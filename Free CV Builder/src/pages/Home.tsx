@@ -282,19 +282,26 @@ export default function Home() {
       
       // Create a temporary link to trigger download
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Use the user's name for the file, or a default
       const safeName = (cvData.personalInfo.fullName || 'CV').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
-      link.setAttribute('download', `${safeName}_Resume.pdf`);
+      const filename = `${safeName}_Resume.pdf`;
+
+      // Check if mobile for more robust download
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
-      document.body.appendChild(link);
-      link.click();
+      if (isMobile) {
+        // On mobile, opening in a new tab or location assign is often more reliable
+        window.location.assign(url);
+      } else {
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
       
-      // Clean up
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      // Clean up after a delay to ensure mobile browser handled it
+      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");

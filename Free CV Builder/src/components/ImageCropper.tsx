@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import Cropper, { Area, Point } from 'react-easy-crop';
+import Cropper, { Area, Point } from '@/node_modules/react-easy-crop';
 import { X, ZoomIn, ZoomOut, Check } from 'lucide-react';
 
 interface ImageCropperProps {
@@ -80,7 +80,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({ image, onCropComplete, onCa
       <div className="relative w-full max-w-lg bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
           <h3 className="text-lg font-bold text-gray-800">Crop Profile Picture</h3>
-          <button 
+          <button
             onClick={onCancel}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
