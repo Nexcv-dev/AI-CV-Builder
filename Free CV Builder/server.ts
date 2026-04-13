@@ -459,6 +459,14 @@ app.post('/api/generate-pdf', async (req, res) => {
     const executablePath = findSystemBrowser();
 
     // Launch puppeteer with memory-saving flags
+    const launchOptions: any = {
+      headless: true,
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage', 
+        '--disable-gpu',
+        '--no-zygote'
       ]
     };
 
@@ -481,7 +489,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     const page = await browser.newPage();
     
     // Set to A4 portrait
-    await page.setViewport({ width: 794, height: 1122, deviceScaleFactor: 2 });
+    await page.setViewport({ width: 794, height: 1122, deviceScaleFactor: 1 });
 
     // Navigate to local print page
     const baseUrl = process.env.NODE_ENV === 'production' 
@@ -490,7 +498,7 @@ app.post('/api/generate-pdf', async (req, res) => {
 
     console.log(`Navigating to: ${baseUrl}/print`);
     await page.goto(`${baseUrl}/print`, { 
-      waitUntil: 'networkidle0',
+      waitUntil: 'networkidle2',
       timeout: 30000 
     });
 
