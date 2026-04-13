@@ -97,6 +97,11 @@ function sanitizeContextField(value: any): string {
 
 // ─── API Routes ──────────────────────────────────────────────────────
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), env: process.env.NODE_ENV });
+});
+
 app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req, res) => {
   try {
     const { base64Data, mimeType } = req.body;
@@ -533,9 +538,14 @@ app.post('/api/generate-pdf', async (req, res) => {
     });
 
     res.send(Buffer.from(pdfBuffer));
-  } catch (error) {
+  } catch (error: any) {
     console.error("PDF generation error:", error);
-    res.status(500).json({ error: "Failed to generate PDF" });
+    // Return specific error message to frontend for better diagnostics
+    res.status(500).json({ 
+      error: "Failed to generate PDF", 
+      details: error.message || String(error),
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

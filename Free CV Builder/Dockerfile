@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     ca-certificates \
     procps \
+    curl \
+    fonts-liberation \
+    fonts-noto-color-emoji \
     libnss3 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \

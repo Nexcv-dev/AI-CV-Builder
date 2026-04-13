@@ -274,7 +274,10 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to generate PDF: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const err = new Error(`Failed to generate PDF: ${response.statusText}`);
+        (err as any).responseBody = JSON.stringify(errorData);
+        throw err;
       }
 
       // Convert response to blob
@@ -302,9 +305,29 @@ export default function Home() {
       
       // Clean up after a delay to ensure mobile browser handled it
       setTimeout(() => window.URL.revokeObjectURL(url), 10000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF. Please try again.");
+      
+      // Try to get a more specific error message from the backend
+      let errorMessage = "Failed to generate PDF. Please try again.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      // If we got a response that wasn't ok, try to parse its JSON content
+      if (error.responseBody) {
+        try {
+          const parsed = JSON.parse(error.responseBody);
+          if (parsed.error) {
+            errorMessage = `${parsed.error}: ${parsed.details || 'Unknown reason'}`;
+          }
+        } catch (e) {
+          // Fallback if not JSON
+        }
+      }
+
+      alert(errorMessage);
     } finally {
       setIsGeneratingPDF(false);
     }
