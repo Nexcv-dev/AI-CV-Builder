@@ -6,6 +6,8 @@ import * as dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import puppeteer from 'puppeteer';
+import fs from 'fs';
 
 // Load environment variables from .env
 dotenv.config();
@@ -413,6 +415,99 @@ Return ONLY the refined text using HTML formatting. Do NOT wrap in code blocks.`
   } catch (error: any) {
     console.error("Refine Text Error:", error);
     return res.status(500).json({ error: "Failed to refine text. Please try again." });
+  }
+});
+
+// AI Generate PDF via Puppeteer
+app.post('/api/generate-pdf', async (req, res) => {
+  try {
+    const { cvData, template } = req.body;
+    
+    if (!cvData) {
+      return res.status(400).json({ error: 'Missing CV data' });
+    }
+
+    // Helper to find Chrome/Edge on Windows as a fallback
+    const findSystemBrowser = () => {
+      if (process.platform !== 'win32') return null;
+      
+      const commonPaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+      ];
+      
+      for (const p of commonPaths) {
+        if (fs.existsSync(p)) return p;
+      }
+      return null;
+    };
+
+    const executablePath = findSystemBrowser();
+
+    // Launch puppeteer with memory-saving flags
+    const launchOptions: any = {
+      headless: true,
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage', 
+        '--single-process',
+        '--disable-gpu',
+        '--no-zygote'
+      ]
+    };
+
+    if (executablePath) {
+      launchOptions.executablePath = executablePath;
+      console.log(`Using system browser at: ${executablePath}`);
+    }
+
+    const browser = await puppeteer.launch(launchOptions);
+
+    const page = await browser.newPage();
+    
+    // Set to A4 portrait
+    await page.setViewport({ width: 794, height: 1122, deviceScaleFactor: 2 });
+
+    // Navigate to local print page
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? `http://localhost:${PORT}` 
+      : 'http://localhost:3000'; // Vite dev server port
+
+    await page.goto(`${baseUrl}/print`, { waitUntil: 'networkidle0' });
+
+    // Inject data
+    await page.evaluate((data: any, tpl: string) => {
+      (window as any).__CV_DATA__ = data;
+      (window as any).__CV_TEMPLATE__ = tpl;
+    }, cvData, template || 'modern');
+
+    // Wait for the render to complete
+    await page.waitForFunction('window.__CV_RENDERED__ === true', { timeout: 10000 });
+
+    // Hide scrollbars for the PDF
+    await page.addStyleTag({ content: '::-webkit-scrollbar { display: none; } * { scrollbar-width: none; }' });
+
+    // Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '0', right: '0', bottom: '0', left: '0' }
+    });
+
+    await browser.close();
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Length': pdfBuffer.length.toString()
+    });
+
+    res.send(Buffer.from(pdfBuffer));
+  } catch (error) {
+    console.error("PDF generation error:", error);
+    res.status(500).json({ error: "Failed to generate PDF" });
   }
 });
 

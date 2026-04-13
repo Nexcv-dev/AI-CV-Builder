@@ -5,6 +5,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
+import PrintView from './pages/PrintView';
 import { Footer } from './components/Footer';
 
 function Layout() {
@@ -43,6 +44,10 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Headless print route - no layout */}
+        <Route path="/print" element={<PrintView />} />
+        
+        {/* Standard layout routes */}
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

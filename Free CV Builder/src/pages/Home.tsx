@@ -8,8 +8,6 @@ import { CVData } from '../types';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
 import { Download, LayoutTemplate, Loader2, FileText, Edit3, AlertCircle, RotateCcw, Save, CheckCircle2 } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 const STORAGE_KEY = 'cv-builder-data';
 const TEMPLATE_STORAGE_KEY = 'cv-builder-template';
@@ -264,163 +262,45 @@ export default function Home() {
 
   const handlePrint = async () => {
     setShowDownloadConfirm(false);
-    if (!contentRef.current) return;
-
-    // Set generating state first to show the overlay
     setIsGeneratingPDF(true);
 
-    // Use a small delay to allow the UI to update and show the loading overlay
-    // before the heavy computation blocks the main thread
-    setTimeout(async () => {
-      try {
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        });
+    try {
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cvData, template }),
+      });
 
-        const pageElement = contentRef.current?.querySelector('.page-break') as HTMLElement;
-        if (!pageElement) {
-          setIsGeneratingPDF(false);
-          return;
-        }
-
-        const canvas = await html2canvas(pageElement, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          windowWidth: 1200,
-          onclone: (clonedDoc) => {
-            const clonedBody = clonedDoc.body;
-            clonedBody.style.width = '1200px';
-            clonedBody.style.overflow = 'visible';
-            clonedDoc.documentElement.style.fontSize = '16px';
-
-            const wrapper = clonedDoc.getElementById('cv-preview-wrapper');
-            if (wrapper) {
-              wrapper.style.transform = 'none';
-              wrapper.style.margin = '0';
-              wrapper.style.padding = '0';
-              wrapper.style.display = 'block';
-              wrapper.style.width = 'auto';
-            }
-
-            const clonedPage = clonedDoc.querySelector('.page-break') as HTMLElement;
-            if (clonedPage) {
-              clonedPage.style.margin = '0';
-              clonedPage.style.transform = 'none';
-              clonedPage.style.width = '210mm';
-              clonedPage.style.minHeight = '297mm';
-              clonedPage.style.boxSizing = 'border-box';
-              clonedPage.style.display = 'flex';
-              clonedPage.style.flexDirection = 'column';
-              clonedPage.style.position = 'relative';
-
-              // Remove the visual page indicators for the PDF
-              const indicators = clonedPage.querySelectorAll('.absolute.inset-0.pointer-events-none');
-              indicators.forEach(ind => ind.remove());
-
-              // Automatic Page Break Handling (Gap Handling)
-              const pxPerPage = 297 * 3.78;
-              const avoidElements = clonedDoc.querySelectorAll('[data-page-break="avoid"]');
-
-              const elements = Array.from(avoidElements) as HTMLElement[];
-
-              elements.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                const pageTop = clonedPage.getBoundingClientRect().top;
-                const relativeTop = rect.top - pageTop;
-                const relativeBottom = rect.bottom - pageTop;
-
-                const pageNumTop = Math.floor(relativeTop / pxPerPage);
-                const pageNumBottom = Math.floor((relativeBottom - 1) / pxPerPage);
-
-                if (pageNumTop !== pageNumBottom) {
-                  const spacer = clonedDoc.createElement('div');
-                  const spaceNeeded = (pageNumBottom * pxPerPage) - relativeTop;
-                  spacer.style.height = `${spaceNeeded}px`;
-                  spacer.className = 'pdf-spacer';
-                  el.parentNode?.insertBefore(spacer, el);
-                }
-              });
-            }
-
-            const allElements = clonedDoc.getElementsByTagName('*');
-            for (let j = 0; j < allElements.length; j++) {
-              const el = allElements[j] as HTMLElement;
-              const computedStyle = window.getComputedStyle(el);
-
-              ['backgroundColor', 'color', 'borderColor', 'outlineColor', 'textDecorationColor', 'fill', 'stroke'].forEach(prop => {
-                const val = (computedStyle as any)[prop];
-                if (val && (val.includes('oklch') || val.includes('oklab'))) {
-                  const inlineVal = (el.style as any)[prop];
-                  if (inlineVal && !inlineVal.includes('oklch') && !inlineVal.includes('oklab')) {
-                    (el.style as any)[prop] = inlineVal;
-                  } else {
-                    (el.style as any)[prop] = 'inherit';
-                    if (prop === 'backgroundColor') {
-                      const isSidebar = el.classList.contains('modern-sidebar');
-                      el.style.backgroundColor = isSidebar ? (cvData.sidebarColor || '#111827') : (el.tagName === 'DIV' ? 'transparent' : 'white');
-                    }
-                  }
-                }
-              });
-
-              if (computedStyle.boxShadow && (computedStyle.boxShadow.includes('oklch') || computedStyle.boxShadow.includes('oklab'))) {
-                el.style.boxShadow = 'none';
-              }
-
-              // Fix: Prevent strikethrough on email/phone/contact text in PDF
-              const textDec = computedStyle.textDecorationLine || (computedStyle as any).textDecoration || '';
-              if (textDec.includes('line-through')) {
-                el.style.textDecorationLine = 'none';
-                el.style.textDecoration = 'none';
-              }
-            }
-            
-            // Fix: Vertically align modern sidebar icons and text for html2canvas
-            const sidebarIcons = clonedDoc.querySelectorAll('.modern-sidebar .flex svg');
-            sidebarIcons.forEach(icon => {
-              if (icon instanceof SVGElement || icon instanceof HTMLElement) {
-                icon.style.transform = 'translateY(1px)';
-              }
-            });
-            const sidebarSpans = clonedDoc.querySelectorAll('.modern-sidebar .flex span');
-            sidebarSpans.forEach(span => {
-              if (span instanceof HTMLElement) {
-                span.style.transform = 'translateY(-1.5px)';
-                // Ensure text is rendered consistently
-                span.style.display = 'inline-block';
-              }
-            });
-          }
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 210;
-        const pageHeight = 297;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft > 1) { // Changed from 0 to 1 to prevent tiny rendering differences creating blank pages
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-
-        const safeName = (cvData.personalInfo.fullName || 'CV').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
-        pdf.save(`${safeName}_Resume.pdf`);
-      } catch (error) {
-        console.error("Error generating PDF:", error);
-      } finally {
-        setIsGeneratingPDF(false);
+      if (!response.ok) {
+        throw new Error(`Failed to generate PDF: ${response.statusText}`);
       }
-    }, 300);
+
+      // Convert response to blob
+      const blob = await response.blob();
+      
+      // Create a temporary link to trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Use the user's name for the file, or a default
+      const safeName = (cvData.personalInfo.fullName || 'CV').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
+      link.setAttribute('download', `${safeName}_Resume.pdf`);
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   return (
