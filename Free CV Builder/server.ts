@@ -13,7 +13,7 @@ import fs from 'fs';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // ─── Security Middleware ─────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ app.use(helmet({
 // CORS: restrict to same-origin in production, allow dev proxy in development
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [process.env.ALLOWED_ORIGIN || ''].filter(Boolean)
-  : ['http://localhost:3000', 'http://localhost:3001'];
+  : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -113,7 +113,7 @@ app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req, res) => {
           If a field is not found, leave it as an empty string or empty array.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-flash-latest",
       contents: [
         {
           inlineData: {
@@ -293,7 +293,7 @@ Rules:
 - Return ONLY the summary text, nothing else`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-flash-latest",
       contents: [context],
     });
 
@@ -400,7 +400,7 @@ Return ONLY the refined text using HTML formatting. Do NOT wrap in code blocks.`
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-flash-latest",
       contents: [prompt],
     });
 
