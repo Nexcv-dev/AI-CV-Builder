@@ -459,24 +459,24 @@ app.post('/api/generate-pdf', async (req, res) => {
     const executablePath = findSystemBrowser();
 
     // Launch puppeteer with memory-saving flags
-    const launchOptions: any = {
-      headless: true,
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--disable-dev-shm-usage', 
-        '--single-process',
-        '--disable-gpu',
-        '--no-zygote'
       ]
     };
 
-    if (executablePath) {
+    // On Render (Docker), Puppeteer might need to use a specific executable path 
+    // or we can just let it use the one downloaded during 'npm install'.
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+      console.log(`Using custom browser at: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+    } else if (executablePath) {
       launchOptions.executablePath = executablePath;
       console.log(`Using system browser at: ${executablePath}`);
+    } else {
+      console.log("No custom executable path found, using Puppeteer default.");
     }
 
+    console.log("Launching Puppeteer...");
     const browser = await puppeteer.launch(launchOptions);
+    console.log("Browser launched successfully.");
 
     const page = await browser.newPage();
     
@@ -485,10 +485,14 @@ app.post('/api/generate-pdf', async (req, res) => {
 
     // Navigate to local print page
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? `http://localhost:${PORT}` 
+      ? `http://127.0.0.1:${PORT}` 
       : 'http://localhost:3000'; // Vite dev server port
 
-    await page.goto(`${baseUrl}/print`, { waitUntil: 'networkidle0' });
+    console.log(`Navigating to: ${baseUrl}/print`);
+    await page.goto(`${baseUrl}/print`, { 
+      waitUntil: 'networkidle0',
+      timeout: 30000 
+    });
 
     // Inject data
     await page.evaluate((data: any, tpl: string) => {
@@ -497,17 +501,21 @@ app.post('/api/generate-pdf', async (req, res) => {
     }, cvData, template || 'modern');
 
     // Wait for the render to complete
-    await page.waitForFunction('window.__CV_RENDERED__ === true', { timeout: 10000 });
+    console.log("Injecting data and waiting for render flag...");
+    await page.waitForFunction('window.__CV_RENDERED__ === true', { timeout: 15000 });
+    console.log("Render completed.");
 
     // Hide scrollbars for the PDF
     await page.addStyleTag({ content: '::-webkit-scrollbar { display: none; } * { scrollbar-width: none; }' });
 
     // Generate PDF
+    console.log("Generating PDF buffer...");
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '0', right: '0', bottom: '0', left: '0' }
     });
+    console.log(`PDF generated. Buffer size: ${pdfBuffer.length}`);
 
     await browser.close();
 

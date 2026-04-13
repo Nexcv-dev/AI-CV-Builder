@@ -1,10 +1,8 @@
 services:
   - type: web
     name: cv-builder
-    runtime: node
+    runtime: docker
     plan: free
-    buildCommand: npm run render-build
-    startCommand: npm start
     envVars:
       - key: GEMINI_API_KEY
         sync: false
