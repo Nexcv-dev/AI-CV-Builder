@@ -285,20 +285,20 @@ export default function Home() {
       const safeName = (cvData.personalInfo.fullName || 'CV').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
       const filename = `${safeName}_Resume.pdf`;
 
-      // Check if mobile for more robust download
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      // Use a consistent approach for all platforms. `location.assign` with blob urls fails on modern mobile browsers.
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
       
-      if (isMobile) {
-        // On mobile, opening in a new tab or location assign is often more reliable
-        window.location.assign(url);
-      } else {
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+      // Fallback for iOS Safari which might sometimes prefer opening blobs in a new tab if download fails
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        link.setAttribute('target', '_blank');
       }
+      
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
       
       // Clean up after a delay to ensure mobile browser handled it
       setTimeout(() => window.URL.revokeObjectURL(url), 10000);

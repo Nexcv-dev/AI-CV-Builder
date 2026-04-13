@@ -30,7 +30,19 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like server-side or same-origin)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) return callback(null, true);
+    
+    // In development mode, allow localhost origins
+    if (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost')) {
+      return callback(null, true);
+    }
+    
+    // In production, if ALLOWED_ORIGIN is not set, allow all as fallback
+    if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
