@@ -435,8 +435,469 @@ Return ONLY the refined text using HTML formatting. Do NOT wrap in code blocks.`
   }
 });
 
-// AI Generate PDF via Puppeteer
+// ─── PDF Generation Helpers ──────────────────────────────────────────
+
+// Read the built CSS at startup so we can inline it into PDFs
+let cachedCSS = '';
+function loadBuiltCSS(): string {
+  if (cachedCSS) return cachedCSS;
+  try {
+    const assetsDir = path.join(__dirname, 'dist', 'assets');
+    if (fs.existsSync(assetsDir)) {
+      const cssFile = fs.readdirSync(assetsDir).find(f => f.endsWith('.css'));
+      if (cssFile) {
+        cachedCSS = fs.readFileSync(path.join(assetsDir, cssFile), 'utf-8');
+        console.log(`Loaded built CSS: ${cssFile} (${cachedCSS.length} bytes)`);
+      }
+    }
+  } catch (e) {
+    console.warn('Could not load built CSS:', e);
+  }
+  return cachedCSS;
+}
+
+// Helper to find Chrome/Edge on Windows as a fallback
+function findSystemBrowser(): string | null {
+  if (process.platform !== 'win32') return null;
+  const commonPaths = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  ];
+  for (const p of commonPaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+// Generate self-contained HTML from CV data — no SPA navigation needed
+function generateCVHTML(cvData: any, template: string): string {
+  const { personalInfo = {}, experience = [], education = [], skills = [], projects = [], courses = [], awards = [], languages = [] } = cvData;
+  const themeColor = cvData.themeColor || '#2563eb';
+  const sidebarColor = cvData.sidebarColor || '#111827';
+  const fontFamily = cvData.fontFamily || 'Inter';
+  const lineSpacing = cvData.lineSpacing || 1.5;
+  const sectionGap = cvData.sectionGap || 2;
+  const profileImage = cvData.profileImage || '';
+  const imageZoom = cvData.imageZoom || 1;
+  const imageX = cvData.imageX || 0;
+  const imageY = cvData.imageY || 0;
+  const sectionOrder = cvData.sectionOrder || ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages'];
+  const hiddenSections = cvData.hiddenSections || [];
+
+  // Contrast color helper
+  const getContrastColor = (hex: string) => {
+    if (!hex || hex.length < 7) return '#ffffff';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5 ? '#1a1a1a' : '#ffffff';
+  };
+
+  const sidebarTextColor = getContrastColor(sidebarColor);
+  const sidebarMutedColor = sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)';
+
+  const esc = (str: string) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // Skill bars helper
+  const renderBars = (level: number) => {
+    const pct = ((level || 0) / 5) * 100;
+    return `<div style="width:96px;height:6px;background:#e5e7eb;border-radius:9999px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${themeColor};border-radius:9999px"></div></div>`;
+  };
+
+  // Section rendering (generates section HTML based on template)
+  const renderSection = (key: string): string => {
+    if (hiddenSections.includes(key)) return '';
+
+    if (key === 'summary' && personalInfo.summary) {
+      if (template === 'professional') {
+        return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+          <h2 style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Professional Summary</h2>
+          <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px">${personalInfo.summary}</div>
+        </section>`;
+      }
+      return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+        <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${template === 'modern' ? 'Profile' : ''}</h2>
+        <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${personalInfo.summary}</div>
+      </section>`;
+    }
+
+    if (key === 'personalDetails' && (personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus)) {
+      const details = [
+        personalInfo.dob ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Date of Birth:</span><span style="color:#1f2937">${esc(personalInfo.dob)}</span></div>` : '',
+        personalInfo.nic ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">NIC:</span><span style="color:#1f2937">${esc(personalInfo.nic)}</span></div>` : '',
+        personalInfo.gender ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Gender:</span><span style="color:#1f2937">${esc(personalInfo.gender)}</span></div>` : '',
+        personalInfo.maritalStatus ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Marital Status:</span><span style="color:#1f2937">${esc(personalInfo.maritalStatus)}</span></div>` : '',
+        personalInfo.nationality ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Nationality:</span><span style="color:#1f2937">${esc(personalInfo.nationality)}</span></div>` : '',
+        personalInfo.religion ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Religion:</span><span style="color:#1f2937">${esc(personalInfo.religion)}</span></div>` : '',
+      ].filter(Boolean).join('');
+
+      return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Personal Details</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:8px;font-size:0.875rem${template === 'professional' ? ';margin-left:130px' : ''}">${details}</div>
+      </section>`;
+    }
+
+    if (key === 'experience' && experience.length > 0) {
+      const items = experience.map((exp: any) => {
+        if (template === 'classic') {
+          return `<div style="display:grid;grid-template-columns:130px 1fr;gap:16px;break-inside:avoid">
+            <div style="font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px">${esc(exp.startDate || '')} ${exp.startDate && exp.endDate ? '—' : ''} ${esc(exp.endDate || '')}</div>
+            <div>
+              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(exp.position || 'Position')}</h3>
+              <div style="font-size:0.875rem;font-weight:500;color:#374151;margin-bottom:8px">${esc(exp.company || 'Company')}</div>
+              ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${exp.description}</div>` : ''}
+            </div>
+          </div>`;
+        } else if (template === 'professional') {
+          return `<div style="display:grid;grid-template-columns:114px 1fr;gap:16px;break-inside:avoid">
+            <div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">${esc(exp.startDate || '')}<br>${exp.startDate && exp.endDate ? '—' : ''}<br>${esc(exp.endDate || '')}</div>
+            <div>
+              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(exp.position || 'Position')}</h3>
+              <div style="font-size:0.875rem;font-weight:500;color:${themeColor};margin-bottom:6px">${esc(exp.company || 'Company')}</div>
+              ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${exp.description}</div>` : ''}
+            </div>
+          </div>`;
+        } else { // modern
+          return `<div style="break-inside:avoid">
+            <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(exp.position || 'Position')}</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="font-size:0.875rem;font-weight:500;color:${themeColor}">${esc(exp.company || 'Company')}</span>
+              <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(exp.startDate || '')} ${exp.startDate && exp.endDate ? '—' : ''} ${esc(exp.endDate || '')}</span>
+            </div>
+            ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${exp.description}</div>` : ''}
+          </div>`;
+        }
+      }).join('');
+
+      return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Experience</h2>
+        <div style="display:flex;flex-direction:column;gap:24px">${items}</div>
+      </section>`;
+    }
+
+    if (key === 'education' && education.length > 0) {
+      const items = education.map((edu: any) => {
+        if (template === 'classic') {
+          return `<div style="display:grid;grid-template-columns:130px 1fr;gap:16px;break-inside:avoid">
+            <div style="font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px">${esc(edu.startDate || '')} ${edu.startDate && edu.endDate ? '—' : ''} ${esc(edu.endDate || '')}</div>
+            <div>
+              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(edu.degree || 'Degree')}</h3>
+              <div style="font-size:0.875rem;color:#374151;margin-bottom:4px">${esc(edu.institution || 'Institution')}</div>
+              ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${edu.description}</div>` : ''}
+            </div>
+          </div>`;
+        } else if (template === 'professional') {
+          return `<div style="display:grid;grid-template-columns:114px 1fr;gap:16px;break-inside:avoid">
+            <div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">${esc(edu.startDate || '')}<br>${edu.startDate && edu.endDate ? '—' : ''}<br>${esc(edu.endDate || '')}</div>
+            <div>
+              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(edu.degree || 'Degree')}</h3>
+              <div style="font-size:0.875rem;font-weight:500;color:${themeColor};margin-bottom:6px">${esc(edu.institution || 'Institution')}</div>
+              ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${edu.description}</div>` : ''}
+            </div>
+          </div>`;
+        } else { // modern
+          return `<div style="break-inside:avoid">
+            <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(edu.degree || 'Degree')}</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(edu.institution || 'Institution')}</span>
+              <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(edu.startDate || '')} ${edu.startDate && edu.endDate ? '—' : ''} ${esc(edu.endDate || '')}</span>
+            </div>
+            ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${edu.description}</div>` : ''}
+          </div>`;
+        }
+      }).join('');
+
+      return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Education</h2>
+        <div style="display:flex;flex-direction:column;gap:24px">${items}</div>
+      </section>`;
+    }
+
+    if (key === 'skills' && skills.length > 0) {
+      // For modern template, skills are in sidebar — skip here
+      if (template === 'modern') return '';
+
+      const skillChips = skills.map((s: any) => 
+        `<span style="font-size:0.875rem;font-weight:600;padding:6px 12px;background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`
+      ).join('');
+
+      if (template === 'professional') {
+        return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+          <h2 style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Skills & Expertise</h2>
+          <div style="display:grid;grid-template-columns:114px 1fr;gap:16px">
+            <div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Core Setup</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">${skillChips}</div>
+          </div>
+        </section>`;
+      }
+
+      return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+        <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Skills</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">${skillChips}</div>
+      </section>`;
+    }
+
+    if (key === 'projects' && projects.length > 0) {
+      const items = projects.map((p: any) => {
+        const link = p.link ? `<a href="${esc(p.link)}" style="font-size:0.75rem;font-weight:500;color:${themeColor};text-decoration:none">View Project</a>` : '';
+        if (template === 'classic' || template === 'professional') {
+          return `<div style="display:grid;grid-template-columns:${template === 'professional' ? '114px' : '130px'} 1fr;gap:16px;break-inside:avoid">
+            <div style="font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px">${link}</div>
+            <div>
+              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(p.name || 'Project Name')}</h3>
+              ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px">${p.description}</div>` : ''}
+            </div>
+          </div>`;
+        } else { // modern
+          return `<div style="break-inside:avoid">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(p.name || 'Project Name')}</h3>
+              ${link}
+            </div>
+            ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${p.description}</div>` : ''}
+          </div>`;
+        }
+      }).join('');
+
+      return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${template === 'professional' ? 'Key Projects' : 'Projects'}</h2>
+        <div style="display:flex;flex-direction:column;gap:24px">${items}</div>
+      </section>`;
+    }
+
+    if (key === 'courses' && courses.length > 0) {
+      const items = courses.map((c: any) => {
+        if (template === 'classic' || template === 'professional') {
+          return `<div style="display:grid;grid-template-columns:${template === 'professional' ? '114px' : '130px'} 1fr;gap:16px;break-inside:avoid">
+            <div style="font-size:${template === 'professional' ? '0.75rem' : '0.875rem'};color:#6b7280;font-weight:${template === 'professional' ? '700' : '500'};${template === 'professional' ? 'text-transform:uppercase;' : ''}padding-top:2px">${esc(c.startDate || '')} ${c.startDate && c.endDate ? '—' : ''} ${esc(c.endDate || '')}</div>
+            <div>
+              <h3 style="font-size:${template === 'professional' ? '0.875rem' : '1rem'};font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3>
+              <div style="font-size:${template === 'professional' ? '0.75rem' : '0.875rem'};color:#374151;margin-top:2px">${esc(c.institution || 'Institution')}</div>
+            </div>
+          </div>`;
+        } else { // modern
+          return `<div style="break-inside:avoid">
+            <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(c.institution || 'Institution')}</span>
+              <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(c.startDate || '')} ${c.startDate && c.endDate ? '—' : ''} ${esc(c.endDate || '')}</span>
+            </div>
+          </div>`;
+        }
+      }).join('');
+
+      return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${template === 'professional' ? 'Certifications & Courses' : 'Courses & Certifications'}</h2>
+        <div style="display:flex;flex-direction:column;gap:${template === 'professional' ? '16px' : '24px'}">${items}</div>
+      </section>`;
+    }
+
+    if (key === 'awards' && awards.length > 0) {
+      const items = awards.map((a: any) => {
+        if (template === 'classic' || template === 'professional') {
+          return `<div style="display:grid;grid-template-columns:${template === 'professional' ? '114px' : '130px'} 1fr;gap:16px;break-inside:avoid">
+            <div style="font-size:${template === 'professional' ? '0.75rem' : '0.875rem'};color:#6b7280;font-weight:${template === 'professional' ? '700' : '500'};${template === 'professional' ? 'text-transform:uppercase;' : ''}padding-top:2px">${esc(a.date || '')}</div>
+            <div>
+              <h3 style="font-size:${template === 'professional' ? '0.875rem' : '1rem'};font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3>
+              <div style="font-size:${template === 'professional' ? '0.75rem' : '0.875rem'};color:#374151;margin-top:2px">${esc(a.issuer || 'Issuer')}</div>
+            </div>
+          </div>`;
+        } else { // modern
+          return `<div style="break-inside:avoid">
+            <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(a.issuer || 'Issuer')}</span>
+              <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(a.date || '')}</span>
+            </div>
+          </div>`;
+        }
+      }).join('');
+
+      return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Awards${template === 'classic' ? '' : ''}</h2>
+        <div style="display:flex;flex-direction:column;gap:${template === 'professional' ? '16px' : '24px'}">${items}</div>
+      </section>`;
+    }
+
+    if (key === 'languages' && languages.length > 0) {
+      // For modern template, languages are in sidebar
+      if (template === 'modern') return '';
+
+      if (template === 'professional') {
+        const langItems = languages.map((l: any) => `<span style="font-size:0.875rem;font-weight:500;color:#1f2937">${esc(l.name || '')} <span style="color:#9ca3af;font-weight:400">(${esc(l.proficiency || '')})</span></span>`).join('');
+        return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+          <h2 style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Languages</h2>
+          <div style="display:grid;grid-template-columns:114px 1fr;gap:16px">
+            <div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Spoken</div>
+            <div style="display:flex;flex-wrap:wrap;gap:16px">${langItems}</div>
+          </div>
+        </section>`;
+      }
+
+      // Classic
+      const langItems = languages.map((l: any) => 
+        `<div style="display:flex;align-items:center;justify-content:space-between;break-inside:avoid">
+          <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(l.name || '')}</span>
+          <span style="font-size:0.875rem;color:#6b7280">${esc(l.proficiency || '')}</span>
+        </div>`
+      ).join('');
+
+      return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
+        <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Languages</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:16px">${langItems}</div>
+      </section>`;
+    }
+
+    return '';
+  };
+
+  const sectionsHTML = sectionOrder.map(renderSection).join('');
+
+  // Build template-specific layout
+  let bodyContent = '';
+
+  if (template === 'modern') {
+    // Modern sidebar
+    const sidebarDetails = [
+      personalInfo.email ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">📧 <span>${esc(personalInfo.email)}</span></div>` : '',
+      personalInfo.phone ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">📱 <span>${esc(personalInfo.phone)}</span></div>` : '',
+      personalInfo.address ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">📍 <span>${esc(personalInfo.address)}</span></div>` : '',
+    ].filter(Boolean).join('');
+
+    const personalDetails = [
+      personalInfo.dob ? `<div style="display:flex;align-items:center;gap:8px">📅 <span>${esc(personalInfo.dob)}</span></div>` : '',
+      personalInfo.nic ? `<div style="display:flex;align-items:center;gap:8px">🪪 <span>${esc(personalInfo.nic)}</span></div>` : '',
+      personalInfo.gender ? `<div style="display:flex;align-items:center;gap:8px">👤 <span>${esc(personalInfo.gender)}</span></div>` : '',
+      personalInfo.nationality ? `<div style="display:flex;align-items:center;gap:8px">🌍 <span>${esc(personalInfo.nationality)}</span></div>` : '',
+      personalInfo.religion ? `<div style="display:flex;align-items:center;gap:8px">✨ <span>${esc(personalInfo.religion)}</span></div>` : '',
+      personalInfo.maritalStatus ? `<div style="display:flex;align-items:center;gap:8px">💍 <span>${esc(personalInfo.maritalStatus)}</span></div>` : '',
+    ].filter(Boolean).join('');
+
+    const sidebarSkills = skills.map((s: any) => 
+      `<div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:${sidebarTextColor}">${esc(s.name || '')}</span>
+        ${renderBars(s.level || 0)}
+      </div>`
+    ).join('');
+
+    const sidebarLanguages = languages.map((l: any) => 
+      `<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.875rem">
+        <span style="font-weight:600;color:${sidebarTextColor}">${esc(l.name || '')}</span>
+        <span style="font-size:0.75rem;color:${sidebarMutedColor}">${esc(l.proficiency || '')}</span>
+      </div>`
+    ).join('');
+
+    bodyContent = `<div style="display:flex;flex-direction:row;min-height:297mm;width:210mm">
+      <div style="width:30%;flex-shrink:0;background:${sidebarColor};color:${sidebarTextColor};padding:15mm;display:flex;flex-direction:column">
+        ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
+        
+        <div style="margin-bottom:32px">
+          <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Details</h2>
+          <div style="display:flex;flex-direction:column;gap:16px;font-size:0.75rem;color:${sidebarMutedColor}">${sidebarDetails}</div>
+        </div>
+
+        ${personalDetails ? `<div style="margin-bottom:32px">
+          <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Personal Info</h2>
+          <div style="display:flex;flex-direction:column;gap:12px;font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:${sidebarMutedColor}">${personalDetails}</div>
+        </div>` : ''}
+
+        ${skills.length > 0 ? `<div style="margin-top:16px">
+          <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Skills</h2>
+          <div style="display:flex;flex-direction:column;gap:16px">${sidebarSkills}</div>
+        </div>` : ''}
+
+        ${languages.length > 0 ? `<div style="margin-top:32px">
+          <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Languages</h2>
+          <div style="display:flex;flex-direction:column;gap:12px">${sidebarLanguages}</div>
+        </div>` : ''}
+      </div>
+
+      <div style="flex:1;width:70%;padding:20mm">
+        <header style="margin-bottom:32px">
+          <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+          <div style="width:64px;height:4px;background:${themeColor};margin-bottom:16px"></div>
+        </header>
+        ${sectionsHTML}
+      </div>
+    </div>`;
+  } else if (template === 'professional') {
+    bodyContent = `<div style="min-height:297mm;display:flex;flex-direction:column;background:white">
+      <div style="width:100%;height:8px;background:${themeColor}"></div>
+      <div style="padding:20mm;padding-top:15mm">
+        <header style="margin-bottom:40px;display:flex;border-bottom:2px solid #f3f4f6;padding-bottom:24px">
+          <div style="flex:1">
+            <h1 style="font-size:3rem;font-weight:800;letter-spacing:-0.025em;margin-bottom:8px;color:#111827">${esc(personalInfo.fullName || 'Your Name')}</h1>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:0.875rem;font-weight:500;margin-top:16px">
+              ${personalInfo.email ? `<div style="color:#4b5563">${esc(personalInfo.email)}</div>` : ''}
+              ${personalInfo.phone ? `<div style="color:#4b5563">${esc(personalInfo.phone)}</div>` : ''}
+              ${personalInfo.address ? `<div style="color:#6b7280">${esc(personalInfo.address)}</div>` : ''}
+            </div>
+          </div>
+          ${profileImage ? `<div style="margin-left:24px;flex-shrink:0"><div style="width:112px;height:112px;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div></div>` : ''}
+        </header>
+        ${sectionsHTML}
+      </div>
+    </div>`;
+  } else {
+    // Classic
+    bodyContent = `<div style="padding:20mm;min-height:297mm;display:flex;flex-direction:column">
+      <header style="margin-bottom:32px;text-align:center;display:flex;flex-direction:column;align-items:center">
+        ${profileImage ? `<div style="width:96px;height:96px;border-radius:9999px;overflow:hidden;border:2px solid #e5e7eb;margin-bottom:16px"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
+        <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;color:${themeColor}">${esc(personalInfo.fullName || 'Your Name')}</h1>
+        <div style="font-size:0.875rem;color:#4b5563;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px">
+          ${personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : ''}
+          ${personalInfo.email && personalInfo.phone ? '<span>•</span>' : ''}
+          ${personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : ''}
+          ${personalInfo.phone && personalInfo.address ? '<span>•</span>' : ''}
+          ${personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''}
+        </div>
+      </header>
+      ${sectionsHTML}
+    </div>`;
+  }
+
+  const fontMap: Record<string, string> = {
+    'Inter': "'Inter', sans-serif",
+    'Lora': "'Lora', serif",
+    'Roboto': "'Roboto', sans-serif",
+    'Montserrat': "'Montserrat', sans-serif",
+    'Merriweather': "'Merriweather', serif",
+    'Playfair Display': "'Playfair Display', serif",
+    'JetBrains Mono': "'JetBrains Mono', monospace",
+  };
+
+  const fontFamilyCSS = fontMap[fontFamily] || "'Inter', sans-serif";
+  const googleFontName = encodeURIComponent(fontFamily || 'Inter');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=${googleFontName}:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: ${fontFamilyCSS}; background: white; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    ::-webkit-scrollbar { display: none; }
+    a { color: inherit; text-decoration: none; }
+    ul { padding-left: 20px; margin: 4px 0; }
+    li { margin-bottom: 4px; }
+    h1, h2, h3 { margin: 0; }
+  </style>
+</head>
+<body>
+  <div style="width:210mm;min-height:297mm;background:white;overflow:hidden;margin:0 auto">
+    ${bodyContent}
+  </div>
+</body>
+</html>`;
+}
+
+// AI Generate PDF via Puppeteer — using setContent() instead of page.goto()
 app.post('/api/generate-pdf', async (req, res) => {
+  let browser: any = null;
   try {
     const { cvData, template } = req.body;
     
@@ -444,24 +905,10 @@ app.post('/api/generate-pdf', async (req, res) => {
       return res.status(400).json({ error: 'Missing CV data' });
     }
 
-    // Helper to find Chrome/Edge on Windows as a fallback
-    const findSystemBrowser = () => {
-      if (process.platform !== 'win32') return null;
-      
-      const commonPaths = [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-      ];
-      
-      for (const p of commonPaths) {
-        if (fs.existsSync(p)) return p;
-      }
-      return null;
-    };
-
-    const executablePath = findSystemBrowser();
+    // Generate self-contained HTML
+    console.log("Generating HTML for PDF...");
+    const html = generateCVHTML(cvData, template || 'modern');
+    console.log(`HTML generated: ${html.length} bytes`);
 
     // Launch puppeteer with memory-saving flags
     const launchOptions: any = {
@@ -471,24 +918,32 @@ app.post('/api/generate-pdf', async (req, res) => {
         '--disable-setuid-sandbox', 
         '--disable-dev-shm-usage', 
         '--disable-gpu',
-        '--no-zygote'
+        '--no-zygote',
+        '--single-process',
+        '--disable-extensions',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-translate',
+        '--no-first-run',
       ]
     };
 
-    // On Render (Docker), Puppeteer might need to use a specific executable path 
-    // or we can just let it use the one downloaded during 'npm install'.
+    // Use custom or system browser if available
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
       launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
       console.log(`Using custom browser at: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
-    } else if (executablePath) {
-      launchOptions.executablePath = executablePath;
-      console.log(`Using system browser at: ${executablePath}`);
     } else {
-      console.log("No custom executable path found, using Puppeteer default.");
+      const systemBrowser = findSystemBrowser();
+      if (systemBrowser) {
+        launchOptions.executablePath = systemBrowser;
+        console.log(`Using system browser at: ${systemBrowser}`);
+      } else {
+        console.log("Using Puppeteer's bundled Chromium.");
+      }
     }
 
     console.log("Launching Puppeteer...");
-    const browser = await puppeteer.launch(launchOptions);
+    browser = await puppeteer.launch(launchOptions);
     console.log("Browser launched successfully.");
 
     const page = await browser.newPage();
@@ -496,33 +951,18 @@ app.post('/api/generate-pdf', async (req, res) => {
     // Set to A4 portrait
     await page.setViewport({ width: 794, height: 1122, deviceScaleFactor: 1 });
 
-    // Navigate to local print page
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? `http://127.0.0.1:${PORT}` 
-      : 'http://localhost:3000'; // Vite dev server port
-
-    console.log(`Navigating to: ${baseUrl}/print`);
-    await page.goto(`${baseUrl}/print`, { 
-      waitUntil: 'networkidle2',
+    // Use setContent instead of goto — no server self-request needed!
+    console.log("Setting page content directly (no navigation)...");
+    await page.setContent(html, { 
+      waitUntil: 'networkidle0',
       timeout: 30000 
     });
+    console.log("Page content set. Generating PDF...");
 
-    // Inject data
-    await page.evaluate((data: any, tpl: string) => {
-      (window as any).__CV_DATA__ = data;
-      (window as any).__CV_TEMPLATE__ = tpl;
-    }, cvData, template || 'modern');
-
-    // Wait for the render to complete
-    console.log("Injecting data and waiting for render flag...");
-    await page.waitForFunction('window.__CV_RENDERED__ === true', { timeout: 15000 });
-    console.log("Render completed.");
-
-    // Hide scrollbars for the PDF
-    await page.addStyleTag({ content: '::-webkit-scrollbar { display: none; } * { scrollbar-width: none; }' });
+    // Short wait to ensure fonts are loaded
+    await page.evaluate(() => document.fonts.ready);
 
     // Generate PDF
-    console.log("Generating PDF buffer...");
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -531,6 +971,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     console.log(`PDF generated. Buffer size: ${pdfBuffer.length}`);
 
     await browser.close();
+    browser = null;
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -540,7 +981,9 @@ app.post('/api/generate-pdf', async (req, res) => {
     res.send(Buffer.from(pdfBuffer));
   } catch (error: any) {
     console.error("PDF generation error:", error);
-    // Return specific error message to frontend for better diagnostics
+    if (browser) {
+      try { await browser.close(); } catch (e) { /* ignore */ }
+    }
     res.status(500).json({ 
       error: "Failed to generate PDF", 
       details: error.message || String(error),
