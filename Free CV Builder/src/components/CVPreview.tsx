@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
 
 interface CVPreviewProps {
   cvData: CVData;
-  template: 'classic' | 'modern';
+  template: 'classic' | 'modern' | 'professional';
 }
 
 const getValidUrl = (url?: string): string | undefined => {

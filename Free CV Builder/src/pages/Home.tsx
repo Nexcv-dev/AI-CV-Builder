@@ -173,12 +173,22 @@ export default function Home() {
     setSaveStatus('saving');
     const timer = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cvData));
+        const dataStr = JSON.stringify(cvData);
+        // Check if data size is approaching localStorage limit (~5MB)
+        if (dataStr.length > 4.5 * 1024 * 1024) {
+          console.warn('CV data is very large, save may fail. Consider removing the profile image.');
+        }
+        localStorage.setItem(STORAGE_KEY, dataStr);
         setSaveStatus('saved');
         // Reset status after 2 seconds
         setTimeout(() => setSaveStatus('idle'), 2000);
-      } catch (e) {
+      } catch (e: any) {
         console.warn('Failed to save CV data:', e);
+        // Show specific error for quota exceeded
+        if (e?.name === 'QuotaExceededError' || e?.code === 22) {
+          setSaveStatus('error' as any);
+          alert('Storage is full. Try removing your profile image or reducing data to enable auto-save.');
+        }
         setSaveStatus('idle');
       }
     }, 500);

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'motion/react';
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award } from '../types';
 import { Plus, Trash2, Loader2, Upload, User, Briefcase, GraduationCap, Wrench, Palette, Star, FileText, BookOpen, Globe, FolderGit2, Trophy, ChevronDown, ChevronUp, Image as ImageIcon, GripVertical, Info, CheckCircle, AlertCircle, CheckCircle2, LayoutTemplate, MoveHorizontal, MoveVertical, Layout, Sparkles } from 'lucide-react';
@@ -29,7 +30,7 @@ interface CVFormProps {
   setTemplate: (template: 'classic' | 'modern' | 'professional') => void;
 }
 
-const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, isOpen, onToggle }: { key?: string, id: string, title: string, icon: any, children: React.ReactNode, isOpen: boolean, onToggle: () => void }) => {
+const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, isOpen, onToggle }: { id: string, title: string, icon: any, children: React.ReactNode, isOpen: boolean, onToggle: () => void }) => {
   const {
     attributes,
     listeners,
@@ -124,9 +125,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
 
   // Strip HTML tags to get plain text for checking and sending
   const stripHtml = (html: string) => {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
+    return DOMPurify.sanitize(html, { ALLOWED_TAGS: [] });
   };
 
   const handleGenerateSummary = async () => {
@@ -348,7 +347,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
     setCvData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePersonalInfoChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handlePersonalInfoChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setCvData((prev) => ({
       ...prev,
@@ -663,7 +662,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               <select
                                 name="gender"
                                 value={cvData.personalInfo.gender}
-                                onChange={(e) => handlePersonalInfoChange(e as any)}
+                                onChange={handlePersonalInfoChange}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
                               >
                                 <option value="">Select Gender</option>
@@ -677,7 +676,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               <select
                                 name="maritalStatus"
                                 value={cvData.personalInfo.maritalStatus}
-                                onChange={(e) => handlePersonalInfoChange(e as any)}
+                                onChange={handlePersonalInfoChange}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
                               >
                                 <option value="">Select Status</option>

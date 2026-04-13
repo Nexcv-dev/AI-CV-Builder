@@ -3,6 +3,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
 import * as dotenv from 'dotenv';
+import helmet from 'helmet';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
 // Load environment variables from .env
 dotenv.config();
@@ -10,19 +13,93 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Increase JSON payload limit for large base64 CV/Resume files
-app.use(express.json({ limit: '50mb' }));
+// ─── Security Middleware ─────────────────────────────────────────────
 
-app.post('/api/parse-cv', async (req, res) => {
+// Helmet: set secure HTTP headers
+app.use(helmet({
+  contentSecurityPolicy: false, // CSP is handled via index.html meta tag
+}));
+
+// CORS: restrict to same-origin in production, allow dev proxy in development
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [process.env.ALLOWED_ORIGIN || ''].filter(Boolean)
+  : ['http://localhost:3000', 'http://localhost:3001'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like server-side or same-origin)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+}));
+
+// Rate limiting: protect AI API endpoints from abuse
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // limit each IP to 30 API requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' },
+});
+
+app.use('/api/', apiLimiter);
+
+// Default JSON limit for most endpoints (1MB)
+app.use(express.json({ limit: '1mb' }));
+
+// ─── Input Validation Helpers ────────────────────────────────────────
+
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'image/gif',
+];
+
+const ALLOWED_SECTION_TYPES = ['experience', 'education', 'project'];
+
+const MAX_TEXT_LENGTH = 10000; // Maximum characters for text inputs
+const MAX_BASE64_LENGTH = 15 * 1024 * 1024; // ~15MB for base64 data
+
+function sanitizeTextForPrompt(text: string): string {
+  // Strip control characters and limit length
+  return text
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .slice(0, MAX_TEXT_LENGTH)
+    .trim();
+}
+
+function sanitizeContextField(value: any): string {
+  if (typeof value !== 'string') return 'Unknown';
+  return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, 200).trim() || 'Unknown';
+}
+
+// ─── API Routes ──────────────────────────────────────────────────────
+
+app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req, res) => {
   try {
     const { base64Data, mimeType } = req.body;
 
-    if (!base64Data) {
-      return res.status(400).json({ error: 'Missing base64Data in request body' });
+    if (!base64Data || typeof base64Data !== 'string') {
+      return res.status(400).json({ error: 'Missing or invalid base64Data in request body' });
     }
 
+    if (base64Data.length > MAX_BASE64_LENGTH) {
+      return res.status(400).json({ error: 'File too large. Maximum allowed size is 10 MB.' });
+    }
+
+    // Validate mimeType against allow-list
+    const validatedMimeType = ALLOWED_MIME_TYPES.includes(mimeType) ? mimeType : 'application/pdf';
+
     if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+      return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
     }
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -39,7 +116,7 @@ app.post('/api/parse-cv', async (req, res) => {
         {
           inlineData: {
             data: base64Data,
-            mimeType: mimeType || "application/pdf"
+            mimeType: validatedMimeType
           }
         },
         prompt
@@ -155,14 +232,19 @@ app.post('/api/parse-cv', async (req, res) => {
     if (jsonStr) {
       // Strip markdown code fences if present
       const cleanJson = jsonStr.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-      const result = JSON.parse(cleanJson);
-      return res.json(result);
+      try {
+        const result = JSON.parse(cleanJson);
+        return res.json(result);
+      } catch {
+        console.error("Failed to parse AI response as JSON");
+        return res.status(500).json({ error: "Failed to parse document. Please try again." });
+      }
     } else {
-      return res.status(500).json({ error: "No data returned from Gemini API" });
+      return res.status(500).json({ error: "No data returned. Please try again." });
     }
   } catch (error: any) {
     console.error("Backend API Error:", error);
-    return res.status(500).json({ error: error.message || "Failed to process document" });
+    return res.status(500).json({ error: "Failed to process document. Please try again." });
   }
 });
 
@@ -170,17 +252,34 @@ app.post('/api/parse-cv', async (req, res) => {
 app.post('/api/generate-summary', async (req, res) => {
   try {
     if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+      return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
     }
 
     const { experience, education, skills } = req.body;
+
+    // Validate inputs are arrays
+    if (experience && !Array.isArray(experience)) {
+      return res.status(400).json({ error: 'Invalid experience data' });
+    }
+    if (education && !Array.isArray(education)) {
+      return res.status(400).json({ error: 'Invalid education data' });
+    }
+    if (skills && !Array.isArray(skills)) {
+      return res.status(400).json({ error: 'Invalid skills data' });
+    }
+
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    // Sanitize and limit data size before embedding in prompt
+    const safeExp = JSON.stringify((experience || []).slice(0, 10)).slice(0, 5000);
+    const safeEdu = JSON.stringify((education || []).slice(0, 10)).slice(0, 5000);
+    const safeSkills = JSON.stringify(((skills || []) as any[]).slice(0, 30).map((s: any) => sanitizeContextField(s.name))).slice(0, 2000);
 
     const context = `Based on the following CV data, write a compelling professional summary (2-3 sentences, first person implied but don't start with "I").
 
-Experience: ${JSON.stringify(experience || [])}
-Education: ${JSON.stringify(education || [])}
-Skills: ${JSON.stringify((skills || []).map((s: any) => s.name))}
+Experience: ${safeExp}
+Education: ${safeEdu}
+Skills: ${safeSkills}
 
 Rules:
 - Keep it concise (2-3 sentences max)
@@ -200,11 +299,11 @@ Rules:
     if (text) {
       return res.json({ summary: text });
     } else {
-      return res.status(500).json({ error: "No summary generated" });
+      return res.status(500).json({ error: "No summary generated. Please try again." });
     }
   } catch (error: any) {
     console.error("Generate Summary Error:", error);
-    return res.status(500).json({ error: error.message || "Failed to generate summary" });
+    return res.status(500).json({ error: "Failed to generate summary. Please try again." });
   }
 });
 
@@ -212,14 +311,26 @@ Rules:
 app.post('/api/refine-text', async (req, res) => {
   try {
     if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+      return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
     }
 
     const { text, sectionType, context } = req.body;
 
-    if (!text || !text.trim()) {
+    if (!text || typeof text !== 'string' || !text.trim()) {
       return res.status(400).json({ error: 'No text provided to refine' });
     }
+
+    // Validate sectionType against allow-list
+    if (sectionType && !ALLOWED_SECTION_TYPES.includes(sectionType)) {
+      return res.status(400).json({ error: 'Invalid section type' });
+    }
+
+    const safeText = sanitizeTextForPrompt(text);
+    const safePosition = sanitizeContextField(context?.position);
+    const safeCompany = sanitizeContextField(context?.company);
+    const safeDegree = sanitizeContextField(context?.degree);
+    const safeInstitution = sanitizeContextField(context?.institution);
+    const safeName = sanitizeContextField(context?.name);
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -229,10 +340,10 @@ app.post('/api/refine-text', async (req, res) => {
       case 'experience':
         prompt = `Refine and professionally rewrite the following job experience description for a CV/resume.
 
-Role: ${context?.position || 'Unknown'} at ${context?.company || 'Unknown'}
+Role: ${safePosition} at ${safeCompany}
 
 Original text:
-"${text}"
+"${safeText}"
 
 Rules:
 - Use bullet points (HTML <ul><li> tags) for each achievement/responsibility
@@ -248,10 +359,10 @@ Rules:
       case 'education':
         prompt = `Refine the following education description for a CV/resume.
 
-Degree: ${context?.degree || 'Unknown'} at ${context?.institution || 'Unknown'}
+Degree: ${safeDegree} at ${safeInstitution}
 
 Original text:
-"${text}"
+"${safeText}"
 
 Rules:
 - Highlight academic achievements, GPA, honors, relevant coursework
@@ -265,10 +376,10 @@ Rules:
       case 'project':
         prompt = `Refine the following project description for a CV/resume.
 
-Project: ${context?.name || 'Unknown'}
+Project: ${safeName}
 
 Original text:
-"${text}"
+"${safeText}"
 
 Rules:
 - Describe the project's purpose, your role, and technologies used
@@ -282,7 +393,7 @@ Rules:
 
       default:
         prompt = `Professionally rewrite the following text for a CV/resume:
-"${text}"
+"${safeText}"
 Return ONLY the refined text using HTML formatting. Do NOT wrap in code blocks.`;
     }
 
@@ -297,11 +408,11 @@ Return ONLY the refined text using HTML formatting. Do NOT wrap in code blocks.`
       result = result.replace(/^```(?:html)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
       return res.json({ refined: result });
     } else {
-      return res.status(500).json({ error: "No refined text generated" });
+      return res.status(500).json({ error: "No refined text generated. Please try again." });
     }
   } catch (error: any) {
     console.error("Refine Text Error:", error);
-    return res.status(500).json({ error: error.message || "Failed to refine text" });
+    return res.status(500).json({ error: "Failed to refine text. Please try again." });
   }
 });
 

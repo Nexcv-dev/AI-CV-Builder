@@ -33,8 +33,9 @@ export default function ContactUs() {
           {isSubmitted ? (
             <div className="bg-green-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center border border-green-100">
               <CheckCircle2 className="text-green-500 w-16 h-16 mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Message Sent!</h2>
-              <p className="text-gray-600 mb-6">Thank you for reaching out. We will respond to your email as soon as possible.</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h2>
+              <p className="text-gray-600 mb-2">Your feedback is appreciated.</p>
+              <p className="text-xs text-gray-400 mb-6">Note: This is a demo form. For actual inquiries, please email us directly.</p>
               <button 
                 onClick={() => setIsSubmitted(false)}
                 className="bg-white text-gray-900 border border-gray-200 px-6 py-2 rounded-xl font-medium hover:bg-gray-50 transition-colors"
