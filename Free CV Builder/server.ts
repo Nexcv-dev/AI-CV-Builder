@@ -792,12 +792,38 @@ function generateCVHTML(cvData: any, template: string): string {
       personalInfo.maritalStatus ? `<div style="display:flex;align-items:center;gap:8px">${PDF_ICONS.heart} <span>${esc(personalInfo.maritalStatus)}</span></div>` : '',
     ].filter(Boolean).join('');
 
-    const sidebarSkills = skills.map((s: any) =>
-      `<div style="display:flex;flex-direction:column;gap:6px">
-        <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:${sidebarTextColor}">${esc(s.name || '')}</span>
-        ${renderBars(s.level || 0)}
-      </div>`
-    ).join('');
+    const hasSkillCategories = skills.some((s: any) => s.category?.trim());
+    let sidebarSkillsHTML = '';
+
+    if (!hasSkillCategories) {
+      sidebarSkillsHTML = skills.map((s: any) =>
+        `<div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:${sidebarTextColor}">${esc(s.name || '')}</span>
+          ${renderBars(s.level || 0)}
+        </div>`
+      ).join('');
+    } else {
+      const skillsByCategory = skills.reduce((acc: any, skill: any) => {
+        const category = skill.category?.trim() || 'Other Skills';
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(skill);
+        return acc;
+      }, {});
+
+      sidebarSkillsHTML = Object.entries(skillsByCategory).map(([category, catSkills]: [string, any]) => `
+        <div style="margin-bottom:12px">
+          <h3 style="font-size:0.625rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${sidebarTextColor};opacity:0.8;margin-bottom:8px">${esc(category)}</h3>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            ${catSkills.map((s: any) => `
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:${sidebarTextColor}">${esc(s.name || '')}</span>
+                ${renderBars(s.level || 0)}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
 
     const sidebarLanguages = languages.map((l: any) =>
       `<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.875rem">
@@ -806,8 +832,8 @@ function generateCVHTML(cvData: any, template: string): string {
       </div>`
     ).join('');
 
-    bodyContent = `<div style="display:block;width:100%">
-      <div style="float:left;width:30%;background:${sidebarColor};color:${sidebarTextColor};padding:15mm;display:flex;flex-direction:column;position:relative;z-index:2">
+    bodyContent = `<div style="display:block;width:100%;position:relative">
+      <div style="float:left;width:30.1%;background:${sidebarColor};color:${sidebarTextColor};padding:15mm;display:flex;flex-direction:column;position:relative;z-index:2;min-height:297mm">
         ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
         
         <div style="margin-bottom:32px">
@@ -822,7 +848,7 @@ function generateCVHTML(cvData: any, template: string): string {
 
         ${skills.length > 0 ? `<div style="margin-top:16px">
           <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Skills</h2>
-          <div style="display:flex;flex-direction:column;gap:16px">${sidebarSkills}</div>
+          <div style="display:flex;flex-direction:column;gap:16px">${sidebarSkillsHTML}</div>
         </div>` : ''}
 
         ${languages.length > 0 ? `<div style="margin-top:32px">
@@ -831,17 +857,21 @@ function generateCVHTML(cvData: any, template: string): string {
         </div>` : ''}
       </div>
 
+      <div style="margin-left:30%;width:70%;padding:20mm;box-sizing:border-box">
+        <header style="margin-bottom:32px">
+          <h1 style="font-size:2.5rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+          <div style="width:64px;height:4px;background:${themeColor};margin-bottom:32px"></div>
+        </header>
+
         <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
           <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
-            <header style="margin-bottom:32px">
-              <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
-              <div style="width:64px;height:4px;background:${themeColor};margin-bottom:16px"></div>
-            </header>
             ${sectionsHTML}
           </td></tr></tbody>
         </table>
       </div>
+      <div style="clear:both;"></div>
+    </div>`;
       <div style="clear:both;"></div>
     </div>`;
   } else if (template === 'professional') {

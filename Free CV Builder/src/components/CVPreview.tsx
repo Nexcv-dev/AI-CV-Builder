@@ -126,44 +126,43 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         </div>
 
         <div className="mb-8 break-inside-avoid print:!break-inside-avoid" data-page-break="avoid">
-          {/* We keep the check if data is present before rendering the list */}
           {(personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus) && (
             <>
               <h2 className="text-base font-bold uppercase tracking-widest border-b border-white/20 mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Personal Info</h2>
-              <div className="space-y-3 text-[10px] uppercase tracking-wider" style={{ color: sidebarMutedColor }}>
+              <div className="space-y-3.5 text-[10px] uppercase tracking-wider font-medium" style={{ color: sidebarMutedColor }}>
                 {personalInfo.dob && (
-                  <div className="flex items-center gap-2">
-                    <Calendar size={12} className="shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <Calendar size={12} className="shrink-0 opacity-80" />
                     <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.dob}</span>
                   </div>
                 )}
                 {personalInfo.nic && (
-                  <div className="flex items-center gap-2">
-                    <IdCard size={12} className="shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <IdCard size={12} className="shrink-0 opacity-80" />
                     <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.nic}</span>
                   </div>
                 )}
                 {personalInfo.gender && (
-                  <div className="flex items-center gap-2">
-                    <User size={12} className="shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <User size={12} className="shrink-0 opacity-80" />
                     <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.gender}</span>
                   </div>
                 )}
                 {personalInfo.nationality && (
-                  <div className="flex items-center gap-2">
-                    <Globe size={12} className="shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <Globe size={12} className="shrink-0 opacity-80" />
                     <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.nationality}</span>
                   </div>
                 )}
                 {personalInfo.religion && (
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={12} className="shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles size={12} className="shrink-0 opacity-80" />
                     <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.religion}</span>
                   </div>
                 )}
                 {personalInfo.maritalStatus && (
-                  <div className="flex items-center gap-2">
-                    <Heart size={12} className="shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <Heart size={12} className="shrink-0 opacity-80" />
                     <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.maritalStatus}</span>
                   </div>
                 )}
