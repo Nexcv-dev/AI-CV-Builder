@@ -438,7 +438,7 @@ Return ONLY the refined text using HTML formatting. Do NOT wrap in code blocks.`
 
 // ─── PDF Generation Helpers ──────────────────────────────────────────
 
-// Read the built CSS at startup so we can inline it into PDFs
+// Read the built CSS at startup so we can inline it into PDF
 let cachedCSS = '';
 function loadBuiltCSS(): string {
   if (cachedCSS) return cachedCSS;
@@ -866,10 +866,10 @@ function generateCVHTML(cvData: any, template: string): string {
               <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;color:${themeColor}">${esc(personalInfo.fullName || 'Your Name')}</h1>
               <div style="font-size:0.875rem;color:#4b5563;text-align:center;">
                 ${[
-                  personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : '',
-                  personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : '',
-                  personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''
-                ].filter(Boolean).join(' &nbsp;&bull;&nbsp; ')}
+        personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : '',
+        personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : '',
+        personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''
+      ].filter(Boolean).join(' &nbsp;&bull;&nbsp; ')}
               </div>
             </header>
             ${sectionsHTML}
@@ -928,10 +928,10 @@ function generateCVHTML(cvData: any, template: string): string {
   </style>
 </head>
 <body>
-  ${template === 'classic' 
-    ? bodyContent 
-    : `<div style="width:210mm;background:transparent;margin:0 auto;position:relative">${bodyContent}</div>`
-  }
+  ${template === 'classic'
+      ? bodyContent
+      : `<div style="width:210mm;background:transparent;margin:0 auto;position:relative">${bodyContent}</div>`
+    }
 </body>
 </html>`;
 }
