@@ -933,7 +933,7 @@ function generateCVHTML(cvData: any, template: string): string {
   };
 
   const fontFamilyCSS = fontMap[fontFamily] || "'Inter', sans-serif";
-  const googleFontName = encodeURIComponent(fontFamily || 'Inter');
+  const googleFontName = (fontFamily || 'Inter').replace(/\s+/g, '+');
 
   const cssInjections = template === 'modern' ? `
     @media print {
@@ -957,7 +957,7 @@ function generateCVHTML(cvData: any, template: string): string {
 <html>
 <head>
   <meta charset="utf-8">
-  <link href="https://fonts.googleapis.com/css2?family=${googleFontName}:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=${googleFontName}:wght@400;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: ${fontFamilyCSS}; background: white; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
@@ -1049,7 +1049,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     console.time("SetContent");
     console.log("Setting page content directly (no navigation)...");
     await page.setContent(html, {
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'networkidle0',
       timeout: 30000
     });
     console.timeEnd("SetContent");
