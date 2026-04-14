@@ -533,7 +533,7 @@ function generateCVHTML(cvData: any, template: string): string {
         </section>`;
       }
       return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${template === 'modern' ? 'Profile' : ''}</h2>
+        <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:12px">${template === 'modern' ? 'Profile' : ''}</h2>
         <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${personalInfo.summary}</div>
       </section>`;
     }
@@ -835,7 +835,7 @@ function generateCVHTML(cvData: any, template: string): string {
     bodyContent = `
     <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed; position:relative; z-index:2">
       <tr>
-        <td style="width:30%; vertical-align:top; padding:15mm; color:${sidebarTextColor}; position:relative; z-index:2">
+        <td style="width:30%; vertical-align:top; padding:15mm; padding-top:15mm; color:${sidebarTextColor}; position:relative; z-index:2">
           ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
           
           <div style="margin-bottom:32px">
@@ -859,8 +859,8 @@ function generateCVHTML(cvData: any, template: string): string {
           </div>` : ''}
         </td>
         <td style="width:70%; vertical-align:top; padding:20mm; padding-top:0; background:white; position:relative; z-index:2">
-          <header style="margin-bottom:12px; padding-top:12.7mm">
-            <h1 style="font-size:2.5rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+          <header style="margin-bottom:12px; padding-top:15mm">
+            <h1 style="font-size:2.5rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
             <div style="width:64px;height:4px;background:${themeColor};margin-bottom:8px"></div>
           </header>
 
