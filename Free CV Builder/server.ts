@@ -872,8 +872,6 @@ function generateCVHTML(cvData: any, template: string): string {
       </div>
       <div style="clear:both;"></div>
     </div>`;
-      <div style="clear:both;"></div>
-    </div>`;
   } else if (template === 'professional') {
     bodyContent = `<div style="display:block;background:white">
       <div style="width:100%;height:8px;background:${themeColor}"></div>
