@@ -539,6 +539,8 @@ function generateCVHTML(cvData: any, template: string): string {
     }
 
     if (key === 'personalDetails' && (personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus)) {
+      if (template === 'modern') return '';
+
       const details = [
         personalInfo.dob ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Date of Birth:</span><span style="color:#1f2937">${esc(personalInfo.dob)}</span></div>` : '',
         personalInfo.nic ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">NIC:</span><span style="color:#1f2937">${esc(personalInfo.nic)}</span></div>` : '',
