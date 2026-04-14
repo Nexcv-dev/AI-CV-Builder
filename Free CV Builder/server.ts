@@ -858,14 +858,14 @@ function generateCVHTML(cvData: any, template: string): string {
             <div style="display:flex;flex-direction:column;gap:12px">${sidebarLanguages}</div>
           </div>` : ''}
         </td>
-        <td style="width:70%; vertical-align:top; padding:20mm; background:white; position:relative; z-index:2">
+        <td style="width:70%; vertical-align:top; padding:20mm; padding-top:10mm; background:white; position:relative; z-index:2">
           <header style="margin-bottom:32px">
             <h1 style="font-size:2.5rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
             <div style="width:64px;height:4px;background:${themeColor};margin-bottom:32px"></div>
           </header>
 
           <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
-            <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+            <thead style="height: 12.7mm;"><tr style="border:none"><td style="border: none; padding: 0; height: 12.7mm;"></td></tr></thead>
             <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
               ${sectionsHTML}
             </td></tr></tbody>
@@ -937,6 +937,9 @@ function generateCVHTML(cvData: any, template: string): string {
 
   const cssInjections = template === 'modern' ? `
     @media print {
+      @page {
+        margin: 0 !important;
+      }
       body::before {
         content: "";
         position: fixed;
