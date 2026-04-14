@@ -833,7 +833,7 @@ function generateCVHTML(cvData: any, template: string): string {
     ).join('');
 
     bodyContent = `<div style="display:block;width:100%;position:relative">
-      <div style="float:left;width:30.1%;background:${sidebarColor};color:${sidebarTextColor};padding:15mm;display:flex;flex-direction:column;position:relative;z-index:2;min-height:297mm">
+      <div style="float:left;width:30%;color:${sidebarTextColor};padding:15mm;display:flex;flex-direction:column;position:relative;z-index:2">
         ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
         
         <div style="margin-bottom:32px">
@@ -857,7 +857,7 @@ function generateCVHTML(cvData: any, template: string): string {
         </div>` : ''}
       </div>
 
-      <div style="margin-left:30%;width:70%;padding:20mm;box-sizing:border-box">
+      <div style="float:left;width:70%;padding:20mm;box-sizing:border-box;position:relative;z-index:2">
         <header style="margin-bottom:32px">
           <h1 style="font-size:2.5rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
           <div style="width:64px;height:4px;background:${themeColor};margin-bottom:32px"></div>
