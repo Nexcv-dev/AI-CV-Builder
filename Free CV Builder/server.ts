@@ -831,9 +831,8 @@ function generateCVHTML(cvData: any, template: string): string {
         </div>` : ''}
       </div>
 
-      <div style="margin-left:30%;width:70%;padding:0 20mm;padding-top:7.3mm;position:relative;z-index:2;background:white">
         <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
-          <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+          <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
             <header style="margin-bottom:32px">
               <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
@@ -850,7 +849,7 @@ function generateCVHTML(cvData: any, template: string): string {
       <div style="width:100%;height:8px;background:${themeColor}"></div>
       <div style="padding:0 20mm;padding-top:2.3mm">
         <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
-          <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+          <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
             <header style="margin-bottom:40px;display:flex;border-bottom:2px solid #f3f4f6;padding-bottom:24px">
               <div style="flex:1">
@@ -874,7 +873,7 @@ function generateCVHTML(cvData: any, template: string): string {
       <div style="width:100%;height:1px;background:transparent"></div>
       <div style="padding:0 20mm;padding-top:7.3mm">
         <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
-          <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+          <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
             <header style="margin-bottom:32px;text-align:center;">
               ${profileImage ? `<div style="width:96px;height:96px;border-radius:9999px;overflow:hidden;border:2px solid #e5e7eb;margin:0 auto 16px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
@@ -939,6 +938,8 @@ function generateCVHTML(cvData: any, template: string): string {
       page-break-inside: auto !important;
       break-inside: auto !important;
     }
+    @page { margin: 0.5in 0 0 0; }
+    @page :first { margin-top: 0; }
     ${cssInjections}
   </style>
 </head>
