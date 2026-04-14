@@ -359,6 +359,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             </div>
           </section>
         );
+      case 'personalDetails':
+        return null;
       default:
         return null;
     }
