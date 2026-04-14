@@ -791,8 +791,8 @@ function generateCVHTML(cvData: any, template: string): string {
       </div>`
     ).join('');
 
-    bodyContent = `<div style="display:flex;flex-direction:row;width:210mm">
-      <div style="width:30%;flex-shrink:0;background:${sidebarColor};color:${sidebarTextColor};padding:15mm;display:flex;flex-direction:column;position:relative;z-index:2">
+    bodyContent = `<div style="display:block;width:100%">
+      <div style="float:left;width:30%;background:${sidebarColor};color:${sidebarTextColor};padding:15mm;display:flex;flex-direction:column;position:relative;z-index:2">
         ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
         
         <div style="margin-bottom:32px">
@@ -816,7 +816,7 @@ function generateCVHTML(cvData: any, template: string): string {
         </div>` : ''}
       </div>
 
-      <div style="flex:1;width:70%;padding:20mm;padding-top:7.3mm;position:relative;z-index:2;background:white">
+      <div style="margin-left:30%;width:70%;padding:0 20mm;padding-top:7.3mm;position:relative;z-index:2;background:white">
         <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
           <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
@@ -828,6 +828,7 @@ function generateCVHTML(cvData: any, template: string): string {
           </td></tr></tbody>
         </table>
       </div>
+      <div style="clear:both;"></div>
     </div>`;
   } else if (template === 'professional') {
     bodyContent = `<div style="display:block;background:white">
