@@ -791,8 +791,8 @@ function generateCVHTML(cvData: any, template: string): string {
       </div>`
     ).join('');
 
-    bodyContent = `<div style="display:flex;flex-direction:row;min-height:297mm;width:210mm">
-      <div style="width:30%;flex-shrink:0;background:${sidebarColor};color:${sidebarTextColor};padding:15mm;display:flex;flex-direction:column">
+    bodyContent = `<div style="display:flex;flex-direction:row;width:210mm">
+      <div style="width:30%;flex-shrink:0;background:${sidebarColor};color:${sidebarTextColor};padding:15mm;display:flex;flex-direction:column;position:relative;z-index:2">
         ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
         
         <div style="margin-bottom:32px">
@@ -816,7 +816,7 @@ function generateCVHTML(cvData: any, template: string): string {
         </div>` : ''}
       </div>
 
-      <div style="flex:1;width:70%;padding:20mm;padding-top:7.3mm">
+      <div style="flex:1;width:70%;padding:20mm;padding-top:7.3mm;position:relative;z-index:2;background:white">
         <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
           <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
@@ -830,9 +830,9 @@ function generateCVHTML(cvData: any, template: string): string {
       </div>
     </div>`;
   } else if (template === 'professional') {
-    bodyContent = `<div style="min-height:297mm;display:flex;flex-direction:column;background:white">
+    bodyContent = `<div style="display:block;background:white">
       <div style="width:100%;height:8px;background:${themeColor}"></div>
-      <div style="padding:20mm;padding-top:2.3mm">
+      <div style="padding:0 20mm;padding-top:2.3mm">
         <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
           <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
@@ -854,24 +854,27 @@ function generateCVHTML(cvData: any, template: string): string {
     </div>`;
   } else {
     // Classic
-    bodyContent = `<div style="padding:20mm;padding-top:7.3mm;min-height:297mm;display:flex;flex-direction:column">
-      <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
-        <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
-        <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
-          <header style="margin-bottom:32px;text-align:center;display:flex;flex-direction:column;align-items:center">
-            ${profileImage ? `<div style="width:96px;height:96px;border-radius:9999px;overflow:hidden;border:2px solid #e5e7eb;margin-bottom:16px"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
-            <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;color:${themeColor}">${esc(personalInfo.fullName || 'Your Name')}</h1>
-            <div style="font-size:0.875rem;color:#4b5563;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px">
-              ${personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : ''}
-              ${personalInfo.email && personalInfo.phone ? '<span>•</span>' : ''}
-              ${personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : ''}
-              ${personalInfo.phone && personalInfo.address ? '<span>•</span>' : ''}
-              ${personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''}
-            </div>
-          </header>
-          ${sectionsHTML}
-        </td></tr></tbody>
-      </table>
+    bodyContent = `<div style="display:block;background:white">
+      <div style="width:100%;height:1px;background:transparent"></div>
+      <div style="padding:0 20mm;padding-top:7.3mm">
+        <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
+          <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+          <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
+            <header style="margin-bottom:32px;text-align:center;">
+              ${profileImage ? `<div style="width:96px;height:96px;border-radius:9999px;overflow:hidden;border:2px solid #e5e7eb;margin:0 auto 16px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
+              <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;color:${themeColor}">${esc(personalInfo.fullName || 'Your Name')}</h1>
+              <div style="font-size:0.875rem;color:#4b5563;text-align:center;">
+                ${[
+                  personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : '',
+                  personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : '',
+                  personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''
+                ].filter(Boolean).join(' &nbsp;&bull;&nbsp; ')}
+              </div>
+            </header>
+            ${sectionsHTML}
+          </td></tr></tbody>
+        </table>
+      </div>
     </div>`;
   }
 
@@ -888,6 +891,21 @@ function generateCVHTML(cvData: any, template: string): string {
   const fontFamilyCSS = fontMap[fontFamily] || "'Inter', sans-serif";
   const googleFontName = encodeURIComponent(fontFamily || 'Inter');
 
+  const cssInjections = template === 'modern' ? `
+    @media print {
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 30%;
+        background-color: ${sidebarColor} !important;
+        z-index: 0;
+      }
+    }
+  ` : '';
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -895,18 +913,24 @@ function generateCVHTML(cvData: any, template: string): string {
   <link href="https://fonts.googleapis.com/css2?family=${googleFontName}:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: ${fontFamilyCSS}; background: white; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: ${fontFamilyCSS}; background: white; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
     ::-webkit-scrollbar { display: none; }
     a { color: inherit; text-decoration: none; }
     ul { padding-left: 20px; margin: 4px 0; }
     li { margin-bottom: 4px; }
     h1, h2, h3 { margin: 0; }
+    table, tbody, tr, td, th, thead, tfoot {
+      page-break-inside: auto !important;
+      break-inside: auto !important;
+    }
+    ${cssInjections}
   </style>
 </head>
 <body>
-  <div style="width:210mm;min-height:297mm;background:white;overflow:hidden;margin:0 auto">
-    ${bodyContent}
-  </div>
+  ${template === 'classic' 
+    ? bodyContent 
+    : `<div style="width:210mm;background:transparent;margin:0 auto;position:relative">${bodyContent}</div>`
+  }
 </body>
 </html>`;
 }
