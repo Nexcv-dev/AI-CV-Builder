@@ -6,7 +6,8 @@ import * as dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 import fs from 'fs';
 
 // Load environment variables from .env
@@ -31,17 +32,17 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like server-side or same-origin)
     if (!origin) return callback(null, true);
-    
+
     // In development mode, allow localhost origins
     if (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost')) {
       return callback(null, true);
     }
-    
+
     // In production, if ALLOWED_ORIGIN is not set, allow all as fallback
     if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
       return callback(null, true);
     }
-    
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -620,7 +621,7 @@ function generateCVHTML(cvData: any, template: string): string {
       // For modern template, skills are in sidebar — skip here
       if (template === 'modern') return '';
 
-      const skillChips = skills.map((s: any) => 
+      const skillChips = skills.map((s: any) =>
         `<span style="font-size:0.875rem;font-weight:600;padding:6px 12px;background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`
       ).join('');
 
@@ -738,7 +739,7 @@ function generateCVHTML(cvData: any, template: string): string {
       }
 
       // Classic
-      const langItems = languages.map((l: any) => 
+      const langItems = languages.map((l: any) =>
         `<div style="display:flex;align-items:center;justify-content:space-between;break-inside:avoid">
           <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(l.name || '')}</span>
           <span style="font-size:0.875rem;color:#6b7280">${esc(l.proficiency || '')}</span>
@@ -776,14 +777,14 @@ function generateCVHTML(cvData: any, template: string): string {
       personalInfo.maritalStatus ? `<div style="display:flex;align-items:center;gap:8px">💍 <span>${esc(personalInfo.maritalStatus)}</span></div>` : '',
     ].filter(Boolean).join('');
 
-    const sidebarSkills = skills.map((s: any) => 
+    const sidebarSkills = skills.map((s: any) =>
       `<div style="display:flex;flex-direction:column;gap:6px">
         <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:${sidebarTextColor}">${esc(s.name || '')}</span>
         ${renderBars(s.level || 0)}
       </div>`
     ).join('');
 
-    const sidebarLanguages = languages.map((l: any) => 
+    const sidebarLanguages = languages.map((l: any) =>
       `<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.875rem">
         <span style="font-weight:600;color:${sidebarTextColor}">${esc(l.name || '')}</span>
         <span style="font-size:0.75rem;color:${sidebarMutedColor}">${esc(l.proficiency || '')}</span>
@@ -815,47 +816,62 @@ function generateCVHTML(cvData: any, template: string): string {
         </div>` : ''}
       </div>
 
-      <div style="flex:1;width:70%;padding:20mm">
-        <header style="margin-bottom:32px">
-          <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
-          <div style="width:64px;height:4px;background:${themeColor};margin-bottom:16px"></div>
-        </header>
-        ${sectionsHTML}
+      <div style="flex:1;width:70%;padding:20mm;padding-top:7.3mm">
+        <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
+          <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+          <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
+            <header style="margin-bottom:32px">
+              <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+              <div style="width:64px;height:4px;background:${themeColor};margin-bottom:16px"></div>
+            </header>
+            ${sectionsHTML}
+          </td></tr></tbody>
+        </table>
       </div>
     </div>`;
   } else if (template === 'professional') {
     bodyContent = `<div style="min-height:297mm;display:flex;flex-direction:column;background:white">
       <div style="width:100%;height:8px;background:${themeColor}"></div>
-      <div style="padding:20mm;padding-top:15mm">
-        <header style="margin-bottom:40px;display:flex;border-bottom:2px solid #f3f4f6;padding-bottom:24px">
-          <div style="flex:1">
-            <h1 style="font-size:3rem;font-weight:800;letter-spacing:-0.025em;margin-bottom:8px;color:#111827">${esc(personalInfo.fullName || 'Your Name')}</h1>
-            <div style="display:flex;flex-direction:column;gap:4px;font-size:0.875rem;font-weight:500;margin-top:16px">
-              ${personalInfo.email ? `<div style="color:#4b5563">${esc(personalInfo.email)}</div>` : ''}
-              ${personalInfo.phone ? `<div style="color:#4b5563">${esc(personalInfo.phone)}</div>` : ''}
-              ${personalInfo.address ? `<div style="color:#6b7280">${esc(personalInfo.address)}</div>` : ''}
-            </div>
-          </div>
-          ${profileImage ? `<div style="margin-left:24px;flex-shrink:0"><div style="width:112px;height:112px;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div></div>` : ''}
-        </header>
-        ${sectionsHTML}
+      <div style="padding:20mm;padding-top:2.3mm">
+        <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
+          <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+          <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
+            <header style="margin-bottom:40px;display:flex;border-bottom:2px solid #f3f4f6;padding-bottom:24px">
+              <div style="flex:1">
+                <h1 style="font-size:3rem;font-weight:800;letter-spacing:-0.025em;margin-bottom:8px;color:#111827">${esc(personalInfo.fullName || 'Your Name')}</h1>
+                <div style="display:flex;flex-direction:column;gap:4px;font-size:0.875rem;font-weight:500;margin-top:16px">
+                  ${personalInfo.email ? `<div style="color:#4b5563">${esc(personalInfo.email)}</div>` : ''}
+                  ${personalInfo.phone ? `<div style="color:#4b5563">${esc(personalInfo.phone)}</div>` : ''}
+                  ${personalInfo.address ? `<div style="color:#6b7280">${esc(personalInfo.address)}</div>` : ''}
+                </div>
+              </div>
+              ${profileImage ? `<div style="margin-left:24px;flex-shrink:0"><div style="width:112px;height:112px;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div></div>` : ''}
+            </header>
+            ${sectionsHTML}
+          </td></tr></tbody>
+        </table>
       </div>
     </div>`;
   } else {
     // Classic
-    bodyContent = `<div style="padding:20mm;min-height:297mm;display:flex;flex-direction:column">
-      <header style="margin-bottom:32px;text-align:center;display:flex;flex-direction:column;align-items:center">
-        ${profileImage ? `<div style="width:96px;height:96px;border-radius:9999px;overflow:hidden;border:2px solid #e5e7eb;margin-bottom:16px"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
-        <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;color:${themeColor}">${esc(personalInfo.fullName || 'Your Name')}</h1>
-        <div style="font-size:0.875rem;color:#4b5563;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px">
-          ${personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : ''}
-          ${personalInfo.email && personalInfo.phone ? '<span>•</span>' : ''}
-          ${personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : ''}
-          ${personalInfo.phone && personalInfo.address ? '<span>•</span>' : ''}
-          ${personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''}
-        </div>
-      </header>
-      ${sectionsHTML}
+    bodyContent = `<div style="padding:20mm;padding-top:7.3mm;min-height:297mm;display:flex;flex-direction:column">
+      <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
+        <thead style="height: 12.7mm;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+        <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
+          <header style="margin-bottom:32px;text-align:center;display:flex;flex-direction:column;align-items:center">
+            ${profileImage ? `<div style="width:96px;height:96px;border-radius:9999px;overflow:hidden;border:2px solid #e5e7eb;margin-bottom:16px"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
+            <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;color:${themeColor}">${esc(personalInfo.fullName || 'Your Name')}</h1>
+            <div style="font-size:0.875rem;color:#4b5563;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px">
+              ${personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : ''}
+              ${personalInfo.email && personalInfo.phone ? '<span>•</span>' : ''}
+              ${personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : ''}
+              ${personalInfo.phone && personalInfo.address ? '<span>•</span>' : ''}
+              ${personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''}
+            </div>
+          </header>
+          ${sectionsHTML}
+        </td></tr></tbody>
+      </table>
     </div>`;
   }
 
@@ -900,7 +916,7 @@ app.post('/api/generate-pdf', async (req, res) => {
   let browser: any = null;
   try {
     const { cvData, template } = req.body;
-    
+
     if (!cvData) {
       return res.status(400).json({ error: 'Missing CV data' });
     }
@@ -910,64 +926,75 @@ app.post('/api/generate-pdf', async (req, res) => {
     const html = generateCVHTML(cvData, template || 'modern');
     console.log(`HTML generated: ${html.length} bytes`);
 
-    // Launch puppeteer with memory-saving flags
+    const isLocal = process.env.NODE_ENV !== 'production';
+
+    // Launch puppeteer using @sparticuz/chromium in production, or system chrome locally
     const launchOptions: any = {
-      headless: true,
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--disable-dev-shm-usage', 
+      args: isLocal ? [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
         '--disable-gpu',
         '--no-zygote',
-        '--single-process',
-        '--disable-extensions',
-        '--disable-background-networking',
-        '--disable-default-apps',
-        '--disable-translate',
-        '--no-first-run',
-      ]
+      ] : chromium.args,
+      defaultViewport: (chromium as any).defaultViewport,
+      headless: isLocal ? true : (chromium as any).headless,
+      ignoreHTTPSErrors: true,
     };
 
     // Use custom or system browser if available
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
       launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
       console.log(`Using custom browser at: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
-    } else {
+    } else if (isLocal) {
       const systemBrowser = findSystemBrowser();
       if (systemBrowser) {
         launchOptions.executablePath = systemBrowser;
         console.log(`Using system browser at: ${systemBrowser}`);
       } else {
-        console.log("Using Puppeteer's bundled Chromium.");
+        throw new Error("Could not find a local Chrome installation. Please set PUPPETEER_EXECUTABLE_PATH.");
       }
+    } else {
+      console.log("Using @sparticuz/chromium executable...");
+      launchOptions.executablePath = await chromium.executablePath();
+      console.log(`Sparticuz Chromium path: ${launchOptions.executablePath}`);
     }
 
+    console.time("PuppeteerLaunch");
     console.log("Launching Puppeteer...");
     browser = await puppeteer.launch(launchOptions);
+    console.timeEnd("PuppeteerLaunch");
     console.log("Browser launched successfully.");
 
+    console.time("NewPage");
     const page = await browser.newPage();
-    
+    console.timeEnd("NewPage");
+
     // Set to A4 portrait
     await page.setViewport({ width: 794, height: 1122, deviceScaleFactor: 1 });
 
-    // Use setContent instead of goto — no server self-request needed!
+    console.time("SetContent");
     console.log("Setting page content directly (no navigation)...");
-    await page.setContent(html, { 
-      waitUntil: 'networkidle0',
-      timeout: 30000 
+    await page.setContent(html, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
     });
+    console.timeEnd("SetContent");
     console.log("Page content set. Generating PDF...");
 
     // Short wait to ensure fonts are loaded
+    console.time("FontsReady");
     await page.evaluate(() => document.fonts.ready);
+    console.timeEnd("FontsReady");
 
     // Generate PDF
+    console.time("PdfGeneration");
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '0', right: '0', bottom: '0', left: '0' }
     });
+    console.timeEnd("PdfGeneration");
     console.log(`PDF generated. Buffer size: ${pdfBuffer.length}`);
 
     await browser.close();
@@ -984,8 +1011,8 @@ app.post('/api/generate-pdf', async (req, res) => {
     if (browser) {
       try { await browser.close(); } catch (e) { /* ignore */ }
     }
-    res.status(500).json({ 
-      error: "Failed to generate PDF", 
+    res.status(500).json({
+      error: "Failed to generate PDF",
       details: error.message || String(error),
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
