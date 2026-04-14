@@ -438,6 +438,19 @@ Return ONLY the refined text using HTML formatting. Do NOT wrap in code blocks.`
 
 // ─── PDF Generation Helpers ──────────────────────────────────────────
 
+// SVG Icons for PDF (Lucide style)
+const PDF_ICONS = {
+  email: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
+  phone: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
+  location: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  calendar: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>`,
+  idCard: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M16 10h2"/><path d="M16 14h2"/><path d="M6.17 15a3 3 0 0 1 5.66 0"/><circle cx="9" cy="11" r="2"/><rect width="18" height="18" x="3" y="3" rx="2"/></svg>`,
+  user: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  globe: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20"/><path d="M12 2a14.5 14.5 0 0 1 0 20"/><path d="M2 12h20"/><path d="M12 22a10 10 0 0 0 0-20"/><path d="M12 22a10 10 0 0 1 0-20"/></svg>`,
+  sparkles: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>`,
+  heart: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
+};
+
 // Read the built CSS at startup so we can inline it into PDF
 let cachedCSS = '';
 function loadBuiltCSS(): string {
@@ -763,18 +776,18 @@ function generateCVHTML(cvData: any, template: string): string {
   if (template === 'modern') {
     // Modern sidebar
     const sidebarDetails = [
-      personalInfo.email ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">📧 <span>${esc(personalInfo.email)}</span></div>` : '',
-      personalInfo.phone ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">📱 <span>${esc(personalInfo.phone)}</span></div>` : '',
-      personalInfo.address ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">📍 <span>${esc(personalInfo.address)}</span></div>` : '',
+      personalInfo.email ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">${PDF_ICONS.email} <span>${esc(personalInfo.email)}</span></div>` : '',
+      personalInfo.phone ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">${PDF_ICONS.phone} <span>${esc(personalInfo.phone)}</span></div>` : '',
+      personalInfo.address ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">${PDF_ICONS.location} <span>${esc(personalInfo.address)}</span></div>` : '',
     ].filter(Boolean).join('');
 
     const personalDetails = [
-      personalInfo.dob ? `<div style="display:flex;align-items:center;gap:8px">📅 <span>${esc(personalInfo.dob)}</span></div>` : '',
-      personalInfo.nic ? `<div style="display:flex;align-items:center;gap:8px">🪪 <span>${esc(personalInfo.nic)}</span></div>` : '',
-      personalInfo.gender ? `<div style="display:flex;align-items:center;gap:8px">👤 <span>${esc(personalInfo.gender)}</span></div>` : '',
-      personalInfo.nationality ? `<div style="display:flex;align-items:center;gap:8px">🌍 <span>${esc(personalInfo.nationality)}</span></div>` : '',
-      personalInfo.religion ? `<div style="display:flex;align-items:center;gap:8px">✨ <span>${esc(personalInfo.religion)}</span></div>` : '',
-      personalInfo.maritalStatus ? `<div style="display:flex;align-items:center;gap:8px">💍 <span>${esc(personalInfo.maritalStatus)}</span></div>` : '',
+      personalInfo.dob ? `<div style="display:flex;align-items:center;gap:8px">${PDF_ICONS.calendar} <span>${esc(personalInfo.dob)}</span></div>` : '',
+      personalInfo.nic ? `<div style="display:flex;align-items:center;gap:8px">${PDF_ICONS.idCard} <span>${esc(personalInfo.nic)}</span></div>` : '',
+      personalInfo.gender ? `<div style="display:flex;align-items:center;gap:8px">${PDF_ICONS.user} <span>${esc(personalInfo.gender)}</span></div>` : '',
+      personalInfo.nationality ? `<div style="display:flex;align-items:center;gap:8px">${PDF_ICONS.globe} <span>${esc(personalInfo.nationality)}</span></div>` : '',
+      personalInfo.religion ? `<div style="display:flex;align-items:center;gap:8px">${PDF_ICONS.sparkles} <span>${esc(personalInfo.religion)}</span></div>` : '',
+      personalInfo.maritalStatus ? `<div style="display:flex;align-items:center;gap:8px">${PDF_ICONS.heart} <span>${esc(personalInfo.maritalStatus)}</span></div>` : '',
     ].filter(Boolean).join('');
 
     const sidebarSkills = skills.map((s: any) =>
