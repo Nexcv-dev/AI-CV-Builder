@@ -895,7 +895,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
 
             {/* Main Content Area */}
             <div className="flex-1 w-[70%] p-[15mm] main-content-area">
-              <header className="mb-4 relative z-20">
+              <header className="mb-10 mt-12 relative z-20">
                 <h1 className="text-4xl font-bold uppercase tracking-widest mb-2 break-words" style={{ color: themeColor }}>
                   {personalInfo.fullName || 'Your Name'}
                 </h1>

@@ -859,7 +859,7 @@ function generateCVHTML(cvData: any, template: string): string {
           </div>` : ''}
         </td>
         <td style="width:70%; vertical-align:top; padding:20mm; padding-top:0; background:white; position:relative; z-index:2">
-          <header style="margin-bottom:12px; padding-top:15mm">
+          <header style="margin-bottom:40px; padding-top:27mm">
             <h1 style="font-size:2.5rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
             <div style="width:64px;height:4px;background:${themeColor};margin-bottom:8px"></div>
           </header>
