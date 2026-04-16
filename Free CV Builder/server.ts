@@ -83,7 +83,7 @@ const ALLOWED_SECTION_TYPES = ['experience', 'education', 'project'];
 const MAX_TEXT_LENGTH = 10000; // Maximum characters for text inputs
 const MAX_BASE64_LENGTH = 15 * 1024 * 1024; // ~15MB for base64 data
 
-function sanitizeTextForPrompt(text: string): string {
+export function sanitizeTextForPrompt(text: string): string {
   // Strip control characters and limit length
   return text
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
@@ -91,7 +91,7 @@ function sanitizeTextForPrompt(text: string): string {
     .trim();
 }
 
-function sanitizeContextField(value: any): string {
+export function sanitizeContextField(value: any): string {
   if (typeof value !== 'string') return 'Unknown';
   return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, 200).trim() || 'Unknown';
 }
@@ -486,7 +486,7 @@ function findSystemBrowser(): string | null {
 }
 
 // Generate self-contained HTML from CV data — no SPA navigation needed
-function generateCVHTML(cvData: any, template: string): string {
+export function generateCVHTML(cvData: any, template: string): string {
   const { personalInfo = {}, experience = [], education = [], skills = [], projects = [], courses = [], awards = [], languages = [] } = cvData;
   const themeColor = cvData.themeColor || '#2563eb';
   const sidebarColor = cvData.sidebarColor || '#111827';
