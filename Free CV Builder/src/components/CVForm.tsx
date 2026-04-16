@@ -593,8 +593,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                         <SortableAccordionSection key="personalDetails" id="personalDetails" title="Personal Details" icon={User} isOpen={expandedSection === 'personalDetails'} onToggle={() => setExpandedSection(expandedSection === 'personalDetails' ? null : 'personalDetails')}>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                               <input
+                                id="fullName"
                                 type="text"
                                 name="fullName"
                                 placeholder="e.g. Jane Doe"
@@ -604,8 +605,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                               <input
+                                id="email"
                                 type="email"
                                 name="email"
                                 placeholder="e.g. jane@example.com"
@@ -615,8 +617,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                               <input
+                                id="phone"
                                 type="text"
                                 name="phone"
                                 placeholder="e.g. +1 234 567 890"
@@ -626,8 +629,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                               <input
+                                id="address"
                                 type="text"
                                 name="address"
                                 placeholder="e.g. New York, NY"
@@ -637,8 +641,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span className="text-gray-400 font-normal">(Optional)</span></label>
+                              <label htmlFor="dob" className="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span className="text-gray-400 font-normal">(Optional)</span></label>
                               <input
+                                id="dob"
                                 type="date"
                                 name="dob"
                                 value={cvData.personalInfo.dob}
@@ -647,8 +652,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">NIC Number <span className="text-gray-400 font-normal">(Optional)</span></label>
+                              <label htmlFor="nic" className="block text-sm font-medium text-gray-700 mb-1">NIC Number <span className="text-gray-400 font-normal">(Optional)</span></label>
                               <input
+                                id="nic"
                                 type="text"
                                 name="nic"
                                 placeholder="e.g. 199012345678"
@@ -658,8 +664,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Gender <span className="text-gray-400 font-normal">(Optional)</span></label>
+                              <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">Gender <span className="text-gray-400 font-normal">(Optional)</span></label>
                               <select
+                                id="gender"
                                 name="gender"
                                 value={cvData.personalInfo.gender}
                                 onChange={handlePersonalInfoChange}
@@ -672,8 +679,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Marital Status <span className="text-gray-400 font-normal">(Optional)</span></label>
+                              <label htmlFor="maritalStatus" className="block text-sm font-medium text-gray-700 mb-1">Marital Status <span className="text-gray-400 font-normal">(Optional)</span></label>
                               <select
+                                id="maritalStatus"
                                 name="maritalStatus"
                                 value={cvData.personalInfo.maritalStatus}
                                 onChange={handlePersonalInfoChange}
@@ -685,8 +693,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Nationality <span className="text-gray-400 font-normal">(Optional)</span></label>
+                              <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 mb-1">Nationality <span className="text-gray-400 font-normal">(Optional)</span></label>
                               <input
+                                id="nationality"
                                 type="text"
                                 name="nationality"
                                 placeholder="e.g. American"
@@ -696,8 +705,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Religion <span className="text-gray-400 font-normal">(Optional)</span></label>
+                              <label htmlFor="religion" className="block text-sm font-medium text-gray-700 mb-1">Religion <span className="text-gray-400 font-normal">(Optional)</span></label>
                               <input
+                                id="religion"
                                 type="text"
                                 name="religion"
                                 placeholder="e.g. Christianity"
@@ -722,8 +732,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                         >
                           <div className="grid grid-cols-1 gap-5">
                             <div className="md:col-span-2">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
+                              <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
                               <RichTextEditor
+                                id="summary"
                                 value={cvData.personalInfo.summary}
                                 onChange={(val) => handlePersonalInfoChange({ target: { name: 'summary', value: val } } as any)}
                                 placeholder="Brief overview of your professional background..."
@@ -765,8 +776,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 </button>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Company</label>
+                                    <label htmlFor={`exp-company-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Company</label>
                                     <input
+                                      id={`exp-company-${exp.id}`}
                                       type="text"
                                       placeholder="Company Name"
                                       value={exp.company}
@@ -775,8 +787,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Position</label>
+                                    <label htmlFor={`exp-position-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Position</label>
                                     <input
+                                      id={`exp-position-${exp.id}`}
                                       type="text"
                                       placeholder="Job Title"
                                       value={exp.position}
@@ -785,8 +798,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
+                                    <label htmlFor={`exp-startDate-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
                                     <input
+                                      id={`exp-startDate-${exp.id}`}
                                       type="text"
                                       placeholder="e.g., Jan 2020"
                                       value={exp.startDate}
@@ -795,8 +809,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
+                                    <label htmlFor={`exp-endDate-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
                                     <input
+                                      id={`exp-endDate-${exp.id}`}
                                       type="text"
                                       placeholder="e.g., Present"
                                       value={exp.endDate}
@@ -806,9 +821,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                   </div>
                                   <div className="md:col-span-2 space-y-2 mt-2">
                                     <div className="flex justify-between items-center">
-                                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Description</label>
+                                      <label htmlFor={`exp-desc-${exp.id}`} className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Description</label>
                                     </div>
                                     <RichTextEditor
+                                      id={`exp-desc-${exp.id}`}
                                       value={exp.description}
                                       onChange={(val) => handleExperienceChange(exp.id, 'description', val)}
                                       placeholder="Describe your responsibilities and achievements..."
@@ -865,8 +881,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 </button>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Institution</label>
+                                    <label htmlFor={`edu-inst-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Institution</label>
                                     <input
+                                      id={`edu-inst-${edu.id}`}
                                       type="text"
                                       placeholder="University or School"
                                       value={edu.institution}
@@ -875,8 +892,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Degree</label>
+                                    <label htmlFor={`edu-degree-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Degree</label>
                                     <input
+                                      id={`edu-degree-${edu.id}`}
                                       type="text"
                                       placeholder="e.g., Bachelor of Science"
                                       value={edu.degree}
@@ -885,8 +903,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
+                                    <label htmlFor={`edu-startDate-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
                                     <input
+                                      id={`edu-startDate-${edu.id}`}
                                       type="text"
                                       placeholder="e.g., Sep 2015"
                                       value={edu.startDate}
@@ -895,8 +914,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
+                                    <label htmlFor={`edu-endDate-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
                                     <input
+                                      id={`edu-endDate-${edu.id}`}
                                       type="text"
                                       placeholder="e.g., May 2019"
                                       value={edu.endDate}
@@ -905,8 +925,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div className="md:col-span-2 mt-2 space-y-2">
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description (Optional)</label>
+                                    <label htmlFor={`edu-desc-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description (Optional)</label>
                                     <RichTextEditor
+                                      id={`edu-desc-${edu.id}`}
                                       value={edu.description || ''}
                                       onChange={(val) => handleEducationChange(edu.id, 'description', val)}
                                       placeholder="Honors, coursework, or achievements..."
@@ -957,7 +978,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               <div key={skill.id} className="flex items-center space-x-4 p-3 border border-gray-100 rounded-lg bg-gray-50/50">
                                 <div className="flex-1">
                                   <input
+                                    id={`skill-name-${skill.id}`}
                                     type="text"
+                                    aria-label="Skill name"
                                     placeholder="Skill name (e.g. React)"
                                     value={skill.name}
                                     onChange={(e) => handleSkillChange(skill.id, 'name', e.target.value)}
@@ -1022,8 +1045,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 </button>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Course Name</label>
+                                    <label htmlFor={`course-name-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Course Name</label>
                                     <input
+                                      id={`course-name-${course.id}`}
                                       type="text"
                                       placeholder="e.g., Advanced React Patterns"
                                       value={course.name}
@@ -1032,8 +1056,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Institution</label>
+                                    <label htmlFor={`course-inst-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Institution</label>
                                     <input
+                                      id={`course-inst-${course.id}`}
                                       type="text"
                                       placeholder="e.g., Coursera"
                                       value={course.institution}
@@ -1042,8 +1067,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
+                                    <label htmlFor={`course-startDate-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
                                     <input
+                                      id={`course-startDate-${course.id}`}
                                       type="text"
                                       placeholder="e.g., Jan 2023"
                                       value={course.startDate}
@@ -1052,8 +1078,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
+                                    <label htmlFor={`course-endDate-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
                                     <input
+                                      id={`course-endDate-${course.id}`}
                                       type="text"
                                       placeholder="e.g., Mar 2023"
                                       value={course.endDate}
@@ -1088,7 +1115,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               <div key={lang.id} className="flex items-center space-x-4 p-3 border border-gray-100 rounded-lg bg-gray-50/50">
                                 <div className="flex-1">
                                   <input
+                                    id={`lang-name-${lang.id}`}
                                     type="text"
+                                    aria-label="Language name"
                                     placeholder="Language (e.g. English)"
                                     value={lang.name}
                                     onChange={(e) => handleLanguageChange(lang.id, 'name', e.target.value)}
@@ -1097,6 +1126,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 </div>
                                 <div className="flex-1">
                                   <select
+                                    id={`lang-prof-${lang.id}`}
+                                    aria-label="Proficiency level"
                                     value={lang.proficiency}
                                     onChange={(e) => handleLanguageChange(lang.id, 'proficiency', e.target.value)}
                                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
@@ -1146,8 +1177,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 </button>
                                 <div className="grid grid-cols-1 gap-4 mt-2">
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Project Name</label>
+                                    <label htmlFor={`proj-name-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Project Name</label>
                                     <input
+                                      id={`proj-name-${proj.id}`}
                                       type="text"
                                       placeholder="e.g., E-commerce Website"
                                       value={proj.name}
@@ -1156,8 +1188,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Link (Optional)</label>
+                                    <label htmlFor={`proj-link-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Link (Optional)</label>
                                     <input
+                                      id={`proj-link-${proj.id}`}
                                       type="text"
                                       placeholder="e.g., https://github.com/..."
                                       value={proj.link}
@@ -1166,8 +1199,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description</label>
+                                    <label htmlFor={`proj-desc-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description</label>
                                     <RichTextEditor
+                                      id={`proj-desc-${proj.id}`}
                                       value={proj.description}
                                       onChange={(val) => handleProjectChange(proj.id, 'description', val)}
                                       placeholder="Describe the project and your role..."
@@ -1224,8 +1258,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 </button>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                   <div className="md:col-span-2">
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Award Name</label>
+                                    <label htmlFor={`award-name-${award.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Award Name</label>
                                     <input
+                                      id={`award-name-${award.id}`}
                                       type="text"
                                       placeholder="e.g., Employee of the Year"
                                       value={award.name}
@@ -1234,8 +1269,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Issuer</label>
+                                    <label htmlFor={`award-issuer-${award.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Issuer</label>
                                     <input
+                                      id={`award-issuer-${award.id}`}
                                       type="text"
                                       placeholder="e.g., Tech Solutions Inc."
                                       value={award.issuer}
@@ -1244,8 +1280,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Date</label>
+                                    <label htmlFor={`award-date-${award.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Date</label>
                                     <input
+                                      id={`award-date-${award.id}`}
                                       type="text"
                                       placeholder="e.g., Dec 2022"
                                       value={award.date}
@@ -1456,10 +1493,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                   <div className="space-y-4 pt-4 border-t border-gray-200">
                     <div>
                       <div className="flex justify-between mb-1">
-                        <label className="text-xs font-medium text-gray-600 uppercase tracking-wider">Zoom</label>
+                        <label htmlFor="imageZoom" className="text-xs font-medium text-gray-600 uppercase tracking-wider">Zoom</label>
                         <span className="text-xs text-gray-500">{cvData.imageZoom || 1}x</span>
                       </div>
                       <input
+                        id="imageZoom"
                         type="range"
                         min="0.5" max="3" step="0.1"
                         value={cvData.imageZoom || 1}
@@ -1470,10 +1508,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="flex justify-between mb-1">
-                          <label className="text-xs font-medium text-gray-600 uppercase tracking-wider">Position X</label>
+                          <label htmlFor="imageX" className="text-xs font-medium text-gray-600 uppercase tracking-wider">Position X</label>
                           <span className="text-xs text-gray-500">{cvData.imageX || 0}px</span>
                         </div>
                         <input
+                          id="imageX"
                           type="range"
                           min="-100" max="100" step="1"
                           value={cvData.imageX || 0}
@@ -1483,10 +1522,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                       </div>
                       <div>
                         <div className="flex justify-between mb-1">
-                          <label className="text-xs font-medium text-gray-600 uppercase tracking-wider">Position Y</label>
+                          <label htmlFor="imageY" className="text-xs font-medium text-gray-600 uppercase tracking-wider">Position Y</label>
                           <span className="text-xs text-gray-500">{cvData.imageY || 0}px</span>
                         </div>
                         <input
+                          id="imageY"
                           type="range"
                           min="-100" max="100" step="1"
                           value={cvData.imageY || 0}
@@ -1507,10 +1547,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
               </div>
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Primary Theme Color</label>
+                  <label htmlFor="themeColor" className="block text-sm font-medium text-gray-700 mb-2">Primary Theme Color</label>
                   <div className="flex items-center space-x-4">
                     <div className="relative">
                       <input
+                        id="themeColor"
                         type="color"
                         value={cvData.themeColor}
                         onChange={(e) => handleThemeChange('themeColor', e.target.value)}
@@ -1522,10 +1563,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sidebar Background (Modern Template)</label>
+                  <label htmlFor="sidebarColor" className="block text-sm font-medium text-gray-700 mb-2">Sidebar Background (Modern Template)</label>
                   <div className="flex items-center space-x-4">
                     <div className="relative">
                       <input
+                        id="sidebarColor"
                         type="color"
                         value={cvData.sidebarColor}
                         onChange={(e) => handleThemeChange('sidebarColor', e.target.value)}
@@ -1537,8 +1579,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Font Family</label>
+                  <label htmlFor="fontFamily" className="block text-sm font-medium text-gray-700 mb-2">Font Family</label>
                   <select
+                    id="fontFamily"
                     value={cvData.fontFamily}
                     onChange={(e) => handleThemeChange('fontFamily', e.target.value)}
                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-gray-800"
@@ -1563,7 +1606,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                   <div className="space-y-5">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <label className="text-xs font-semibold text-gray-600 flex items-center gap-2 uppercase tracking-wider">
+                        <label htmlFor="lineSpacing" className="text-xs font-semibold text-gray-600 flex items-center gap-2 uppercase tracking-wider">
                           <MoveVertical size={14} />
                           Line Spacing
                         </label>
@@ -1572,6 +1615,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                         </span>
                       </div>
                       <input
+                        id="lineSpacing"
                         type="range"
                         min="1"
                         max="2.5"
@@ -1588,7 +1632,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
 
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <label className="text-xs font-semibold text-gray-600 flex items-center gap-2 uppercase tracking-wider">
+                        <label htmlFor="sectionGap" className="text-xs font-semibold text-gray-600 flex items-center gap-2 uppercase tracking-wider">
                           <MoveHorizontal size={14} />
                           Section Gap
                         </label>
@@ -1597,6 +1641,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                         </span>
                       </div>
                       <input
+                        id="sectionGap"
                         type="range"
                         min="0.5"
                         max="4"

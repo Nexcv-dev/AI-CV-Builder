@@ -16,13 +16,15 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  id?: string;
 }
 
-export const RichTextEditor = React.memo(({ value, onChange, placeholder }: RichTextEditorProps) => {
+export const RichTextEditor = React.memo(({ value, onChange, placeholder, id }: RichTextEditorProps) => {
   return (
     <div className="rich-text-editor-container border border-gray-300 rounded-lg overflow-hidden focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 hover:border-gray-400 transition-all bg-white">
       <EditorProvider>
         <Editor
+          id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
