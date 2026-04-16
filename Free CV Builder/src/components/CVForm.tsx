@@ -598,6 +598,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 id="fullName"
                                 type="text"
                                 name="fullName"
+                                autoComplete="name"
                                 placeholder="e.g. Jane Doe"
                                 value={cvData.personalInfo.fullName}
                                 onChange={handlePersonalInfoChange}
@@ -610,6 +611,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 id="email"
                                 type="email"
                                 name="email"
+                                autoComplete="email"
                                 placeholder="e.g. jane@example.com"
                                 value={cvData.personalInfo.email}
                                 onChange={handlePersonalInfoChange}
@@ -622,6 +624,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 id="phone"
                                 type="text"
                                 name="phone"
+                                autoComplete="tel"
                                 placeholder="e.g. +1 234 567 890"
                                 value={cvData.personalInfo.phone}
                                 onChange={handlePersonalInfoChange}
@@ -634,6 +637,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 id="address"
                                 type="text"
                                 name="address"
+                                autoComplete="street-address"
                                 placeholder="e.g. New York, NY"
                                 value={cvData.personalInfo.address}
                                 onChange={handlePersonalInfoChange}
@@ -646,6 +650,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 id="dob"
                                 type="date"
                                 name="dob"
+                                autoComplete="bday"
                                 value={cvData.personalInfo.dob}
                                 onChange={handlePersonalInfoChange}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
@@ -668,6 +673,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                               <select
                                 id="gender"
                                 name="gender"
+                                autoComplete="sex"
                                 value={cvData.personalInfo.gender}
                                 onChange={handlePersonalInfoChange}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
@@ -698,6 +704,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 id="nationality"
                                 type="text"
                                 name="nationality"
+                                autoComplete="country-name"
                                 placeholder="e.g. American"
                                 value={cvData.personalInfo.nationality}
                                 onChange={handlePersonalInfoChange}
@@ -780,6 +787,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     <input
                                       id={`exp-company-${exp.id}`}
                                       type="text"
+                                      autoComplete="organization"
                                       placeholder="Company Name"
                                       value={exp.company}
                                       onChange={(e) => handleExperienceChange(exp.id, 'company', e.target.value)}
@@ -791,6 +799,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     <input
                                       id={`exp-position-${exp.id}`}
                                       type="text"
+                                      autoComplete="organization-title"
                                       placeholder="Job Title"
                                       value={exp.position}
                                       onChange={(e) => handleExperienceChange(exp.id, 'position', e.target.value)}
@@ -885,6 +894,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     <input
                                       id={`edu-inst-${edu.id}`}
                                       type="text"
+                                      autoComplete="organization"
                                       placeholder="University or School"
                                       value={edu.institution}
                                       onChange={(e) => handleEducationChange(edu.id, 'institution', e.target.value)}
@@ -1060,6 +1070,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     <input
                                       id={`course-inst-${course.id}`}
                                       type="text"
+                                      autoComplete="organization"
                                       placeholder="e.g., Coursera"
                                       value={course.institution}
                                       onChange={(e) => handleCourseChange(course.id, 'institution', e.target.value)}
@@ -1117,6 +1128,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                   <input
                                     id={`lang-name-${lang.id}`}
                                     type="text"
+                                    autoComplete="language"
                                     aria-label="Language name"
                                     placeholder="Language (e.g. English)"
                                     value={lang.name}
@@ -1192,6 +1204,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     <input
                                       id={`proj-link-${proj.id}`}
                                       type="text"
+                                      autoComplete="url"
                                       placeholder="e.g., https://github.com/..."
                                       value={proj.link}
                                       onChange={(e) => handleProjectChange(proj.id, 'link', e.target.value)}
@@ -1273,6 +1286,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     <input
                                       id={`award-issuer-${award.id}`}
                                       type="text"
+                                      autoComplete="organization"
                                       placeholder="e.g., Tech Solutions Inc."
                                       value={award.issuer}
                                       onChange={(e) => handleAwardChange(award.id, 'issuer', e.target.value)}
