@@ -24,6 +24,12 @@ const mockCVData: CVData = {
     phone: '123456789',
     address: '123 Main St',
     summary: '<p>Experienced developer</p>',
+    dob: '1990-01-01',
+    nic: '123456789V',
+    gender: 'Female',
+    nationality: 'Sri Lankan',
+    religion: 'Buddhism',
+    maritalStatus: 'Single',
   },
   experience: [
     {
@@ -46,6 +52,13 @@ const mockCVData: CVData = {
   themeColor: '#2563eb',
   sidebarColor: '#111827',
   fontFamily: 'Inter',
+  profileImage: '',
+  imageZoom: 1,
+  imageX: 0,
+  imageY: 0,
+  lineSpacing: 1.5,
+  sectionGap: 2,
+  hiddenSections: [],
   sectionOrder: ['summary', 'experience', 'skills'],
 };
 
