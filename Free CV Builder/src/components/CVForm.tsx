@@ -637,7 +637,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 id="address"
                                 type="text"
                                 name="address"
-                                autoComplete="street-address"
+                                autoComplete="address-line1"
                                 placeholder="e.g. New York, NY"
                                 value={cvData.personalInfo.address}
                                 onChange={handlePersonalInfoChange}
@@ -704,7 +704,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                 id="nationality"
                                 type="text"
                                 name="nationality"
-                                autoComplete="country-name"
+                                autoComplete="on"
                                 placeholder="e.g. American"
                                 value={cvData.personalInfo.nationality}
                                 onChange={handlePersonalInfoChange}
@@ -1128,7 +1128,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                   <input
                                     id={`lang-name-${lang.id}`}
                                     type="text"
-                                    autoComplete="language"
+                                    autoComplete="on"
                                     aria-label="Language name"
                                     placeholder="Language (e.g. English)"
                                     value={lang.name}
