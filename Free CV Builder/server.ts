@@ -83,7 +83,7 @@ app.use(express.json({ limit: '1mb' }));
 // ─── Security Helpers & Middleware ───────────────────────────────────
 
 // Middleware to check request integrity via custom header
-const integrityCheck = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+export const integrityCheck = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   // Only check POST requests to /api/ as they are the sensitive ones
   if (req.method === 'POST' && req.path.startsWith('/api/')) {
     const appSource = req.header('X-App-Source');
@@ -97,7 +97,7 @@ const integrityCheck = (req: express.Request, res: express.Response, next: expre
 app.use(integrityCheck);
 
 // Helper to provide private error responses
-const sendError = (res: express.Response, status: number, clientMessage: string, internalError?: any) => {
+export const sendError = (res: express.Response, status: number, clientMessage: string, internalError?: any) => {
   const errorId = Math.random().toString(36).substring(7);
   console.error(`[Error ID: ${errorId}] Status: ${status} | Message: ${clientMessage} | Details:`, internalError || 'N/A');
   
@@ -1152,6 +1152,8 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+}

@@ -603,8 +603,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
 
 
             <DndContext sensors={sensors} collisionDetection={closestCorners} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-              <SortableContext items={cvData.sectionOrder} strategy={verticalListSortingStrategy}>
-                {cvData.sectionOrder.map((sectionKey) => {
+              <SortableContext items={cvData.sectionOrder || []} strategy={verticalListSortingStrategy}>
+                {(cvData.sectionOrder || []).map((sectionKey) => {
                   switch (sectionKey) {
                     case 'personalDetails':
                       return (

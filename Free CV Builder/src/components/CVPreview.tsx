@@ -903,7 +903,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               </header>
 
               <div className="modern-sections-container">
-                {cvData.sectionOrder.map(renderModernSection)}
+                {(cvData.sectionOrder || []).map(renderModernSection)}
               </div>
             </div>
           </div>
@@ -938,7 +938,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               </header>
 
               <div className="professional-sections-container">
-                 {cvData.sectionOrder.map(renderProfessionalSection)}
+                 {(cvData.sectionOrder || []).map(renderProfessionalSection)}
               </div>
             </div>
           </div>
