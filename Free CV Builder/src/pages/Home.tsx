@@ -57,7 +57,7 @@ const initialData: CVData = {
   },
   experience: [
     {
-      id: '1',
+      id: crypto.randomUUID(),
       company: 'Tech Solutions Inc.',
       position: 'Senior Software Engineer',
       startDate: 'Jan 2020',
@@ -67,7 +67,7 @@ const initialData: CVData = {
   ],
   education: [
     {
-      id: '1',
+      id: crypto.randomUUID(),
       institution: 'State University',
       degree: 'Bachelor of Science in Computer Science',
       startDate: 'Sep 2015',
@@ -76,12 +76,12 @@ const initialData: CVData = {
     },
   ],
   skills: [
-    { id: '1', name: 'JavaScript', level: 5 },
-    { id: '2', name: 'TypeScript', level: 4 },
-    { id: '3', name: 'React', level: 5 },
-    { id: '4', name: 'Node.js', level: 4 },
-    { id: '5', name: 'Tailwind CSS', level: 5 },
-    { id: '6', name: 'Git', level: 4 },
+    { id: crypto.randomUUID(), name: 'JavaScript', level: 5 },
+    { id: crypto.randomUUID(), name: 'TypeScript', level: 4 },
+    { id: crypto.randomUUID(), name: 'React', level: 5 },
+    { id: crypto.randomUUID(), name: 'Node.js', level: 4 },
+    { id: crypto.randomUUID(), name: 'Tailwind CSS', level: 5 },
+    { id: crypto.randomUUID(), name: 'Git', level: 4 },
   ],
   courses: [],
   languages: [],
@@ -269,6 +269,7 @@ export default function Home() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-App-Source': 'cv-builder-app',
         },
         body: JSON.stringify({ cvData, template }),
       });

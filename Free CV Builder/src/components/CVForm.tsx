@@ -133,7 +133,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
     try {
       const res = await fetch('/api/generate-summary', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-App-Source': 'cv-builder-app'
+        },
         body: JSON.stringify({
           experience: cvData.experience,
           education: cvData.education,
@@ -152,7 +155,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
         }));
       }
     } catch (error) {
-      console.error('Generate summary error:', error);
+      console.error('Error generating summary:', error);
+      alert('Failed to generate summary. Please try again.');
     } finally {
       setRefining('summary', false);
     }
@@ -165,7 +169,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
     try {
       const res = await fetch('/api/refine-text', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-App-Source': 'cv-builder-app'
+        },
         body: JSON.stringify({ text: plainText, sectionType, context }),
       });
       if (!res.ok) {
@@ -177,7 +184,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
         onUpdate(data.refined);
       }
     } catch (error) {
-      console.error('Refine text error:', error);
+      console.error('Error refining text:', error);
+      alert('Failed to refine text. Please try again.');
     } finally {
       setRefining(id, false);
     }
@@ -190,14 +198,15 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setIsImporting(true);
+    setImportMessage({ type: 'success', text: 'Starting import...' });
+
     if (file.size > MAX_CV_FILE_SIZE) {
       setImportMessage({ type: 'error', text: 'File is too large. Maximum allowed size is 10 MB.' });
       event.target.value = '';
+      setIsImporting(false);
       return;
     }
-
-    setIsImporting(true);
-    setImportMessage(null);
 
     let mimeType = file.type;
 
@@ -223,6 +232,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-App-Source': 'cv-builder-app',
             },
             body: JSON.stringify({
               base64Data,
@@ -284,9 +294,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
           } else {
             throw new Error("No data returned");
           }
-        } catch (error) {
-          console.error("Error parsing CV document:", error);
-          setImportMessage({ type: 'error', text: 'Failed to parse document. Please try again.' });
+        } catch (error: any) {
+          console.error('Error importing CV:', error);
+          setImportMessage({ type: 'error', text: `Import failed: ${error.message || 'Please check your file and try again'}` });
+          alert(`Import failed: ${error.message || 'Please check your file and try again'}`);
         } finally {
           setIsImporting(false);
         }
@@ -295,9 +306,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
         setImportMessage({ type: 'error', text: 'Failed to read file.' });
         setIsImporting(false);
       };
-    } catch (error) {
-      console.error("Error importing CV document:", error);
-      setImportMessage({ type: 'error', text: 'Failed to process file. Please try again.' });
+    } catch (error: any) {
+      console.error('Error importing CV:', error);
+      setImportMessage({ type: 'error', text: `Import failed: ${error.message || 'Please check your file and try again'}` });
+      alert(`Import failed: ${error.message || 'Please check your file and try again'}`);
       setIsImporting(false);
     }
 
@@ -336,8 +348,14 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setCvData((prev) => ({ ...prev, profileImage: reader.result as string }));
+      reader.onload = () => {
+        setCvData((prev) => ({ 
+          ...prev, 
+          profileImage: reader.result as string,
+          imageZoom: 1,
+          imageX: 0,
+          imageY: 0
+        }));
       };
       reader.readAsDataURL(file);
     }
@@ -585,8 +603,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
 
 
             <DndContext sensors={sensors} collisionDetection={closestCorners} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-              <SortableContext items={cvData.sectionOrder} strategy={verticalListSortingStrategy}>
-                {cvData.sectionOrder.map((sectionKey) => {
+              <SortableContext items={cvData.sectionOrder || []} strategy={verticalListSortingStrategy}>
+                {(cvData.sectionOrder || []).map((sectionKey) => {
                   switch (sectionKey) {
                     case 'personalDetails':
                       return (
@@ -1003,6 +1021,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     <button
                                       key={level}
                                       type="button"
+                                      aria-label={`Set skill level to ${level} out of 5`}
                                       onClick={() => handleSkillChange(skill.id, 'level', level)}
                                       className="focus:outline-none transition-all"
                                     >
@@ -1018,6 +1037,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
 
                                 <button
                                   onClick={() => removeSkill(skill.id)}
+                                  aria-label="Remove skill"
+                                  title="Remove skill"
                                   className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                 >
                                   <Trash2 size={16} />

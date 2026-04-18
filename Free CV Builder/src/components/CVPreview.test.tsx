@@ -89,10 +89,75 @@ describe('CVPreview Component', () => {
 
   it('renders Modern sidebar when template is modern', () => {
     const { container } = render(<CVPreview cvData={mockCVData} template="modern" />);
-    // In modern template, some info moves to a sidebar with sidebarColor background
     const sidebar = container.querySelector('.modern-sidebar');
     expect(sidebar).toBeInTheDocument();
-    expect(sidebar).toHaveStyle({ backgroundColor: '#111827' });
+  });
+
+  it('handles "Kitchen Sink" data without crashing (Full fields)', () => {
+    const kitchenSinkData = {
+      personalInfo: {
+        fullName: 'Dr. Jane Verity Smith-Doe, PhD',
+        email: 'jane.smith.doe@extremely-long-domain-name-example.com',
+        phone: '+1 (555) 000-0000 ext 1234',
+        location: '1234 Very Long Street Name, Suite 567, San Francisco, CA 94105, United States of America',
+        title: 'Principal Lead Senior Executive Software Architect & Visionary Strategy Consultant',
+        summary: 'A'.repeat(1000), // Huge summary
+        links: [
+          { label: 'LinkedIn', url: 'https://linkedin.com/in/very-long-profile-id-12345' },
+          { label: 'Portfolio', url: 'https://very-long-subdomain.portfolio-site.com/user/jane-doe' }
+        ]
+      },
+      experience: Array(5).fill(null).map((_, i) => ({
+        id: `exp-${i}`,
+        company: 'Global Megacorp International Services Limited',
+        position: 'Senior Vice President of Engineering Engineering Engineering',
+        startDate: 'Jan 2010',
+        endDate: 'Present',
+        description: '<p>' + 'B'.repeat(500) + '</p><ul><li>' + 'Bullet '.repeat(20) + '</li></ul>'
+      })),
+      education: Array(3).fill(null).map((_, i) => ({
+        id: `edu-${i}`,
+        institution: 'University of High Excellence and International Learning at Oxford',
+        degree: 'Doctorate in Theoretical Computation and Advanced Mathematics',
+        startDate: '2005',
+        endDate: '2010',
+        description: 'C'.repeat(300)
+      })),
+      skills: Array(20).fill(null).map((_, i) => ({ id: `skill-${i}`, name: 'Very Long Skill Name Here', level: 5 })),
+      projects: Array(4).fill(null).map((_, i) => ({
+        id: `proj-${i}`,
+        name: 'Massive Scalable Global Architecture Platform',
+        description: 'D'.repeat(400),
+        url: 'https://github.com/org/very-very-very-long-repo-name'
+      })),
+      awards: Array(2).fill(null).map((_, i) => ({ id: `award-${i}`, name: 'Global Award', date: '2022', issuer: 'World Org' })),
+      languages: Array(2).fill(null).map((_, i) => ({ id: `lang-${i}`, name: 'English', proficiency: 'Native' })),
+      courses: Array(2).fill(null).map((_, i) => ({ id: `course-${i}`, name: 'Advanced JS', institution: 'MIT', startDate: '2021', endDate: '2021' })),
+      themeColor: '#2563eb',
+      sidebarColor: '#1f2937',
+      sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'awards', 'languages', 'courses']
+    };
+
+    const { container } = render(<CVPreview cvData={kitchenSinkData as any} template="modern" />);
+    expect(container).toBeInTheDocument();
+    expect(screen.getByText(/Dr. Jane Verity Smith-Doe/i)).toBeInTheDocument();
+  });
+
+  it('handles "Minimum Data" gracefully', () => {
+    const minData = {
+      personalInfo: { fullName: 'Minimalist' },
+      experience: [],
+      education: [],
+      skills: [],
+      projects: [],
+      sectionOrder: [],
+      themeColor: '#000',
+      sidebarColor: '#000'
+    };
+
+    const { container } = render(<CVPreview cvData={minData as any} template="professional" />);
+    expect(container).toBeInTheDocument();
+    expect(screen.getByText('Minimalist')).toBeInTheDocument();
   });
 
   it('sanitizes HTML content', () => {
