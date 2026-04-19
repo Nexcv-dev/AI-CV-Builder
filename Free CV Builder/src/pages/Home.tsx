@@ -347,6 +347,13 @@ export default function Home() {
               CV Builder
             </span>
           </h1>
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="sm:hidden p-2 text-red-500 hover:bg-red-50 active:scale-95 rounded-xl transition-all"
+            aria-label="Reset Resume"
+          >
+            <RotateCcw size={20} />
+          </button>
         </div>
 
         {/* Mobile View Toggle - Segmented Control */}
