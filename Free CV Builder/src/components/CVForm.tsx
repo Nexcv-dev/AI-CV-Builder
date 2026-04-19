@@ -757,9 +757,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                         >
                           <div className="grid grid-cols-1 gap-5">
                             <div className="md:col-span-2">
-                              <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
+                              <label id="summary-label" className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
                               <RichTextEditor
                                 id="summary"
+                                labelId="summary-label"
                                 value={cvData.personalInfo.summary}
                                 onChange={(val) => handlePersonalInfoChange({ target: { name: 'summary', value: val } } as any)}
                                 placeholder="Brief overview of your professional background..."
@@ -848,10 +849,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                   </div>
                                   <div className="md:col-span-2 space-y-2 mt-2">
                                     <div className="flex justify-between items-center">
-                                      <label htmlFor={`exp-desc-${exp.id}`} className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Description</label>
+                                      <label id={`exp-desc-label-${exp.id}`} className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Description</label>
                                     </div>
                                     <RichTextEditor
                                       id={`exp-desc-${exp.id}`}
+                                      labelId={`exp-desc-label-${exp.id}`}
                                       value={exp.description}
                                       onChange={(val) => handleExperienceChange(exp.id, 'description', val)}
                                       placeholder="Describe your responsibilities and achievements..."
@@ -953,9 +955,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div className="md:col-span-2 mt-2 space-y-2">
-                                    <label htmlFor={`edu-desc-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description (Optional)</label>
+                                    <label id={`edu-desc-label-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description (Optional)</label>
                                     <RichTextEditor
                                       id={`edu-desc-${edu.id}`}
+                                      labelId={`edu-desc-label-${edu.id}`}
                                       value={edu.description || ''}
                                       onChange={(val) => handleEducationChange(edu.id, 'description', val)}
                                       placeholder="Honors, coursework, or achievements..."
@@ -1233,9 +1236,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <label htmlFor={`proj-desc-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description</label>
+                                    <label id={`proj-desc-label-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description</label>
                                     <RichTextEditor
                                       id={`proj-desc-${proj.id}`}
+                                      labelId={`proj-desc-label-${proj.id}`}
                                       value={proj.description}
                                       onChange={(val) => handleProjectChange(proj.id, 'description', val)}
                                       placeholder="Describe the project and your role..."

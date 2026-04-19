@@ -28,6 +28,12 @@ app.use(helmet({
   contentSecurityPolicy: false, // CSP is handled via index.html meta tag
 }));
 
+// Permissions-Policy: restrict browser feature access
+app.use((_req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  next();
+});
+
 // CORS: restrict to same-origin in production, allow dev proxy in development
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [process.env.ALLOWED_ORIGIN || ''].filter(Boolean)
@@ -98,7 +104,7 @@ app.use(integrityCheck);
 
 // Helper to provide private error responses
 export const sendError = (res: express.Response, status: number, clientMessage: string, internalError?: any) => {
-  const errorId = Math.random().toString(36).substring(7);
+  const errorId = crypto.randomUUID();
   console.error(`[Error ID: ${errorId}] Status: ${status} | Message: ${clientMessage} | Details:`, internalError || 'N/A');
   
   return res.status(status).json({ 
@@ -138,7 +144,7 @@ export function sanitizeContextField(value: any): string {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), env: process.env.NODE_ENV });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req, res) => {
@@ -584,12 +590,12 @@ export function generateCVHTML(cvData: any, template: string): string {
       if (template === 'professional') {
         return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
           <h2 style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Professional Summary</h2>
-          <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px">${personalInfo.summary}</div>
+          <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px">${sanitize(personalInfo.summary)}</div>
         </section>`;
       }
       return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
         <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:12px">${template === 'modern' ? 'Profile' : ''}</h2>
-        <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${personalInfo.summary}</div>
+        <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${sanitize(personalInfo.summary)}</div>
       </section>`;
     }
 
@@ -719,7 +725,7 @@ export function generateCVHTML(cvData: any, template: string): string {
             <div style="font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px">${link}</div>
             <div>
               <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(p.name || 'Project Name')}</h3>
-              ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px">${p.description}</div>` : ''}
+              ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px">${sanitize(p.description)}</div>` : ''}
             </div>
           </div>`;
         } else { // modern
@@ -1040,18 +1046,48 @@ export function generateCVHTML(cvData: any, template: string): string {
 }
 
 // AI Generate PDF via Puppeteer — using setContent() instead of page.goto()
+const ALLOWED_TEMPLATES = ['classic', 'modern', 'professional'] as const;
+type TemplateType = typeof ALLOWED_TEMPLATES[number];
+
+/** Recursively sanitize all string values in an object to prevent XSS in PDF generation */
+function sanitizeCvData(obj: any, depth = 0): any {
+  if (depth > 10) return obj; // Prevent infinite recursion
+  if (typeof obj === 'string') {
+    return obj.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, MAX_TEXT_LENGTH);
+  }
+  if (Array.isArray(obj)) {
+    return obj.slice(0, 50).map(item => sanitizeCvData(item, depth + 1));
+  }
+  if (obj && typeof obj === 'object') {
+    const sanitized: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      sanitized[key] = sanitizeCvData(value, depth + 1);
+    }
+    return sanitized;
+  }
+  return obj;
+}
+
 app.post('/api/generate-pdf', async (req, res) => {
   let browser: any = null;
   try {
     const { cvData, template } = req.body;
 
-    if (!cvData) {
-      return res.status(400).json({ error: 'Missing CV data' });
+    if (!cvData || typeof cvData !== 'object') {
+      return res.status(400).json({ error: 'Missing or invalid CV data' });
     }
+
+    // Validate template against allow-list
+    const validatedTemplate: TemplateType = ALLOWED_TEMPLATES.includes(template)
+      ? template
+      : 'modern';
+
+    // Sanitize all string values in cvData to prevent injection
+    const safeCvData = sanitizeCvData(cvData);
 
     // Generate self-contained HTML
     console.log("Generating HTML for PDF...");
-    const html = generateCVHTML(cvData, template || 'modern');
+    const html = generateCVHTML(safeCvData, validatedTemplate);
     console.log(`HTML generated: ${html.length} bytes`);
 
     const isLocal = process.env.NODE_ENV !== 'production';
