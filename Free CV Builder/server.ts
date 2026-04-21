@@ -84,7 +84,7 @@ app.use('/api/', apiLimiter);
 app.use('/api/generate-pdf', pdfLimiter);
 
 // Default JSON limit for most endpoints (1MB)
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '20mb' }));
 
 // ─── Security Helpers & Middleware ───────────────────────────────────
 
