@@ -897,7 +897,7 @@ export function generateCVHTML(cvData: any, template: string): string {
     <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed; position:relative; z-index:2">
       <tr>
         <td style="width:30%; vertical-align:top; padding:15mm; padding-top:15mm; color:${sidebarTextColor}; position:relative; z-index:2">
-          ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
+          ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
           
           <div style="margin-bottom:32px">
             <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Details</h2>
@@ -950,7 +950,7 @@ export function generateCVHTML(cvData: any, template: string): string {
                   ${personalInfo.address ? `<div style="color:#6b7280">${esc(personalInfo.address)}</div>` : ''}
                 </div>
               </div>
-              ${profileImage ? `<div style="margin-left:24px;flex-shrink:0"><div style="width:112px;height:112px;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div></div>` : ''}
+              ${profileImage ? `<div style="margin-left:24px;flex-shrink:0"><div style="width:112px;height:112px;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 6px)"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div></div>` : ''}
             </header>
             ${sectionsHTML}
           </td></tr></tbody>
@@ -966,7 +966,7 @@ export function generateCVHTML(cvData: any, template: string): string {
           <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
             <header style="margin-bottom:32px;text-align:center;">
-              ${profileImage ? `<div style="width:96px;height:96px;border-radius:9999px;overflow:hidden;border:2px solid #e5e7eb;margin:0 auto 16px auto"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
+              ${profileImage ? `<div style="width:96px;height:96px;border-radius:9999px;overflow:hidden;border:2px solid #e5e7eb;margin:0 auto 16px auto;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
               <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;color:${themeColor}">${esc(personalInfo.fullName || 'Your Name')}</h1>
               <div style="font-size:0.875rem;color:#4b5563;text-align:center;">
                 ${[
@@ -1053,6 +1053,7 @@ type TemplateType = typeof ALLOWED_TEMPLATES[number];
 function sanitizeCvData(obj: any, depth = 0): any {
   if (depth > 10) return obj; // Prevent infinite recursion
   if (typeof obj === 'string') {
+    if (obj.startsWith('data:image/')) return obj;
     return obj.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, MAX_TEXT_LENGTH);
   }
   if (Array.isArray(obj)) {
@@ -1146,10 +1147,16 @@ app.post('/api/generate-pdf', async (req, res) => {
     console.timeEnd("SetContent");
     console.log("Page content set. Generating PDF...");
 
-    // Short wait to ensure fonts are loaded
-    console.time("FontsReady");
-    await page.evaluate(() => document.fonts.ready);
-    console.timeEnd("FontsReady");
+    // Wait for all fonts and images to be fully painted to prevent cut off/half-rendered items
+    console.time("RenderWait");
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      const images = Array.from(document.querySelectorAll('img'));
+      await Promise.all(images.map(img => img.decode().catch(() => {})));
+    });
+    // Give the layout engine a moment to composite the decoded base64 image layer
+    await new Promise(resolve => setTimeout(resolve, 500));
+    console.timeEnd("RenderWait");
 
     // Generate PDF
     console.time("PdfGeneration");
