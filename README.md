@@ -130,8 +130,6 @@ This application is optimized for **Render**.
 
 ---
 
----
-
 <div align="center">
 Made with ❤️ for Job Seekers Everywhere.
 </div>
