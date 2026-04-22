@@ -22,6 +22,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { RichTextEditor } from './RichTextEditor';
+import { compressAndResizeImage } from '../utils/imageUtils';
 
 interface CVFormProps {
   cvData: CVData;
@@ -339,7 +340,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
   };
 
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > MAX_IMAGE_FILE_SIZE) {
@@ -347,17 +348,19 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
         e.target.value = '';
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setCvData((prev) => ({ 
-          ...prev, 
-          profileImage: reader.result as string,
+      try {
+        const compressedImage = await compressAndResizeImage(file);
+        setCvData((prev) => ({
+          ...prev,
+          profileImage: compressedImage,
           imageZoom: 1,
           imageX: 0,
           imageY: 0
         }));
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Error processing image:', error);
+        alert('Failed to process image. Please try another one.');
+      }
     }
   };
 

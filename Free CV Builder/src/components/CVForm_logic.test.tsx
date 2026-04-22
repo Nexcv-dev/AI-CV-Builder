@@ -27,6 +27,10 @@ vi.mock('lucide-react', () => {
   return mockExports;
 });
 
+vi.mock('../utils/imageUtils', () => ({
+  compressAndResizeImage: vi.fn(() => Promise.resolve('data:image/png;base64,mocked-image-data')),
+}));
+
 // Mock fetch globally
 vi.stubGlobal('fetch', vi.fn(() => 
   Promise.resolve({ 
