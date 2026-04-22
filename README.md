@@ -99,6 +99,18 @@ We prioritize stability and security.
 - **Watch mode**: `npm run test`
 - **Coverage**: `npm run test:coverage`
 
+## ⚙️ CI/CD Pipeline
+
+This project uses **GitHub Actions** for continuous integration and deployment. Every push or pull request triggers an automated workflow that:
+
+1.  **Lints** the codebase to ensure TypeScript standards.
+2.  **Runs Tests** via Vitest to verify all components and AI logic.
+3.  **Builds** the application to check for production readiness.
+4.  **Auto-Deploys** to **Render** whenever changes are merged into the `main` branch.
+
+> [!IMPORTANT]
+> To enable automatic deployment, you must add a GitHub Secret named `RENDER_DEPLOY_HOOK` containing your Render Deploy Hook URL.
+
 ## 🛡️ Security Features
 
 - **Content Security Policy (CSP)**: Hardened via Helmet.js.
@@ -115,6 +127,8 @@ This application is optimized for **Render**.
 3. **Build Command**: `npm run render-build`
 4. **Start Command**: `npm run start`
 5. Add your `GEMINI_API_KEY` to the Environment Variables.
+
+---
 
 ---
 
