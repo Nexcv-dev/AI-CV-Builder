@@ -937,7 +937,7 @@ export function generateCVHTML(cvData: any, template: string): string {
   } else if (template === 'professional') {
     bodyContent = `<div style="display:block;background:white">
       <div style="width:100%;height:8px;background:${themeColor}"></div>
-      <div style="padding:0 20mm;padding-top:2.3mm">
+      <div style="padding:0 20mm;padding-top:15mm">
         <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
           <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
@@ -961,7 +961,7 @@ export function generateCVHTML(cvData: any, template: string): string {
     // Classic
     bodyContent = `<div style="display:block;background:white">
       <div style="width:100%;height:1px;background:transparent"></div>
-      <div style="padding:0 20mm;padding-top:7.3mm">
+      <div style="padding:0 20mm;padding-top:20mm">
         <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
           <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
