@@ -39,6 +39,9 @@ vi.stubGlobal('fetch', vi.fn(() =>
   })
 ));
 
+// Mock alert to prevent jsdom "Not implemented" errors
+vi.stubGlobal('alert', vi.fn());
+
 describe('CVForm Logic', () => {
   const mockSetCvData = vi.fn();
   const mockSetTemplate = vi.fn();
@@ -101,11 +104,13 @@ describe('CVForm Logic', () => {
     const file = new File(['image content'], 'test.png', { type: 'image/png' });
     
     // We need to find the specific input for profile image (it's the one that accepts images)
-    await waitFor(() => {
-        const imageInput = document.querySelector('input[accept="image/*"]') as HTMLInputElement;
-        if (!imageInput) throw new Error("Image input not found");
-        fireEvent.change(imageInput, { target: { files: [file] } });
+    const imageInput = await waitFor(() => {
+        const input = document.querySelector('input[accept="image/*"]') as HTMLInputElement;
+        if (!input) throw new Error("Image input not found");
+        return input;
     });
+    
+    fireEvent.change(imageInput, { target: { files: [file] } });
 
     // Since FileReader is async, we wait for mockSetCvData to be called
     await waitFor(() => expect(mockSetCvData).toHaveBeenCalled(), { timeout: 2000 });
@@ -154,5 +159,10 @@ describe('CVForm Logic', () => {
 
     // Verify immediate feedback
     expect(screen.getByText(/Starting import/i)).toBeInTheDocument();
+
+    // Wait for the async operation to finish to prevent unhandled promise rejections after test ends
+    await waitFor(() => {
+        expect(screen.queryByText(/Data imported successfully/i)).toBeInTheDocument();
+    });
   });
 });

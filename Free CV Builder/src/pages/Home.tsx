@@ -93,7 +93,7 @@ const initialData: CVData = {
   imageZoom: 1,
   imageX: 0,
   imageY: 0,
-  sidebarColor: '#111827', // Default gray-900
+  sidebarColor: '#1e293b', // Default slate-800
   lineSpacing: 1.5,
   sectionGap: 2,
   sectionOrder: ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages'],
@@ -103,7 +103,7 @@ const initialData: CVData = {
 export default function Home() {
   const [cvData, setCvData] = useState<CVData>(() => loadSavedData() || initialData);
   const [debouncedCvData, setDebouncedCvData] = useState<CVData>(() => loadSavedData() || initialData);
-  const [template, setTemplate] = useState<'classic' | 'modern' | 'professional'>(() => loadSavedTemplate() || 'classic');
+  const [template, setTemplate] = useState<'classic' | 'modern' | 'professional'>(() => loadSavedTemplate() || 'professional');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -335,15 +335,15 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#f8f9fa] font-sans text-gray-900 overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible">
+    <div className="flex flex-col h-full w-full bg-slate-50 font-sans text-slate-800 overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible">
       {/* Top Navigation Bar */}
       <header className="bg-white border-b border-gray-200/80 flex flex-col sm:flex-row items-center justify-between p-4 sm:px-8 shrink-0 z-50 print:hidden gap-4 sm:gap-0 sticky top-0 shadow-sm">
         <div className="flex items-center justify-between w-full sm:w-auto">
           <h1 className="text-xl sm:text-2xl font-extrabold flex items-center">
-            <div className="p-2 bg-gray-900 rounded-xl mr-3 shadow-md shadow-gray-900/10">
+            <div className="p-2 bg-blue-600 rounded-xl mr-3 shadow-md shadow-blue-600/20">
               <LayoutTemplate className="text-white" size={20} />
             </div>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-blue-600">
               CV Builder
             </span>
           </h1>
@@ -360,14 +360,14 @@ export default function Home() {
         <div className="lg:hidden flex bg-gray-100/50 p-1.5 rounded-2xl w-full max-w-sm mx-auto sm:mx-4 border border-gray-200/40 shadow-inner">
           <button
             onClick={() => setMobileView('edit')}
-            className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'edit' ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-900/5 scale-100' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50 scale-95'}`}
+            className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'edit' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-800/5 scale-100' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 scale-95'}`}
           >
             <FileText size={16} className="mr-2" />
             Edit
           </button>
           <button
             onClick={() => setMobileView('preview')}
-            className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'preview' ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-900/5 scale-100' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50 scale-95'}`}
+            className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'preview' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-800/5 scale-100' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 scale-95'}`}
           >
             <LayoutTemplate size={16} className="mr-2" />
             Preview
@@ -398,7 +398,7 @@ export default function Home() {
           <button
             onClick={() => setShowDownloadConfirm(true)}
             disabled={isGeneratingPDF}
-            className="hidden md:flex items-center px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-black hover:shadow-gray-900/20 transition-all duration-200 shadow-md active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+            className="hidden md:flex items-center px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 hover:shadow-blue-600/20 transition-all duration-200 shadow-md active:scale-95 disabled:opacity-70 disabled:active:scale-100"
           >
             {isGeneratingPDF ? (
               <><Loader2 size={16} className="mr-2 animate-spin" /> Generating...</>
@@ -465,7 +465,7 @@ export default function Home() {
                 }}
                 onTouchStart={(e) => e.stopPropagation()}
                 disabled={isGeneratingPDF}
-                className="pointer-events-auto touch-manipulation select-none [-webkit-tap-highlight-color:transparent] w-full flex items-center justify-center px-4 py-3.5 bg-gray-900 text-white text-sm font-semibold rounded-2xl hover:bg-black active:scale-[0.98] transition-all shadow-xl shadow-gray-900/20 disabled:opacity-70"
+                className="pointer-events-auto touch-manipulation select-none [-webkit-tap-highlight-color:transparent] w-full flex items-center justify-center px-4 py-3.5 bg-blue-600 text-white text-sm font-semibold rounded-2xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-xl shadow-blue-600/20 disabled:opacity-70"
               >
                 {isGeneratingPDF ? (
                   <><Loader2 size={18} className="mr-2 animate-spin" /> Generating...</>
@@ -483,17 +483,17 @@ export default function Home() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
             <div className="p-8">
-              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-6 mx-auto shadow-inner border border-gray-200/60">
-                <Download className="text-gray-900" size={28} />
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 mx-auto shadow-inner border border-blue-100">
+                <Download className="text-blue-600" size={28} />
               </div>
-              <h3 className="text-xl font-bold text-center text-gray-900 mb-2">Download Resume</h3>
+              <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Download Resume</h3>
               <p className="text-sm text-center text-gray-500 mb-8">
                 Are you ready to download your resume as a PDF? This might take a few seconds.
               </p>
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handlePrint}
-                  className="w-full py-3.5 px-4 bg-gray-900 hover:bg-black active:scale-[0.98] text-white font-semibold rounded-xl transition-all shadow-lg shadow-gray-900/20 flex items-center justify-center"
+                  className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center"
                 >
                   <Download size={18} className="mr-2" /> Yes, Download PDF
                 </button>
@@ -517,7 +517,7 @@ export default function Home() {
               <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-6 mx-auto shadow-inner border border-red-100">
                 <RotateCcw className="text-red-500" size={28} />
               </div>
-              <h3 className="text-xl font-bold text-center text-gray-900 mb-2">Reset All Data?</h3>
+              <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Reset All Data?</h3>
               <p className="text-sm text-center text-gray-500 mb-8">
                 This will clear all your CV data and reset to the default template. This action cannot be undone.
               </p>
@@ -545,10 +545,10 @@ export default function Home() {
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center border border-gray-100">
             <div className="relative mb-6">
-              <div className="w-16 h-16 border-4 border-gray-100 border-t-gray-900 rounded-full animate-spin"></div>
-              <FileText className="absolute inset-0 m-auto text-gray-900" size={24} />
+              <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+              <FileText className="absolute inset-0 m-auto text-blue-600" size={24} />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Generating PDF</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Generating PDF</h3>
             <p className="text-gray-500 text-center max-w-[200px]">
               Please wait while we prepare your professional resume...
             </p>

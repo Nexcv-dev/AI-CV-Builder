@@ -370,6 +370,9 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
       case 'summary':
         return personalInfo.summary && (
           <section key="summary" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
+              Profile
+            </h2>
             <div 
               className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
               style={{ lineHeight: lineSpacing }}
@@ -943,7 +946,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             </div>
           </div>
         ) : (
-          <div className="p-[20mm] min-h-[297mm] flex flex-col">
+          <div className="p-[20mm] min-h-[297mm] flex flex-col bg-white">
             <header className="mb-8 text-center flex flex-col items-center">
               {profileImage && (
                 <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 mb-4 flex items-center justify-center">
@@ -956,7 +959,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   />
                 </div>
               )}
-              <h1 className="text-4xl font-bold uppercase tracking-widest mb-3" style={{ color: themeColor }}>
+              <h1 className="text-3xl font-bold uppercase tracking-widest mb-3" style={{ color: themeColor }}>
                 {personalInfo.fullName || 'Your Name'}
               </h1>
               <div className="text-sm text-gray-600 flex flex-wrap justify-center gap-x-4 gap-y-1">
