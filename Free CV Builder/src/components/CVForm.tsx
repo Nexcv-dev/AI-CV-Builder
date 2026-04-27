@@ -641,22 +641,22 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
                 {allSteps[wizardStep] === 'import' ? (
-                  <div className="mb-6 p-8 bg-white border border-gray-200 rounded-2xl shadow-sm relative overflow-hidden group">
+                  <div className="mb-6 p-6 sm:p-8 bg-white border border-gray-200 rounded-2xl shadow-sm relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                    <div className="flex flex-col items-center text-center relative z-10 gap-6">
+                    <div className="flex flex-col items-center text-center relative z-10 gap-6 sm:gap-8">
                       <div className="flex flex-col items-center">
-                        <div className="bg-blue-100 p-4 rounded-2xl mb-4 shrink-0 border border-blue-200 shadow-sm transition-transform group-hover:scale-110 duration-300">
-                          <FileText size={32} className="text-blue-600" />
+                        <div className="bg-blue-100/50 p-4 rounded-2xl mb-4 shrink-0 border border-blue-200/50 shadow-sm transition-transform group-hover:scale-110 duration-300">
+                          <FileText className="text-blue-600 w-8 h-8" />
                         </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900 mb-2">Upload Existing CV</h3>
-                          <p className="text-sm text-gray-500 flex items-center justify-center">
-                            <Info size={14} className="mr-1.5 shrink-0" />
+                        <div className="px-2">
+                          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">Upload Existing CV</h3>
+                          <p className="text-xs sm:text-sm text-gray-500 text-center leading-relaxed max-w-[240px] sm:max-w-none mx-auto">
+                            <Info size={15} className="inline-block mr-1.5 align-text-bottom text-blue-500/70" />
                             Auto-fill data from any resume PDF or Image
                           </p>
                         </div>
                       </div>
-                      <div className="shrink-0 w-full sm:w-auto">
+                      <div className="shrink-0 w-full sm:w-auto px-2 sm:px-0">
                         <input
                           type="file"
                           accept=".pdf,image/*"
@@ -667,9 +667,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                         />
                         <label
                           htmlFor="cv-upload"
-                          className={`flex items-center justify-center w-full sm:min-w-[200px] px-6 py-3 text-sm font-bold rounded-xl cursor-pointer transition-all ${isImporting
+                          className={`flex items-center justify-center w-full sm:min-w-[240px] px-8 py-4 text-sm font-bold rounded-2xl cursor-pointer transition-all duration-300 ${isImporting
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg active:scale-95'
+                            : 'bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white shadow-xl shadow-indigo-200/50 hover:shadow-2xl hover:shadow-indigo-300/50 hover:scale-[1.02] active:scale-[0.98]'
                             }`}
                         >
                           {isImporting ? (
