@@ -119,6 +119,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
   const goToStep = (i: number) => { setWizardStep(i); };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const progressContainerRef = useRef<HTMLDivElement>(null);
+  const formContainerRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -129,6 +130,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
         const scrollLeft = stepElement.offsetLeft - (container.clientWidth / 2) + (stepElement.clientWidth / 2);
         container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
       }
+    }
+  }, [wizardStep]);
+
+  useEffect(() => {
+    if (formContainerRef.current) {
+      formContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [wizardStep]);
 
@@ -594,7 +601,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
         </button>
       </div>
 
-      <div className="flex-1 h-full overflow-y-auto scrollbar-hide px-4 sm:px-6 flex flex-col" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div 
+        ref={formContainerRef}
+        className="flex-1 h-full overflow-y-auto scrollbar-hide px-4 sm:px-6 flex flex-col" 
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {activeMainTab === 'content' && (
           <div className="animate-in fade-in duration-300 flex flex-col flex-1">
             {/* ===== Wizard Step Progress Bar ===== */}
