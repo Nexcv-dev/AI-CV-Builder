@@ -1,9 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'motion/react';
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award } from '../types';
-import { Plus, Trash2, Loader2, Upload, User, Briefcase, GraduationCap, Wrench, Palette, Star, FileText, BookOpen, Globe, FolderGit2, Trophy, ChevronDown, ChevronUp, Image as ImageIcon, GripVertical, Info, CheckCircle, AlertCircle, CheckCircle2, LayoutTemplate, MoveHorizontal, MoveVertical, Layout, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Loader2, Upload, User, Briefcase, GraduationCap, Wrench, Palette, Star, FileText, BookOpen, Globe, FolderGit2, Trophy, ChevronDown, ChevronUp, Image as ImageIcon, GripVertical, Info, CheckCircle, AlertCircle, CheckCircle2, LayoutTemplate, MoveHorizontal, MoveVertical, Layout, Sparkles, ArrowLeft, ArrowRight, Check, SkipForward, Type } from 'lucide-react';
 import { EditorFooter } from './EditorFooter';
+import { WizardNav } from './WizardNav';
 import {
   DndContext,
   closestCorners,
@@ -54,29 +55,12 @@ const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, 
       className={`border rounded-xl mb-4 bg-white overflow-hidden transition-colors transition-shadow duration-300 ${isOpen ? 'border-blue-500 shadow-md' : 'border-gray-200 shadow-sm'} ${isDragging ? 'opacity-50 shadow-lg relative' : ''}`}
     >
       <div className={`w-full flex items-center transition-colors ${isOpen ? 'bg-blue-50/30' : 'bg-gray-50 hover:bg-gray-100'}`}>
-        <div
-          {...attributes}
-          {...listeners}
-          className="p-4 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 flex items-center justify-center touch-none"
-        >
-          <GripVertical size={18} />
-        </div>
-        <button
-          type="button"
-          onClick={onToggle}
-          className="flex-1 flex items-center justify-between p-4 pl-0"
-        >
+        <div className="flex-1 flex items-center justify-between p-4">
           <div className="flex items-center font-semibold text-gray-800">
             <Icon size={18} className="mr-2 text-blue-600" />
             {title}
           </div>
-          <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-          >
-            <ChevronDown size={18} className="text-gray-500" />
-          </motion.div>
-        </button>
+        </div>
       </div>
       <AnimatePresence initial={false}>
         {isOpen && (
@@ -100,10 +84,60 @@ const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, 
   );
 });
 
+const fonts = [
+  { name: 'Inter', description: 'Modern, Clean', className: 'font-sans' },
+  { name: 'Lora', description: 'Serif, Classic', className: 'font-serif' },
+  { name: 'Roboto', description: 'Structured, Technical', className: 'font-roboto' },
+  { name: 'Montserrat', description: 'Geometric, Bold', className: 'font-montserrat' },
+  { name: 'Merriweather', description: 'Elegant Serif', className: 'font-merriweather' },
+  { name: 'Playfair Display', description: 'Stylish Serif', className: 'font-playfair' },
+  { name: 'JetBrains Mono', description: 'Technical, Code', className: 'font-mono' },
+];
+
 export default function CVForm({ cvData, setCvData, template, setTemplate }: CVFormProps) {
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design'>('content');
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
+  const [wizardStep, setWizardStep] = useState(0);
+
+  const allSteps = ['import', ...(cvData?.sectionOrder || [])];
+
+  const wizardSteps = [
+    { key: 'import', title: 'Upload', icon: Upload },
+    { key: 'personalDetails', title: 'Personal', icon: User },
+    { key: 'summary', title: 'Summary', icon: FileText },
+    { key: 'experience', title: 'Experience', icon: Briefcase },
+    { key: 'education', title: 'Education', icon: GraduationCap },
+    { key: 'skills', title: 'Skills', icon: Wrench },
+    { key: 'courses', title: 'Courses', icon: BookOpen },
+    { key: 'languages', title: 'Languages', icon: Globe },
+    { key: 'projects', title: 'Projects', icon: FolderGit2 },
+    { key: 'awards', title: 'Awards', icon: Trophy },
+  ];
+  const totalSteps = allSteps.length;
+  const goNext = () => { if (wizardStep < totalSteps - 1) setWizardStep(wizardStep + 1); };
+  const goBack = () => { if (wizardStep > 0) setWizardStep(wizardStep - 1); };
+  const goToStep = (i: number) => { setWizardStep(i); };
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const progressContainerRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    if (progressContainerRef.current && stepRefs.current[wizardStep]) {
+      const container = progressContainerRef.current;
+      const stepElement = stepRefs.current[wizardStep];
+      if (stepElement) {
+        const scrollLeft = stepElement.offsetLeft - (container.clientWidth / 2) + (stepElement.clientWidth / 2);
+        container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+      }
+    }
+  }, [wizardStep]);
+
+  useEffect(() => {
+    const currentSectionKey = allSteps[wizardStep];
+    if (currentSectionKey && currentSectionKey !== 'import') {
+      setExpandedSection(currentSectionKey);
+    }
+  }, [wizardStep, cvData.sectionOrder]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -119,6 +153,18 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [refiningIds, setRefiningIds] = useState<Record<string, boolean>>({});
+  const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
+  const fontDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (fontDropdownRef.current && !fontDropdownRef.current.contains(event.target as Node)) {
+        setIsFontDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const setRefining = useCallback((id: string, value: boolean) => {
     setRefiningIds(prev => ({ ...prev, [id]: value }));
@@ -548,66 +594,109 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
         </button>
       </div>
 
-      <div className="flex-1 h-full overflow-y-auto px-4 sm:px-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex-1 h-full overflow-y-auto scrollbar-hide px-4 sm:px-6 flex flex-col" style={{ WebkitOverflowScrolling: 'touch' }}>
         {activeMainTab === 'content' && (
-          <div className="animate-in fade-in duration-300">
-            {/* CV Import Section */}
-            <div className="mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center">
-                  <div className="bg-blue-100 p-2 rounded-lg mr-3 shrink-0">
-                    <FileText size={20} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Upload Existing CV</h3>
-                    <p className="text-xs text-gray-500 flex items-center mt-0.5">
-                      <Info size={12} className="mr-1 shrink-0" />
-                      Auto-fill data from any resume PDF or Image
-                    </p>
-                  </div>
-                </div>
-                <div className="shrink-0 w-full sm:w-auto">
-                  <input
-                    type="file"
-                    accept=".pdf,image/*"
-                    onChange={handleCVImport}
-                    className="hidden"
-                    id="cv-upload"
-                    disabled={isImporting}
-                  />
-                  <label
-                    htmlFor="cv-upload"
-                    className={`flex items-center justify-center w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-md cursor-pointer transition-colors ${isImporting
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
-                      }`}
-                  >
-                    {isImporting ? (
-                      <><Loader2 size={16} className="mr-2 animate-spin" /> Parsing Doc...</>
-                    ) : (
-                      <><Upload size={16} className="mr-2" /> Upload CV (PDF/Image)</>
-                    )}
-                  </label>
-                </div>
+          <div className="animate-in fade-in duration-300 flex flex-col flex-1">
+            {/* ===== Wizard Step Progress Bar ===== */}
+            <div 
+              ref={progressContainerRef}
+              className="mb-5 px-1 w-full overflow-x-auto scrollbar-hide py-2"
+            >
+              <div className="flex items-center justify-between min-w-max sm:min-w-full px-2 gap-4 sm:gap-2">
+                {allSteps.map((stepKey, i) => {
+                  const stepConfig = wizardSteps.find(s => s.key === stepKey);
+                  if (!stepConfig) return null;
+                  const StepIcon = stepConfig.icon;
+                  const status = i < wizardStep ? 'completed' : i === wizardStep ? 'active' : 'upcoming';
+                  return (
+                    <React.Fragment key={stepKey}>
+                      <div 
+                        ref={(el) => { stepRefs.current[i] = el; }}
+                        className="flex flex-col items-center cursor-pointer" 
+                        onClick={() => goToStep(i)}
+                      >
+                        <div className={`wizard-step-dot ${status}`}>
+                          {status === 'completed' ? <Check size={14} /> : <StepIcon size={14} />}
+                        </div>
+                        <span className={`wizard-step-label ${status === 'active' ? 'text-blue-600' : status === 'completed' ? 'text-blue-500' : 'text-gray-400'}`}>
+                          {stepConfig.title}
+                        </span>
+                      </div>
+                      {i < allSteps.length - 1 && (
+                        <div className={`wizard-step-connector ${i < wizardStep ? 'completed' : ''}`} />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </div>
-
-              {importMessage && (
-                <div className={`mt-3 p-2.5 rounded-md text-sm flex items-start ${importMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
-                  {importMessage.type === 'success' ? (
-                    <CheckCircle size={16} className="mr-2 mt-0.5 shrink-0" />
-                  ) : (
-                    <AlertCircle size={16} className="mr-2 mt-0.5 shrink-0" />
-                  )}
-                  {importMessage.text}
-                </div>
-              )}
             </div>
 
+            {/* ===== Wizard Step Content ===== */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={wizardStep}
+                initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -16, scale: 0.98 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              >
+                {allSteps[wizardStep] === 'import' ? (
+                  <div className="mb-6 p-8 bg-white border border-gray-200 rounded-2xl shadow-sm relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    <div className="flex flex-col items-center text-center relative z-10 gap-6">
+                      <div className="flex flex-col items-center">
+                        <div className="bg-blue-100 p-4 rounded-2xl mb-4 shrink-0 border border-blue-200 shadow-sm transition-transform group-hover:scale-110 duration-300">
+                          <FileText size={32} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 mb-2">Upload Existing CV</h3>
+                          <p className="text-sm text-gray-500 flex items-center justify-center">
+                            <Info size={14} className="mr-1.5 shrink-0" />
+                            Auto-fill data from any resume PDF or Image
+                          </p>
+                        </div>
+                      </div>
+                      <div className="shrink-0 w-full sm:w-auto">
+                        <input
+                          type="file"
+                          accept=".pdf,image/*"
+                          onChange={handleCVImport}
+                          className="hidden"
+                          id="cv-upload"
+                          disabled={isImporting}
+                        />
+                        <label
+                          htmlFor="cv-upload"
+                          className={`flex items-center justify-center w-full sm:min-w-[200px] px-6 py-3 text-sm font-bold rounded-xl cursor-pointer transition-all ${isImporting
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg active:scale-95'
+                            }`}
+                        >
+                          {isImporting ? (
+                            <><Loader2 size={18} className="mr-2 animate-spin" /> Parsing Doc...</>
+                          ) : (
+                            <><Upload size={18} className="mr-2" /> Upload CV</>
+                          )}
+                        </label>
+                      </div>
+                    </div>
 
+                    {importMessage && (
+                      <div className={`mt-6 p-4 rounded-xl text-sm flex items-center justify-center shadow-sm relative z-10 ${importMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                        }`}>
+                        {importMessage.type === 'success' ? (
+                          <CheckCircle size={18} className="mr-2 shrink-0" />
+                        ) : (
+                          <AlertCircle size={18} className="mr-2 shrink-0" />
+                        )}
+                        <span className="font-medium text-center">{importMessage.text}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
             <DndContext sensors={sensors} collisionDetection={closestCorners} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-              <SortableContext items={cvData.sectionOrder || []} strategy={verticalListSortingStrategy}>
-                {(cvData.sectionOrder || []).map((sectionKey) => {
+              <SortableContext items={[allSteps[wizardStep]]} strategy={verticalListSortingStrategy}>
+                {[allSteps[wizardStep]].filter(Boolean).map((sectionKey) => {
                   switch (sectionKey) {
                     case 'personalDetails':
                       return (
@@ -1350,13 +1439,22 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                 })}
               </SortableContext>
             </DndContext>
+                )}
+              </motion.div>
+            </AnimatePresence>
+            <WizardNav 
+              wizardStep={wizardStep} 
+              totalSteps={allSteps.length} 
+              onNext={goNext} 
+              onBack={goBack} 
+            />
             {/* Spacer to ensure scrollability and prevent dnd-kit bugs at the bottom */}
             <div className="h-8 w-full shrink-0"></div>
           </div>
         )}
 
         {activeMainTab === 'design' && (
-          <div className="animate-in fade-in duration-300 space-y-6">
+          <div className="animate-in fade-in duration-300 space-y-6 flex flex-col flex-1">
 
             {/* Choose Template Section */}
             <div className="p-5 border border-gray-200 rounded-xl bg-gray-50">
@@ -1620,22 +1718,62 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                   </div>
                 </div>
 
-                <div>
+                <div className="relative" ref={fontDropdownRef}>
                   <label htmlFor="fontFamily" className="block text-sm font-medium text-gray-700 mb-2">Font Family</label>
-                  <select
-                    id="fontFamily"
-                    value={cvData.fontFamily}
-                    onChange={(e) => handleThemeChange('fontFamily', e.target.value)}
-                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-gray-800"
+                  <button
+                    type="button"
+                    onClick={() => setIsFontDropdownOpen(!isFontDropdownOpen)}
+                    className="w-full flex items-center justify-between p-3 bg-white border border-gray-300 rounded-xl hover:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
                   >
-                    <option value="Inter">Inter (Modern, Clean)</option>
-                    <option value="Lora">Lora (Serif, Classic)</option>
-                    <option value="Roboto">Roboto (Structured, Technical)</option>
-                    <option value="Montserrat">Montserrat (Geometric, Bold)</option>
-                    <option value="Merriweather">Merriweather (Elegant Serif)</option>
-                    <option value="Playfair Display">Playfair Display (Stylish Serif)</option>
-                    <option value="JetBrains Mono">JetBrains Mono (Technical, Code)</option>
-                  </select>
+                    <div className="flex items-center">
+                      <span className="text-gray-400 mr-3 shrink-0"><Type size={18} /></span>
+                      <div className="flex flex-col items-start overflow-hidden">
+                        <span className="text-sm font-bold text-gray-800 truncate">{cvData.fontFamily}</span>
+                        <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider truncate">
+                          {fonts.find(f => f.name === cvData.fontFamily)?.description}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronDown size={18} className={`text-gray-400 shrink-0 transition-transform duration-300 ${isFontDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {isFontDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute z-[100] w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden py-2"
+                      >
+                        {fonts.map((f) => (
+                          <button
+                            key={f.name}
+                            type="button"
+                            onClick={() => {
+                              handleThemeChange('fontFamily', f.name);
+                              setIsFontDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center px-4 py-3 hover:bg-blue-50 transition-colors text-left ${cvData.fontFamily === f.name ? 'bg-blue-50/50' : ''}`}
+                          >
+                            <div className={`flex flex-col w-full ${f.className}`}>
+                              <div className="flex items-center justify-between w-full">
+                                <span className={`text-base font-bold ${cvData.fontFamily === f.name ? 'text-blue-600' : 'text-gray-800'}`}>
+                                  {f.name}
+                                </span>
+                                {cvData.fontFamily === f.name && (
+                                  <Check size={16} className="text-blue-600 shrink-0" />
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-500 font-medium mt-0.5">
+                                {f.description}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Spacing Controls */}
@@ -1706,7 +1844,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
             <div className="h-8 w-full shrink-0"></div>
           </div>
         )}
-        <EditorFooter />
+        <div className="mt-auto">
+          <EditorFooter />
+        </div>
       </div>
     </div>
   );

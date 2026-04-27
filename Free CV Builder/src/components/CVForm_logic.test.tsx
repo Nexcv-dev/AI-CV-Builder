@@ -18,7 +18,8 @@ vi.mock('lucide-react', () => {
     'Trophy', 'ChevronDown', 'ChevronUp', 'Image', 'GripVertical', 'Info', 
     'CheckCircle', 'AlertCircle', 'CheckCircle2', 'LayoutTemplate', 
     'MoveHorizontal', 'MoveVertical', 'Layout', 'Sparkles', 'LogOut', 
-    'Mail', 'Phone', 'MapPin', 'Linkedin', 'Github'
+    'Mail', 'Phone', 'MapPin', 'Linkedin', 'Github',
+    'ArrowLeft', 'ArrowRight', 'Check', 'SkipForward', 'Type'
   ];
   const mockExports: any = { __esModule: true };
   icons.forEach(name => {
@@ -41,6 +42,9 @@ vi.stubGlobal('fetch', vi.fn(() =>
 
 // Mock alert to prevent jsdom "Not implemented" errors
 vi.stubGlobal('alert', vi.fn());
+
+// Mock scrollTo for JSDOM
+Element.prototype.scrollTo = vi.fn();
 
 describe('CVForm Logic', () => {
   const mockSetCvData = vi.fn();
@@ -72,12 +76,13 @@ describe('CVForm Logic', () => {
       </MemoryRouter>
     );
     
-    // Open the Work Experience section first
-    const expHeader = screen.getByText(/Work Experience/i).closest('button');
-    if (expHeader) fireEvent.click(expHeader);
+    // Navigate to Experience step
+    const expStep = screen.getByText('Experience');
+    fireEvent.click(expStep);
     
-    // Find the "Add Experience" button
-    const addBtn = screen.getByText(/Add Experience/i).closest('button');
+    // Find the "Add Experience" button - wait for it to appear
+    const addBtn = await screen.findByText(/Add Experience/i);
+    fireEvent.click(addBtn);
     if (!addBtn) throw new Error("Add Experience button not found");
     fireEvent.click(addBtn);
 
@@ -123,7 +128,7 @@ describe('CVForm Logic', () => {
     expect(newState.imageY).toBe(0);
   });
 
-  it('applies aria-label to skill level buttons for accessibility', () => {
+  it('applies aria-label to skill level buttons for accessibility', async () => {
     const dataWithSkills = {
       ...initialData,
       skills: [{ id: 'uuid-1', name: 'React', level: 3 }]
@@ -135,12 +140,12 @@ describe('CVForm Logic', () => {
       </MemoryRouter>
     );
     
-    // Open the Skills section first
-    const skillsHeader = screen.getByText(/Skills/i).closest('button');
-    if (skillsHeader) fireEvent.click(skillsHeader);
+    // Navigate to Skills step
+    const skillsStep = screen.getByText('Skills');
+    fireEvent.click(skillsStep);
     
-    // Look for skill level buttons
-    const skillButtons = screen.getAllByLabelText(/Set skill level to/i);
+    // Look for skill level buttons - wait for them to appear
+    const skillButtons = await screen.findAllByLabelText(/Set skill level to/i);
     expect(skillButtons.length).toBe(5); // 5 levels
     expect(skillButtons[0]).toHaveAttribute('aria-label', 'Set skill level to 1 out of 5');
   });
@@ -157,8 +162,8 @@ describe('CVForm Logic', () => {
     
     fireEvent.change(importInput, { target: { files: [file] } });
 
-    // Verify immediate feedback
-    expect(screen.getByText(/Starting import/i)).toBeInTheDocument();
+    // Verify immediate feedback - use findBy to wait for render
+    expect(await screen.findByText(/Starting import/i)).toBeInTheDocument();
 
     // Wait for the async operation to finish to prevent unhandled promise rejections after test ends
     await waitFor(() => {
