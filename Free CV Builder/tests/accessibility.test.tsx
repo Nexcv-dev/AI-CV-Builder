@@ -12,7 +12,8 @@ vi.mock('lucide-react', () => {
     'Trophy', 'ChevronDown', 'ChevronUp', 'Image', 'GripVertical', 'Info', 
     'CheckCircle', 'AlertCircle', 'CheckCircle2', 'LayoutTemplate', 
     'MoveHorizontal', 'MoveVertical', 'Layout', 'Sparkles', 'LogOut', 
-    'Mail', 'Phone', 'MapPin', 'Linkedin', 'Github'
+    'Mail', 'Phone', 'MapPin', 'Linkedin', 'Github',
+    'ArrowLeft', 'ArrowRight', 'Check', 'SkipForward'
   ];
   const mockExports: any = { __esModule: true };
   icons.forEach(name => {
@@ -24,6 +25,9 @@ vi.mock('lucide-react', () => {
 vi.mock('../src/components/RichTextEditor', () => ({
   RichTextEditor: () => <div data-testid="mock-editor" />
 }));
+
+// Mock scrollTo for JSDOM
+Element.prototype.scrollTo = vi.fn();
 
 describe('Accessibility Audit', () => {
   const initialData = {
@@ -42,46 +46,47 @@ describe('Accessibility Audit', () => {
     sectionOrder: ['personalDetails', 'summary', 'experience', 'education', 'skills', 'projects', 'courses', 'languages', 'awards']
   };
 
-  it('provides descriptive labels for delete/remove buttons', () => {
+  it('provides descriptive labels for delete/remove buttons', async () => {
     render(
       <MemoryRouter>
         <CVForm cvData={initialData} setCvData={() => {}} template="classic" setTemplate={() => {}} />
       </MemoryRouter>
     );
     
-    // Open the Skills section first
-    const skillsHeader = screen.getByText(/Skills/i).closest('button');
-    if (skillsHeader) fireEvent.click(skillsHeader);
+    // Navigate to Skills step
+    fireEvent.click(screen.getByText('Skills'));
     
-    // Skill remove button
-    const removeSkillBtn = screen.getByLabelText(/Remove skill/i);
+    // Skill remove button - wait for it to appear
+    const removeSkillBtn = await screen.findByLabelText(/Remove skill/i);
     expect(removeSkillBtn).toBeInTheDocument();
     expect(removeSkillBtn).toHaveAttribute('title', 'Remove skill');
   });
 
-  it('uses semantic labels for form inputs', () => {
+  it('uses semantic labels for form inputs', async () => {
     render(
       <MemoryRouter>
         <CVForm cvData={initialData} setCvData={() => {}} template="classic" setTemplate={() => {}} />
       </MemoryRouter>
     );
     
+    // Navigate to Personal step
+    fireEvent.click(screen.getByText('Personal'));
+    
     // Check if labels are correctly associated with inputs
-    expect(screen.getByLabelText(/Full Name/i)).toHaveAttribute('id', 'fullName');
+    expect(await screen.findByLabelText(/Full Name/i)).toHaveAttribute('id', 'fullName');
   });
 
-  it('announces skill level selection status', () => {
+  it('announces skill level selection status', async () => {
      render(
        <MemoryRouter>
          <CVForm cvData={initialData} setCvData={() => {}} template="classic" setTemplate={() => {}} />
        </MemoryRouter>
      );
      
-     // Open the Skills section first
-     const skillsHeader = screen.getByText(/Skills/i).closest('button');
-     if (skillsHeader) fireEvent.click(skillsHeader);
+     // Navigate to Skills step
+     fireEvent.click(screen.getByText('Skills'));
      
-     const levelButtons = screen.getAllByLabelText(/Set skill level to/i);
+     const levelButtons = await screen.findAllByLabelText(/Set skill level to/i);
      expect(levelButtons[0]).toHaveAttribute('aria-label', 'Set skill level to 1 out of 5');
   });
 });
