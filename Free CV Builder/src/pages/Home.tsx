@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { CVData } from '../types';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
@@ -113,6 +114,8 @@ export default function Home() {
   const [previewHeight, setPreviewHeight] = useState(1122); // Default A4 height in px
   const [formWidth, setFormWidth] = useState(45);
   const [isDraggingResizer, setIsDraggingResizer] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isPopupVisible, setIsPopupVisible] = useState(false);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
 
@@ -149,6 +152,14 @@ export default function Home() {
       window.removeEventListener('mouseup', handleMouseUp);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    // Simulate initial loading sequence
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 1500); // 1.5 seconds loading animation
+    return () => clearTimeout(timer);
   }, []);
 
   const startDragging = useCallback(() => {
@@ -209,6 +220,8 @@ export default function Home() {
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(TEMPLATE_STORAGE_KEY);
+      sessionStorage.removeItem('hasSeenCVPrompt');
+      window.location.reload();
     } catch (e) {
       console.warn('Failed to clear saved data:', e);
     }
@@ -335,9 +348,31 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-50 font-sans text-slate-800 overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible">
-      {/* Top Navigation Bar */}
-      <header className="bg-white border-b border-gray-200/80 flex flex-col sm:flex-row items-center justify-between p-4 sm:px-8 shrink-0 z-50 print:hidden gap-4 sm:gap-0 sticky top-0 shadow-sm">
+    <>
+      <AnimatePresence>
+        {isInitialLoading && (
+          <motion.div 
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 bg-slate-50 flex flex-col items-center justify-center z-[200]"
+          >
+            <div className="relative mb-6">
+              <div className="w-20 h-20 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+              <LayoutTemplate className="absolute inset-0 m-auto text-blue-600 animate-pulse" size={32} />
+            </div>
+            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-blue-600 animate-pulse">
+              CV Builder
+            </h2>
+            <p className="text-sm text-gray-500 mt-2 font-medium">Preparing your workspace...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-col h-full w-full bg-slate-50 font-sans text-slate-800 overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible">
+        {/* Top Navigation Bar - hidden when popup is visible */}
+        {!isPopupVisible && (
+        <header className="bg-white border-b border-gray-200/80 flex flex-col sm:flex-row items-center justify-between p-4 sm:px-8 shrink-0 z-50 print:hidden gap-4 sm:gap-0 sticky top-0 shadow-sm">
         <div className="flex items-center justify-between w-full sm:w-auto">
           <h1 className="text-xl sm:text-2xl font-extrabold flex items-center">
             <div className="p-2 bg-blue-600 rounded-xl mr-3 shadow-md shadow-blue-600/20">
@@ -408,6 +443,7 @@ export default function Home() {
           </button>
         </div>
       </header>
+        )}
 
       <div className="flex-1 overflow-hidden relative flex flex-col lg:flex-row print:overflow-visible print:block">
         {/* Left Side: Form */}
@@ -421,17 +457,20 @@ export default function Home() {
               setCvData={setCvData}
               template={template}
               setTemplate={setTemplate}
+              onPopupVisibleChange={setIsPopupVisible}
             />
           </div>
         </div>
 
-        {/* Resizer */}
+        {/* Resizer - hidden when popup is visible */}
+        {!isPopupVisible && (
         <div
           className="hidden lg:block w-1.5 hover:w-2 bg-transparent hover:bg-blue-400/50 cursor-col-resize transition-all z-20 shrink-0 relative group"
           onMouseDown={startDragging}
         >
           <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 h-full bg-gray-200/50 group-hover:bg-blue-400/0 transition-colors"></div>
         </div>
+        )}
 
         {/* Right Side: Preview */}
         <div
@@ -483,8 +522,13 @@ export default function Home() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
             <div className="p-8">
-              <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 mx-auto shadow-inner border border-blue-100">
-                <Download className="text-blue-600" size={28} />
+              {/* Premium Icon Block */}
+              <div className="relative w-20 h-20 mx-auto mb-6 group">
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-cyan-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
+                <div className="relative flex items-center justify-center w-full h-full bg-white/50 backdrop-blur-md border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(59,130,246,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                  <Download className="text-blue-600 w-9 h-9 drop-shadow-sm group-hover:translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
+                </div>
               </div>
               <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Download Resume</h3>
               <p className="text-sm text-center text-gray-500 mb-8">
@@ -514,8 +558,13 @@ export default function Home() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
             <div className="p-8">
-              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-6 mx-auto shadow-inner border border-red-100">
-                <RotateCcw className="text-red-500" size={28} />
+              {/* Premium Icon Block */}
+              <div className="relative w-20 h-20 mx-auto mb-6 group">
+                <div className="absolute inset-0 bg-gradient-to-tr from-red-500/20 to-orange-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
+                <div className="relative flex items-center justify-center w-full h-full bg-white/50 backdrop-blur-md border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(239,68,68,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                  <RotateCcw className="text-red-500 w-9 h-9 drop-shadow-sm group-hover:-rotate-180 transition-transform duration-500" strokeWidth={1.5} />
+                </div>
               </div>
               <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Reset All Data?</h3>
               <p className="text-sm text-center text-gray-500 mb-8">
@@ -556,6 +605,7 @@ export default function Home() {
         </div>
       )}
     </div>
+    </>
   );
 }
 

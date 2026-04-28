@@ -13,7 +13,7 @@ vi.mock('./RichTextEditor', () => ({
 
 vi.mock('lucide-react', () => {
   const icons = [
-    'Plus', 'Trash2', 'Loader2', 'Upload', 'User', 'Briefcase', 'GraduationCap', 
+    'Plus', 'Trash2', 'Loader2', 'Upload', 'CloudUpload', 'User', 'Briefcase', 'GraduationCap', 
     'Wrench', 'Palette', 'Star', 'FileText', 'BookOpen', 'Globe', 'FolderGit2', 
     'Trophy', 'ChevronDown', 'ChevronUp', 'Image', 'GripVertical', 'Info', 
     'CheckCircle', 'AlertCircle', 'CheckCircle2', 'LayoutTemplate', 
@@ -67,6 +67,8 @@ describe('CVForm Logic', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
+    localStorage.clear();
   });
 
   it('generates a UUID when adding a new experience item', async () => {
@@ -157,7 +159,10 @@ describe('CVForm Logic', () => {
       </MemoryRouter>
     );
     
-    const importInput = document.getElementById('cv-upload') as HTMLInputElement;
+    const yesButton = await screen.findByText(/Yes, I have one/i);
+    fireEvent.click(yesButton);
+    
+    const importInput = document.getElementById('cv-upload-modal') as HTMLInputElement;
     const file = new File(['{}'], 'cv.json', { type: 'application/json' });
     
     fireEvent.change(importInput, { target: { files: [file] } });
