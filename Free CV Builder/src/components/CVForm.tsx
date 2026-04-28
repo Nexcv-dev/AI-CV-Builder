@@ -32,7 +32,7 @@ interface CVFormProps {
   setTemplate: (template: 'classic' | 'modern' | 'professional') => void;
 }
 
-const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, isOpen, onToggle }: { id: string, title: string, icon: any, children: React.ReactNode, isOpen: boolean, onToggle: () => void }) => {
+const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, isOpen, onToggle, showDragHandle = false }: { id: string, title: string, icon: any, children: React.ReactNode, isOpen: boolean, onToggle: () => void, showDragHandle?: boolean }) => {
   const {
     attributes,
     listeners,
@@ -55,12 +55,26 @@ const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, 
       className={`border rounded-xl mb-4 bg-white overflow-hidden transition-colors transition-shadow duration-300 ${isOpen ? 'border-blue-500 shadow-md' : 'border-gray-200 shadow-sm'} ${isDragging ? 'opacity-50 shadow-lg relative' : ''}`}
     >
       <div className={`w-full flex items-center transition-colors ${isOpen ? 'bg-blue-50/30' : 'bg-gray-50 hover:bg-gray-100'}`}>
-        <div className="flex-1 flex items-center justify-between p-4">
+        {showDragHandle && (
+          <div
+            className="flex items-center px-2 py-4 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical size={16} />
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex-1 flex items-center justify-between p-4 cursor-pointer"
+        >
           <div className="flex items-center font-semibold text-gray-800">
             <Icon size={18} className="mr-2 text-blue-600" />
             {title}
           </div>
-        </div>
+          {isOpen ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+        </button>
       </div>
       <AnimatePresence initial={false}>
         {isOpen && (
@@ -99,19 +113,21 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
 
-  const allSteps = ['import', ...(cvData?.sectionOrder || [])];
+  // Main sections shown as individual wizard steps
+  const mainSectionKeys = ['summary', 'personalDetails', 'experience', 'education', 'skills'];
+  // Sections grouped under "Finalize" step
+  const finalizeSectionKeys = ['projects', 'courses', 'awards', 'languages'];
+
+  const allSteps = ['import', ...mainSectionKeys, 'finalize'];
 
   const wizardSteps = [
     { key: 'import', title: 'Upload', icon: Upload },
-    { key: 'personalDetails', title: 'Personal', icon: User },
     { key: 'summary', title: 'Summary', icon: FileText },
+    { key: 'personalDetails', title: 'Personal', icon: User },
     { key: 'experience', title: 'Experience', icon: Briefcase },
     { key: 'education', title: 'Education', icon: GraduationCap },
     { key: 'skills', title: 'Skills', icon: Wrench },
-    { key: 'courses', title: 'Courses', icon: BookOpen },
-    { key: 'languages', title: 'Languages', icon: Globe },
-    { key: 'projects', title: 'Projects', icon: FolderGit2 },
-    { key: 'awards', title: 'Awards', icon: Trophy },
+    { key: 'finalize', title: 'Finalize', icon: CheckCircle2 },
   ];
   const totalSteps = allSteps.length;
   const goNext = () => { if (wizardStep < totalSteps - 1) setWizardStep(wizardStep + 1); };
@@ -142,9 +158,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
   useEffect(() => {
     const currentSectionKey = allSteps[wizardStep];
     if (currentSectionKey && currentSectionKey !== 'import') {
-      setExpandedSection(currentSectionKey);
+      if (currentSectionKey === 'finalize') {
+        setExpandedSection(finalizeSectionKeys[0]);
+      } else {
+        setExpandedSection(currentSectionKey);
+      }
     }
-  }, [wizardStep, cvData.sectionOrder]);
+  }, [wizardStep]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -652,48 +672,81 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
                 {allSteps[wizardStep] === 'import' ? (
-                  <div className="mb-6 p-6 sm:p-8 bg-white border border-gray-200 rounded-2xl shadow-sm relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                    <div className="flex flex-col items-center text-center relative z-10 gap-6 sm:gap-8">
-                      <div className="flex flex-col items-center">
-                        <div className="bg-blue-100/50 p-4 rounded-2xl mb-4 shrink-0 border border-blue-200/50 shadow-sm transition-transform group-hover:scale-110 duration-300">
-                          <FileText className="text-blue-600 w-8 h-8" />
-                        </div>
-                        <div className="px-2">
-                          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">Upload Existing CV</h3>
-                          <p className="text-xs sm:text-sm text-gray-500 text-center leading-relaxed max-w-[240px] sm:max-w-none mx-auto">
-                            <Info size={15} className="inline-block mr-1.5 align-text-bottom text-blue-500/70" />
-                            Auto-fill data from any resume PDF or Image
-                          </p>
-                        </div>
-                      </div>
-                      <div className="shrink-0 w-full sm:w-auto px-2 sm:px-0">
-                        <input
-                          type="file"
-                          accept=".pdf,image/*"
-                          onChange={handleCVImport}
-                          className="hidden"
-                          id="cv-upload"
-                          disabled={isImporting}
-                        />
-                        <label
-                          htmlFor="cv-upload"
-                          className={`flex items-center justify-center w-full sm:min-w-[240px] px-8 py-4 text-sm font-bold rounded-2xl cursor-pointer transition-all duration-300 ${isImporting
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white shadow-xl shadow-indigo-200/50 hover:shadow-2xl hover:shadow-indigo-300/50 hover:scale-[1.02] active:scale-[0.98]'
-                            }`}
-                        >
-                          {isImporting ? (
-                            <><Loader2 size={18} className="mr-2 animate-spin" /> Parsing Doc...</>
-                          ) : (
-                            <><Upload size={18} className="mr-2" /> Upload CV</>
-                          )}
-                        </label>
-                      </div>
-                    </div>
+                  <div className="mb-6 relative overflow-hidden">
+                    {/* Main Upload Drop Zone */}
+                    <label
+                      htmlFor="cv-upload"
+                      className={`group relative flex flex-col items-center justify-center p-5 sm:p-8 rounded-2xl border-2 border-dashed transition-all duration-500 cursor-pointer ${isImporting
+                        ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                        : 'border-blue-300 bg-gradient-to-b from-blue-50/60 via-white to-indigo-50/40 hover:border-indigo-400 hover:from-blue-50 hover:via-white hover:to-indigo-50/60 hover:shadow-lg hover:shadow-blue-100/50'
+                      }`}
+                    >
+                      {/* Decorative background elements */}
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-violet-100/40 to-transparent rounded-bl-full pointer-events-none" />
+                      <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-100/30 to-transparent rounded-tr-full pointer-events-none" />
 
+                      {/* Animated Upload Icon */}
+                      <div className="relative mb-4">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-xl scale-150 group-hover:scale-[1.8] transition-transform duration-500" />
+                        <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-3.5 rounded-xl shadow-lg shadow-blue-200/60 group-hover:shadow-xl group-hover:shadow-indigo-200/60 transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-1">
+                          <Upload className="text-white w-5 h-5" />
+                        </div>
+                      </div>
+
+                      {/* Title & Description */}
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1 relative z-10">
+                        {isImporting ? 'Processing your CV...' : 'Drop your CV here'}
+                      </h3>
+                      <p className="text-xs text-gray-500 mb-4 relative z-10">
+                        {isImporting ? 'AI is extracting your data' : 'or click to browse files'}
+                      </p>
+
+                      {/* File format badges */}
+                      <div className="flex items-center gap-1.5 mb-4 relative z-10">
+                        {['PDF', 'JPG', 'PNG'].map((format) => (
+                          <span
+                            key={format}
+                            className="px-2.5 py-0.5 text-[10px] font-semibold rounded-full bg-white border border-gray-200 text-gray-500 shadow-sm"
+                          >
+                            {format}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Upload Button / Loading State */}
+                      <div className="relative z-10">
+                        {isImporting ? (
+                          <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+                            <Loader2 size={20} className="animate-spin text-indigo-600" />
+                            <span className="text-sm font-semibold text-gray-700">Parsing Document...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200/50 group-hover:shadow-xl group-hover:shadow-indigo-300/60 transition-all duration-300 group-hover:scale-[1.03] group-active:scale-[0.97]">
+                            <Upload size={16} />
+                            Upload CV
+                          </div>
+                        )}
+                      </div>
+
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        onChange={handleCVImport}
+                        className="hidden"
+                        id="cv-upload"
+                        disabled={isImporting}
+                      />
+                    </label>
+
+                    {/* Hint text */}
+                    <p className="text-center text-xs text-gray-400 mt-3 flex items-center justify-center gap-1.5">
+                      <Info size={12} />
+                      AI will auto-fill all fields from your resume — or skip and fill manually
+                    </p>
+
+                    {/* Import message */}
                     {importMessage && (
-                      <div className={`mt-6 p-4 rounded-xl text-sm flex items-center justify-center shadow-sm relative z-10 ${importMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                      <div className={`mt-4 p-4 rounded-xl text-sm flex items-center justify-center shadow-sm ${importMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
                         }`}>
                         {importMessage.type === 'success' ? (
                           <CheckCircle size={18} className="mr-2 shrink-0" />
@@ -706,8 +759,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                   </div>
                 ) : (
             <DndContext sensors={sensors} collisionDetection={closestCorners} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-              <SortableContext items={[allSteps[wizardStep]]} strategy={verticalListSortingStrategy}>
-                {[allSteps[wizardStep]].filter(Boolean).map((sectionKey) => {
+              <SortableContext items={allSteps[wizardStep] === 'finalize' ? finalizeSectionKeys : [allSteps[wizardStep]]} strategy={verticalListSortingStrategy}>
+                {(allSteps[wizardStep] === 'finalize' ? finalizeSectionKeys : [allSteps[wizardStep]]).filter(Boolean).map((sectionKey) => {
                   switch (sectionKey) {
                     case 'personalDetails':
                       return (
@@ -1170,6 +1223,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                           icon={BookOpen}
                           isOpen={expandedSection === 'courses'}
                           onToggle={() => setExpandedSection(expandedSection === 'courses' ? null : 'courses')}
+                          showDragHandle
                         >
                           <div className="space-y-6">
                             {cvData.courses.map((course) => (
@@ -1247,6 +1301,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                           icon={Globe}
                           isOpen={expandedSection === 'languages'}
                           onToggle={() => setExpandedSection(expandedSection === 'languages' ? null : 'languages')}
+                          showDragHandle
                         >
                           <div className="space-y-4">
                             {cvData.languages.map((lang) => (
@@ -1304,6 +1359,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                           icon={FolderGit2}
                           isOpen={expandedSection === 'projects'}
                           onToggle={() => setExpandedSection(expandedSection === 'projects' ? null : 'projects')}
+                          showDragHandle
                         >
                           <div className="space-y-6">
                             {cvData.projects.map((proj) => (
@@ -1387,6 +1443,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                           icon={Trophy}
                           isOpen={expandedSection === 'awards'}
                           onToggle={() => setExpandedSection(expandedSection === 'awards' ? null : 'awards')}
+                          showDragHandle
                         >
                           <div className="space-y-6">
                             {cvData.awards.map((award) => (
