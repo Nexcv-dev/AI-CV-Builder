@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'motion/react';
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award } from '../types';
-import { Plus, Trash2, Loader2, Upload, User, Briefcase, GraduationCap, Wrench, Palette, Star, FileText, BookOpen, Globe, FolderGit2, Trophy, ChevronDown, ChevronUp, Image as ImageIcon, GripVertical, Info, CheckCircle, AlertCircle, CheckCircle2, LayoutTemplate, MoveHorizontal, MoveVertical, Layout, Sparkles, ArrowLeft, ArrowRight, Check, SkipForward, Type } from 'lucide-react';
+import { Plus, Trash2, Loader2, Upload, CloudUpload, User, Briefcase, GraduationCap, Wrench, Palette, Star, FileText, BookOpen, Globe, FolderGit2, Trophy, ChevronDown, ChevronUp, Image as ImageIcon, GripVertical, Info, CheckCircle, AlertCircle, CheckCircle2, LayoutTemplate, MoveHorizontal, MoveVertical, Layout, Sparkles, ArrowLeft, ArrowRight, Check, SkipForward, Type } from 'lucide-react';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import {
@@ -224,7 +224,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
     try {
       const res = await fetch('/api/generate-summary', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-App-Source': 'cv-builder-app'
         },
@@ -260,7 +260,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
     try {
       const res = await fetch('/api/refine-text', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-App-Source': 'cv-builder-app'
         },
@@ -642,15 +642,15 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
         </button>
       </div>
 
-      <div 
+      <div
         ref={formContainerRef}
-        className="flex-1 h-full overflow-y-auto scrollbar-hide px-4 sm:px-6 flex flex-col" 
+        className="flex-1 h-full overflow-y-auto scrollbar-hide px-4 sm:px-6 flex flex-col"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {activeMainTab === 'content' && (
           <div className="animate-in fade-in duration-300 flex flex-col flex-1">
             {/* ===== Wizard Step Progress Bar ===== */}
-            <div 
+            <div
               ref={progressContainerRef}
               className="mb-5 px-1 w-full overflow-x-auto scrollbar-hide py-2"
             >
@@ -662,9 +662,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                   const status = i < wizardStep ? 'completed' : i === wizardStep ? 'active' : 'upcoming';
                   return (
                     <React.Fragment key={stepKey}>
-                      <div 
+                      <div
                         ref={(el) => { stepRefs.current[i] = el; }}
-                        className="flex flex-col items-center cursor-pointer" 
+                        className="flex flex-col items-center cursor-pointer"
                         onClick={() => goToStep(i)}
                       >
                         <div className={`wizard-step-dot ${status}`}>
@@ -692,762 +692,762 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                 exit={{ opacity: 0, y: -16, scale: 0.98 }}
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
-            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-              <SortableContext items={allSteps[wizardStep] === 'finalize' ? finalizeSectionKeys : [allSteps[wizardStep]]} strategy={verticalListSortingStrategy}>
-                {(allSteps[wizardStep] === 'finalize' ? finalizeSectionKeys : [allSteps[wizardStep]]).filter(Boolean).map((sectionKey) => {
-                  switch (sectionKey) {
-                    case 'personalDetails':
-                      return (
-                        <SortableAccordionSection key="personalDetails" id="personalDetails" title="Personal Details" icon={User} isOpen={expandedSection === 'personalDetails'} onToggle={() => setExpandedSection(expandedSection === 'personalDetails' ? null : 'personalDetails')}>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                              <input
-                                id="fullName"
-                                type="text"
-                                name="fullName"
-                                autoComplete="name"
-                                placeholder="e.g. Jane Doe"
-                                value={cvData.personalInfo.fullName}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                              <input
-                                id="email"
-                                type="email"
-                                name="email"
-                                autoComplete="email"
-                                placeholder="e.g. jane@example.com"
-                                value={cvData.personalInfo.email}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                              <input
-                                id="phone"
-                                type="text"
-                                name="phone"
-                                autoComplete="tel"
-                                placeholder="e.g. +1 234 567 890"
-                                value={cvData.personalInfo.phone}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                              <input
-                                id="address"
-                                type="text"
-                                name="address"
-                                autoComplete="street-address"
-                                placeholder="e.g. New York, NY"
-                                value={cvData.personalInfo.address}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="dob" className="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span className="text-gray-400 font-normal">(Optional)</span></label>
-                              <input
-                                id="dob"
-                                type="date"
-                                name="dob"
-                                autoComplete="bday"
-                                value={cvData.personalInfo.dob}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="nic" className="block text-sm font-medium text-gray-700 mb-1">NIC Number <span className="text-gray-400 font-normal">(Optional)</span></label>
-                              <input
-                                id="nic"
-                                type="text"
-                                name="nic"
-                                placeholder="e.g. 199012345678"
-                                value={cvData.personalInfo.nic}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">Gender <span className="text-gray-400 font-normal">(Optional)</span></label>
-                              <select
-                                id="gender"
-                                name="gender"
-                                autoComplete="sex"
-                                value={cvData.personalInfo.gender}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              >
-                                <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label htmlFor="maritalStatus" className="block text-sm font-medium text-gray-700 mb-1">Marital Status <span className="text-gray-400 font-normal">(Optional)</span></label>
-                              <select
-                                id="maritalStatus"
-                                name="maritalStatus"
-                                value={cvData.personalInfo.maritalStatus}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              >
-                                <option value="">Select Status</option>
-                                <option value="Single">Single</option>
-                                <option value="Married">Married</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 mb-1">Nationality <span className="text-gray-400 font-normal">(Optional)</span></label>
-                              <input
-                                id="nationality"
-                                type="text"
-                                name="nationality"
-                                autoComplete="country-name"
-                                placeholder="e.g. American"
-                                value={cvData.personalInfo.nationality}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="religion" className="block text-sm font-medium text-gray-700 mb-1">Religion <span className="text-gray-400 font-normal">(Optional)</span></label>
-                              <input
-                                id="religion"
-                                type="text"
-                                name="religion"
-                                placeholder="e.g. Christianity"
-                                value={cvData.personalInfo.religion}
-                                onChange={handlePersonalInfoChange}
-                                className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                              />
-                            </div>
-
-                          </div>
-                        </SortableAccordionSection>
-                      );
-                    case 'summary':
-                      return (
-                        <SortableAccordionSection
-                          key="summary"
-                          id="summary"
-                          title="Professional Summary"
-                          icon={FileText}
-                          isOpen={expandedSection === 'summary'}
-                          onToggle={() => setExpandedSection(expandedSection === 'summary' ? null : 'summary')}
-                        >
-                          <div className="grid grid-cols-1 gap-5">
-                            <div className="md:col-span-2">
-                              <label id="summary-label" className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
-                              <RichTextEditor
-                                id="summary"
-                                labelId="summary-label"
-                                value={cvData.personalInfo.summary}
-                                onChange={(val) => handlePersonalInfoChange({ target: { name: 'summary', value: val } } as any)}
-                                placeholder="Brief overview of your professional background..."
-                              />
-                              <button
-                                type="button"
-                                onClick={handleGenerateSummary}
-                                disabled={refiningIds['summary']}
-                                className="mt-2 flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                              >
-                                {refiningIds['summary'] ? (
-                                  <><Loader2 size={13} className="mr-1.5 animate-spin" /> Generating...</>
-                                ) : (
-                                  <><Sparkles size={13} className="mr-1.5" /> Generate with AI</>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </SortableAccordionSection>
-                      );
-                    case 'experience':
-                      return (
-                        <SortableAccordionSection
-                          key="experience"
-                          id="experience"
-                          title="Work Experience"
-                          icon={Briefcase}
-                          isOpen={expandedSection === 'experience'}
-                          onToggle={() => setExpandedSection(expandedSection === 'experience' ? null : 'experience')}
-                        >
-                          <div className="space-y-6">
-                            {cvData.experience.map((exp) => (
-                              <div key={exp.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
-                                <button
-                                  onClick={() => removeExperience(exp.id)}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                                  <div>
-                                    <label htmlFor={`exp-company-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Company</label>
-                                    <input
-                                      id={`exp-company-${exp.id}`}
-                                      type="text"
-                                      autoComplete="organization"
-                                      placeholder="Company Name"
-                                      value={exp.company}
-                                      onChange={(e) => handleExperienceChange(exp.id, 'company', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`exp-position-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Position</label>
-                                    <input
-                                      id={`exp-position-${exp.id}`}
-                                      type="text"
-                                      autoComplete="organization-title"
-                                      placeholder="Job Title"
-                                      value={exp.position}
-                                      onChange={(e) => handleExperienceChange(exp.id, 'position', e.target.value)}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`exp-startDate-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
-                                    <input
-                                      id={`exp-startDate-${exp.id}`}
-                                      type="text"
-                                      placeholder="e.g., Jan 2020"
-                                      value={exp.startDate}
-                                      onChange={(e) => handleExperienceChange(exp.id, 'startDate', e.target.value)}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`exp-endDate-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
-                                    <input
-                                      id={`exp-endDate-${exp.id}`}
-                                      type="text"
-                                      placeholder="e.g., Present"
-                                      value={exp.endDate}
-                                      onChange={(e) => handleExperienceChange(exp.id, 'endDate', e.target.value)}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div className="md:col-span-2 space-y-2 mt-2">
-                                    <div className="flex justify-between items-center">
-                                      <label id={`exp-desc-label-${exp.id}`} className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Description</label>
-                                    </div>
-                                    <RichTextEditor
-                                      id={`exp-desc-${exp.id}`}
-                                      labelId={`exp-desc-label-${exp.id}`}
-                                      value={exp.description}
-                                      onChange={(val) => handleExperienceChange(exp.id, 'description', val)}
-                                      placeholder="Describe your responsibilities and achievements..."
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRefineText(
-                                        `exp-${exp.id}`,
-                                        exp.description,
-                                        'experience',
-                                        { position: exp.position, company: exp.company },
-                                        (refined) => handleExperienceChange(exp.id, 'description', refined)
-                                      )}
-                                      disabled={refiningIds[`exp-${exp.id}`] || !exp.description?.trim()}
-                                      className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
-                                      {refiningIds[`exp-${exp.id}`] ? (
-                                        <><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>
-                                      ) : (
-                                        <><Sparkles size={13} className="mr-1.5" /> Refine with AI</>
-                                      )}
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                            <button
-                              onClick={addExperience}
-                              className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
-                            >
-                              <Plus size={18} className="mr-2" /> Add Experience
-                            </button>
-                          </div>
-                        </SortableAccordionSection>
-                      );
-                    case 'education':
-                      return (
-                        <SortableAccordionSection
-                          key="education"
-                          id="education"
-                          title="Education"
-                          icon={GraduationCap}
-                          isOpen={expandedSection === 'education'}
-                          onToggle={() => setExpandedSection(expandedSection === 'education' ? null : 'education')}
-                        >
-                          <div className="space-y-6">
-                            {cvData.education.map((edu) => (
-                              <div key={edu.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
-                                <button
-                                  onClick={() => removeEducation(edu.id)}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                                  <div>
-                                    <label htmlFor={`edu-inst-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Institution</label>
-                                    <input
-                                      id={`edu-inst-${edu.id}`}
-                                      type="text"
-                                      autoComplete="organization"
-                                      placeholder="University or School"
-                                      value={edu.institution}
-                                      onChange={(e) => handleEducationChange(edu.id, 'institution', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`edu-degree-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Degree</label>
-                                    <input
-                                      id={`edu-degree-${edu.id}`}
-                                      type="text"
-                                      placeholder="e.g., Bachelor of Science"
-                                      value={edu.degree}
-                                      onChange={(e) => handleEducationChange(edu.id, 'degree', e.target.value)}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`edu-startDate-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
-                                    <input
-                                      id={`edu-startDate-${edu.id}`}
-                                      type="text"
-                                      placeholder="e.g., Sep 2015"
-                                      value={edu.startDate}
-                                      onChange={(e) => handleEducationChange(edu.id, 'startDate', e.target.value)}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`edu-endDate-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
-                                    <input
-                                      id={`edu-endDate-${edu.id}`}
-                                      type="text"
-                                      placeholder="e.g., May 2019"
-                                      value={edu.endDate}
-                                      onChange={(e) => handleEducationChange(edu.id, 'endDate', e.target.value)}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div className="md:col-span-2 mt-2 space-y-2">
-                                    <label id={`edu-desc-label-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description (Optional)</label>
-                                    <RichTextEditor
-                                      id={`edu-desc-${edu.id}`}
-                                      labelId={`edu-desc-label-${edu.id}`}
-                                      value={edu.description || ''}
-                                      onChange={(val) => handleEducationChange(edu.id, 'description', val)}
-                                      placeholder="Honors, coursework, or achievements..."
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRefineText(
-                                        `edu-${edu.id}`,
-                                        edu.description || '',
-                                        'education',
-                                        { degree: edu.degree, institution: edu.institution },
-                                        (refined) => handleEducationChange(edu.id, 'description', refined)
-                                      )}
-                                      disabled={refiningIds[`edu-${edu.id}`] || !edu.description?.trim()}
-                                      className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
-                                      {refiningIds[`edu-${edu.id}`] ? (
-                                        <><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>
-                                      ) : (
-                                        <><Sparkles size={13} className="mr-1.5" /> Refine with AI</>
-                                      )}
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                            <button
-                              onClick={addEducation}
-                              className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
-                            >
-                              <Plus size={18} className="mr-2" /> Add Education
-                            </button>
-                          </div>
-                        </SortableAccordionSection>
-                      );
-                    case 'skills':
-                      return (
-                        <SortableAccordionSection
-                          key="skills"
-                          id="skills"
-                          title="Skills"
-                          icon={Wrench}
-                          isOpen={expandedSection === 'skills'}
-                          onToggle={() => setExpandedSection(expandedSection === 'skills' ? null : 'skills')}
-                        >
-                          <div className="space-y-4">
-                            {cvData.skills.map((skill) => (
-                              <div key={skill.id} className="flex items-center space-x-4 p-3 border border-gray-100 rounded-lg bg-gray-50/50">
-                                <div className="flex-1">
+                <DndContext sensors={sensors} collisionDetection={closestCorners} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+                  <SortableContext items={allSteps[wizardStep] === 'finalize' ? finalizeSectionKeys : [allSteps[wizardStep]]} strategy={verticalListSortingStrategy}>
+                    {(allSteps[wizardStep] === 'finalize' ? finalizeSectionKeys : [allSteps[wizardStep]]).filter(Boolean).map((sectionKey) => {
+                      switch (sectionKey) {
+                        case 'personalDetails':
+                          return (
+                            <SortableAccordionSection key="personalDetails" id="personalDetails" title="Personal Details" icon={User} isOpen={expandedSection === 'personalDetails'} onToggle={() => setExpandedSection(expandedSection === 'personalDetails' ? null : 'personalDetails')}>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                                   <input
-                                    id={`skill-name-${skill.id}`}
+                                    id="fullName"
                                     type="text"
-                                    aria-label="Skill name"
-                                    placeholder="Skill name (e.g. React)"
-                                    value={skill.name}
-                                    onChange={(e) => handleSkillChange(skill.id, 'name', e.target.value)}
-                                    className="w-full min-h-[44px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
+                                    name="fullName"
+                                    autoComplete="name"
+                                    placeholder="e.g. Jane Doe"
+                                    value={cvData.personalInfo.fullName}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
-
-                                <div className="flex items-center space-x-1">
-                                  {[1, 2, 3, 4, 5].map((level) => (
-                                    <button
-                                      key={level}
-                                      type="button"
-                                      aria-label={`Set skill level to ${level} out of 5`}
-                                      onClick={() => handleSkillChange(skill.id, 'level', level)}
-                                      className="focus:outline-none transition-all"
-                                    >
-                                      <div
-                                        className={`h-2.5 w-6 rounded-sm border ${level <= skill.level ? 'border-blue-500' : 'border-gray-300 bg-transparent'}`}
-                                        style={{
-                                          backgroundColor: level <= skill.level ? '#3b82f6' : 'transparent'
-                                        }}
-                                      />
-                                    </button>
-                                  ))}
-                                </div>
-
-                                <button
-                                  onClick={() => removeSkill(skill.id)}
-                                  aria-label="Remove skill"
-                                  title="Remove skill"
-                                  className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            ))}
-
-                            <button
-                              onClick={addSkill}
-                              className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
-                            >
-                              <Plus size={18} className="mr-2" /> Add Skill
-                            </button>
-                          </div>
-                        </SortableAccordionSection>
-                      );
-                    case 'courses':
-                      return (
-                        <SortableAccordionSection
-                          key="courses"
-                          id="courses"
-                          title="Courses & Certifications"
-                          icon={BookOpen}
-                          isOpen={expandedSection === 'courses'}
-                          onToggle={() => setExpandedSection(expandedSection === 'courses' ? null : 'courses')}
-                          showDragHandle
-                        >
-                          <div className="space-y-6">
-                            {cvData.courses.map((course) => (
-                              <div key={course.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
-                                <button
-                                  onClick={() => removeCourse(course.id)}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                                  <div>
-                                    <label htmlFor={`course-name-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Course Name</label>
-                                    <input
-                                      id={`course-name-${course.id}`}
-                                      type="text"
-                                      placeholder="e.g., Advanced React Patterns"
-                                      value={course.name}
-                                      onChange={(e) => handleCourseChange(course.id, 'name', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`course-inst-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Institution</label>
-                                    <input
-                                      id={`course-inst-${course.id}`}
-                                      type="text"
-                                      autoComplete="organization"
-                                      placeholder="e.g., Coursera"
-                                      value={course.institution}
-                                      onChange={(e) => handleCourseChange(course.id, 'institution', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`course-startDate-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
-                                    <input
-                                      id={`course-startDate-${course.id}`}
-                                      type="text"
-                                      placeholder="e.g., Jan 2023"
-                                      value={course.startDate}
-                                      onChange={(e) => handleCourseChange(course.id, 'startDate', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`course-endDate-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
-                                    <input
-                                      id={`course-endDate-${course.id}`}
-                                      type="text"
-                                      placeholder="e.g., Mar 2023"
-                                      value={course.endDate}
-                                      onChange={(e) => handleCourseChange(course.id, 'endDate', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                            <button
-                              onClick={addCourse}
-                              className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
-                            >
-                              <Plus size={18} className="mr-2" /> Add Course
-                            </button>
-                          </div>
-                        </SortableAccordionSection>
-                      );
-                    case 'languages':
-                      return (
-                        <SortableAccordionSection
-                          key="languages"
-                          id="languages"
-                          title="Languages"
-                          icon={Globe}
-                          isOpen={expandedSection === 'languages'}
-                          onToggle={() => setExpandedSection(expandedSection === 'languages' ? null : 'languages')}
-                          showDragHandle
-                        >
-                          <div className="space-y-4">
-                            {cvData.languages.map((lang) => (
-                              <div key={lang.id} className="flex items-center space-x-4 p-3 border border-gray-100 rounded-lg bg-gray-50/50">
-                                <div className="flex-1">
+                                <div>
+                                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                   <input
-                                    id={`lang-name-${lang.id}`}
-                                    type="text"
-                                    autoComplete="language"
-                                    aria-label="Language name"
-                                    placeholder="Language (e.g. English)"
-                                    value={lang.name}
-                                    onChange={(e) => handleLanguageChange(lang.id, 'name', e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
+                                    id="email"
+                                    type="email"
+                                    name="email"
+                                    autoComplete="email"
+                                    placeholder="e.g. jane@example.com"
+                                    value={cvData.personalInfo.email}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
-                                <div className="flex-1">
+                                <div>
+                                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                  <input
+                                    id="phone"
+                                    type="text"
+                                    name="phone"
+                                    autoComplete="tel"
+                                    placeholder="e.g. +1 234 567 890"
+                                    value={cvData.personalInfo.phone}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                  <input
+                                    id="address"
+                                    type="text"
+                                    name="address"
+                                    autoComplete="street-address"
+                                    placeholder="e.g. New York, NY"
+                                    value={cvData.personalInfo.address}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="dob" className="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                  <input
+                                    id="dob"
+                                    type="date"
+                                    name="dob"
+                                    autoComplete="bday"
+                                    value={cvData.personalInfo.dob}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="nic" className="block text-sm font-medium text-gray-700 mb-1">NIC Number <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                  <input
+                                    id="nic"
+                                    type="text"
+                                    name="nic"
+                                    placeholder="e.g. 199012345678"
+                                    value={cvData.personalInfo.nic}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">Gender <span className="text-gray-400 font-normal">(Optional)</span></label>
                                   <select
-                                    id={`lang-prof-${lang.id}`}
-                                    aria-label="Proficiency level"
-                                    value={lang.proficiency}
-                                    onChange={(e) => handleLanguageChange(lang.id, 'proficiency', e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
+                                    id="gender"
+                                    name="gender"
+                                    autoComplete="sex"
+                                    value={cvData.personalInfo.gender}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
                                   >
-                                    <option value="Native">Native</option>
-                                    <option value="Fluent">Fluent</option>
-                                    <option value="Advanced">Advanced</option>
-                                    <option value="Intermediate">Intermediate</option>
-                                    <option value="Beginner">Beginner</option>
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
                                   </select>
                                 </div>
+                                <div>
+                                  <label htmlFor="maritalStatus" className="block text-sm font-medium text-gray-700 mb-1">Marital Status <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                  <select
+                                    id="maritalStatus"
+                                    name="maritalStatus"
+                                    value={cvData.personalInfo.maritalStatus}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                  >
+                                    <option value="">Select Status</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 mb-1">Nationality <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                  <input
+                                    id="nationality"
+                                    type="text"
+                                    name="nationality"
+                                    autoComplete="country-name"
+                                    placeholder="e.g. American"
+                                    value={cvData.personalInfo.nationality}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label htmlFor="religion" className="block text-sm font-medium text-gray-700 mb-1">Religion <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                  <input
+                                    id="religion"
+                                    type="text"
+                                    name="religion"
+                                    placeholder="e.g. Christianity"
+                                    value={cvData.personalInfo.religion}
+                                    onChange={handlePersonalInfoChange}
+                                    className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                  />
+                                </div>
+
+                              </div>
+                            </SortableAccordionSection>
+                          );
+                        case 'summary':
+                          return (
+                            <SortableAccordionSection
+                              key="summary"
+                              id="summary"
+                              title="Professional Summary"
+                              icon={FileText}
+                              isOpen={expandedSection === 'summary'}
+                              onToggle={() => setExpandedSection(expandedSection === 'summary' ? null : 'summary')}
+                            >
+                              <div className="grid grid-cols-1 gap-5">
+                                <div className="md:col-span-2">
+                                  <label id="summary-label" className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
+                                  <RichTextEditor
+                                    id="summary"
+                                    labelId="summary-label"
+                                    value={cvData.personalInfo.summary}
+                                    onChange={(val) => handlePersonalInfoChange({ target: { name: 'summary', value: val } } as any)}
+                                    placeholder="Brief overview of your professional background..."
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={handleGenerateSummary}
+                                    disabled={refiningIds['summary']}
+                                    className="mt-2 flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                  >
+                                    {refiningIds['summary'] ? (
+                                      <><Loader2 size={13} className="mr-1.5 animate-spin" /> Generating...</>
+                                    ) : (
+                                      <><Sparkles size={13} className="mr-1.5" /> Generate with AI</>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            </SortableAccordionSection>
+                          );
+                        case 'experience':
+                          return (
+                            <SortableAccordionSection
+                              key="experience"
+                              id="experience"
+                              title="Work Experience"
+                              icon={Briefcase}
+                              isOpen={expandedSection === 'experience'}
+                              onToggle={() => setExpandedSection(expandedSection === 'experience' ? null : 'experience')}
+                            >
+                              <div className="space-y-6">
+                                {cvData.experience.map((exp) => (
+                                  <div key={exp.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
+                                    <button
+                                      onClick={() => removeExperience(exp.id)}
+                                      className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                      <div>
+                                        <label htmlFor={`exp-company-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Company</label>
+                                        <input
+                                          id={`exp-company-${exp.id}`}
+                                          type="text"
+                                          autoComplete="organization"
+                                          placeholder="Company Name"
+                                          value={exp.company}
+                                          onChange={(e) => handleExperienceChange(exp.id, 'company', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`exp-position-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Position</label>
+                                        <input
+                                          id={`exp-position-${exp.id}`}
+                                          type="text"
+                                          autoComplete="organization-title"
+                                          placeholder="Job Title"
+                                          value={exp.position}
+                                          onChange={(e) => handleExperienceChange(exp.id, 'position', e.target.value)}
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`exp-startDate-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
+                                        <input
+                                          id={`exp-startDate-${exp.id}`}
+                                          type="text"
+                                          placeholder="e.g., Jan 2020"
+                                          value={exp.startDate}
+                                          onChange={(e) => handleExperienceChange(exp.id, 'startDate', e.target.value)}
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`exp-endDate-${exp.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
+                                        <input
+                                          id={`exp-endDate-${exp.id}`}
+                                          type="text"
+                                          placeholder="e.g., Present"
+                                          value={exp.endDate}
+                                          onChange={(e) => handleExperienceChange(exp.id, 'endDate', e.target.value)}
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div className="md:col-span-2 space-y-2 mt-2">
+                                        <div className="flex justify-between items-center">
+                                          <label id={`exp-desc-label-${exp.id}`} className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Description</label>
+                                        </div>
+                                        <RichTextEditor
+                                          id={`exp-desc-${exp.id}`}
+                                          labelId={`exp-desc-label-${exp.id}`}
+                                          value={exp.description}
+                                          onChange={(val) => handleExperienceChange(exp.id, 'description', val)}
+                                          placeholder="Describe your responsibilities and achievements..."
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRefineText(
+                                            `exp-${exp.id}`,
+                                            exp.description,
+                                            'experience',
+                                            { position: exp.position, company: exp.company },
+                                            (refined) => handleExperienceChange(exp.id, 'description', refined)
+                                          )}
+                                          disabled={refiningIds[`exp-${exp.id}`] || !exp.description?.trim()}
+                                          className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >
+                                          {refiningIds[`exp-${exp.id}`] ? (
+                                            <><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>
+                                          ) : (
+                                            <><Sparkles size={13} className="mr-1.5" /> Refine with AI</>
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
                                 <button
-                                  onClick={() => removeLanguage(lang.id)}
-                                  className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                  onClick={addExperience}
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
                                 >
-                                  <Trash2 size={16} />
+                                  <Plus size={18} className="mr-2" /> Add Experience
                                 </button>
                               </div>
-                            ))}
-                            <button
-                              onClick={addLanguage}
-                              className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                            </SortableAccordionSection>
+                          );
+                        case 'education':
+                          return (
+                            <SortableAccordionSection
+                              key="education"
+                              id="education"
+                              title="Education"
+                              icon={GraduationCap}
+                              isOpen={expandedSection === 'education'}
+                              onToggle={() => setExpandedSection(expandedSection === 'education' ? null : 'education')}
                             >
-                              <Plus size={18} className="mr-2" /> Add Language
-                            </button>
-                          </div>
-                        </SortableAccordionSection>
-                      );
-                    case 'projects':
-                      return (
-                        <SortableAccordionSection
-                          key="projects"
-                          id="projects"
-                          title="Projects"
-                          icon={FolderGit2}
-                          isOpen={expandedSection === 'projects'}
-                          onToggle={() => setExpandedSection(expandedSection === 'projects' ? null : 'projects')}
-                          showDragHandle
-                        >
-                          <div className="space-y-6">
-                            {cvData.projects.map((proj) => (
-                              <div key={proj.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
-                                <button
-                                  onClick={() => removeProject(proj.id)}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                                <div className="grid grid-cols-1 gap-4 mt-2">
-                                  <div>
-                                    <label htmlFor={`proj-name-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Project Name</label>
-                                    <input
-                                      id={`proj-name-${proj.id}`}
-                                      type="text"
-                                      placeholder="e.g., E-commerce Website"
-                                      value={proj.name}
-                                      onChange={(e) => handleProjectChange(proj.id, 'name', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`proj-link-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Link (Optional)</label>
-                                    <input
-                                      id={`proj-link-${proj.id}`}
-                                      type="text"
-                                      autoComplete="url"
-                                      placeholder="e.g., https://github.com/..."
-                                      value={proj.link}
-                                      onChange={(e) => handleProjectChange(proj.id, 'link', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <label id={`proj-desc-label-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description</label>
-                                    <RichTextEditor
-                                      id={`proj-desc-${proj.id}`}
-                                      labelId={`proj-desc-label-${proj.id}`}
-                                      value={proj.description}
-                                      onChange={(val) => handleProjectChange(proj.id, 'description', val)}
-                                      placeholder="Describe the project and your role..."
-                                    />
+                              <div className="space-y-6">
+                                {cvData.education.map((edu) => (
+                                  <div key={edu.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
                                     <button
-                                      type="button"
-                                      onClick={() => handleRefineText(
-                                        `proj-${proj.id}`,
-                                        proj.description,
-                                        'project',
-                                        { name: proj.name },
-                                        (refined) => handleProjectChange(proj.id, 'description', refined)
-                                      )}
-                                      disabled={refiningIds[`proj-${proj.id}`] || !proj.description?.trim()}
-                                      className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                      onClick={() => removeEducation(edu.id)}
+                                      className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
                                     >
-                                      {refiningIds[`proj-${proj.id}`] ? (
-                                        <><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>
-                                      ) : (
-                                        <><Sparkles size={13} className="mr-1.5" /> Refine with AI</>
-                                      )}
+                                      <Trash2 size={18} />
+                                    </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                      <div>
+                                        <label htmlFor={`edu-inst-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Institution</label>
+                                        <input
+                                          id={`edu-inst-${edu.id}`}
+                                          type="text"
+                                          autoComplete="organization"
+                                          placeholder="University or School"
+                                          value={edu.institution}
+                                          onChange={(e) => handleEducationChange(edu.id, 'institution', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`edu-degree-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Degree</label>
+                                        <input
+                                          id={`edu-degree-${edu.id}`}
+                                          type="text"
+                                          placeholder="e.g., Bachelor of Science"
+                                          value={edu.degree}
+                                          onChange={(e) => handleEducationChange(edu.id, 'degree', e.target.value)}
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`edu-startDate-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
+                                        <input
+                                          id={`edu-startDate-${edu.id}`}
+                                          type="text"
+                                          placeholder="e.g., Sep 2015"
+                                          value={edu.startDate}
+                                          onChange={(e) => handleEducationChange(edu.id, 'startDate', e.target.value)}
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`edu-endDate-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
+                                        <input
+                                          id={`edu-endDate-${edu.id}`}
+                                          type="text"
+                                          placeholder="e.g., May 2019"
+                                          value={edu.endDate}
+                                          onChange={(e) => handleEducationChange(edu.id, 'endDate', e.target.value)}
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div className="md:col-span-2 mt-2 space-y-2">
+                                        <label id={`edu-desc-label-${edu.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description (Optional)</label>
+                                        <RichTextEditor
+                                          id={`edu-desc-${edu.id}`}
+                                          labelId={`edu-desc-label-${edu.id}`}
+                                          value={edu.description || ''}
+                                          onChange={(val) => handleEducationChange(edu.id, 'description', val)}
+                                          placeholder="Honors, coursework, or achievements..."
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRefineText(
+                                            `edu-${edu.id}`,
+                                            edu.description || '',
+                                            'education',
+                                            { degree: edu.degree, institution: edu.institution },
+                                            (refined) => handleEducationChange(edu.id, 'description', refined)
+                                          )}
+                                          disabled={refiningIds[`edu-${edu.id}`] || !edu.description?.trim()}
+                                          className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >
+                                          {refiningIds[`edu-${edu.id}`] ? (
+                                            <><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>
+                                          ) : (
+                                            <><Sparkles size={13} className="mr-1.5" /> Refine with AI</>
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                                <button
+                                  onClick={addEducation}
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                >
+                                  <Plus size={18} className="mr-2" /> Add Education
+                                </button>
+                              </div>
+                            </SortableAccordionSection>
+                          );
+                        case 'skills':
+                          return (
+                            <SortableAccordionSection
+                              key="skills"
+                              id="skills"
+                              title="Skills"
+                              icon={Wrench}
+                              isOpen={expandedSection === 'skills'}
+                              onToggle={() => setExpandedSection(expandedSection === 'skills' ? null : 'skills')}
+                            >
+                              <div className="space-y-4">
+                                {cvData.skills.map((skill) => (
+                                  <div key={skill.id} className="flex items-center space-x-4 p-3 border border-gray-100 rounded-lg bg-gray-50/50">
+                                    <div className="flex-1">
+                                      <input
+                                        id={`skill-name-${skill.id}`}
+                                        type="text"
+                                        aria-label="Skill name"
+                                        placeholder="Skill name (e.g. React)"
+                                        value={skill.name}
+                                        onChange={(e) => handleSkillChange(skill.id, 'name', e.target.value)}
+                                        className="w-full min-h-[44px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
+                                      />
+                                    </div>
+
+                                    <div className="flex items-center space-x-1">
+                                      {[1, 2, 3, 4, 5].map((level) => (
+                                        <button
+                                          key={level}
+                                          type="button"
+                                          aria-label={`Set skill level to ${level} out of 5`}
+                                          onClick={() => handleSkillChange(skill.id, 'level', level)}
+                                          className="focus:outline-none transition-all"
+                                        >
+                                          <div
+                                            className={`h-2.5 w-6 rounded-sm border ${level <= skill.level ? 'border-blue-500' : 'border-gray-300 bg-transparent'}`}
+                                            style={{
+                                              backgroundColor: level <= skill.level ? '#3b82f6' : 'transparent'
+                                            }}
+                                          />
+                                        </button>
+                                      ))}
+                                    </div>
+
+                                    <button
+                                      onClick={() => removeSkill(skill.id)}
+                                      aria-label="Remove skill"
+                                      title="Remove skill"
+                                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                    >
+                                      <Trash2 size={16} />
                                     </button>
                                   </div>
-                                </div>
-                              </div>
-                            ))}
-                            <button
-                              onClick={addProject}
-                              className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
-                            >
-                              <Plus size={18} className="mr-2" /> Add Project
-                            </button>
-                          </div>
-                        </SortableAccordionSection>
-                      );
-                    case 'awards':
-                      return (
-                        <SortableAccordionSection
-                          key="awards"
-                          id="awards"
-                          title="Awards & Honors"
-                          icon={Trophy}
-                          isOpen={expandedSection === 'awards'}
-                          onToggle={() => setExpandedSection(expandedSection === 'awards' ? null : 'awards')}
-                          showDragHandle
-                        >
-                          <div className="space-y-6">
-                            {cvData.awards.map((award) => (
-                              <div key={award.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
+                                ))}
+
                                 <button
-                                  onClick={() => removeAward(award.id)}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                                  onClick={addSkill}
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
                                 >
-                                  <Trash2 size={18} />
+                                  <Plus size={18} className="mr-2" /> Add Skill
                                 </button>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                                  <div className="md:col-span-2">
-                                    <label htmlFor={`award-name-${award.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Award Name</label>
-                                    <input
-                                      id={`award-name-${award.id}`}
-                                      type="text"
-                                      placeholder="e.g., Employee of the Year"
-                                      value={award.name}
-                                      onChange={(e) => handleAwardChange(award.id, 'name', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`award-issuer-${award.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Issuer</label>
-                                    <input
-                                      id={`award-issuer-${award.id}`}
-                                      type="text"
-                                      autoComplete="organization"
-                                      placeholder="e.g., Tech Solutions Inc."
-                                      value={award.issuer}
-                                      onChange={(e) => handleAwardChange(award.id, 'issuer', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label htmlFor={`award-date-${award.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Date</label>
-                                    <input
-                                      id={`award-date-${award.id}`}
-                                      type="text"
-                                      placeholder="e.g., Dec 2022"
-                                      value={award.date}
-                                      onChange={(e) => handleAwardChange(award.id, 'date', e.target.value)}
-                                      className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
-                                    />
-                                  </div>
-                                </div>
                               </div>
-                            ))}
-                            <button
-                              onClick={addAward}
-                              className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                            </SortableAccordionSection>
+                          );
+                        case 'courses':
+                          return (
+                            <SortableAccordionSection
+                              key="courses"
+                              id="courses"
+                              title="Courses & Certifications"
+                              icon={BookOpen}
+                              isOpen={expandedSection === 'courses'}
+                              onToggle={() => setExpandedSection(expandedSection === 'courses' ? null : 'courses')}
+                              showDragHandle
                             >
-                              <Plus size={18} className="mr-2" /> Add Award
-                            </button>
-                          </div>
-                        </SortableAccordionSection>
-                      );
-                    default:
-                      return null;
-                  }
-                })}
-              </SortableContext>
-            </DndContext>
+                              <div className="space-y-6">
+                                {cvData.courses.map((course) => (
+                                  <div key={course.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
+                                    <button
+                                      onClick={() => removeCourse(course.id)}
+                                      className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                      <div>
+                                        <label htmlFor={`course-name-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Course Name</label>
+                                        <input
+                                          id={`course-name-${course.id}`}
+                                          type="text"
+                                          placeholder="e.g., Advanced React Patterns"
+                                          value={course.name}
+                                          onChange={(e) => handleCourseChange(course.id, 'name', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`course-inst-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Institution</label>
+                                        <input
+                                          id={`course-inst-${course.id}`}
+                                          type="text"
+                                          autoComplete="organization"
+                                          placeholder="e.g., Coursera"
+                                          value={course.institution}
+                                          onChange={(e) => handleCourseChange(course.id, 'institution', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`course-startDate-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Start Date</label>
+                                        <input
+                                          id={`course-startDate-${course.id}`}
+                                          type="text"
+                                          placeholder="e.g., Jan 2023"
+                                          value={course.startDate}
+                                          onChange={(e) => handleCourseChange(course.id, 'startDate', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`course-endDate-${course.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">End Date</label>
+                                        <input
+                                          id={`course-endDate-${course.id}`}
+                                          type="text"
+                                          placeholder="e.g., Mar 2023"
+                                          value={course.endDate}
+                                          onChange={(e) => handleCourseChange(course.id, 'endDate', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                                <button
+                                  onClick={addCourse}
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                >
+                                  <Plus size={18} className="mr-2" /> Add Course
+                                </button>
+                              </div>
+                            </SortableAccordionSection>
+                          );
+                        case 'languages':
+                          return (
+                            <SortableAccordionSection
+                              key="languages"
+                              id="languages"
+                              title="Languages"
+                              icon={Globe}
+                              isOpen={expandedSection === 'languages'}
+                              onToggle={() => setExpandedSection(expandedSection === 'languages' ? null : 'languages')}
+                              showDragHandle
+                            >
+                              <div className="space-y-4">
+                                {cvData.languages.map((lang) => (
+                                  <div key={lang.id} className="flex items-center space-x-4 p-3 border border-gray-100 rounded-lg bg-gray-50/50">
+                                    <div className="flex-1">
+                                      <input
+                                        id={`lang-name-${lang.id}`}
+                                        type="text"
+                                        autoComplete="language"
+                                        aria-label="Language name"
+                                        placeholder="Language (e.g. English)"
+                                        value={lang.name}
+                                        onChange={(e) => handleLanguageChange(lang.id, 'name', e.target.value)}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <select
+                                        id={`lang-prof-${lang.id}`}
+                                        aria-label="Proficiency level"
+                                        value={lang.proficiency}
+                                        onChange={(e) => handleLanguageChange(lang.id, 'proficiency', e.target.value)}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
+                                      >
+                                        <option value="Native">Native</option>
+                                        <option value="Fluent">Fluent</option>
+                                        <option value="Advanced">Advanced</option>
+                                        <option value="Intermediate">Intermediate</option>
+                                        <option value="Beginner">Beginner</option>
+                                      </select>
+                                    </div>
+                                    <button
+                                      onClick={() => removeLanguage(lang.id)}
+                                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                ))}
+                                <button
+                                  onClick={addLanguage}
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                >
+                                  <Plus size={18} className="mr-2" /> Add Language
+                                </button>
+                              </div>
+                            </SortableAccordionSection>
+                          );
+                        case 'projects':
+                          return (
+                            <SortableAccordionSection
+                              key="projects"
+                              id="projects"
+                              title="Projects"
+                              icon={FolderGit2}
+                              isOpen={expandedSection === 'projects'}
+                              onToggle={() => setExpandedSection(expandedSection === 'projects' ? null : 'projects')}
+                              showDragHandle
+                            >
+                              <div className="space-y-6">
+                                {cvData.projects.map((proj) => (
+                                  <div key={proj.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
+                                    <button
+                                      onClick={() => removeProject(proj.id)}
+                                      className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                    <div className="grid grid-cols-1 gap-4 mt-2">
+                                      <div>
+                                        <label htmlFor={`proj-name-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Project Name</label>
+                                        <input
+                                          id={`proj-name-${proj.id}`}
+                                          type="text"
+                                          placeholder="e.g., E-commerce Website"
+                                          value={proj.name}
+                                          onChange={(e) => handleProjectChange(proj.id, 'name', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`proj-link-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Link (Optional)</label>
+                                        <input
+                                          id={`proj-link-${proj.id}`}
+                                          type="text"
+                                          autoComplete="url"
+                                          placeholder="e.g., https://github.com/..."
+                                          value={proj.link}
+                                          onChange={(e) => handleProjectChange(proj.id, 'link', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <label id={`proj-desc-label-${proj.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Description</label>
+                                        <RichTextEditor
+                                          id={`proj-desc-${proj.id}`}
+                                          labelId={`proj-desc-label-${proj.id}`}
+                                          value={proj.description}
+                                          onChange={(val) => handleProjectChange(proj.id, 'description', val)}
+                                          placeholder="Describe the project and your role..."
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRefineText(
+                                            `proj-${proj.id}`,
+                                            proj.description,
+                                            'project',
+                                            { name: proj.name },
+                                            (refined) => handleProjectChange(proj.id, 'description', refined)
+                                          )}
+                                          disabled={refiningIds[`proj-${proj.id}`] || !proj.description?.trim()}
+                                          className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >
+                                          {refiningIds[`proj-${proj.id}`] ? (
+                                            <><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>
+                                          ) : (
+                                            <><Sparkles size={13} className="mr-1.5" /> Refine with AI</>
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                                <button
+                                  onClick={addProject}
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                >
+                                  <Plus size={18} className="mr-2" /> Add Project
+                                </button>
+                              </div>
+                            </SortableAccordionSection>
+                          );
+                        case 'awards':
+                          return (
+                            <SortableAccordionSection
+                              key="awards"
+                              id="awards"
+                              title="Awards & Honors"
+                              icon={Trophy}
+                              isOpen={expandedSection === 'awards'}
+                              onToggle={() => setExpandedSection(expandedSection === 'awards' ? null : 'awards')}
+                              showDragHandle
+                            >
+                              <div className="space-y-6">
+                                {cvData.awards.map((award) => (
+                                  <div key={award.id} className="p-5 border border-gray-200 rounded-xl relative bg-gray-50 shadow-sm">
+                                    <button
+                                      onClick={() => removeAward(award.id)}
+                                      className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                      <div className="md:col-span-2">
+                                        <label htmlFor={`award-name-${award.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Award Name</label>
+                                        <input
+                                          id={`award-name-${award.id}`}
+                                          type="text"
+                                          placeholder="e.g., Employee of the Year"
+                                          value={award.name}
+                                          onChange={(e) => handleAwardChange(award.id, 'name', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`award-issuer-${award.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Issuer</label>
+                                        <input
+                                          id={`award-issuer-${award.id}`}
+                                          type="text"
+                                          autoComplete="organization"
+                                          placeholder="e.g., Tech Solutions Inc."
+                                          value={award.issuer}
+                                          onChange={(e) => handleAwardChange(award.id, 'issuer', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label htmlFor={`award-date-${award.id}`} className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Date</label>
+                                        <input
+                                          id={`award-date-${award.id}`}
+                                          type="text"
+                                          placeholder="e.g., Dec 2022"
+                                          value={award.date}
+                                          onChange={(e) => handleAwardChange(award.id, 'date', e.target.value)}
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                                <button
+                                  onClick={addAward}
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                >
+                                  <Plus size={18} className="mr-2" /> Add Award
+                                </button>
+                              </div>
+                            </SortableAccordionSection>
+                          );
+                        default:
+                          return null;
+                      }
+                    })}
+                  </SortableContext>
+                </DndContext>
               </motion.div>
             </AnimatePresence>
-            <WizardNav 
-              wizardStep={wizardStep} 
-              totalSteps={allSteps.length} 
-              onNext={goNext} 
-              onBack={goBack} 
+            <WizardNav
+              wizardStep={wizardStep}
+              totalSteps={allSteps.length}
+              onNext={goNext}
+              onBack={goBack}
             />
             {/* Spacer to ensure scrollability and prevent dnd-kit bugs at the bottom */}
             <div className="h-8 w-full shrink-0"></div>
@@ -1854,8 +1854,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
       {showInitialPrompt && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20 p-8">
-            <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 mx-auto shadow-inner border border-blue-100">
-              <FileText className="text-blue-600" size={28} />
+            {/* Premium Icon Block */}
+            <div className="relative w-20 h-20 mx-auto mb-6 group">
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-indigo-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
+              <div className="relative flex items-center justify-center w-full h-full bg-white/50 backdrop-blur-md border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(59,130,246,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                <FileText className="text-blue-600 w-9 h-9 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />
+              </div>
             </div>
             <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Do you have a CV?</h3>
             <p className="text-sm text-center text-gray-500 mb-8">
@@ -1899,17 +1904,28 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                 className={`group relative flex flex-col items-center justify-center p-6 sm:p-10 rounded-2xl border-2 border-dashed transition-all duration-500 cursor-pointer ${isImporting
                   ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
                   : 'border-blue-300 bg-gradient-to-b from-blue-50/60 via-white to-indigo-50/40 hover:border-indigo-400 hover:from-blue-50 hover:via-white hover:to-indigo-50/60 hover:shadow-lg hover:shadow-blue-100/50'
-                }`}
+                  }`}
               >
                 {/* Decorative background elements */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-violet-100/40 to-transparent rounded-bl-full pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-100/30 to-transparent rounded-tr-full pointer-events-none" />
 
-                {/* Animated Upload Icon */}
-                <div className="relative mb-4">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-xl scale-150 group-hover:scale-[1.8] transition-transform duration-500" />
-                  <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-xl shadow-lg shadow-blue-200/60 group-hover:shadow-xl group-hover:shadow-indigo-200/60 transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-1">
-                    <Upload className="text-white w-6 h-6" />
+                {/* Animated Premium Upload Icon */}
+                <div className="relative mb-6">
+                  {/* Glowing background rings */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/30 to-fuchsia-500/30 rounded-full blur-2xl scale-[2.5] group-hover:scale-[3] transition-transform duration-700 ease-out animate-pulse" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/40 to-violet-400/40 rounded-full blur-xl scale-150 group-hover:scale-[1.8] transition-transform duration-500" />
+
+                  {/* Icon container with glassmorphism */}
+                  <div className="relative flex items-center justify-center w-20 h-20 bg-white/40 backdrop-blur-md border border-white/60 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] group-hover:shadow-[0_8px_30px_rgb(99,102,241,0.2)] group-hover:bg-white/60 transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-110 overflow-hidden">
+                    {/* Inner gradient shine */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+
+                    <CloudUpload className="text-indigo-600 w-10 h-10 drop-shadow-md group-hover:scale-110 transition-transform duration-500" strokeWidth={1.5} />
+
+                    {/* Little sparkle accents */}
+                    <Sparkles className="absolute top-3 right-3 w-4 h-4 text-fuchsia-500 opacity-0 group-hover:opacity-100 group-hover:animate-bounce transition-opacity duration-300 delay-100" />
+                    <Sparkles className="absolute bottom-3 left-3 w-3 h-3 text-blue-500 opacity-0 group-hover:opacity-100 group-hover:animate-bounce transition-opacity duration-300 delay-200" />
                   </div>
                 </div>
 

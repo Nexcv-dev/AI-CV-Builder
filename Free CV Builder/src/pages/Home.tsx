@@ -522,8 +522,13 @@ export default function Home() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
             <div className="p-8">
-              <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 mx-auto shadow-inner border border-blue-100">
-                <Download className="text-blue-600" size={28} />
+              {/* Premium Icon Block */}
+              <div className="relative w-20 h-20 mx-auto mb-6 group">
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-cyan-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
+                <div className="relative flex items-center justify-center w-full h-full bg-white/50 backdrop-blur-md border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(59,130,246,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                  <Download className="text-blue-600 w-9 h-9 drop-shadow-sm group-hover:translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
+                </div>
               </div>
               <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Download Resume</h3>
               <p className="text-sm text-center text-gray-500 mb-8">
@@ -553,8 +558,13 @@ export default function Home() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
             <div className="p-8">
-              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-6 mx-auto shadow-inner border border-red-100">
-                <RotateCcw className="text-red-500" size={28} />
+              {/* Premium Icon Block */}
+              <div className="relative w-20 h-20 mx-auto mb-6 group">
+                <div className="absolute inset-0 bg-gradient-to-tr from-red-500/20 to-orange-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
+                <div className="relative flex items-center justify-center w-full h-full bg-white/50 backdrop-blur-md border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(239,68,68,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                  <RotateCcw className="text-red-500 w-9 h-9 drop-shadow-sm group-hover:-rotate-180 transition-transform duration-500" strokeWidth={1.5} />
+                </div>
               </div>
               <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Reset All Data?</h3>
               <p className="text-sm text-center text-gray-500 mb-8">
