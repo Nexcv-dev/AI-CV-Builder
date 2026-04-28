@@ -30,6 +30,7 @@ interface CVFormProps {
   setCvData: React.Dispatch<React.SetStateAction<CVData>>;
   template: string;
   setTemplate: (template: 'classic' | 'modern' | 'professional') => void;
+  onPopupVisibleChange?: (visible: boolean) => void;
 }
 
 const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, isOpen, onToggle, showDragHandle = false }: { id: string, title: string, icon: any, children: React.ReactNode, isOpen: boolean, onToggle: () => void, showDragHandle?: boolean }) => {
@@ -108,7 +109,7 @@ const fonts = [
   { name: 'JetBrains Mono', description: 'Technical, Code', className: 'font-mono' },
 ];
 
-export default function CVForm({ cvData, setCvData, template, setTemplate }: CVFormProps) {
+export default function CVForm({ cvData, setCvData, template, setTemplate, onPopupVisibleChange }: CVFormProps) {
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design'>('content');
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
@@ -118,10 +119,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
   // Sections grouped under "Finalize" step
   const finalizeSectionKeys = ['projects', 'courses', 'awards', 'languages'];
 
-  const allSteps = ['import', ...mainSectionKeys, 'finalize'];
+  const allSteps = [...mainSectionKeys, 'finalize'];
 
   const wizardSteps = [
-    { key: 'import', title: 'Upload', icon: Upload },
     { key: 'summary', title: 'Summary', icon: FileText },
     { key: 'personalDetails', title: 'Personal', icon: User },
     { key: 'experience', title: 'Experience', icon: Briefcase },
@@ -157,7 +157,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
 
   useEffect(() => {
     const currentSectionKey = allSteps[wizardStep];
-    if (currentSectionKey && currentSectionKey !== 'import') {
+    if (currentSectionKey) {
       if (currentSectionKey === 'finalize') {
         setExpandedSection(finalizeSectionKeys[0]);
       } else {
@@ -165,6 +165,23 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
       }
     }
   }, [wizardStep]);
+
+  const [showInitialPrompt, setShowInitialPrompt] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
+  useEffect(() => {
+    const hasSeenPrompt = sessionStorage.getItem('hasSeenCVPrompt');
+    const hasSavedData = localStorage.getItem('cv-builder-data');
+    if (!hasSeenPrompt && !hasSavedData) {
+      setShowInitialPrompt(true);
+      sessionStorage.setItem('hasSeenCVPrompt', 'true');
+    }
+  }, []);
+
+  // Notify parent when any popup is visible
+  useEffect(() => {
+    onPopupVisibleChange?.(showInitialPrompt || showUploadModal);
+  }, [showInitialPrompt, showUploadModal, onPopupVisibleChange]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -365,6 +382,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
             });
 
             setImportMessage({ type: 'success', text: 'Data imported successfully!' });
+            setTimeout(() => {
+              setShowUploadModal(false);
+              setImportMessage(null);
+            }, 1500);
           } else {
             throw new Error("No data returned");
           }
@@ -671,93 +692,6 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                 exit={{ opacity: 0, y: -16, scale: 0.98 }}
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
-                {allSteps[wizardStep] === 'import' ? (
-                  <div className="mb-6 relative overflow-hidden">
-                    {/* Main Upload Drop Zone */}
-                    <label
-                      htmlFor="cv-upload"
-                      className={`group relative flex flex-col items-center justify-center p-5 sm:p-8 rounded-2xl border-2 border-dashed transition-all duration-500 cursor-pointer ${isImporting
-                        ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
-                        : 'border-blue-300 bg-gradient-to-b from-blue-50/60 via-white to-indigo-50/40 hover:border-indigo-400 hover:from-blue-50 hover:via-white hover:to-indigo-50/60 hover:shadow-lg hover:shadow-blue-100/50'
-                      }`}
-                    >
-                      {/* Decorative background elements */}
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-violet-100/40 to-transparent rounded-bl-full pointer-events-none" />
-                      <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-100/30 to-transparent rounded-tr-full pointer-events-none" />
-
-                      {/* Animated Upload Icon */}
-                      <div className="relative mb-4">
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-xl scale-150 group-hover:scale-[1.8] transition-transform duration-500" />
-                        <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-3.5 rounded-xl shadow-lg shadow-blue-200/60 group-hover:shadow-xl group-hover:shadow-indigo-200/60 transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-1">
-                          <Upload className="text-white w-5 h-5" />
-                        </div>
-                      </div>
-
-                      {/* Title & Description */}
-                      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1 relative z-10">
-                        {isImporting ? 'Processing your CV...' : 'Drop your CV here'}
-                      </h3>
-                      <p className="text-xs text-gray-500 mb-4 relative z-10">
-                        {isImporting ? 'AI is extracting your data' : 'or click to browse files'}
-                      </p>
-
-                      {/* File format badges */}
-                      <div className="flex items-center gap-1.5 mb-4 relative z-10">
-                        {['PDF', 'JPG', 'PNG'].map((format) => (
-                          <span
-                            key={format}
-                            className="px-2.5 py-0.5 text-[10px] font-semibold rounded-full bg-white border border-gray-200 text-gray-500 shadow-sm"
-                          >
-                            {format}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Upload Button / Loading State */}
-                      <div className="relative z-10">
-                        {isImporting ? (
-                          <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-xl border border-gray-200 shadow-sm">
-                            <Loader2 size={20} className="animate-spin text-indigo-600" />
-                            <span className="text-sm font-semibold text-gray-700">Parsing Document...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200/50 group-hover:shadow-xl group-hover:shadow-indigo-300/60 transition-all duration-300 group-hover:scale-[1.03] group-active:scale-[0.97]">
-                            <Upload size={16} />
-                            Upload CV
-                          </div>
-                        )}
-                      </div>
-
-                      <input
-                        type="file"
-                        accept=".pdf,image/*"
-                        onChange={handleCVImport}
-                        className="hidden"
-                        id="cv-upload"
-                        disabled={isImporting}
-                      />
-                    </label>
-
-                    {/* Hint text */}
-                    <p className="text-center text-xs text-gray-400 mt-3 flex items-center justify-center gap-1.5">
-                      <Info size={12} />
-                      AI will auto-fill all fields from your resume — or skip and fill manually
-                    </p>
-
-                    {/* Import message */}
-                    {importMessage && (
-                      <div className={`mt-4 p-4 rounded-xl text-sm flex items-center justify-center shadow-sm ${importMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-                        }`}>
-                        {importMessage.type === 'success' ? (
-                          <CheckCircle size={18} className="mr-2 shrink-0" />
-                        ) : (
-                          <AlertCircle size={18} className="mr-2 shrink-0" />
-                        )}
-                        <span className="font-medium text-center">{importMessage.text}</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
             <DndContext sensors={sensors} collisionDetection={closestCorners} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
               <SortableContext items={allSteps[wizardStep] === 'finalize' ? finalizeSectionKeys : [allSteps[wizardStep]]} strategy={verticalListSortingStrategy}>
                 {(allSteps[wizardStep] === 'finalize' ? finalizeSectionKeys : [allSteps[wizardStep]]).filter(Boolean).map((sectionKey) => {
@@ -1507,7 +1441,6 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
                 })}
               </SortableContext>
             </DndContext>
-                )}
               </motion.div>
             </AnimatePresence>
             <WizardNav 
@@ -1916,6 +1849,147 @@ export default function CVForm({ cvData, setCvData, template, setTemplate }: CVF
           <EditorFooter />
         </div>
       </div>
+
+      {/* Initial Prompt Modal */}
+      {showInitialPrompt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20 p-8">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 mx-auto shadow-inner border border-blue-100">
+              <FileText className="text-blue-600" size={28} />
+            </div>
+            <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Do you have a CV?</h3>
+            <p className="text-sm text-center text-gray-500 mb-8">
+              If you have an existing resume, we can extract your data automatically to save time.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setShowInitialPrompt(false);
+                  setShowUploadModal(true);
+                }}
+                className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center"
+              >
+                Yes, I have one
+              </button>
+              <button
+                onClick={() => setShowInitialPrompt(false)}
+                className="w-full py-3.5 px-4 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all border border-gray-200"
+              >
+                No, start from scratch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload CV Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20 p-6 sm:p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-800">Upload Resume</h3>
+              <button onClick={() => setShowUploadModal(false)} className="text-gray-400 hover:text-gray-600">
+                <span className="text-2xl leading-none">&times;</span>
+              </button>
+            </div>
+            <div className="relative overflow-hidden">
+              {/* Main Upload Drop Zone */}
+              <label
+                htmlFor="cv-upload-modal"
+                className={`group relative flex flex-col items-center justify-center p-6 sm:p-10 rounded-2xl border-2 border-dashed transition-all duration-500 cursor-pointer ${isImporting
+                  ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                  : 'border-blue-300 bg-gradient-to-b from-blue-50/60 via-white to-indigo-50/40 hover:border-indigo-400 hover:from-blue-50 hover:via-white hover:to-indigo-50/60 hover:shadow-lg hover:shadow-blue-100/50'
+                }`}
+              >
+                {/* Decorative background elements */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-violet-100/40 to-transparent rounded-bl-full pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-100/30 to-transparent rounded-tr-full pointer-events-none" />
+
+                {/* Animated Upload Icon */}
+                <div className="relative mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-xl scale-150 group-hover:scale-[1.8] transition-transform duration-500" />
+                  <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-xl shadow-lg shadow-blue-200/60 group-hover:shadow-xl group-hover:shadow-indigo-200/60 transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-1">
+                    <Upload className="text-white w-6 h-6" />
+                  </div>
+                </div>
+
+                {/* Title & Description */}
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 relative z-10">
+                  {isImporting ? 'Processing your CV...' : 'Drop your CV here'}
+                </h3>
+                <p className="text-sm text-gray-500 mb-5 relative z-10">
+                  {isImporting ? 'AI is extracting your data' : 'or click to browse files'}
+                </p>
+
+                {/* File format badges */}
+                <div className="flex items-center gap-2 mb-5 relative z-10">
+                  {['PDF', 'JPG', 'PNG'].map((format) => (
+                    <span
+                      key={format}
+                      className="px-3 py-1 text-[11px] font-semibold rounded-full bg-white border border-gray-200 text-gray-500 shadow-sm"
+                    >
+                      {format}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Upload Button / Loading State */}
+                <div className="relative z-10">
+                  {isImporting ? (
+                    <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+                      <Loader2 size={20} className="animate-spin text-indigo-600" />
+                      <span className="text-sm font-semibold text-gray-700">Parsing Document...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200/50 group-hover:shadow-xl group-hover:shadow-indigo-300/60 transition-all duration-300 group-hover:scale-[1.03] group-active:scale-[0.97]">
+                      <Upload size={18} />
+                      Upload CV
+                    </div>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  accept=".pdf,image/*"
+                  onChange={handleCVImport}
+                  className="hidden"
+                  id="cv-upload-modal"
+                  disabled={isImporting}
+                />
+              </label>
+
+              {/* Hint text */}
+              <p className="text-center text-xs text-gray-400 mt-4 flex items-center justify-center gap-1.5">
+                <Info size={14} />
+                AI will auto-fill all fields from your resume — or skip and fill manually
+              </p>
+
+              {/* Import message */}
+              {importMessage && (
+                <div className={`mt-5 p-4 rounded-xl text-sm flex items-center justify-center shadow-sm ${importMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                  {importMessage.type === 'success' ? (
+                    <CheckCircle size={18} className="mr-2 shrink-0" />
+                  ) : (
+                    <AlertCircle size={18} className="mr-2 shrink-0" />
+                  )}
+                  <span className="font-medium text-center">{importMessage.text}</span>
+                </div>
+              )}
+            </div>
+            {!isImporting && (
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all"
+                >
+                  Skip for now
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
