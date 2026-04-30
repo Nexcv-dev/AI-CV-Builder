@@ -30,6 +30,7 @@ interface CVFormProps {
   setCvData: React.Dispatch<React.SetStateAction<CVData>>;
   template: string;
   setTemplate: (template: 'classic' | 'modern' | 'professional') => void;
+  isDarkMode?: boolean;
   onPopupVisibleChange?: (visible: boolean) => void;
 }
 
@@ -53,9 +54,9 @@ const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, 
     <div
       ref={setNodeRef}
       style={style}
-      className={`border rounded-xl mb-4 bg-white overflow-hidden transition-colors transition-shadow duration-300 ${isOpen ? 'border-blue-500 shadow-md' : 'border-gray-200 shadow-sm'} ${isDragging ? 'opacity-50 shadow-lg relative' : ''}`}
+      className={`border rounded-xl mb-4 bg-white overflow-hidden transition-colors transition-shadow duration-300 ${isOpen ? 'border-violet-500 shadow-md' : 'border-gray-200 shadow-sm'} ${isDragging ? 'opacity-50 shadow-lg relative' : ''}`}
     >
-      <div className={`w-full flex items-center transition-colors ${isOpen ? 'bg-blue-50/30' : 'bg-gray-50 hover:bg-gray-100'}`}>
+      <div className={`w-full flex items-center transition-colors ${isOpen ? 'bg-violet-50/30' : 'bg-gray-50 hover:bg-gray-100'}`}>
         {showDragHandle && (
           <div
             className="flex items-center px-2 py-4 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors"
@@ -71,7 +72,7 @@ const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, 
           className="flex-1 flex items-center justify-between p-4 cursor-pointer"
         >
           <div className="flex items-center font-semibold text-gray-800">
-            <Icon size={18} className="mr-2 text-blue-600" />
+            <Icon size={18} className="mr-2 text-violet-600" />
             {title}
           </div>
           {isOpen ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
@@ -109,7 +110,7 @@ const fonts = [
   { name: 'JetBrains Mono', description: 'Technical, Code', className: 'font-mono' },
 ];
 
-export default function CVForm({ cvData, setCvData, template, setTemplate, onPopupVisibleChange }: CVFormProps) {
+export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange }: CVFormProps) {
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design'>('content');
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
@@ -630,13 +631,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
       <div className="flex p-1 mt-4 sm:mt-6 mx-4 sm:mx-6 mb-4 bg-gray-100/50 rounded-xl shrink-0 overflow-x-auto scrollbar-hide gap-2">
         <button
           onClick={() => setActiveMainTab('content')}
-          className={`flex items-center justify-center px-4 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap ${activeMainTab === 'content' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`flex items-center justify-center px-4 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap ${activeMainTab === 'content' ? 'bg-violet-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <FileText size={16} className="mr-2" /> Content
         </button>
         <button
           onClick={() => setActiveMainTab('design')}
-          className={`flex items-center justify-center px-4 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap ${activeMainTab === 'design' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`flex items-center justify-center px-4 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap ${activeMainTab === 'design' ? 'bg-violet-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <Palette size={16} className="mr-2" /> Design
         </button>
@@ -670,7 +671,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                         <div className={`wizard-step-dot ${status}`}>
                           {status === 'completed' ? <Check size={14} /> : <StepIcon size={14} />}
                         </div>
-                        <span className={`wizard-step-label ${status === 'active' ? 'text-blue-600' : status === 'completed' ? 'text-blue-500' : 'text-gray-400'}`}>
+                        <span className={`wizard-step-label ${status === 'active' ? 'text-violet-600' : status === 'completed' ? 'text-violet-500' : 'text-gray-400'}`}>
                           {stepConfig.title}
                         </span>
                       </div>
@@ -710,7 +711,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     placeholder="e.g. Jane Doe"
                                     value={cvData.personalInfo.fullName}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
                                 <div>
@@ -723,7 +724,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     placeholder="e.g. jane@example.com"
                                     value={cvData.personalInfo.email}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
                                 <div>
@@ -736,7 +737,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     placeholder="e.g. +1 234 567 890"
                                     value={cvData.personalInfo.phone}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
                                 <div>
@@ -749,7 +750,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     placeholder="e.g. New York, NY"
                                     value={cvData.personalInfo.address}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
                                 <div>
@@ -761,7 +762,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     autoComplete="bday"
                                     value={cvData.personalInfo.dob}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
                                 <div>
@@ -773,7 +774,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     placeholder="e.g. 199012345678"
                                     value={cvData.personalInfo.nic}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
                                 <div>
@@ -784,7 +785,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     autoComplete="sex"
                                     value={cvData.personalInfo.gender}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   >
                                     <option value="">Select Gender</option>
                                     <option value="Male">Male</option>
@@ -799,7 +800,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     name="maritalStatus"
                                     value={cvData.personalInfo.maritalStatus}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   >
                                     <option value="">Select Status</option>
                                     <option value="Single">Single</option>
@@ -816,7 +817,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     placeholder="e.g. American"
                                     value={cvData.personalInfo.nationality}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
                                 <div>
@@ -828,7 +829,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     placeholder="e.g. Christianity"
                                     value={cvData.personalInfo.religion}
                                     onChange={handlePersonalInfoChange}
-                                    className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                    className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
 
@@ -859,7 +860,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                     type="button"
                                     onClick={handleGenerateSummary}
                                     disabled={refiningIds['summary']}
-                                    className="mt-2 flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                    className="mt-2 flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-fuchsia-50 to-violet-100 text-violet-700 border border-violet-300 hover:from-fuchsia-100 hover:to-violet-200 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                                   >
                                     {refiningIds['summary'] ? (
                                       <><Loader2 size={13} className="mr-1.5 animate-spin" /> Generating...</>
@@ -900,7 +901,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="Company Name"
                                           value={exp.company}
                                           onChange={(e) => handleExperienceChange(exp.id, 'company', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -912,7 +913,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="Job Title"
                                           value={exp.position}
                                           onChange={(e) => handleExperienceChange(exp.id, 'position', e.target.value)}
-                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -923,7 +924,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Jan 2020"
                                           value={exp.startDate}
                                           onChange={(e) => handleExperienceChange(exp.id, 'startDate', e.target.value)}
-                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -934,7 +935,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Present"
                                           value={exp.endDate}
                                           onChange={(e) => handleExperienceChange(exp.id, 'endDate', e.target.value)}
-                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div className="md:col-span-2 space-y-2 mt-2">
@@ -958,7 +959,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                             (refined) => handleExperienceChange(exp.id, 'description', refined)
                                           )}
                                           disabled={refiningIds[`exp-${exp.id}`] || !exp.description?.trim()}
-                                          className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                          className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-fuchsia-50 to-violet-100 text-violet-700 border border-violet-300 hover:from-fuchsia-100 hover:to-violet-200 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                                         >
                                           {refiningIds[`exp-${exp.id}`] ? (
                                             <><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>
@@ -972,7 +973,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                 ))}
                                 <button
                                   onClick={addExperience}
-                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-violet-600 hover:border-violet-300 font-medium transition-colors"
                                 >
                                   <Plus size={18} className="mr-2" /> Add Experience
                                 </button>
@@ -1008,7 +1009,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="University or School"
                                           value={edu.institution}
                                           onChange={(e) => handleEducationChange(edu.id, 'institution', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -1019,7 +1020,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Bachelor of Science"
                                           value={edu.degree}
                                           onChange={(e) => handleEducationChange(edu.id, 'degree', e.target.value)}
-                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -1030,7 +1031,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Sep 2015"
                                           value={edu.startDate}
                                           onChange={(e) => handleEducationChange(edu.id, 'startDate', e.target.value)}
-                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -1041,7 +1042,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., May 2019"
                                           value={edu.endDate}
                                           onChange={(e) => handleEducationChange(edu.id, 'endDate', e.target.value)}
-                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div className="md:col-span-2 mt-2 space-y-2">
@@ -1063,7 +1064,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                             (refined) => handleEducationChange(edu.id, 'description', refined)
                                           )}
                                           disabled={refiningIds[`edu-${edu.id}`] || !edu.description?.trim()}
-                                          className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                          className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-fuchsia-50 to-violet-100 text-violet-700 border border-violet-300 hover:from-fuchsia-100 hover:to-violet-200 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                                         >
                                           {refiningIds[`edu-${edu.id}`] ? (
                                             <><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>
@@ -1077,7 +1078,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                 ))}
                                 <button
                                   onClick={addEducation}
-                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-violet-600 hover:border-violet-300 font-medium transition-colors"
                                 >
                                   <Plus size={18} className="mr-2" /> Add Education
                                 </button>
@@ -1105,7 +1106,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                         placeholder="Skill name (e.g. React)"
                                         value={skill.name}
                                         onChange={(e) => handleSkillChange(skill.id, 'name', e.target.value)}
-                                        className="w-full min-h-[44px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
+                                        className="w-full min-h-[44px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white text-sm"
                                       />
                                     </div>
 
@@ -1119,7 +1120,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           className="focus:outline-none transition-all"
                                         >
                                           <div
-                                            className={`h-2.5 w-6 rounded-sm border ${level <= skill.level ? 'border-blue-500' : 'border-gray-300 bg-transparent'}`}
+                                            className={`h-2.5 w-6 rounded-sm border ${level <= skill.level ? 'border-violet-500' : 'border-gray-300 bg-transparent'}`}
                                             style={{
                                               backgroundColor: level <= skill.level ? '#3b82f6' : 'transparent'
                                             }}
@@ -1141,7 +1142,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
 
                                 <button
                                   onClick={addSkill}
-                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-violet-600 hover:border-violet-300 font-medium transition-colors"
                                 >
                                   <Plus size={18} className="mr-2" /> Add Skill
                                 </button>
@@ -1177,7 +1178,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Advanced React Patterns"
                                           value={course.name}
                                           onChange={(e) => handleCourseChange(course.id, 'name', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -1189,7 +1190,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Coursera"
                                           value={course.institution}
                                           onChange={(e) => handleCourseChange(course.id, 'institution', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -1200,7 +1201,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Jan 2023"
                                           value={course.startDate}
                                           onChange={(e) => handleCourseChange(course.id, 'startDate', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -1211,7 +1212,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Mar 2023"
                                           value={course.endDate}
                                           onChange={(e) => handleCourseChange(course.id, 'endDate', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                     </div>
@@ -1219,7 +1220,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                 ))}
                                 <button
                                   onClick={addCourse}
-                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-violet-600 hover:border-violet-300 font-medium transition-colors"
                                 >
                                   <Plus size={18} className="mr-2" /> Add Course
                                 </button>
@@ -1249,7 +1250,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                         placeholder="Language (e.g. English)"
                                         value={lang.name}
                                         onChange={(e) => handleLanguageChange(lang.id, 'name', e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white text-sm"
                                       />
                                     </div>
                                     <div className="flex-1">
@@ -1258,7 +1259,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                         aria-label="Proficiency level"
                                         value={lang.proficiency}
                                         onChange={(e) => handleLanguageChange(lang.id, 'proficiency', e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white text-sm"
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white text-sm"
                                       >
                                         <option value="Native">Native</option>
                                         <option value="Fluent">Fluent</option>
@@ -1277,7 +1278,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                 ))}
                                 <button
                                   onClick={addLanguage}
-                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-violet-600 hover:border-violet-300 font-medium transition-colors"
                                 >
                                   <Plus size={18} className="mr-2" /> Add Language
                                 </button>
@@ -1313,7 +1314,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., E-commerce Website"
                                           value={proj.name}
                                           onChange={(e) => handleProjectChange(proj.id, 'name', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -1325,7 +1326,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., https://github.com/..."
                                           value={proj.link}
                                           onChange={(e) => handleProjectChange(proj.id, 'link', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div className="space-y-2">
@@ -1347,7 +1348,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                             (refined) => handleProjectChange(proj.id, 'description', refined)
                                           )}
                                           disabled={refiningIds[`proj-${proj.id}`] || !proj.description?.trim()}
-                                          className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-violet-50 to-blue-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-blue-100 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                          className="flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-fuchsia-50 to-violet-100 text-violet-700 border border-violet-300 hover:from-fuchsia-100 hover:to-violet-200 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                                         >
                                           {refiningIds[`proj-${proj.id}`] ? (
                                             <><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>
@@ -1361,7 +1362,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                 ))}
                                 <button
                                   onClick={addProject}
-                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-violet-600 hover:border-violet-300 font-medium transition-colors"
                                 >
                                   <Plus size={18} className="mr-2" /> Add Project
                                 </button>
@@ -1397,7 +1398,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Employee of the Year"
                                           value={award.name}
                                           onChange={(e) => handleAwardChange(award.id, 'name', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -1409,7 +1410,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Tech Solutions Inc."
                                           value={award.issuer}
                                           onChange={(e) => handleAwardChange(award.id, 'issuer', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                       <div>
@@ -1420,7 +1421,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                           placeholder="e.g., Dec 2022"
                                           value={award.date}
                                           onChange={(e) => handleAwardChange(award.id, 'date', e.target.value)}
-                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-400 transition-all bg-white"
+                                          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                         />
                                       </div>
                                     </div>
@@ -1428,7 +1429,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                                 ))}
                                 <button
                                   onClick={addAward}
-                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 font-medium transition-colors"
+                                  className="w-full flex justify-center items-center text-sm py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-violet-600 hover:border-violet-300 font-medium transition-colors"
                                 >
                                   <Plus size={18} className="mr-2" /> Add Award
                                 </button>
@@ -1460,7 +1461,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
             {/* Choose Template Section */}
             <div className="p-5 border border-gray-200 rounded-xl bg-gray-50">
               <div className="flex items-center mb-4">
-                <LayoutTemplate size={20} className="text-blue-600 mr-2" />
+                <LayoutTemplate size={20} className="text-violet-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-800">Choose Template</h3>
               </div>
 
@@ -1470,16 +1471,16 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                   type="button"
                   onClick={() => setTemplate('classic')}
                   className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all duration-200 group ${template === 'classic'
-                    ? 'border-blue-500 bg-blue-50 shadow-sm'
+                    ? 'border-violet-500 bg-violet-50 shadow-sm'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                     }`}
                 >
                   {template === 'classic' && (
-                    <div className="absolute top-1.5 right-1.5 text-blue-600 z-10">
-                      <CheckCircle2 size={16} fill="currentColor" className="text-white fill-blue-600" />
+                    <div className="absolute top-1.5 right-1.5 text-violet-600 z-10">
+                      <CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" />
                     </div>
                   )}
-                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 flex flex-col p-1.5 space-y-0.5 overflow-hidden transition-colors ${template === 'classic' ? 'border-blue-200 bg-white' : 'border-gray-100 bg-gray-50'
+                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 flex flex-col p-1.5 space-y-0.5 overflow-hidden transition-colors ${template === 'classic' ? 'border-violet-200 bg-white' : 'border-gray-100 bg-gray-50'
                     }`}>
                     <div className="h-1.5 w-1/2 bg-gray-300 rounded-full mb-1"></div>
                     <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
@@ -1497,7 +1498,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                       </div>
                     </div>
                   </div>
-                  <span className={`text-xs font-bold ${template === 'classic' ? 'text-blue-700' : 'text-gray-600'}`}>Classic</span>
+                  <span className={`text-xs font-bold ${template === 'classic' ? 'text-violet-700' : 'text-gray-600'}`}>Classic</span>
                 </button>
 
                 {/* Modern Template Card */}
@@ -1505,21 +1506,21 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                   type="button"
                   onClick={() => setTemplate('modern')}
                   className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all duration-200 group ${template === 'modern'
-                    ? 'border-blue-500 bg-blue-50 shadow-sm'
+                    ? 'border-violet-500 bg-violet-50 shadow-sm'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                     }`}
                 >
                   {template === 'modern' && (
-                    <div className="absolute top-1.5 right-1.5 text-blue-600 z-10">
-                      <CheckCircle2 size={16} fill="currentColor" className="text-white fill-blue-600" />
+                    <div className="absolute top-1.5 right-1.5 text-violet-600 z-10">
+                      <CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" />
                     </div>
                   )}
-                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 flex flex-row overflow-hidden transition-colors ${template === 'modern' ? 'border-blue-200 bg-white' : 'border-gray-100 bg-gray-50'
+                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 flex flex-row overflow-hidden transition-colors ${template === 'modern' ? 'border-violet-200 bg-white' : 'border-gray-100 bg-gray-50'
                     }`}>
-                    <div className="w-1/3 h-full bg-blue-600/10 p-1.5 space-y-0.5">
-                      <div className="w-5 h-5 rounded-full bg-blue-600/20 mb-1"></div>
-                      <div className="h-0.5 w-full bg-blue-600/20 rounded-full"></div>
-                      <div className="h-0.5 w-full bg-blue-600/20 rounded-full"></div>
+                    <div className="w-1/3 h-full bg-violet-600/10 p-1.5 space-y-0.5">
+                      <div className="w-5 h-5 rounded-full bg-violet-600/20 mb-1"></div>
+                      <div className="h-0.5 w-full bg-violet-600/20 rounded-full"></div>
+                      <div className="h-0.5 w-full bg-violet-600/20 rounded-full"></div>
                     </div>
                     <div className="w-2/3 h-full p-1.5 space-y-1">
                       <div className="h-1.5 w-1/2 bg-gray-300 rounded-full"></div>
@@ -1530,7 +1531,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                       </div>
                     </div>
                   </div>
-                  <span className={`text-xs font-bold ${template === 'modern' ? 'text-blue-700' : 'text-gray-600'}`}>Modern</span>
+                  <span className={`text-xs font-bold ${template === 'modern' ? 'text-violet-700' : 'text-gray-600'}`}>Modern</span>
                 </button>
 
                 {/* Professional Template Card */}
@@ -1538,22 +1539,22 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                   type="button"
                   onClick={() => setTemplate('professional')}
                   className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all duration-200 group ${template === 'professional'
-                    ? 'border-blue-500 bg-blue-50 shadow-sm'
+                    ? 'border-violet-500 bg-violet-50 shadow-sm'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                     }`}
                 >
                   {template === 'professional' && (
-                    <div className="absolute top-1.5 right-1.5 text-blue-600 z-10">
-                      <CheckCircle2 size={16} fill="currentColor" className="text-white fill-blue-600" />
+                    <div className="absolute top-1.5 right-1.5 text-violet-600 z-10">
+                      <CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" />
                     </div>
                   )}
-                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 flex flex-col p-1.5 overflow-hidden transition-colors ${template === 'professional' ? 'border-blue-200 bg-white' : 'border-gray-100 bg-gray-50'
+                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 flex flex-col p-1.5 overflow-hidden transition-colors ${template === 'professional' ? 'border-violet-200 bg-white' : 'border-gray-100 bg-gray-50'
                     }`}>
-                    <div className="w-full h-1 bg-blue-600/30 rounded-full mb-1"></div>
+                    <div className="w-full h-1 bg-violet-600/30 rounded-full mb-1"></div>
                     <div className="h-1.5 w-1/2 bg-gray-300 rounded-full mb-0.5"></div>
                     <div className="h-0.5 w-1/3 bg-gray-200 rounded-full mb-2"></div>
 
-                    <div className="h-0.5 w-1/4 bg-blue-600/20 rounded-full mb-1"></div>
+                    <div className="h-0.5 w-1/4 bg-violet-600/20 rounded-full mb-1"></div>
                     <div className="flex space-x-1 mb-1.5">
                       <div className="w-1/3 space-y-0.5">
                         <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
@@ -1565,7 +1566,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                       </div>
                     </div>
 
-                    <div className="h-0.5 w-1/4 bg-blue-600/20 rounded-full mb-1"></div>
+                    <div className="h-0.5 w-1/4 bg-violet-600/20 rounded-full mb-1"></div>
                     <div className="flex space-x-1">
                       <div className="w-1/3 space-y-0.5">
                         <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
@@ -1576,14 +1577,14 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                       </div>
                     </div>
                   </div>
-                  <span className={`text-xs font-bold ${template === 'professional' ? 'text-blue-700' : 'text-gray-600'}`}>Professional</span>
+                  <span className={`text-xs font-bold ${template === 'professional' ? 'text-violet-700' : 'text-gray-600'}`}>Professional</span>
                 </button>
               </div>
             </div>
 
             <div className="p-5 border border-gray-200 rounded-xl bg-gray-50">
               <div className="flex items-center mb-4">
-                <ImageIcon size={20} className="text-blue-600 mr-2" />
+                <ImageIcon size={20} className="text-violet-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-800">Profile Picture</h3>
               </div>
 
@@ -1683,7 +1684,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
 
             <div className="p-5 border border-gray-200 rounded-xl bg-gray-50">
               <div className="flex items-center mb-4">
-                <Palette size={20} className="text-blue-600 mr-2" />
+                <Palette size={20} className="text-violet-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-800">Theme Settings</h3>
               </div>
               <div className="space-y-5">
@@ -1724,7 +1725,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                   <button
                     type="button"
                     onClick={() => setIsFontDropdownOpen(!isFontDropdownOpen)}
-                    className="w-full flex items-center justify-between p-3 bg-white border border-gray-300 rounded-xl hover:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+                    className="w-full flex items-center justify-between p-3 bg-white border border-gray-300 rounded-xl hover:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 transition-all shadow-sm"
                   >
                     <div className="flex items-center">
                       <span className="text-gray-400 mr-3 shrink-0"><Type size={18} /></span>
@@ -1755,15 +1756,15 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                               handleThemeChange('fontFamily', f.name);
                               setIsFontDropdownOpen(false);
                             }}
-                            className={`w-full flex items-center px-4 py-3 hover:bg-blue-50 transition-colors text-left ${cvData.fontFamily === f.name ? 'bg-blue-50/50' : ''}`}
+                            className={`w-full flex items-center px-4 py-3 hover:bg-violet-50 transition-colors text-left ${cvData.fontFamily === f.name ? 'bg-violet-50/50' : ''}`}
                           >
                             <div className={`flex flex-col w-full ${f.className}`}>
                               <div className="flex items-center justify-between w-full">
-                                <span className={`text-base font-bold ${cvData.fontFamily === f.name ? 'text-blue-600' : 'text-gray-800'}`}>
+                                <span className={`text-base font-bold ${cvData.fontFamily === f.name ? 'text-violet-600' : 'text-gray-800'}`}>
                                   {f.name}
                                 </span>
                                 {cvData.fontFamily === f.name && (
-                                  <Check size={16} className="text-blue-600 shrink-0" />
+                                  <Check size={16} className="text-violet-600 shrink-0" />
                                 )}
                               </div>
                               <span className="text-xs text-gray-500 font-medium mt-0.5">
@@ -1780,7 +1781,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                 {/* Spacing Controls */}
                 <div className="space-y-6 pt-6 border-t border-gray-200">
                   <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2 uppercase tracking-wider">
-                    <Layout size={16} className="text-blue-600" />
+                    <Layout size={16} className="text-violet-600" />
                     Document Spacing
                   </h4>
 
@@ -1791,7 +1792,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                           <MoveVertical size={14} />
                           Line Spacing
                         </label>
-                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                        <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100">
                           {cvData.lineSpacing || 1.5}
                         </span>
                       </div>
@@ -1803,7 +1804,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                         step="0.1"
                         value={cvData.lineSpacing || 1.5}
                         onChange={(e) => setCvData(prev => ({ ...prev, lineSpacing: parseFloat(e.target.value) }))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-600"
                       />
                       <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
                         <span>Compact</span>
@@ -1817,7 +1818,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                           <MoveHorizontal size={14} />
                           Section Gap
                         </label>
-                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                        <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100">
                           {cvData.sectionGap || 2}
                         </span>
                       </div>
@@ -1829,7 +1830,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                         step="0.1"
                         value={cvData.sectionGap || 2}
                         onChange={(e) => setCvData(prev => ({ ...prev, sectionGap: parseFloat(e.target.value) }))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-600"
                       />
                       <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
                         <span>Tight</span>
@@ -1856,10 +1857,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20 p-8">
             {/* Premium Icon Block */}
             <div className="relative w-20 h-20 mx-auto mb-6 group">
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-indigo-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/20 to-fuchsia-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
               <div className="relative flex items-center justify-center w-full h-full bg-white/50 backdrop-blur-md border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(59,130,246,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-                <FileText className="text-blue-600 w-9 h-9 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />
+                <FileText className="text-violet-600 w-9 h-9 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />
               </div>
             </div>
             <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Do you have a CV?</h3>
@@ -1872,7 +1873,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                   setShowInitialPrompt(false);
                   setShowUploadModal(true);
                 }}
-                className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center"
+                className="w-full py-3.5 px-4 bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-600/20 flex items-center justify-center"
               >
                 Yes, I have one
               </button>
@@ -1890,10 +1891,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
       {/* Upload CV Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20 p-6 sm:p-8">
+          <div className={`rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border p-6 sm:p-8 ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-white/20'}`}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-slate-800">Upload Resume</h3>
-              <button onClick={() => setShowUploadModal(false)} className="text-gray-400 hover:text-gray-600">
+              <h3 className={`text-xl font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Upload Resume</h3>
+              <button onClick={() => setShowUploadModal(false)} className={`${isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-gray-400 hover:text-gray-600'}`}>
                 <span className="text-2xl leading-none">&times;</span>
               </button>
             </div>
@@ -1902,38 +1903,40 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
               <label
                 htmlFor="cv-upload-modal"
                 className={`group relative flex flex-col items-center justify-center p-6 sm:p-10 rounded-2xl border-2 border-dashed transition-all duration-500 cursor-pointer ${isImporting
-                  ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
-                  : 'border-blue-300 bg-gradient-to-b from-blue-50/60 via-white to-indigo-50/40 hover:border-indigo-400 hover:from-blue-50 hover:via-white hover:to-indigo-50/60 hover:shadow-lg hover:shadow-blue-100/50'
+                  ? (isDarkMode ? 'border-slate-600 bg-slate-800/60 cursor-not-allowed' : 'border-gray-300 bg-gray-50 cursor-not-allowed')
+                  : (isDarkMode
+                    ? 'border-violet-500/70 bg-gradient-to-b from-slate-800/80 via-slate-900 to-violet-950/40 hover:border-violet-400 hover:shadow-lg hover:shadow-violet-900/30'
+                    : 'border-violet-300 bg-gradient-to-b from-violet-50/60 via-white to-fuchsia-50/40 hover:border-violet-400 hover:from-violet-50 hover:via-white hover:to-fuchsia-50/60 hover:shadow-lg hover:shadow-violet-100/50')
                   }`}
               >
                 {/* Decorative background elements */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-violet-100/40 to-transparent rounded-bl-full pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-100/30 to-transparent rounded-tr-full pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-violet-100/30 to-transparent rounded-tr-full pointer-events-none" />
 
                 {/* Animated Premium Upload Icon */}
                 <div className="relative mb-6">
                   {/* Glowing background rings */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/30 to-fuchsia-500/30 rounded-full blur-2xl scale-[2.5] group-hover:scale-[3] transition-transform duration-700 ease-out animate-pulse" />
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/40 to-violet-400/40 rounded-full blur-xl scale-150 group-hover:scale-[1.8] transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/30 to-fuchsia-500/30 rounded-full blur-2xl scale-[2.5] group-hover:scale-[3] transition-transform duration-700 ease-out animate-pulse" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-400/40 to-violet-400/40 rounded-full blur-xl scale-150 group-hover:scale-[1.8] transition-transform duration-500" />
 
                   {/* Icon container with glassmorphism */}
                   <div className="relative flex items-center justify-center w-20 h-20 bg-white/40 backdrop-blur-md border border-white/60 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] group-hover:shadow-[0_8px_30px_rgb(99,102,241,0.2)] group-hover:bg-white/60 transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-110 overflow-hidden">
                     {/* Inner gradient shine */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
 
-                    <CloudUpload className="text-indigo-600 w-10 h-10 drop-shadow-md group-hover:scale-110 transition-transform duration-500" strokeWidth={1.5} />
+                    <CloudUpload className="text-violet-600 w-10 h-10 drop-shadow-md group-hover:scale-110 transition-transform duration-500" strokeWidth={1.5} />
 
                     {/* Little sparkle accents */}
                     <Sparkles className="absolute top-3 right-3 w-4 h-4 text-fuchsia-500 opacity-0 group-hover:opacity-100 group-hover:animate-bounce transition-opacity duration-300 delay-100" />
-                    <Sparkles className="absolute bottom-3 left-3 w-3 h-3 text-blue-500 opacity-0 group-hover:opacity-100 group-hover:animate-bounce transition-opacity duration-300 delay-200" />
+                    <Sparkles className="absolute bottom-3 left-3 w-3 h-3 text-violet-500 opacity-0 group-hover:opacity-100 group-hover:animate-bounce transition-opacity duration-300 delay-200" />
                   </div>
                 </div>
 
                 {/* Title & Description */}
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 relative z-10">
+                <h3 className={`text-lg sm:text-xl font-bold mb-2 relative z-10 ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
                   {isImporting ? 'Processing your CV...' : 'Drop your CV here'}
                 </h3>
-                <p className="text-sm text-gray-500 mb-5 relative z-10">
+                <p className={`text-sm mb-5 relative z-10 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                   {isImporting ? 'AI is extracting your data' : 'or click to browse files'}
                 </p>
 
@@ -1942,7 +1945,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                   {['PDF', 'JPG', 'PNG'].map((format) => (
                     <span
                       key={format}
-                      className="px-3 py-1 text-[11px] font-semibold rounded-full bg-white border border-gray-200 text-gray-500 shadow-sm"
+                      className={`px-3 py-1 text-[11px] font-semibold rounded-full border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-500'}`}
                     >
                       {format}
                     </span>
@@ -1952,12 +1955,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                 {/* Upload Button / Loading State */}
                 <div className="relative z-10">
                   {isImporting ? (
-                    <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-xl border border-gray-200 shadow-sm">
-                      <Loader2 size={20} className="animate-spin text-indigo-600" />
-                      <span className="text-sm font-semibold text-gray-700">Parsing Document...</span>
+                    <div className={`flex items-center gap-3 px-6 py-3 rounded-xl border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
+                      <Loader2 size={20} className="animate-spin text-violet-600" />
+                      <span className={`text-sm font-semibold ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Parsing Document...</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200/50 group-hover:shadow-xl group-hover:shadow-indigo-300/60 transition-all duration-300 group-hover:scale-[1.03] group-active:scale-[0.97]">
+                    <div className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-200/50 group-hover:shadow-xl group-hover:shadow-violet-300/60 transition-all duration-300 group-hover:scale-[1.03] group-active:scale-[0.97]">
                       <Upload size={18} />
                       Upload CV
                     </div>
@@ -1970,12 +1973,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
                   onChange={handleCVImport}
                   className="hidden"
                   id="cv-upload-modal"
+                  data-testid="cv-upload-input"
                   disabled={isImporting}
                 />
               </label>
 
               {/* Hint text */}
-              <p className="text-center text-xs text-gray-400 mt-4 flex items-center justify-center gap-1.5">
+              <p className={`text-center text-xs mt-4 flex items-center justify-center gap-1.5 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}>
                 <Info size={14} />
                 AI will auto-fill all fields from your resume — or skip and fill manually
               </p>
@@ -1997,7 +2001,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, onPop
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setShowUploadModal(false)}
-                  className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all"
+                  className={`px-6 py-2.5 text-sm font-bold rounded-xl transition-all ${isDarkMode ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-800' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
                 >
                   Skip for now
                 </button>
