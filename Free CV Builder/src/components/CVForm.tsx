@@ -1097,7 +1097,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                             >
                               <div className="space-y-4">
                                 {cvData.skills.map((skill) => (
-                                  <div key={skill.id} className="flex items-center space-x-4 p-3 border border-gray-100 rounded-lg bg-gray-50/50">
+                                  <div key={skill.id} className={`flex items-center space-x-4 p-3 border rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50/50 border-gray-100'}`}>
                                     <div className="flex-1">
                                       <input
                                         id={`skill-name-${skill.id}`}
@@ -1119,12 +1119,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                                           onClick={() => handleSkillChange(skill.id, 'level', level)}
                                           className="focus:outline-none transition-all"
                                         >
-                                          <div
-                                            className={`h-2.5 w-6 rounded-sm border ${level <= skill.level ? 'border-violet-500' : 'border-gray-300 bg-transparent'}`}
-                                            style={{
-                                              backgroundColor: level <= skill.level ? '#3b82f6' : 'transparent'
-                                            }}
-                                          />
+                                            <div
+                                              className={`h-2.5 w-6 rounded-sm border transition-all ${level <= skill.level ? (isDarkMode ? 'border-violet-400' : 'border-violet-500') : (isDarkMode ? 'border-slate-600 bg-transparent' : 'border-gray-300 bg-transparent')}`}
+                                              style={{
+                                                backgroundColor: level <= skill.level ? (isDarkMode ? '#818cf8' : '#3b82f6') : 'transparent'
+                                              }}
+                                            />
                                         </button>
                                       ))}
                                     </div>
@@ -1240,7 +1240,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                             >
                               <div className="space-y-4">
                                 {cvData.languages.map((lang) => (
-                                  <div key={lang.id} className="flex items-center space-x-4 p-3 border border-gray-100 rounded-lg bg-gray-50/50">
+                                  <div key={lang.id} className={`flex items-center space-x-4 p-3 border rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50/50 border-gray-100'}`}>
                                     <div className="flex-1">
                                       <input
                                         id={`lang-name-${lang.id}`}
