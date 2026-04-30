@@ -698,9 +698,12 @@
 
 .dark-cv .cv-form-panel .bg-gray-50,
 .dark-cv .cv-form-panel .bg-gray-50\/30,
+.dark-cv .cv-form-panel .bg-gray-50\/50,
 .dark-cv .cv-form-panel .bg-gray-100,
+.dark-cv .cv-form-panel .bg-gray-100\/30,
 .dark-cv .cv-form-panel .bg-gray-100\/50 {
-  background-color: #111827 !important;
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
 }
 
 .dark-cv .cv-form-panel .bg-violet-50\/30 {
@@ -752,6 +755,19 @@
   background-color: #0b1220 !important;
   border-color: #334155 !important;
   color: #e2e8f0 !important;
+}
+
+.dark-cv .cv-form-panel input:hover,
+.dark-cv .cv-form-panel textarea:hover,
+.dark-cv .cv-form-panel select:hover {
+  border-color: #475569 !important;
+}
+
+.dark-cv .cv-form-panel input:focus,
+.dark-cv .cv-form-panel textarea:focus,
+.dark-cv .cv-form-panel select:focus {
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15) !important;
 }
 
 .dark-cv .cv-form-panel button {
