@@ -1459,10 +1459,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <div className="animate-in fade-in duration-300 space-y-6 flex flex-col flex-1">
 
             {/* Choose Template Section */}
-            <div className="p-5 border border-gray-200 rounded-xl bg-gray-50">
+            <div className={`p-5 border rounded-xl transition-colors ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
               <div className="flex items-center mb-4">
                 <LayoutTemplate size={20} className="text-violet-600 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-800">Choose Template</h3>
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-slate-100' : 'text-gray-800'}`}>Choose Template</h3>
               </div>
 
               <div className="grid grid-cols-3 gap-3 max-w-[480px]">
@@ -1480,23 +1480,15 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                       <CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" />
                     </div>
                   )}
-                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 flex flex-col p-1.5 space-y-0.5 overflow-hidden transition-colors ${template === 'classic' ? 'border-violet-200 bg-white' : 'border-gray-100 bg-gray-50'
+                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === 'classic' 
+                    ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]') 
+                    : (isDarkMode ? 'border-slate-700 grayscale-[0.4] opacity-70 hover:grayscale-0 hover:opacity-100 hover:border-slate-600' : 'border-gray-200 grayscale-[0.3] opacity-80 hover:grayscale-0 hover:opacity-100 hover:border-gray-300')
                     }`}>
-                    <div className="h-1.5 w-1/2 bg-gray-300 rounded-full mb-1"></div>
-                    <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                    <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                    <div className="h-0.5 w-3/4 bg-gray-200 rounded-full mb-1"></div>
-                    <div className="flex space-x-1 mt-0.5">
-                      <div className="w-1/3 space-y-0.5">
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                      </div>
-                      <div className="w-2/3 space-y-0.5">
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                      </div>
-                    </div>
+                    <img
+                      src="/templates/classic.png"
+                      alt="Classic Template"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <span className={`text-xs font-bold ${template === 'classic' ? 'text-violet-700' : 'text-gray-600'}`}>Classic</span>
                 </button>
@@ -1515,21 +1507,15 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                       <CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" />
                     </div>
                   )}
-                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 flex flex-row overflow-hidden transition-colors ${template === 'modern' ? 'border-violet-200 bg-white' : 'border-gray-100 bg-gray-50'
+                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === 'modern' 
+                    ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]') 
+                    : (isDarkMode ? 'border-slate-700 grayscale-[0.4] opacity-70 hover:grayscale-0 hover:opacity-100 hover:border-slate-600' : 'border-gray-200 grayscale-[0.3] opacity-80 hover:grayscale-0 hover:opacity-100 hover:border-gray-300')
                     }`}>
-                    <div className="w-1/3 h-full bg-violet-600/10 p-1.5 space-y-0.5">
-                      <div className="w-5 h-5 rounded-full bg-violet-600/20 mb-1"></div>
-                      <div className="h-0.5 w-full bg-violet-600/20 rounded-full"></div>
-                      <div className="h-0.5 w-full bg-violet-600/20 rounded-full"></div>
-                    </div>
-                    <div className="w-2/3 h-full p-1.5 space-y-1">
-                      <div className="h-1.5 w-1/2 bg-gray-300 rounded-full"></div>
-                      <div className="space-y-0.5">
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                        <div className="h-0.5 w-3/4 bg-gray-200 rounded-full"></div>
-                      </div>
-                    </div>
+                    <img
+                      src="/templates/modern.png"
+                      alt="Modern Template"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <span className={`text-xs font-bold ${template === 'modern' ? 'text-violet-700' : 'text-gray-600'}`}>Modern</span>
                 </button>
@@ -1548,44 +1534,25 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                       <CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" />
                     </div>
                   )}
-                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 flex flex-col p-1.5 overflow-hidden transition-colors ${template === 'professional' ? 'border-violet-200 bg-white' : 'border-gray-100 bg-gray-50'
+                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === 'professional' 
+                    ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]') 
+                    : (isDarkMode ? 'border-slate-700 grayscale-[0.4] opacity-70 hover:grayscale-0 hover:opacity-100 hover:border-slate-600' : 'border-gray-200 grayscale-[0.3] opacity-80 hover:grayscale-0 hover:opacity-100 hover:border-gray-300')
                     }`}>
-                    <div className="w-full h-1 bg-violet-600/30 rounded-full mb-1"></div>
-                    <div className="h-1.5 w-1/2 bg-gray-300 rounded-full mb-0.5"></div>
-                    <div className="h-0.5 w-1/3 bg-gray-200 rounded-full mb-2"></div>
-
-                    <div className="h-0.5 w-1/4 bg-violet-600/20 rounded-full mb-1"></div>
-                    <div className="flex space-x-1 mb-1.5">
-                      <div className="w-1/3 space-y-0.5">
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                      </div>
-                      <div className="w-2/3 space-y-0.5">
-                        <div className="h-0.5 w-full bg-gray-300 rounded-full"></div>
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                        <div className="h-0.5 w-3/4 bg-gray-200 rounded-full"></div>
-                      </div>
-                    </div>
-
-                    <div className="h-0.5 w-1/4 bg-violet-600/20 rounded-full mb-1"></div>
-                    <div className="flex space-x-1">
-                      <div className="w-1/3 space-y-0.5">
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                      </div>
-                      <div className="w-2/3 space-y-0.5">
-                        <div className="h-0.5 w-full bg-gray-300 rounded-full"></div>
-                        <div className="h-0.5 w-full bg-gray-200 rounded-full"></div>
-                      </div>
-                    </div>
+                    <img
+                      src="/templates/professional.png"
+                      alt="Professional Template"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <span className={`text-xs font-bold ${template === 'professional' ? 'text-violet-700' : 'text-gray-600'}`}>Professional</span>
                 </button>
               </div>
             </div>
 
-            <div className="p-5 border border-gray-200 rounded-xl bg-gray-50">
+            <div className={`p-5 border rounded-xl transition-colors ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
               <div className="flex items-center mb-4">
                 <ImageIcon size={20} className="text-violet-600 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-800">Profile Picture</h3>
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-slate-100' : 'text-gray-800'}`}>Profile Picture</h3>
               </div>
 
               <div className="flex flex-col space-y-5">
@@ -1682,10 +1649,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
               </div>
             </div>
 
-            <div className="p-5 border border-gray-200 rounded-xl bg-gray-50">
+            <div className={`p-5 border rounded-xl transition-colors ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
               <div className="flex items-center mb-4">
                 <Palette size={20} className="text-violet-600 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-800">Theme Settings</h3>
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-slate-100' : 'text-gray-800'}`}>Theme Settings</h3>
               </div>
               <div className="space-y-5">
                 <div>
@@ -1780,7 +1747,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
 
                 {/* Spacing Controls */}
                 <div className="space-y-6 pt-6 border-t border-gray-200">
-                  <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2 uppercase tracking-wider">
+                  <h4 className={`text-sm font-bold flex items-center gap-2 uppercase tracking-wider ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>
                     <Layout size={16} className="text-violet-600" />
                     Document Spacing
                   </h4>
