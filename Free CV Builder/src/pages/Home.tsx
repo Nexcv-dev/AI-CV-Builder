@@ -8,10 +8,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CVData } from '../types';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
-import { Download, LayoutTemplate, Loader2, FileText, Edit3, AlertCircle, RotateCcw, Save, CheckCircle2 } from 'lucide-react';
+import { Download, LayoutTemplate, Loader2, FileText, Edit3, AlertCircle, RotateCcw, Save, CheckCircle2, Moon, Sun } from 'lucide-react';
 
 const STORAGE_KEY = 'cv-builder-data';
 const TEMPLATE_STORAGE_KEY = 'cv-builder-template';
+const THEME_STORAGE_KEY = 'cv-builder-theme';
 
 function loadSavedData(): CVData | null {
   try {
@@ -88,7 +89,7 @@ const initialData: CVData = {
   languages: [],
   projects: [],
   awards: [],
-  themeColor: '#2563eb', // Default blue-600
+  themeColor: '#7c3aed', // Default violet-600
   fontFamily: 'Inter',
   profileImage: '',
   imageZoom: 1,
@@ -116,6 +117,17 @@ export default function Home() {
   const [isDraggingResizer, setIsDraggingResizer] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
+  const [isThemeAnimating, setIsThemeAnimating] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+      if (savedTheme) return savedTheme === 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch (e) {
+      return false;
+    }
+  });
+  const [themeTransition, setThemeTransition] = useState<{ x: number; y: number; key: number; targetDark: boolean } | null>(null);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
 
@@ -212,6 +224,36 @@ export default function Home() {
       console.warn('Failed to save template:', e);
     }
   }, [template]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light');
+    } catch (e) {
+      console.warn('Failed to save theme preference:', e);
+    }
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    if (!themeTransition) return;
+    const timer = setTimeout(() => setThemeTransition(null), 800);
+    return () => clearTimeout(timer);
+  }, [themeTransition]);
+
+  const handleThemeToggle = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX || rect.left + rect.width / 2;
+    const y = event.clientY || rect.top + rect.height / 2;
+    const nextDark = !isDarkMode;
+    setIsThemeAnimating(true);
+    setThemeTransition({ x, y, key: Date.now(), targetDark: nextDark });
+    setIsDarkMode(nextDark);
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    if (!isThemeAnimating) return;
+    const timer = setTimeout(() => setIsThemeAnimating(false), 650);
+    return () => clearTimeout(timer);
+  }, [isThemeAnimating]);
 
   const handleReset = useCallback(() => {
     setCvData(initialData);
@@ -355,54 +397,63 @@ export default function Home() {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="fixed inset-0 bg-slate-50 flex flex-col items-center justify-center z-[200]"
+            className={`fixed inset-0 flex flex-col items-center justify-center z-[200] ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}
           >
             <div className="relative mb-6">
-              <div className="w-20 h-20 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-              <LayoutTemplate className="absolute inset-0 m-auto text-blue-600 animate-pulse" size={32} />
+              <div className={`w-20 h-20 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
+              <LayoutTemplate className="absolute inset-0 m-auto text-violet-600 animate-pulse" size={32} />
             </div>
-            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-blue-600 animate-pulse">
+            <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r animate-pulse ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
               CV Builder
             </h2>
-            <p className="text-sm text-gray-500 mt-2 font-medium">Preparing your workspace...</p>
+            <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Preparing your workspace...</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col h-full w-full bg-slate-50 font-sans text-slate-800 overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible">
+      <div className={`flex flex-col h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isThemeAnimating ? 'theme-switch-animate' : ''} ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
         {/* Top Navigation Bar - hidden when popup is visible */}
         {!isPopupVisible && (
-        <header className="bg-white border-b border-gray-200/80 flex flex-col sm:flex-row items-center justify-between p-4 sm:px-8 shrink-0 z-50 print:hidden gap-4 sm:gap-0 sticky top-0 shadow-sm">
+        <header className={`border-b flex flex-col sm:flex-row items-center justify-between p-4 sm:px-8 shrink-0 z-50 print:hidden gap-4 sm:gap-0 sticky top-0 shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}>
         <div className="flex items-center justify-between w-full sm:w-auto">
           <h1 className="text-xl sm:text-2xl font-extrabold flex items-center">
-            <div className="p-2 bg-blue-600 rounded-xl mr-3 shadow-md shadow-blue-600/20">
+            <div className={`p-2 rounded-xl mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-violet-500 shadow-violet-500/30' : 'bg-violet-600 shadow-violet-600/20'}`}>
               <LayoutTemplate className="text-white" size={20} />
             </div>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-blue-600">
+            <span className={`bg-clip-text text-transparent bg-gradient-to-r ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
               CV Builder
             </span>
           </h1>
-          <button
-            onClick={() => setShowResetConfirm(true)}
-            className="sm:hidden p-2 text-red-500 hover:bg-red-50 active:scale-95 rounded-xl transition-all"
-            aria-label="Reset Resume"
-          >
-            <RotateCcw size={20} />
-          </button>
+          <div className="sm:hidden flex items-center gap-2">
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95 ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+              aria-label="Reset Resume"
+            >
+              Reset
+            </button>
+            <button
+              onClick={handleThemeToggle}
+              className={`p-2 active:scale-95 rounded-xl transition-all border ${isDarkMode ? 'text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700' : 'text-slate-700 bg-white border-gray-200 hover:bg-gray-100'}`}
+              aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile View Toggle - Segmented Control */}
-        <div className="lg:hidden flex bg-gray-100/50 p-1.5 rounded-2xl w-full max-w-sm mx-auto sm:mx-4 border border-gray-200/40 shadow-inner">
+        <div className={`lg:hidden flex p-1.5 rounded-2xl w-full max-w-sm mx-auto sm:mx-4 border shadow-inner transition-colors duration-500 ${isDarkMode ? 'bg-slate-800/70 border-slate-700/70' : 'bg-gray-100/50 border-gray-200/40'}`}>
           <button
             onClick={() => setMobileView('edit')}
-            className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'edit' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-800/5 scale-100' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 scale-95'}`}
+            className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'edit' ? (isDarkMode ? 'bg-slate-700 text-violet-300 shadow-sm ring-1 ring-violet-200/10 scale-100' : 'bg-white text-violet-600 shadow-sm ring-1 ring-slate-800/5 scale-100') : (isDarkMode ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/80 scale-95' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 scale-95')}`}
           >
             <FileText size={16} className="mr-2" />
             Edit
           </button>
           <button
             onClick={() => setMobileView('preview')}
-            className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'preview' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-800/5 scale-100' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 scale-95'}`}
+            className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'preview' ? (isDarkMode ? 'bg-slate-700 text-violet-300 shadow-sm ring-1 ring-violet-200/10 scale-100' : 'bg-white text-violet-600 shadow-sm ring-1 ring-slate-800/5 scale-100') : (isDarkMode ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/80 scale-95' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 scale-95')}`}
           >
             <LayoutTemplate size={16} className="mr-2" />
             Preview
@@ -426,20 +477,27 @@ export default function Home() {
 
           <button
             onClick={() => setShowResetConfirm(true)}
-            className="hidden md:flex items-center px-4 py-2.5 bg-gray-100 text-gray-600 text-sm font-semibold rounded-xl hover:bg-red-50 hover:text-red-600 transition-all duration-200 border border-gray-200 active:scale-95"
+            className={`hidden md:flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 border active:scale-95 ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
           >
             <RotateCcw size={15} className="mr-2" /> Reset
           </button>
           <button
             onClick={() => setShowDownloadConfirm(true)}
             disabled={isGeneratingPDF}
-            className="hidden md:flex items-center px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 hover:shadow-blue-600/20 transition-all duration-200 shadow-md active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+            className="hidden md:flex items-center px-5 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 hover:shadow-violet-600/20 transition-all duration-200 shadow-md active:scale-95 disabled:opacity-70 disabled:active:scale-100"
           >
             {isGeneratingPDF ? (
               <><Loader2 size={16} className="mr-2 animate-spin" /> Generating...</>
             ) : (
               <><Download size={16} className="mr-2" /> Download PDF</>
             )}
+          </button>
+          <button
+            onClick={handleThemeToggle}
+            className={`hidden md:flex items-center justify-center p-2.5 rounded-xl transition-all duration-200 border active:scale-95 ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-700 border-gray-200 hover:bg-gray-100'}`}
+            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         </div>
       </header>
@@ -448,7 +506,7 @@ export default function Home() {
       <div className="flex-1 overflow-hidden relative flex flex-col lg:flex-row print:overflow-visible print:block">
         {/* Left Side: Form */}
         <div
-          className={`${mobileView === 'edit' ? 'flex max-lg:!w-full max-lg:!min-w-0' : 'hidden'} lg:flex h-full border-r border-gray-200/80 bg-white p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)]`}
+          className={`${mobileView === 'edit' ? 'flex max-lg:!w-full max-lg:!min-w-0' : 'hidden'} lg:flex h-full border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
           style={{ width: `${formWidth}%`, minWidth: '420px' }}
         >
           <div className="h-full w-full overflow-y-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -457,6 +515,7 @@ export default function Home() {
               setCvData={setCvData}
               template={template}
               setTemplate={setTemplate}
+              isDarkMode={isDarkMode}
               onPopupVisibleChange={setIsPopupVisible}
             />
           </div>
@@ -465,10 +524,10 @@ export default function Home() {
         {/* Resizer - hidden when popup is visible */}
         {!isPopupVisible && (
         <div
-          className="hidden lg:block w-1.5 hover:w-2 bg-transparent hover:bg-blue-400/50 cursor-col-resize transition-all z-20 shrink-0 relative group"
+          className={`hidden lg:block w-1.5 hover:w-2 bg-transparent cursor-col-resize transition-all z-20 shrink-0 relative group ${isDarkMode ? 'hover:bg-violet-400/30' : 'hover:bg-violet-400/50'}`}
           onMouseDown={startDragging}
         >
-          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 h-full bg-gray-200/50 group-hover:bg-blue-400/0 transition-colors"></div>
+          <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 h-full group-hover:bg-violet-400/0 transition-colors ${isDarkMode ? 'bg-slate-700/70' : 'bg-gray-200/50'}`}></div>
         </div>
         )}
 
@@ -504,7 +563,7 @@ export default function Home() {
                 }}
                 onTouchStart={(e) => e.stopPropagation()}
                 disabled={isGeneratingPDF}
-                className="pointer-events-auto touch-manipulation select-none [-webkit-tap-highlight-color:transparent] w-full flex items-center justify-center px-4 py-3.5 bg-blue-600 text-white text-sm font-semibold rounded-2xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-xl shadow-blue-600/20 disabled:opacity-70"
+                className="pointer-events-auto touch-manipulation select-none [-webkit-tap-highlight-color:transparent] w-full flex items-center justify-center px-4 py-3.5 bg-violet-600 text-white text-sm font-semibold rounded-2xl hover:bg-violet-700 active:scale-[0.98] transition-all shadow-xl shadow-violet-600/20 disabled:opacity-70"
               >
                 {isGeneratingPDF ? (
                   <><Loader2 size={18} className="mr-2 animate-spin" /> Generating...</>
@@ -520,30 +579,32 @@ export default function Home() {
       {/* Download Confirmation Modal */}
       {showDownloadConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
+          <div className={`rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-white/20'}`}>
             <div className="p-8">
               {/* Premium Icon Block */}
               <div className="relative w-20 h-20 mx-auto mb-6 group">
-                <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-cyan-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
-                <div className="relative flex items-center justify-center w-full h-full bg-white/50 backdrop-blur-md border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(59,130,246,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/20 to-fuchsia-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
+                <div className={`relative flex items-center justify-center w-full h-full backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(59,130,246,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden border ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/50 border-white/80'}`}>
                   <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-                  <Download className="text-blue-600 w-9 h-9 drop-shadow-sm group-hover:translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
+                  <Download className="text-violet-600 w-9 h-9 drop-shadow-sm group-hover:translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Download Resume</h3>
-              <p className="text-sm text-center text-gray-500 mb-8">
-                Are you ready to download your resume as a PDF? This might take a few seconds.
+              <h3 className={`text-xl font-bold text-center mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Download Resume</h3>
+              <p className={`text-sm text-center mb-8 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                Your resume will be exported as a PDF.
+                <br />
+                This usually takes a few seconds.
               </p>
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handlePrint}
-                  className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center"
+                  className="w-full py-3.5 px-4 bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-600/20 flex items-center justify-center"
                 >
                   <Download size={18} className="mr-2" /> Yes, Download PDF
                 </button>
                 <button
                   onClick={() => setShowDownloadConfirm(false)}
-                  className="w-full py-3.5 px-4 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all border border-gray-200"
+                  className={`w-full py-3.5 px-4 font-semibold rounded-xl transition-all border ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 border-gray-200'}`}
                 >
                   Cancel
                 </button>
@@ -553,22 +614,49 @@ export default function Home() {
         </div>
       )}
 
+      {themeTransition && (
+        <motion.div
+          key={themeTransition.key}
+          className="fixed inset-0 pointer-events-none z-[120] overflow-hidden"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
+          onAnimationComplete={() => setThemeTransition(null)}
+        >
+          <motion.div
+            className={`absolute rounded-full ${themeTransition.targetDark ? 'bg-slate-950' : 'bg-slate-50'}`}
+            style={{
+              left: themeTransition.x,
+              top: themeTransition.y,
+              width: Math.hypot(window.innerWidth, window.innerHeight) * 2,
+              height: Math.hypot(window.innerWidth, window.innerHeight) * 2,
+              transform: 'translate(-50%, -50%)',
+            }}
+            initial={{ scale: 0, opacity: 0.9 }}
+            animate={{ scale: 1, opacity: 0 }}
+            transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </motion.div>
+      )}
+
       {/* Reset Confirmation Modal */}
       {showResetConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
+          <div className={`rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-white/20'}`}>
             <div className="p-8">
               {/* Premium Icon Block */}
               <div className="relative w-20 h-20 mx-auto mb-6 group">
                 <div className="absolute inset-0 bg-gradient-to-tr from-red-500/20 to-orange-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
-                <div className="relative flex items-center justify-center w-full h-full bg-white/50 backdrop-blur-md border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(239,68,68,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                <div className={`relative flex items-center justify-center w-full h-full backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(239,68,68,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden border ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/50 border-white/80'}`}>
                   <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
                   <RotateCcw className="text-red-500 w-9 h-9 drop-shadow-sm group-hover:-rotate-180 transition-transform duration-500" strokeWidth={1.5} />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-center text-slate-800 mb-2">Reset All Data?</h3>
-              <p className="text-sm text-center text-gray-500 mb-8">
-                This will clear all your CV data and reset to the default template. This action cannot be undone.
+              <h3 className={`text-xl font-bold text-center mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Reset All Data?</h3>
+              <p className={`text-sm text-center mb-8 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                This will clear all resume content and restore defaults.
+                <br />
+                This action cannot be undone.
               </p>
               <div className="flex flex-col gap-3">
                 <button
@@ -579,7 +667,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setShowResetConfirm(false)}
-                  className="w-full py-3.5 px-4 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all border border-gray-200"
+                  className={`w-full py-3.5 px-4 font-semibold rounded-xl transition-all border ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 border-gray-200'}`}
                 >
                   Cancel
                 </button>
@@ -591,14 +679,14 @@ export default function Home() {
 
       {/* Global Loading Overlay */}
       {isGeneratingPDF && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center border border-gray-100">
+        <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-md animate-in fade-in duration-300 ${isDarkMode ? 'bg-slate-950/80' : 'bg-white/80'}`}>
+          <div className={`p-8 rounded-3xl shadow-2xl flex flex-col items-center border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-100'}`}>
             <div className="relative mb-6">
-              <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-              <FileText className="absolute inset-0 m-auto text-blue-600" size={24} />
+              <div className={`w-16 h-16 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
+              <FileText className="absolute inset-0 m-auto text-violet-600" size={24} />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Generating PDF</h3>
-            <p className="text-gray-500 text-center max-w-[200px]">
+            <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Generating PDF</h3>
+            <p className={`text-center max-w-[200px] ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
               Please wait while we prepare your professional resume...
             </p>
           </div>

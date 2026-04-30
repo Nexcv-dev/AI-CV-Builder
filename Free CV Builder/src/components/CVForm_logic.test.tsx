@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CVForm from './CVForm';
@@ -32,12 +33,12 @@ vi.mock('../utils/imageUtils', () => ({
   compressAndResizeImage: vi.fn(() => Promise.resolve('data:image/png;base64,mocked-image-data')),
 }));
 
-// Mock fetch globally
+// Mock fetch globally with a small delay to allow testing intermediate states
 vi.stubGlobal('fetch', vi.fn(() => 
-  Promise.resolve({ 
+  new Promise(resolve => setTimeout(() => resolve({ 
     ok: true, 
     json: () => Promise.resolve({ summary: 'Mocked summary' }) 
-  })
+  }), 100))
 ));
 
 // Mock alert to prevent jsdom "Not implemented" errors
@@ -45,6 +46,11 @@ vi.stubGlobal('alert', vi.fn());
 
 // Mock scrollTo for JSDOM
 Element.prototype.scrollTo = vi.fn();
+
+// Mock crypto for randomUUID
+vi.stubGlobal('crypto', {
+  randomUUID: () => 'test-uuid-' + Math.random().toString(36).substring(2, 11)
+});
 
 describe('CVForm Logic', () => {
   const mockSetCvData = vi.fn();
@@ -159,13 +165,18 @@ describe('CVForm Logic', () => {
       </MemoryRouter>
     );
     
+    const user = userEvent.setup();
     const yesButton = await screen.findByText(/Yes, I have one/i);
-    fireEvent.click(yesButton);
+    await user.click(yesButton);
     
-    const importInput = document.getElementById('cv-upload-modal') as HTMLInputElement;
-    const file = new File(['{}'], 'cv.json', { type: 'application/json' });
+    // Confirm the upload modal title appears
+    expect(await screen.findByText(/Upload Resume/i)).toBeInTheDocument();
     
-    fireEvent.change(importInput, { target: { files: [file] } });
+    // Wait for the modal and input to be available in the DOM
+    const importInput = await screen.findByTestId('cv-upload-input');
+
+    const file = new File(['{}'], 'cv.pdf', { type: 'application/pdf' });
+    await user.upload(importInput, file);
 
     // Verify immediate feedback - use findBy to wait for render
     expect(await screen.findByText(/Starting import/i)).toBeInTheDocument();
@@ -173,6 +184,6 @@ describe('CVForm Logic', () => {
     // Wait for the async operation to finish to prevent unhandled promise rejections after test ends
     await waitFor(() => {
         expect(screen.queryByText(/Data imported successfully/i)).toBeInTheDocument();
-    });
+    }, { timeout: 2000 });
   });
 });
