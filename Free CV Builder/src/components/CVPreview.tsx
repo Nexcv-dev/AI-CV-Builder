@@ -32,14 +32,14 @@ const domPurifyConfig = {
 };
 
 const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvData, template }, ref) => {
-  const { 
-    personalInfo, 
-    experience, 
-    education, 
-    skills, 
-    themeColor, 
-    fontFamily, 
-    profileImage, 
+  const {
+    personalInfo,
+    experience,
+    education,
+    skills,
+    themeColor,
+    fontFamily,
+    profileImage,
     imageZoom = 1,
     imageX = 0,
     imageY = 0,
@@ -66,8 +66,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     const percentage = (level / 5) * 100;
     return (
       <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-        <div 
-          className="h-full rounded-full transition-all duration-500" 
+        <div
+          className="h-full rounded-full transition-all duration-500"
           style={{ width: `${percentage}%`, backgroundColor: color }}
         />
       </div>
@@ -91,16 +91,16 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
       <div className="w-full text-white p-[15mm] flex flex-col h-full modern-sidebar" style={{ backgroundColor: sidebarColor }}>
         {profileImage && (
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/20 mx-auto mb-6 flex items-center justify-center">
-            <img 
-              src={profileImage} 
-              alt="Profile" 
-              className="w-full h-full object-cover" 
+            <img
+              src={profileImage}
+              alt="Profile"
+              className="w-full h-full object-cover"
               style={{ transform: `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)` }}
-              referrerPolicy="no-referrer" 
+              referrerPolicy="no-referrer"
             />
           </div>
         )}
-        
+
         <div className="mb-8">
           <h2 className="text-base font-bold uppercase tracking-widest border-b mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Details</h2>
           <div className="space-y-4 text-xs" style={{ color: sidebarMutedColor }}>
@@ -242,8 +242,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         return personalInfo.summary && (
           <section key="summary" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
             <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Profile</h2>
-            <div 
-              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+            <div
+              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
               style={{ lineHeight: lineSpacing }}
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(personalInfo.summary, domPurifyConfig) }}
             />
@@ -262,8 +262,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <span className="text-xs text-gray-500 font-medium">{exp.startDate} {exp.startDate && exp.endDate ? '—' : ''} {exp.endDate}</span>
                   </div>
                   {exp.description && (
-                    <div 
-                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+                    <div
+                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
                       style={{ lineHeight: lineSpacing }}
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.description, domPurifyConfig) }}
                     />
@@ -286,8 +286,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <span className="text-xs text-gray-500 font-medium">{edu.startDate} {edu.startDate && edu.endDate ? '—' : ''} {edu.endDate}</span>
                   </div>
                   {edu.description && (
-                    <div 
-                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+                    <div
+                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
                       style={{ lineHeight: lineSpacing }}
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
                     />
@@ -330,8 +330,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     )}
                   </div>
                   {proj.description && (
-                    <div 
-                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+                    <div
+                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
                       style={{ lineHeight: lineSpacing }}
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(proj.description, domPurifyConfig) }}
                     />
@@ -373,8 +373,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
               Profile
             </h2>
-            <div 
-              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+            <div
+              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
               style={{ lineHeight: lineSpacing }}
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(personalInfo.summary, domPurifyConfig) }}
             />
@@ -442,8 +442,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <h3 className="text-base font-bold text-gray-900">{exp.position || 'Position'}</h3>
                     <div className="text-sm font-medium text-gray-700 mb-2">{exp.company || 'Company'}</div>
                     {exp.description && (
-                      <div 
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+                      <div
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.description, domPurifyConfig) }}
                       />
@@ -470,10 +470,10 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <h3 className="text-base font-bold text-gray-900">{edu.degree || 'Degree'}</h3>
                     <div className="text-sm text-gray-700 mb-1">{edu.institution || 'Institution'}</div>
                     {edu.description && (
-                      <div 
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+                      <div
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
                         style={{ lineHeight: lineSpacing }}
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
                       />
                     )}
                   </div>
@@ -484,7 +484,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         );
       case 'skills': {
         if (skills.length === 0) return null;
-        
+
         const hasCategories = skills.some(skill => skill.category?.trim());
 
         if (!hasCategories) {
@@ -556,8 +556,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                       {project.name || 'Project Name'}
                     </h3>
                     {project.description && (
-                      <div 
-                        className="text-sm text-gray-700 prose prose-sm max-w-none mt-1 prose-p:my-0" 
+                      <div
+                        className="text-sm text-gray-700 prose prose-sm max-w-none mt-1 prose-p:my-0"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(project.description, domPurifyConfig) }}
                       />
@@ -637,8 +637,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         return personalInfo.summary && (
           <section key="summary" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
             <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Professional Summary</h2>
-            <div 
-              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 ml-[130px]" 
+            <div
+              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 ml-[130px]"
               style={{ lineHeight: lineSpacing }}
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(personalInfo.summary, domPurifyConfig) }}
             />
@@ -658,8 +658,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <h3 className="text-base font-bold text-gray-900">{exp.position || 'Position'}</h3>
                     <div className="text-sm font-medium mb-1.5" style={{ color: themeColor }}>{exp.company || 'Company'}</div>
                     {exp.description && (
-                      <div 
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+                      <div
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.description, domPurifyConfig) }}
                       />
@@ -684,8 +684,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <h3 className="text-base font-bold text-gray-900">{edu.degree || 'Degree'}</h3>
                     <div className="text-sm font-medium mb-1.5" style={{ color: themeColor }}>{edu.institution || 'Institution'}</div>
                     {edu.description && (
-                      <div 
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+                      <div
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
                       />
@@ -725,7 +725,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           acc[category].push(skill);
           return acc;
         }, {} as Record<string, typeof skills>);
-        
+
         const categories = Object.entries(skillsByCategory);
 
         return (
@@ -765,8 +765,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   <div>
                     <h3 className="text-base font-bold text-gray-900 mb-1.5">{project.name || 'Project Name'}</h3>
                     {project.description && (
-                      <div 
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0" 
+                      <div
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(project.description, domPurifyConfig) }}
                       />
@@ -865,9 +865,9 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           }
         `}
       </style>
-      <div 
+      <div
         className={`bg-white w-[210mm] min-h-[297mm] shadow-2xl mb-8 mx-auto box-border overflow-hidden flex flex-col print:shadow-none print:mb-0 page-break relative`}
-        style={{ 
+        style={{
           minWidth: '210mm',
           backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 296.5mm, #e5e7eb 296.5mm, #e5e7eb 297mm)',
           backgroundSize: '100% 297mm'
@@ -876,10 +876,10 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         {/* Visual Page Indicators for Preview */}
         <div className="absolute inset-0 pointer-events-none print:hidden overflow-hidden">
           {[...Array(10)].map((_, i) => (
-            <div 
+            <div
               key={i}
               className="absolute w-full border-t-2 border-blue-400 border-dashed flex items-center justify-end pr-4"
-              style={{ 
+              style={{
                 top: `${(i + 1) * 297}mm`,
                 opacity: 0.4
               }}
@@ -928,12 +928,12 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 {profileImage && (
                   <div className="ml-6 flex-shrink-0">
                     <div className="w-28 h-28 rounded-md overflow-hidden border border-gray-200">
-                      <img 
-                        src={profileImage} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover" 
+                      <img
+                        src={profileImage}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
                         style={{ transform: `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)` }}
-                        referrerPolicy="no-referrer" 
+                        referrerPolicy="no-referrer"
                       />
                     </div>
                   </div>
@@ -941,7 +941,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               </header>
 
               <div className="professional-sections-container">
-                 {(cvData.sectionOrder || []).map(renderProfessionalSection)}
+                {(cvData.sectionOrder || []).map(renderProfessionalSection)}
               </div>
             </div>
           </div>
@@ -950,12 +950,12 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             <header className="mb-8 text-center flex flex-col items-center">
               {profileImage && (
                 <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 mb-4 flex items-center justify-center">
-                  <img 
-                    src={profileImage} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover" 
+                  <img
+                    src={profileImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
                     style={{ transform: `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)` }}
-                    referrerPolicy="no-referrer" 
+                    referrerPolicy="no-referrer"
                   />
                 </div>
               )}

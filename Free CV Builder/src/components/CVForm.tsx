@@ -1119,12 +1119,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                                           onClick={() => handleSkillChange(skill.id, 'level', level)}
                                           className="focus:outline-none transition-all"
                                         >
-                                            <div
-                                              className={`h-2.5 w-6 rounded-sm border transition-all ${level <= skill.level ? (isDarkMode ? 'border-violet-400' : 'border-violet-500') : (isDarkMode ? 'border-slate-600 bg-transparent' : 'border-gray-300 bg-transparent')}`}
-                                              style={{
-                                                backgroundColor: level <= skill.level ? (isDarkMode ? '#818cf8' : '#3b82f6') : 'transparent'
-                                              }}
-                                            />
+                                          <div
+                                            className={`h-2.5 w-6 rounded-sm border transition-all ${level <= skill.level ? (isDarkMode ? 'border-violet-400' : 'border-violet-500') : (isDarkMode ? 'border-slate-600 bg-transparent' : 'border-gray-300 bg-transparent')}`}
+                                            style={{
+                                              backgroundColor: level <= skill.level ? (isDarkMode ? '#818cf8' : '#3b82f6') : 'transparent'
+                                            }}
+                                          />
                                         </button>
                                       ))}
                                     </div>
@@ -1480,8 +1480,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                       <CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" />
                     </div>
                   )}
-                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === 'classic' 
-                    ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]') 
+                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === 'classic'
+                    ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]')
                     : (isDarkMode ? 'border-slate-700 grayscale-[0.4] opacity-70 hover:grayscale-0 hover:opacity-100 hover:border-slate-600' : 'border-gray-200 grayscale-[0.3] opacity-80 hover:grayscale-0 hover:opacity-100 hover:border-gray-300')
                     }`}>
                     <img
@@ -1507,8 +1507,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                       <CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" />
                     </div>
                   )}
-                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === 'modern' 
-                    ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]') 
+                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === 'modern'
+                    ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]')
                     : (isDarkMode ? 'border-slate-700 grayscale-[0.4] opacity-70 hover:grayscale-0 hover:opacity-100 hover:border-slate-600' : 'border-gray-200 grayscale-[0.3] opacity-80 hover:grayscale-0 hover:opacity-100 hover:border-gray-300')
                     }`}>
                     <img
@@ -1534,8 +1534,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                       <CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" />
                     </div>
                   )}
-                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === 'professional' 
-                    ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]') 
+                  <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === 'professional'
+                    ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]')
                     : (isDarkMode ? 'border-slate-700 grayscale-[0.4] opacity-70 hover:grayscale-0 hover:opacity-100 hover:border-slate-600' : 'border-gray-200 grayscale-[0.3] opacity-80 hover:grayscale-0 hover:opacity-100 hover:border-gray-300')
                     }`}>
                     <img
