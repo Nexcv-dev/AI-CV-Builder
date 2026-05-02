@@ -1,8 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'motion/react';
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award } from '../types';
-import { Plus, Trash2, Loader2, Upload, CloudUpload, User, Briefcase, GraduationCap, Wrench, Palette, Star, FileText, BookOpen, Globe, FolderGit2, Trophy, ChevronDown, ChevronUp, Image as ImageIcon, GripVertical, Info, CheckCircle, AlertCircle, CheckCircle2, LayoutTemplate, MoveHorizontal, MoveVertical, Layout, Sparkles, ArrowLeft, ArrowRight, Check, SkipForward, Type } from 'lucide-react';
+import { Plus, Trash2, Loader2, Upload, CloudUpload, User, Briefcase, GraduationCap, Wrench, Palette, Star, FileText, BookOpen, Globe, FolderGit2, Trophy, ChevronDown, ChevronUp, Image as ImageIcon, GripVertical, Info, CheckCircle, AlertCircle, CheckCircle2, LayoutTemplate, MoveHorizontal, MoveVertical, Layout, Sparkles, ArrowLeft, ArrowRight, Check, SkipForward, Type, Calendar } from 'lucide-react';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import {
@@ -54,9 +56,9 @@ const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, 
     <div
       ref={setNodeRef}
       style={style}
-      className={`border rounded-xl mb-4 bg-white overflow-hidden transition-colors transition-shadow duration-300 ${isOpen ? 'border-violet-500 shadow-md' : 'border-gray-200 shadow-sm'} ${isDragging ? 'opacity-50 shadow-lg relative' : ''}`}
+      className={`border rounded-xl mb-4 bg-white transition-colors transition-shadow duration-300 ${isOpen ? 'border-violet-500 shadow-md' : 'border-gray-200 shadow-sm'} ${isDragging ? 'opacity-50 shadow-lg relative' : ''}`}
     >
-      <div className={`w-full flex items-center transition-colors ${isOpen ? 'bg-violet-50/30' : 'bg-gray-50 hover:bg-gray-100'}`}>
+      <div className={`w-full flex items-center transition-colors rounded-t-xl overflow-hidden ${isOpen ? 'bg-violet-50/30' : 'bg-gray-50 hover:bg-gray-100'}`}>
         {showDragHandle && (
           <div
             className="flex items-center px-2 py-4 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors"
@@ -89,6 +91,7 @@ const SortableAccordionSection = React.memo(({ id, title, icon: Icon, children, 
               collapsed: { opacity: 0, height: 0 }
             }}
             transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+            className="overflow-visible"
           >
             <div className="p-5 border-t border-gray-200">
               {children}
@@ -109,6 +112,76 @@ const fonts = [
   { name: 'Playfair Display', description: 'Stylish Serif', className: 'font-playfair' },
   { name: 'JetBrains Mono', description: 'Technical, Code', className: 'font-mono' },
 ];
+
+const PremiumSelect = ({ label, id, name, value, options, onChange, placeholder, isDarkMode, optional = false }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isOpen) setIsOpen(false);
+    };
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [isOpen]);
+
+  const selectedOption = options.find((opt: any) => opt.value === value);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+        {label} {optional && <span className="text-gray-400 font-normal">(Optional)</span>}
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full p-3 border rounded-lg text-left flex items-center justify-between transition-all outline-none ring-offset-2 ${isOpen ? 'border-violet-500 ring-4 ring-violet-500/10' : 'border-gray-300 hover:border-gray-400'} ${isDarkMode ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-white text-gray-900'}`}
+      >
+        <span className={!value ? 'text-gray-400' : ''}>{selectedOption ? selectedOption.label : placeholder}</span>
+        <ChevronDown size={18} className={`transition-transform duration-300 ${isOpen ? 'rotate-180 text-violet-500' : 'text-gray-400'}`} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            className={`absolute z-[100] w-full mt-2 overflow-hidden border rounded-xl shadow-2xl ${isDarkMode ? 'bg-slate-800 border-slate-700 shadow-black/50' : 'bg-white border-gray-100 shadow-violet-500/10'}`}
+          >
+            <div className="p-1 max-h-60 overflow-y-auto scrollbar-hide">
+              {options.map((option: any) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange({ target: { name, value: option.value } });
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-between ${value === option.value ? (isDarkMode ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-50 text-violet-600') : (isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-50')}`}
+                >
+                  {option.label}
+                  {value === option.value && <Check size={16} />}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange }: CVFormProps) {
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design'>('content');
@@ -199,7 +272,16 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const [importMessage, setImportMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [refiningIds, setRefiningIds] = useState<Record<string, boolean>>({});
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsDatePickerOpen(false);
+    };
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -755,15 +837,36 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                                 </div>
                                 <div>
                                   <label htmlFor="dob" className="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span className="text-gray-400 font-normal">(Optional)</span></label>
-                                  <input
-                                    id="dob"
-                                    type="date"
-                                    name="dob"
-                                    autoComplete="bday"
-                                    value={cvData.personalInfo.dob}
-                                    onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
-                                  />
+                                  <div className="relative date-picker-wrapper">
+                                    <DatePicker
+                                      selected={cvData.personalInfo.dob ? new Date(cvData.personalInfo.dob) : null}
+                                      onChange={(date) => {
+                                        const event = {
+                                          target: {
+                                            name: 'dob',
+                                            value: date ? date.toISOString().split('T')[0] : ''
+                                          }
+                                        };
+                                        handlePersonalInfoChange(event as any);
+                                      }}
+                                      dateFormat="yyyy-MM-dd"
+                                      placeholderText="Select Date of Birth"
+                                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
+                                      popperClassName={`premium-datepicker-popper ${isDarkMode ? 'dark-cv' : ''}`}
+                                      calendarClassName="premium-datepicker-calendar"
+                                      showMonthDropdown
+                                      showYearDropdown
+                                      dropdownMode="select"
+                                      portalId="root"
+                                      open={isDatePickerOpen}
+                                      onInputClick={() => setIsDatePickerOpen(true)}
+                                      onClickOutside={() => setIsDatePickerOpen(false)}
+                                      onSelect={() => setIsDatePickerOpen(false)}
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                      <Calendar size={18} />
+                                    </div>
+                                  </div>
                                 </div>
                                 <div>
                                   <label htmlFor="nic" className="block text-sm font-medium text-gray-700 mb-1">NIC Number <span className="text-gray-400 font-normal">(Optional)</span></label>
@@ -777,36 +880,35 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
                                   />
                                 </div>
-                                <div>
-                                  <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">Gender <span className="text-gray-400 font-normal">(Optional)</span></label>
-                                  <select
-                                    id="gender"
-                                    name="gender"
-                                    autoComplete="sex"
-                                    value={cvData.personalInfo.gender}
-                                    onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
-                                  >
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label htmlFor="maritalStatus" className="block text-sm font-medium text-gray-700 mb-1">Marital Status <span className="text-gray-400 font-normal">(Optional)</span></label>
-                                  <select
-                                    id="maritalStatus"
-                                    name="maritalStatus"
-                                    value={cvData.personalInfo.maritalStatus}
-                                    onChange={handlePersonalInfoChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
-                                  >
-                                    <option value="">Select Status</option>
-                                    <option value="Single">Single</option>
-                                    <option value="Married">Married</option>
-                                  </select>
-                                </div>
+                                <PremiumSelect
+                                  label="Gender"
+                                  id="gender"
+                                  name="gender"
+                                  value={cvData.personalInfo.gender}
+                                  onChange={handlePersonalInfoChange}
+                                  isDarkMode={isDarkMode}
+                                  optional={true}
+                                  placeholder="Select Gender"
+                                  options={[
+                                    { value: 'Male', label: 'Male' },
+                                    { value: 'Female', label: 'Female' },
+                                    { value: 'Other', label: 'Other' },
+                                  ]}
+                                />
+                                <PremiumSelect
+                                  label="Marital Status"
+                                  id="maritalStatus"
+                                  name="maritalStatus"
+                                  value={cvData.personalInfo.maritalStatus}
+                                  onChange={handlePersonalInfoChange}
+                                  isDarkMode={isDarkMode}
+                                  optional={true}
+                                  placeholder="Select Status"
+                                  options={[
+                                    { value: 'Single', label: 'Single' },
+                                    { value: 'Married', label: 'Married' },
+                                  ]}
+                                />
                                 <div>
                                   <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 mb-1">Nationality <span className="text-gray-400 font-normal">(Optional)</span></label>
                                   <input
@@ -1968,7 +2070,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setShowUploadModal(false)}
-                  className={`px-6 py-2.5 text-sm font-bold rounded-xl transition-all ${isDarkMode ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-800' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
+                  className={`px-6 py-2.5 text-sm font-bold rounded-xl border transition-all ${isDarkMode ? 'text-slate-300 border-slate-700 hover:text-slate-100 hover:bg-slate-800 hover:border-slate-600' : 'text-gray-600 border-gray-200 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300'}`}
                 >
                   Skip for now
                 </button>
