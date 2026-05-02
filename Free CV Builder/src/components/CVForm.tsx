@@ -127,13 +127,7 @@ const PremiumSelect = ({ label, id, name, value, options, onChange, placeholder,
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (isOpen) setIsOpen(false);
-    };
-    window.addEventListener('scroll', handleScroll, true);
-    return () => window.removeEventListener('scroll', handleScroll, true);
-  }, [isOpen]);
+
 
   const selectedOption = options.find((opt: any) => opt.value === value);
 
@@ -275,13 +269,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsDatePickerOpen(false);
-    };
-    window.addEventListener('scroll', handleScroll, true);
-    return () => window.removeEventListener('scroll', handleScroll, true);
-  }, []);
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -857,7 +845,6 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                                       showMonthDropdown
                                       showYearDropdown
                                       dropdownMode="select"
-                                      portalId="root"
                                       open={isDatePickerOpen}
                                       onInputClick={() => setIsDatePickerOpen(true)}
                                       onClickOutside={() => setIsDatePickerOpen(false)}
