@@ -572,7 +572,7 @@ export function generateCVHTML(cvData: any, template: string): string {
 
     // Sanitization config for rich text
     const sanitize = (html: string) => DOMPurify.sanitize(html || '', {
-        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u'],
+        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
         ALLOWED_ATTR: ['href', 'target', 'rel']
     });
 
@@ -590,12 +590,12 @@ export function generateCVHTML(cvData: any, template: string): string {
             if (template === 'professional') {
                 return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
           <h2 style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Professional Summary</h2>
-          <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px">${sanitize(personalInfo.summary)}</div>
+          <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>
         </section>`;
             }
             return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
         <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:12px">Profile</h2>
-        <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${sanitize(personalInfo.summary)}</div>
+        <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>
       </section>`;
         }
 
@@ -625,7 +625,7 @@ export function generateCVHTML(cvData: any, template: string): string {
             <div>
               <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(exp.position || 'Position')}</h3>
               <div style="font-size:0.875rem;font-weight:500;color:#374151;margin-bottom:8px">${esc(exp.company || 'Company')}</div>
-              ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${sanitize(exp.description)}</div>` : ''}
+              ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(exp.description)}</div>` : ''}
             </div>
           </div>`;
                 } else if (template === 'professional') {
@@ -634,7 +634,7 @@ export function generateCVHTML(cvData: any, template: string): string {
             <div>
               <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(exp.position || 'Position')}</h3>
               <div style="font-size:0.875rem;font-weight:500;color:${themeColor};margin-bottom:6px">${esc(exp.company || 'Company')}</div>
-              ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${sanitize(exp.description)}</div>` : ''}
+              ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(exp.description)}</div>` : ''}
             </div>
           </div>`;
                 } else { // modern
@@ -644,7 +644,7 @@ export function generateCVHTML(cvData: any, template: string): string {
               <span style="font-size:0.875rem;font-weight:500;color:${themeColor}">${esc(exp.company || 'Company')}</span>
               <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(exp.startDate || '')} ${exp.startDate && exp.endDate ? '—' : ''} ${esc(exp.endDate || '')}</span>
             </div>
-            ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${sanitize(exp.description)}</div>` : ''}
+            ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(exp.description)}</div>` : ''}
           </div>`;
                 }
             }).join('');
@@ -663,7 +663,7 @@ export function generateCVHTML(cvData: any, template: string): string {
             <div>
               <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(edu.degree || 'Degree')}</h3>
               <div style="font-size:0.875rem;color:#374151;margin-bottom:4px">${esc(edu.institution || 'Institution')}</div>
-              ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${sanitize(edu.description)}</div>` : ''}
+              ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(edu.description)}</div>` : ''}
             </div>
           </div>`;
                 } else if (template === 'professional') {
@@ -672,7 +672,7 @@ export function generateCVHTML(cvData: any, template: string): string {
             <div>
               <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(edu.degree || 'Degree')}</h3>
               <div style="font-size:0.875rem;font-weight:500;color:${themeColor};margin-bottom:6px">${esc(edu.institution || 'Institution')}</div>
-              ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${sanitize(edu.description)}</div>` : ''}
+              ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(edu.description)}</div>` : ''}
             </div>
           </div>`;
                 } else { // modern
@@ -682,7 +682,7 @@ export function generateCVHTML(cvData: any, template: string): string {
               <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(edu.institution || 'Institution')}</span>
               <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(edu.startDate || '')} ${edu.startDate && edu.endDate ? '—' : ''} ${esc(edu.endDate || '')}</span>
             </div>
-            ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${sanitize(edu.description)}</div>` : ''}
+            ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(edu.description)}</div>` : ''}
           </div>`;
                 }
             }).join('');
@@ -725,7 +725,7 @@ export function generateCVHTML(cvData: any, template: string): string {
             <div style="font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px">${link}</div>
             <div>
               <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(p.name || 'Project Name')}</h3>
-              ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px">${sanitize(p.description)}</div>` : ''}
+              ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px;white-space:pre-wrap;word-break:break-word">${sanitize(p.description)}</div>` : ''}
             </div>
           </div>`;
                 } else { // modern
@@ -734,7 +734,7 @@ export function generateCVHTML(cvData: any, template: string): string {
               <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(p.name || 'Project Name')}</h3>
               ${link}
             </div>
-            ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing}">${sanitize(p.description)}</div>` : ''}
+            ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(p.description)}</div>` : ''}
           </div>`;
                 }
             }).join('');

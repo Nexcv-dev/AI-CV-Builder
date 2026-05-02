@@ -27,7 +27,7 @@ const getValidUrl = (url?: string): string | undefined => {
 };
 
 const domPurifyConfig = {
-  ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u'],
+  ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
   ALLOWED_ATTR: ['href', 'target', 'rel']
 };
 
@@ -243,7 +243,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           <section key="summary" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
             <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Profile</h2>
             <div
-              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
               style={{ lineHeight: lineSpacing }}
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(personalInfo.summary, domPurifyConfig) }}
             />
@@ -263,7 +263,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   </div>
                   {exp.description && (
                     <div
-                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
                       style={{ lineHeight: lineSpacing }}
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.description, domPurifyConfig) }}
                     />
@@ -287,7 +287,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   </div>
                   {edu.description && (
                     <div
-                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
                       style={{ lineHeight: lineSpacing }}
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
                     />
@@ -331,7 +331,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   </div>
                   {proj.description && (
                     <div
-                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
                       style={{ lineHeight: lineSpacing }}
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(proj.description, domPurifyConfig) }}
                     />
@@ -374,7 +374,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               Profile
             </h2>
             <div
-              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
               style={{ lineHeight: lineSpacing }}
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(personalInfo.summary, domPurifyConfig) }}
             />
@@ -443,7 +443,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <div className="text-sm font-medium text-gray-700 mb-2">{exp.company || 'Company'}</div>
                     {exp.description && (
                       <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.description, domPurifyConfig) }}
                       />
@@ -471,7 +471,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <div className="text-sm text-gray-700 mb-1">{edu.institution || 'Institution'}</div>
                     {edu.description && (
                       <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
                       />
@@ -557,7 +557,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     </h3>
                     {project.description && (
                       <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none mt-1 prose-p:my-0"
+                        className="text-sm text-gray-700 prose prose-sm max-w-none mt-1 prose-p:my-0 whitespace-pre-wrap break-words"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(project.description, domPurifyConfig) }}
                       />
@@ -638,7 +638,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           <section key="summary" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
             <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Professional Summary</h2>
             <div
-              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 ml-[130px]"
+              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 ml-[130px] whitespace-pre-wrap break-words"
               style={{ lineHeight: lineSpacing }}
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(personalInfo.summary, domPurifyConfig) }}
             />
@@ -659,7 +659,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <div className="text-sm font-medium mb-1.5" style={{ color: themeColor }}>{exp.company || 'Company'}</div>
                     {exp.description && (
                       <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.description, domPurifyConfig) }}
                       />
@@ -685,7 +685,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <div className="text-sm font-medium mb-1.5" style={{ color: themeColor }}>{edu.institution || 'Institution'}</div>
                     {edu.description && (
                       <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
                       />
@@ -766,7 +766,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <h3 className="text-base font-bold text-gray-900 mb-1.5">{project.name || 'Project Name'}</h3>
                     {project.description && (
                       <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0"
+                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
                         style={{ lineHeight: lineSpacing }}
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(project.description, domPurifyConfig) }}
                       />

@@ -172,4 +172,24 @@ describe('CVPreview Component', () => {
     expect(container.innerHTML).toContain('Safe');
     expect(container.querySelector('script')).toBeNull();
   });
+
+  it('applies whitespace-pre-wrap and break-words classes to rich text containers', () => {
+    const dataWithNewlines: CVData = {
+      ...mockCVData,
+      personalInfo: {
+        ...mockCVData.personalInfo,
+        summary: '<div>Line 1</div><div>Line 2</div>',
+      },
+    };
+    const { container } = render(<CVPreview cvData={dataWithNewlines} template="modern" />);
+    
+    // Find the summary container - it has the prose class
+    const summaryContainer = container.querySelector('.prose');
+    expect(summaryContainer).toHaveClass('whitespace-pre-wrap');
+    expect(summaryContainer).toHaveClass('break-words');
+    
+    // Verify that the content still has two separate lines/blocks
+    expect(screen.getByText('Line 1')).toBeInTheDocument();
+    expect(screen.getByText('Line 2')).toBeInTheDocument();
+  });
 });
