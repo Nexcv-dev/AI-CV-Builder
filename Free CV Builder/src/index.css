@@ -867,3 +867,24 @@
   color: #a78bfa !important;
 }
 
+
+/* Specific background and text colors for autofill based on theme */
+.dark-cv .cv-form-panel input:-webkit-autofill,
+.dark-cv .cv-form-panel input:-webkit-autofill:hover, 
+.dark-cv .cv-form-panel input:-webkit-autofill:focus,
+.dark-cv .cv-form-panel textarea:-webkit-autofill,
+.dark-cv .cv-form-panel textarea:-webkit-autofill:hover,
+.dark-cv .cv-form-panel textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #0b1220 inset !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Light mode defaults */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #1f2937 !important;
+}
+
