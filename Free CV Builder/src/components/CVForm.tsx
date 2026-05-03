@@ -849,6 +849,21 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                                       onInputClick={() => setIsDatePickerOpen(true)}
                                       onClickOutside={() => setIsDatePickerOpen(false)}
                                       onSelect={() => setIsDatePickerOpen(false)}
+                                      popperPlacement="top"
+                                      popperModifiers={[
+                                        {
+                                          name: 'flip',
+                                          options: {
+                                            enabled: false,
+                                          },
+                                        },
+                                        {
+                                          name: 'preventOverflow',
+                                          options: {
+                                            boundary: 'viewport',
+                                          },
+                                        },
+                                      ]}
                                     />
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                                       <Calendar size={18} />
