@@ -25,7 +25,6 @@
     "@sparticuz/chromium": "^147.0.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.14",
-    "@types/react-datepicker": "^6.2.0",
     "@vitejs/plugin-react": "^5.0.4",
     "cors": "^2.8.6",
     "dompurify": "^3.3.3",

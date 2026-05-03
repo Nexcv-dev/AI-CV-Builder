@@ -288,7 +288,7 @@ export default function Home() {
     return () => {
       resizeObserver.disconnect();
     };
-  }, [mobileView, template, cvData]);
+  }, [mobileView, template]);
 
   const handlePrint = async () => {
     setShowDownloadConfirm(false);

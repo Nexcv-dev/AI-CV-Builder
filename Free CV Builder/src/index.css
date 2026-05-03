@@ -908,6 +908,8 @@
   padding: 0.75rem !important;
   background-color: white !important;
   animation: date-picker-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 @keyframes date-picker-in {
@@ -932,6 +934,18 @@
   font-weight: 600 !important;
   width: 2.25rem !important;
   line-height: 2.25rem !important;
+  display: inline-block !important;
+}
+
+.react-datepicker__month {
+  margin: 0.4rem !important;
+  display: block !important;
+}
+
+.react-datepicker__week {
+  white-space: nowrap !important;
+  display: flex !important;
+  justify-content: center !important;
 }
 
 .react-datepicker__day {
@@ -941,6 +955,7 @@
   transition: all 0.2s ease !important;
   color: #4b5563 !important;
   margin: 0.1rem !important;
+  display: inline-block !important;
 }
 
 .react-datepicker__day:hover {
