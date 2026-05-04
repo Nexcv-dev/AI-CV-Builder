@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, Palette, Check, ArrowRight } from 'lucide-react';
-import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { FileText, Palette, Check } from 'lucide-react';
+import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import DOMPurify from 'dompurify';
 
@@ -113,9 +113,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     setRefiningIds(prev => ({ ...prev, [id]: value }));
   }, []);
 
-  const stripHtml = (html: string) => DOMPurify.sanitize(html, { ALLOWED_TAGS: [] });
+  const stripHtml = useCallback((html: string) => DOMPurify.sanitize(html, { ALLOWED_TAGS: [] }), []);
 
-  const handleGenerateSummary = async () => {
+  const handleGenerateSummary = useCallback(async () => {
     setRefining('summary', true);
     try {
       const res = await fetch('/api/generate-summary', {
@@ -138,7 +138,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     } finally {
       setRefining('summary', false);
     }
-  };
+  }, [cvData.experience, cvData.education, cvData.skills, setCvData, setRefining]);
 
   const handleRefineText = async (id: string, text: string, sectionType: string, context: any, onUpdate: (refined: string) => void) => {
     const plainText = stripHtml(text || '');
@@ -196,13 +196,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             setCvData(prev => ({
               ...prev,
               personalInfo: { ...prev.personalInfo, ...(result.personalInfo || {}) },
-              experience: (result.experience || []).map((e: any) => ({ ...e, id: crypto.randomUUID() })),
-              education: (result.education || []).map((e: any) => ({ ...e, id: crypto.randomUUID() })),
-              skills: (result.skills || []).map((s: any) => ({ ...s, id: crypto.randomUUID(), level: s.level || 4 })),
-              courses: (result.courses || []).map((c: any) => ({ ...c, id: crypto.randomUUID() })),
-              languages: (result.languages || []).map((l: any) => ({ ...l, id: crypto.randomUUID() })),
-              projects: (result.projects || []).map((p: any) => ({ ...p, id: crypto.randomUUID() })),
-              awards: (result.awards || []).map((a: any) => ({ ...a, id: crypto.randomUUID() })),
+              experience: (result.experience || []).map((e: Omit<Experience, 'id'>) => ({ ...e, id: crypto.randomUUID() })),
+              education: (result.education || []).map((e: Omit<Education, 'id'>) => ({ ...e, id: crypto.randomUUID() })),
+              skills: (result.skills || []).map((s: Omit<Skill, 'id'>) => ({ ...s, id: crypto.randomUUID(), level: s.level || 4 })),
+              courses: (result.courses || []).map((c: Omit<Course, 'id'>) => ({ ...c, id: crypto.randomUUID() })),
+              languages: (result.languages || []).map((l: Omit<Language, 'id'>) => ({ ...l, id: crypto.randomUUID() })),
+              projects: (result.projects || []).map((p: Omit<Project, 'id'>) => ({ ...p, id: crypto.randomUUID() })),
+              awards: (result.awards || []).map((a: Omit<Award, 'id'>) => ({ ...a, id: crypto.randomUUID() })),
             }));
 
             setImportMessage({ type: 'success', text: 'Data imported successfully!' });
@@ -222,7 +222,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     if (event.target) event.target.value = '';
   };
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setCvData((prev) => {
@@ -313,8 +313,39 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     setCvData(prev => ({ ...prev, [section]: (prev[section] as any[]).filter(item => item.id !== id) }));
   }, [setCvData]);
 
-  const goNext = () => { if (wizardStep < ALL_STEPS.length - 1) setWizardStep(wizardStep + 1); };
-  const goBack = () => { if (wizardStep > 0) setWizardStep(wizardStep - 1); };
+  const goNext = useCallback(() => { setWizardStep(prev => Math.min(prev + 1, ALL_STEPS.length - 1)); }, []);
+  const goBack = useCallback(() => { setWizardStep(prev => Math.max(prev - 1, 0)); }, []);
+
+  // Stable toggle callback factory — avoids creating new function refs on each render
+  const toggleSection = useCallback((key: string) => {
+    setExpandedSection(prev => prev === key ? null : key);
+  }, []);
+
+  // Stable add/remove callbacks
+  const addExperience = useCallback(() => addSectionItem('experience', { company: '', position: '', startDate: '', endDate: '', description: '' }), [addSectionItem]);
+  const addEducation = useCallback(() => addSectionItem('education', { institution: '', degree: '', startDate: '', endDate: '', description: '' }), [addSectionItem]);
+  const addSkill = useCallback(() => addSectionItem('skills', { name: '', level: 5 }), [addSectionItem]);
+  const addCourse = useCallback(() => addSectionItem('courses', { name: '', institution: '', startDate: '', endDate: '' }), [addSectionItem]);
+  const addLanguage = useCallback(() => addSectionItem('languages', { name: '', proficiency: 'Native' }), [addSectionItem]);
+  const addProject = useCallback(() => addSectionItem('projects', { name: '', description: '', link: '' }), [addSectionItem]);
+  const addAward = useCallback(() => addSectionItem('awards', { name: '', date: '', issuer: '' }), [addSectionItem]);
+
+  const removeExperience = useCallback((id: string) => removeSectionItem('experience', id), [removeSectionItem]);
+  const removeEducation = useCallback((id: string) => removeSectionItem('education', id), [removeSectionItem]);
+  const removeSkill = useCallback((id: string) => removeSectionItem('skills', id), [removeSectionItem]);
+  const removeCourse = useCallback((id: string) => removeSectionItem('courses', id), [removeSectionItem]);
+  const removeLanguage = useCallback((id: string) => removeSectionItem('languages', id), [removeSectionItem]);
+  const removeProject = useCallback((id: string) => removeSectionItem('projects', id), [removeSectionItem]);
+  const removeAward = useCallback((id: string) => removeSectionItem('awards', id), [removeSectionItem]);
+
+  // Stable DatePicker callbacks
+  const openDatePicker = useCallback(() => setIsDatePickerOpen(true), []);
+  const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), []);
+
+  // Stable summary change callback
+  const handleSummaryChange = useCallback((val: string) => {
+    handlePersonalInfoChange({ target: { name: 'summary', value: val } });
+  }, [handlePersonalInfoChange]);
 
   const renderSection = (sectionKey: string) => {
     switch (sectionKey) {
@@ -323,12 +354,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <PersonalDetailsSection
             personalInfo={cvData.personalInfo}
             isOpen={expandedSection === 'personalDetails'}
-            onToggle={() => setExpandedSection(expandedSection === 'personalDetails' ? null : 'personalDetails')}
+            onToggle={() => toggleSection('personalDetails')}
             onChange={handlePersonalInfoChange}
             isDarkMode={isDarkMode}
             isDatePickerOpen={isDatePickerOpen}
-            onDatePickerOpen={() => setIsDatePickerOpen(true)}
-            onDatePickerClose={() => setIsDatePickerOpen(false)}
+            onDatePickerOpen={openDatePicker}
+            onDatePickerClose={closeDatePicker}
           />
         );
       case 'summary':
@@ -336,8 +367,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <SummarySection
             summary={cvData.personalInfo.summary}
             isOpen={expandedSection === 'summary'}
-            onToggle={() => setExpandedSection(expandedSection === 'summary' ? null : 'summary')}
-            onSummaryChange={(val) => handlePersonalInfoChange({ target: { name: 'summary', value: val } })}
+            onToggle={() => toggleSection('summary')}
+            onSummaryChange={handleSummaryChange}
             onGenerateSummary={handleGenerateSummary}
             isRefining={refiningIds['summary']}
           />
@@ -347,10 +378,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <ExperienceSection
             experience={cvData.experience}
             isOpen={expandedSection === 'experience'}
-            onToggle={() => setExpandedSection(expandedSection === 'experience' ? null : 'experience')}
+            onToggle={() => toggleSection('experience')}
             onChange={handleExperienceChange}
-            onAdd={() => addSectionItem('experience', { company: '', position: '', startDate: '', endDate: '', description: '' })}
-            onRemove={(id) => removeSectionItem('experience', id)}
+            onAdd={addExperience}
+            onRemove={removeExperience}
             onRefineText={handleRefineText}
             refiningIds={refiningIds}
           />
@@ -360,10 +391,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <EducationSection
             education={cvData.education}
             isOpen={expandedSection === 'education'}
-            onToggle={() => setExpandedSection(expandedSection === 'education' ? null : 'education')}
+            onToggle={() => toggleSection('education')}
             onChange={handleEducationChange}
-            onAdd={() => addSectionItem('education', { institution: '', degree: '', startDate: '', endDate: '', description: '' })}
-            onRemove={(id) => removeSectionItem('education', id)}
+            onAdd={addEducation}
+            onRemove={removeEducation}
             onRefineText={handleRefineText}
             refiningIds={refiningIds}
           />
@@ -373,10 +404,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <SkillsSection
             skills={cvData.skills}
             isOpen={expandedSection === 'skills'}
-            onToggle={() => setExpandedSection(expandedSection === 'skills' ? null : 'skills')}
+            onToggle={() => toggleSection('skills')}
             onChange={handleSkillChange}
-            onAdd={() => addSectionItem('skills', { name: '', level: 5 })}
-            onRemove={(id) => removeSectionItem('skills', id)}
+            onAdd={addSkill}
+            onRemove={removeSkill}
             isDarkMode={isDarkMode}
           />
         );
@@ -385,10 +416,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <CoursesSection
             courses={cvData.courses}
             isOpen={expandedSection === 'courses'}
-            onToggle={() => setExpandedSection(expandedSection === 'courses' ? null : 'courses')}
+            onToggle={() => toggleSection('courses')}
             onChange={handleCourseChange}
-            onAdd={() => addSectionItem('courses', { name: '', institution: '', startDate: '', endDate: '' })}
-            onRemove={(id) => removeSectionItem('courses', id)}
+            onAdd={addCourse}
+            onRemove={removeCourse}
           />
         );
       case 'languages':
@@ -396,10 +427,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <LanguagesSection
             languages={cvData.languages}
             isOpen={expandedSection === 'languages'}
-            onToggle={() => setExpandedSection(expandedSection === 'languages' ? null : 'languages')}
+            onToggle={() => toggleSection('languages')}
             onChange={handleLanguageChange}
-            onAdd={() => addSectionItem('languages', { name: '', proficiency: 'Native' })}
-            onRemove={(id) => removeSectionItem('languages', id)}
+            onAdd={addLanguage}
+            onRemove={removeLanguage}
             isDarkMode={isDarkMode}
           />
         );
@@ -408,10 +439,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <ProjectsSection
             projects={cvData.projects}
             isOpen={expandedSection === 'projects'}
-            onToggle={() => setExpandedSection(expandedSection === 'projects' ? null : 'projects')}
+            onToggle={() => toggleSection('projects')}
             onChange={handleProjectChange}
-            onAdd={() => addSectionItem('projects', { name: '', description: '', link: '' })}
-            onRemove={(id) => removeSectionItem('projects', id)}
+            onAdd={addProject}
+            onRemove={removeProject}
             onRefineText={handleRefineText}
             refiningIds={refiningIds}
           />
@@ -421,10 +452,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <AwardsSection
             awards={cvData.awards}
             isOpen={expandedSection === 'awards'}
-            onToggle={() => setExpandedSection(expandedSection === 'awards' ? null : 'awards')}
+            onToggle={() => toggleSection('awards')}
             onChange={handleAwardChange}
-            onAdd={() => addSectionItem('awards', { name: '', date: '', issuer: '' })}
-            onRemove={(id) => removeSectionItem('awards', id)}
+            onAdd={addAward}
+            onRemove={removeAward}
           />
         );
       default:
@@ -462,7 +493,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
               <div className="flex items-center justify-between min-w-max sm:min-w-full px-2 gap-4 sm:gap-2">
                 {WIZARD_STEPS.map((step, i) => {
                   const status = i < wizardStep ? 'completed' : i === wizardStep ? 'active' : 'upcoming';
-                  const Icon = step.key === 'finalize' ? ArrowRight : (WIZARD_STEPS[i] as any).icon || FileText; // Fallback or handle icons
+                  const Icon = step.icon;
                   return (
                     <React.Fragment key={step.key}>
                       <div
@@ -487,15 +518,15 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             </div>
 
             {/* Form Content */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={wizardStep}
-                initial={{ opacity: 0, y: 16, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -16, scale: 0.98 }}
-                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              >
-                <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={wizardStep}
+                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -16, scale: 0.98 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                >
                   <SortableContext
                     items={ALL_STEPS[wizardStep] === 'finalize' ? [...FINALIZE_SECTION_KEYS] : [ALL_STEPS[wizardStep]]}
                     strategy={verticalListSortingStrategy}
@@ -504,9 +535,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                       .filter(Boolean)
                       .map((key) => renderSection(key as string))}
                   </SortableContext>
-                </DndContext>
-              </motion.div>
-            </AnimatePresence>
+                </motion.div>
+              </AnimatePresence>
+            </DndContext>
 
             <WizardNav
               wizardStep={wizardStep}

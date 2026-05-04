@@ -14,6 +14,12 @@ interface DesignPanelProps {
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
+const TEMPLATES: Array<{ key: 'classic' | 'modern' | 'professional'; label: string; img: string }> = [
+  { key: 'classic', label: 'Classic', img: '/templates/classic.png' },
+  { key: 'modern', label: 'Modern', img: '/templates/modern.png' },
+  { key: 'professional', label: 'Professional', img: '/templates/professional.png' },
+];
+
 export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplate, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
@@ -32,12 +38,6 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
     setCvData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const templates: Array<{ key: 'classic' | 'modern' | 'professional'; label: string; img: string }> = [
-    { key: 'classic', label: 'Classic', img: '/templates/classic.png' },
-    { key: 'modern', label: 'Modern', img: '/templates/modern.png' },
-    { key: 'professional', label: 'Professional', img: '/templates/professional.png' },
-  ];
-
   return (
     <div className="animate-in fade-in duration-300 space-y-6 flex flex-col flex-1">
       {/* Choose Template */}
@@ -47,7 +47,7 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
           <h3 className={DESIGN_SECTION_TITLE_CLASS}>Choose Template</h3>
         </div>
         <div className="grid grid-cols-3 gap-3 max-w-[480px]">
-          {templates.map((t) => (
+          {TEMPLATES.map((t) => (
             <button key={t.key} type="button" onClick={() => setTemplate(t.key)}
               className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all duration-200 group ${template === t.key ? 'border-violet-500 bg-violet-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'}`}>
               {template === t.key && (<div className="absolute top-1.5 right-1.5 text-violet-600 z-10"><CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" /></div>)}

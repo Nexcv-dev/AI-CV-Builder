@@ -236,271 +236,188 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     );
   };
 
-  const renderModernSection = (sectionKey: string) => {
-    switch (sectionKey) {
-      case 'summary':
-        return personalInfo.summary && (
-          <section key="summary" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Profile</h2>
-            <div
-              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-              style={{ lineHeight: lineSpacing }}
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(personalInfo.summary, domPurifyConfig) }}
-            />
-          </section>
-        );
-      case 'experience':
-        return experience.length > 0 && (
-          <section key="experience" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Experience</h2>
-            <div className="space-y-6">
-              {experience.map((exp) => (
-                <div key={exp.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <h3 className="text-base font-bold text-gray-900">{exp.position || 'Position'}</h3>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium" style={{ color: themeColor }}>{exp.company || 'Company'}</span>
-                    <span className="text-xs text-gray-500 font-medium">{exp.startDate} {exp.startDate && exp.endDate ? '—' : ''} {exp.endDate}</span>
-                  </div>
-                  {exp.description && (
-                    <div
-                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-                      style={{ lineHeight: lineSpacing }}
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.description, domPurifyConfig) }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'education':
-        return education.length > 0 && (
-          <section key="education" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Education</h2>
-            <div className="space-y-6">
-              {education.map((edu) => (
-                <div key={edu.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <h3 className="text-base font-bold text-gray-900">{edu.degree || 'Degree'}</h3>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium text-gray-700">{edu.institution || 'Institution'}</span>
-                    <span className="text-xs text-gray-500 font-medium">{edu.startDate} {edu.startDate && edu.endDate ? '—' : ''} {edu.endDate}</span>
-                  </div>
-                  {edu.description && (
-                    <div
-                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-                      style={{ lineHeight: lineSpacing }}
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'courses':
-        return cvData.courses && cvData.courses.length > 0 && (
-          <section key="courses" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Courses & Certifications</h2>
-            <div className="space-y-4">
-              {cvData.courses.map((course) => (
-                <div key={course.id} style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <h3 className="text-base font-bold text-gray-900">{course.name || 'Course Name'}</h3>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">{course.institution || 'Institution'}</span>
-                    <span className="text-xs text-gray-500 font-medium">{course.startDate} {course.startDate && course.endDate ? '—' : ''} {course.endDate}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'projects':
-        return cvData.projects && cvData.projects.length > 0 && (
-          <section key="projects" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Projects</h2>
-            <div className="space-y-6">
-              {cvData.projects.map((proj) => (
-                <div key={proj.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="flex justify-between items-center mb-1">
-                    <h3 className="text-base font-bold text-gray-900">{proj.name || 'Project Name'}</h3>
-                    {proj.link && (
-                      <a href={getValidUrl(proj.link)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium hover:underline" style={{ color: themeColor }}>
-                        View Project
-                      </a>
-                    )}
-                  </div>
-                  {proj.description && (
-                    <div
-                      className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-                      style={{ lineHeight: lineSpacing }}
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(proj.description, domPurifyConfig) }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'awards':
-        return cvData.awards && cvData.awards.length > 0 && (
-          <section key="awards" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Awards & Honors</h2>
-            <div className="space-y-4">
-              {cvData.awards.map((award) => (
-                <div key={award.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <h3 className="text-base font-bold text-gray-900">{award.name || 'Award Name'}</h3>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">{award.issuer || 'Issuer'}</span>
-                    <span className="text-xs text-gray-500 font-medium">{award.date}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'personalDetails':
-        return null;
-      default:
-        return null;
-    }
-  };
+  const renderSection = (sectionKey: string) => {
+    const isPro = template === 'professional';
+    const isModern = template === 'modern';
 
-  const renderClassicSection = (sectionKey: string) => {
+    const SectionHeader = ({ title }: { title: string }) => (
+      <h2 
+        className={`${isPro ? 'text-sm' : 'text-lg'} font-bold uppercase tracking-widest border-b-2 mb-4 pb-1`} 
+        style={{ color: themeColor, borderColor: themeColor }}
+      >
+        {title}
+      </h2>
+    );
+
+    const SectionWrapper = ({ children }: { children: React.ReactNode }) => (
+      <section data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+        {children}
+      </section>
+    );
+
+    const ProseContent = ({ html, className = '' }: { html: string, className?: string }) => (
+      <div
+        className={`text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words ${className}`}
+        style={{ lineHeight: lineSpacing }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html, domPurifyConfig) }}
+      />
+    );
+
+    const GridRow = ({ dateNode, contentNode }: { dateNode: React.ReactNode, contentNode: React.ReactNode }) => {
+      const colClass = isPro ? 'grid-cols-[114px_1fr]' : 'grid-cols-[130px_1fr]';
+      const dateClass = isPro ? 'text-xs text-gray-500 font-bold uppercase pt-0.5' : 'text-sm text-gray-500 font-medium pt-0.5';
+      return (
+        <div className={`grid ${colClass} gap-4`} style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+          <div className={dateClass}>{dateNode}</div>
+          <div>{contentNode}</div>
+        </div>
+      );
+    };
+
     switch (sectionKey) {
       case 'summary':
-        return personalInfo.summary && (
-          <section key="summary" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-              Profile
-            </h2>
-            <div
-              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-              style={{ lineHeight: lineSpacing }}
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(personalInfo.summary, domPurifyConfig) }}
-            />
-          </section>
+        if (!personalInfo.summary) return null;
+        return (
+          <SectionWrapper key="summary">
+            <SectionHeader title={isPro ? 'Professional Summary' : 'Profile'} />
+            <ProseContent html={personalInfo.summary} className={isPro ? 'ml-[130px]' : ''} />
+          </SectionWrapper>
         );
+
       case 'personalDetails':
-        return (personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus) && (
-          <section key="personalDetails" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-              Personal Details
-            </h2>
-            <div className="grid grid-cols-2 gap-x-12 gap-y-2 text-sm">
-              {personalInfo.dob && (
-                <div className="flex justify-between border-b border-gray-100 pb-1">
-                  <span className="font-semibold text-gray-600">Date of Birth:</span>
-                  <span className="text-gray-800">{personalInfo.dob}</span>
-                </div>
-              )}
-              {personalInfo.nic && (
-                <div className="flex justify-between border-b border-gray-100 pb-1">
-                  <span className="font-semibold text-gray-600">NIC Number:</span>
-                  <span className="text-gray-800">{personalInfo.nic}</span>
-                </div>
-              )}
-              {personalInfo.gender && (
-                <div className="flex justify-between border-b border-gray-100 pb-1">
-                  <span className="font-semibold text-gray-600">Gender:</span>
-                  <span className="text-gray-800">{personalInfo.gender}</span>
-                </div>
-              )}
-              {personalInfo.maritalStatus && (
-                <div className="flex justify-between border-b border-gray-100 pb-1">
-                  <span className="font-semibold text-gray-600">Marital Status:</span>
-                  <span className="text-gray-800">{personalInfo.maritalStatus}</span>
-                </div>
-              )}
-              {personalInfo.nationality && (
-                <div className="flex justify-between border-b border-gray-100 pb-1">
-                  <span className="font-semibold text-gray-600">Nationality:</span>
-                  <span className="text-gray-800">{personalInfo.nationality}</span>
-                </div>
-              )}
-              {personalInfo.religion && (
-                <div className="flex justify-between border-b border-gray-100 pb-1">
-                  <span className="font-semibold text-gray-600">Religion:</span>
-                  <span className="text-gray-800">{personalInfo.religion}</span>
-                </div>
-              )}
+        if (isModern || !(personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus)) return null;
+        return (
+          <SectionWrapper key="personalDetails">
+            <SectionHeader title={isPro ? 'Personal Information' : 'Personal Details'} />
+            <div className={`grid grid-cols-2 gap-x-12 gap-y-2 text-sm ${isPro ? 'ml-[130px]' : ''}`}>
+              {personalInfo.dob && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Date of Birth:</span><span className="text-gray-800">{personalInfo.dob}</span></div>}
+              {personalInfo.nic && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">NIC${isPro ? '' : ' Number'}:</span><span className="text-gray-800">{personalInfo.nic}</span></div>}
+              {personalInfo.gender && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Gender:</span><span className="text-gray-800">{personalInfo.gender}</span></div>}
+              {personalInfo.maritalStatus && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Marital Status:</span><span className="text-gray-800">{personalInfo.maritalStatus}</span></div>}
+              {personalInfo.nationality && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Nationality:</span><span className="text-gray-800">{personalInfo.nationality}</span></div>}
+              {personalInfo.religion && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Religion:</span><span className="text-gray-800">{personalInfo.religion}</span></div>}
             </div>
-          </section>
+          </SectionWrapper>
         );
+
       case 'experience':
-        return experience.length > 0 && (
-          <section key="experience" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-              Experience
-            </h2>
+        if (experience.length === 0) return null;
+        return (
+          <SectionWrapper key="experience">
+            <SectionHeader title="Experience" />
             <div className="space-y-6">
-              {experience.map((exp) => (
-                <div key={exp.id} className="grid grid-cols-[130px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-sm text-gray-500 font-medium pt-0.5">
-                    {exp.startDate} {exp.startDate && exp.endDate ? '—' : ''} {exp.endDate}
-                  </div>
-                  <div>
+              {experience.map((exp) => {
+                if (isModern) {
+                  return (
+                    <div key={exp.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <h3 className="text-base font-bold text-gray-900">{exp.position || 'Position'}</h3>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium" style={{ color: themeColor }}>{exp.company || 'Company'}</span>
+                        <span className="text-xs text-gray-500 font-medium">{exp.startDate} {exp.startDate && exp.endDate ? '—' : ''} {exp.endDate}</span>
+                      </div>
+                      {exp.description && <ProseContent html={exp.description} />}
+                    </div>
+                  );
+                }
+                const dateNode = isPro ? (
+                  <>{exp.startDate} <br /> {exp.startDate && exp.endDate ? '—' : ''} <br /> {exp.endDate}</>
+                ) : (
+                  <>{exp.startDate} {exp.startDate && exp.endDate ? '—' : ''} {exp.endDate}</>
+                );
+                const contentNode = (
+                  <>
                     <h3 className="text-base font-bold text-gray-900">{exp.position || 'Position'}</h3>
-                    <div className="text-sm font-medium text-gray-700 mb-2">{exp.company || 'Company'}</div>
-                    {exp.description && (
-                      <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-                        style={{ lineHeight: lineSpacing }}
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.description, domPurifyConfig) }}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
+                    <div className={isPro ? "text-sm font-medium mb-1.5" : "text-sm font-medium text-gray-700 mb-2"} style={isPro ? { color: themeColor } : {}}>{exp.company || 'Company'}</div>
+                    {exp.description && <ProseContent html={exp.description} />}
+                  </>
+                );
+                return <GridRow key={exp.id} dateNode={dateNode} contentNode={contentNode} />;
+              })}
             </div>
-          </section>
+          </SectionWrapper>
         );
-      case 'education':
-        return education.length > 0 && (
-          <section key="education" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-              Education
-            </h2>
-            <div className="space-y-6">
-              {education.map((edu) => (
-                <div key={edu.id} className="grid grid-cols-[130px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-sm text-gray-500 font-medium pt-0.5">
-                    {edu.startDate} {edu.startDate && edu.endDate ? '—' : ''} {edu.endDate}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">{edu.degree || 'Degree'}</h3>
-                    <div className="text-sm text-gray-700 mb-1">{edu.institution || 'Institution'}</div>
-                    {edu.description && (
-                      <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-                        style={{ lineHeight: lineSpacing }}
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'skills': {
-        if (skills.length === 0) return null;
 
+      case 'education':
+        if (education.length === 0) return null;
+        return (
+          <SectionWrapper key="education">
+            <SectionHeader title="Education" />
+            <div className="space-y-6">
+              {education.map((edu) => {
+                if (isModern) {
+                  return (
+                    <div key={edu.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <h3 className="text-base font-bold text-gray-900">{edu.degree || 'Degree'}</h3>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-medium text-gray-700">{edu.institution || 'Institution'}</span>
+                        <span className="text-xs text-gray-500 font-medium">{edu.startDate} {edu.startDate && edu.endDate ? '—' : ''} {edu.endDate}</span>
+                      </div>
+                      {edu.description && <ProseContent html={edu.description} />}
+                    </div>
+                  );
+                }
+                const dateNode = isPro ? (
+                  <>{edu.startDate} <br /> {edu.startDate && edu.endDate ? '—' : ''} <br /> {edu.endDate}</>
+                ) : (
+                  <>{edu.startDate} {edu.startDate && edu.endDate ? '—' : ''} {edu.endDate}</>
+                );
+                const contentNode = (
+                  <>
+                    <h3 className="text-base font-bold text-gray-900">{edu.degree || 'Degree'}</h3>
+                    <div className={isPro ? "text-sm font-medium mb-1.5" : "text-sm text-gray-700 mb-1"} style={isPro ? { color: themeColor } : {}}>{edu.institution || 'Institution'}</div>
+                    {edu.description && <ProseContent html={edu.description} />}
+                  </>
+                );
+                return <GridRow key={edu.id} dateNode={dateNode} contentNode={contentNode} />;
+              })}
+            </div>
+          </SectionWrapper>
+        );
+
+      case 'skills': {
+        if (isModern || skills.length === 0) return null;
         const hasCategories = skills.some(skill => skill.category?.trim());
+        const renderChips = (skillList: typeof skills) => (
+          <div className="flex flex-wrap gap-2">
+            {skillList.map((skill) => (
+              <span key={skill.id} className={`font-semibold bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-200 ${isPro ? 'text-xs px-2.5 py-1' : 'text-sm px-3 py-1.5'}`} style={{ pageBreakInside: 'avoid' }}>
+                {skill.name}
+              </span>
+            ))}
+          </div>
+        );
+
+        if (isPro) {
+          const skillsByCategory = hasCategories 
+            ? skills.reduce((acc, skill) => {
+                const category = skill.category?.trim() || 'Core Setup';
+                if (!acc[category]) acc[category] = [];
+                acc[category].push(skill);
+                return acc;
+              }, {} as Record<string, typeof skills>)
+            : { 'Core Setup': skills };
+
+          return (
+            <SectionWrapper key="skills">
+              <SectionHeader title="Skills & Expertise" />
+              <div className="space-y-4">
+                {Object.entries(skillsByCategory).map(([category, catSkills]) => (
+                  <div key={category} className="grid grid-cols-[114px_1fr] gap-4">
+                    <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">{category}</div>
+                    {renderChips(catSkills)}
+                  </div>
+                ))}
+              </div>
+            </SectionWrapper>
+          );
+        }
 
         if (!hasCategories) {
           return (
-            <section key="skills" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-              <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-                Skills
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {skills.map((skill) => (
-                  <span key={skill.id} className="text-sm font-semibold px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-200" style={{ pageBreakInside: 'avoid' }}>
-                    {skill.name}
-                  </span>
-                ))}
-              </div>
-            </section>
+            <SectionWrapper key="skills">
+              <SectionHeader title="Skills" />
+              {renderChips(skills)}
+            </SectionWrapper>
           );
         }
 
@@ -511,338 +428,151 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           return acc;
         }, {} as Record<string, typeof skills>);
 
-        const categories = Object.entries(skillsByCategory);
-
         return (
-          <section key="skills" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-              Skills
-            </h2>
+          <SectionWrapper key="skills">
+            <SectionHeader title="Skills" />
             <div className="space-y-5">
-              {categories.map(([category, catSkills]) => (
+              {Object.entries(skillsByCategory).map(([category, catSkills]) => (
                 <div key={category} className="space-y-2">
                   <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">{category}</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {catSkills.map((skill) => (
-                      <span key={skill.id} className="text-sm font-semibold px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-200" style={{ pageBreakInside: 'avoid' }}>
-                        {skill.name}
-                      </span>
-                    ))}
-                  </div>
+                  {renderChips(catSkills)}
                 </div>
               ))}
             </div>
-          </section>
+          </SectionWrapper>
         );
       }
+
       case 'projects':
-        return cvData.projects && cvData.projects.length > 0 && (
-          <section key="projects" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-              Projects
-            </h2>
+        if (!cvData.projects || cvData.projects.length === 0) return null;
+        return (
+          <SectionWrapper key="projects">
+            <SectionHeader title={isPro ? 'Key Projects' : 'Projects'} />
             <div className="space-y-6">
-              {cvData.projects.map((project) => (
-                <div key={project.id} className="grid grid-cols-[130px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-sm text-gray-500 font-medium pt-0.5">
-                    {project.link && (
-                      <a href={getValidUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-sm font-normal underline hover:text-gray-900" style={{ color: themeColor }}>
-                        View Project
-                      </a>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">
-                      {project.name || 'Project Name'}
-                    </h3>
-                    {project.description && (
-                      <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none mt-1 prose-p:my-0 whitespace-pre-wrap break-words"
-                        style={{ lineHeight: lineSpacing }}
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(project.description, domPurifyConfig) }}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
+              {cvData.projects.map((proj) => {
+                const linkNode = proj.link ? (
+                  <a href={getValidUrl(proj.link)} target="_blank" rel="noopener noreferrer" className={isPro ? "hover:underline" : "text-sm font-normal underline hover:text-gray-900"} style={{ color: themeColor }}>
+                    {isModern || isPro ? (isModern ? 'View Project' : 'Link') : 'View Project'}
+                  </a>
+                ) : null;
+
+                if (isModern) {
+                  return (
+                    <div key={proj.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div className="flex justify-between items-center mb-1">
+                        <h3 className="text-base font-bold text-gray-900">{proj.name || 'Project Name'}</h3>
+                        {linkNode && <span className="text-xs font-medium">{linkNode}</span>}
+                      </div>
+                      {proj.description && <ProseContent html={proj.description} />}
+                    </div>
+                  );
+                }
+                const contentNode = (
+                  <>
+                    <h3 className={`text-base font-bold text-gray-900 ${isPro ? 'mb-1.5' : ''}`}>{proj.name || 'Project Name'}</h3>
+                    {proj.description && <ProseContent html={proj.description} className={isPro ? '' : 'mt-1'} />}
+                  </>
+                );
+                return <GridRow key={proj.id} dateNode={linkNode} contentNode={contentNode} />;
+              })}
             </div>
-          </section>
+          </SectionWrapper>
         );
+
       case 'courses':
-        return cvData.courses && cvData.courses.length > 0 && (
-          <section key="courses" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-              Courses
-            </h2>
-            <div className="space-y-6">
-              {cvData.courses.map((course) => (
-                <div key={course.id} data-page-break="avoid" className="grid grid-cols-[130px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-sm text-gray-500 font-medium pt-0.5">
-                    {course.startDate} {course.startDate && course.endDate ? '—' : ''} {course.endDate}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">{course.name || 'Course Name'}</h3>
-                    <div className="text-sm text-gray-700 mb-1">{course.institution || 'Institution'}</div>
-                  </div>
-                </div>
-              ))}
+        if (!cvData.courses || cvData.courses.length === 0) return null;
+        return (
+          <SectionWrapper key="courses">
+            <SectionHeader title={isPro ? 'Certifications & Courses' : (isModern ? 'Courses & Certifications' : 'Courses')} />
+            <div className={isPro || isModern ? "space-y-4" : "space-y-6"}>
+              {cvData.courses.map((course) => {
+                if (isModern) {
+                  return (
+                    <div key={course.id} style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <h3 className="text-base font-bold text-gray-900">{course.name || 'Course Name'}</h3>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700">{course.institution || 'Institution'}</span>
+                        <span className="text-xs text-gray-500 font-medium">{course.startDate} {course.startDate && course.endDate ? '—' : ''} {course.endDate}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                const dateNode = isPro ? (
+                  <>{course.startDate} <br /> {course.endDate ? '—' : ''} <br /> {course.endDate}</>
+                ) : (
+                  <>{course.startDate} {course.startDate && course.endDate ? '—' : ''} {course.endDate}</>
+                );
+                const contentNode = (
+                  <>
+                    <h3 className={isPro ? "text-sm font-bold text-gray-900" : "text-base font-bold text-gray-900"}>{course.name || 'Course Name'}</h3>
+                    <div className={isPro ? "text-xs font-medium text-gray-600 mt-0.5" : "text-sm text-gray-700 mb-1"}>{course.institution || 'Institution'}</div>
+                  </>
+                );
+                return <GridRow key={course.id} dateNode={dateNode} contentNode={contentNode} />;
+              })}
             </div>
-          </section>
+          </SectionWrapper>
         );
+
       case 'awards':
-        return cvData.awards && cvData.awards.length > 0 && (
-          <section key="awards" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-              Awards
-            </h2>
-            <div className="space-y-6">
-              {cvData.awards.map((award) => (
-                <div key={award.id} data-page-break="avoid" className="grid grid-cols-[130px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-sm text-gray-500 font-medium pt-0.5">
-                    {award.date}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">{award.name || 'Award Name'}</h3>
-                    <div className="text-sm text-gray-700 mb-1">{award.issuer || 'Issuer'}</div>
-                  </div>
-                </div>
-              ))}
+        if (!cvData.awards || cvData.awards.length === 0) return null;
+        return (
+          <SectionWrapper key="awards">
+            <SectionHeader title={isModern ? 'Awards & Honors' : 'Awards'} />
+            <div className={isPro || isModern ? "space-y-4" : "space-y-6"}>
+              {cvData.awards.map((award) => {
+                if (isModern) {
+                  return (
+                    <div key={award.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <h3 className="text-base font-bold text-gray-900">{award.name || 'Award Name'}</h3>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700">{award.issuer || 'Issuer'}</span>
+                        <span className="text-xs text-gray-500 font-medium">{award.date}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                const contentNode = (
+                  <>
+                    <h3 className={isPro ? "text-sm font-bold text-gray-900" : "text-base font-bold text-gray-900"}>{award.name || (isPro ? 'Award Title' : 'Award Name')}</h3>
+                    <div className={isPro ? "text-xs font-medium text-gray-600 mt-0.5" : "text-sm text-gray-700 mb-1"}>{award.issuer || 'Issuer'}</div>
+                  </>
+                );
+                return <GridRow key={award.id} dateNode={award.date} contentNode={contentNode} />;
+              })}
             </div>
-          </section>
+          </SectionWrapper>
         );
+
       case 'languages':
-        return cvData.languages && cvData.languages.length > 0 && (
-          <section key="languages" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-lg font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>
-              Languages
-            </h2>
-            <div className="grid grid-cols-2 gap-x-12 gap-y-4">
-              {cvData.languages.map((language) => (
-                <div key={language.id} data-page-break="avoid" className="flex items-center justify-between" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <span className="text-sm font-medium text-gray-700">{language.name}</span>
-                  <span className="text-sm text-gray-500">{language.proficiency}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const renderProfessionalSection = (sectionKey: string) => {
-    switch (sectionKey) {
-      case 'summary':
-        return personalInfo.summary && (
-          <section key="summary" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Professional Summary</h2>
-            <div
-              className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 ml-[130px] whitespace-pre-wrap break-words"
-              style={{ lineHeight: lineSpacing }}
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(personalInfo.summary, domPurifyConfig) }}
-            />
-          </section>
-        );
-      case 'experience':
-        return experience.length > 0 && (
-          <section key="experience" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Experience</h2>
-            <div className="space-y-6">
-              {experience.map((exp) => (
-                <div key={exp.id} className="grid grid-cols-[114px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">
-                    {exp.startDate} <br /> {exp.startDate && exp.endDate ? '—' : ''} <br /> {exp.endDate}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">{exp.position || 'Position'}</h3>
-                    <div className="text-sm font-medium mb-1.5" style={{ color: themeColor }}>{exp.company || 'Company'}</div>
-                    {exp.description && (
-                      <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-                        style={{ lineHeight: lineSpacing }}
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.description, domPurifyConfig) }}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'education':
-        return education.length > 0 && (
-          <section key="education" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Education</h2>
-            <div className="space-y-6">
-              {education.map((edu) => (
-                <div key={edu.id} className="grid grid-cols-[114px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">
-                    {edu.startDate} <br /> {edu.startDate && edu.endDate ? '—' : ''} <br /> {edu.endDate}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">{edu.degree || 'Degree'}</h3>
-                    <div className="text-sm font-medium mb-1.5" style={{ color: themeColor }}>{edu.institution || 'Institution'}</div>
-                    {edu.description && (
-                      <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-                        style={{ lineHeight: lineSpacing }}
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(edu.description, domPurifyConfig) }}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'skills': {
-        if (skills.length === 0) return null;
-
-        const hasCategories = skills.some(skill => skill.category?.trim());
-
-        if (!hasCategories) {
-          return (
-            <section key="skills" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-              <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Skills & Expertise</h2>
+        if (isModern || !cvData.languages || cvData.languages.length === 0) return null;
+        return (
+          <SectionWrapper key="languages">
+            <SectionHeader title="Languages" />
+            {isPro ? (
               <div className="grid grid-cols-[114px_1fr] gap-4">
-                <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">Core Setup</div>
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((skill) => (
-                    <span key={skill.id} className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md">
-                      {skill.name}
+                <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">Spoken</div>
+                <div className="flex flex-wrap gap-4 text-sm font-medium text-gray-800">
+                  {cvData.languages.map((lang) => (
+                    <span key={lang.id}>
+                      {lang.name} <span className="text-gray-400 font-normal">({lang.proficiency})</span>
                     </span>
                   ))}
                 </div>
               </div>
-            </section>
-          );
-        }
-
-        const skillsByCategory = skills.reduce((acc, skill) => {
-          const category = skill.category?.trim() || 'Core Setup';
-          if (!acc[category]) acc[category] = [];
-          acc[category].push(skill);
-          return acc;
-        }, {} as Record<string, typeof skills>);
-
-        const categories = Object.entries(skillsByCategory);
-
-        return (
-          <section key="skills" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Skills & Expertise</h2>
-            <div className="space-y-4">
-              {categories.map(([category, catSkills]) => (
-                <div key={category} className="grid grid-cols-[114px_1fr] gap-4">
-                  <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">{category}</div>
-                  <div className="flex flex-wrap gap-2">
-                    {catSkills.map((skill) => (
-                      <span key={skill.id} className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md">
-                        {skill.name}
-                      </span>
-                    ))}
+            ) : (
+              <div className="grid grid-cols-2 gap-x-12 gap-y-4">
+                {cvData.languages.map((language) => (
+                  <div key={language.id} data-page-break="avoid" className="flex items-center justify-between" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                    <span className="text-sm font-medium text-gray-700">{language.name}</span>
+                    <span className="text-sm text-gray-500">{language.proficiency}</span>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      }
-      case 'projects':
-        return cvData.projects && cvData.projects.length > 0 && (
-          <section key="projects" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Key Projects</h2>
-            <div className="space-y-6">
-              {cvData.projects.map((project) => (
-                <div key={project.id} className="grid grid-cols-[114px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">
-                    {project.link && (
-                      <a href={getValidUrl(project.link)} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: themeColor }}>
-                        Link
-                      </a>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900 mb-1.5">{project.name || 'Project Name'}</h3>
-                    {project.description && (
-                      <div
-                        className="text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words"
-                        style={{ lineHeight: lineSpacing }}
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(project.description, domPurifyConfig) }}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'courses':
-        return cvData.courses && cvData.courses.length > 0 && (
-          <section key="courses" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Certifications & Courses</h2>
-            <div className="space-y-4">
-              {cvData.courses.map((course) => (
-                <div key={course.id} className="grid grid-cols-[114px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">
-                    {course.startDate} <br /> {course.endDate ? '—' : ''} <br /> {course.endDate}
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-900">{course.name || 'Course Name'}</h3>
-                    <div className="text-xs font-medium text-gray-600 mt-0.5">{course.institution || 'Institution'}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'awards':
-        return cvData.awards && cvData.awards.length > 0 && (
-          <section key="awards" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Awards</h2>
-            <div className="space-y-4">
-              {cvData.awards.map((award) => (
-                <div key={award.id} className="grid grid-cols-[114px_1fr] gap-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                  <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">{award.date}</div>
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-900">{award.name || 'Award Title'}</h3>
-                    <div className="text-xs font-medium text-gray-600 mt-0.5">{award.issuer || 'Issuer'}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'languages':
-        return cvData.languages && cvData.languages.length > 0 && (
-          <section key="languages" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Languages</h2>
-            <div className="grid grid-cols-[114px_1fr] gap-4">
-              <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">Spoken</div>
-              <div className="flex flex-wrap gap-4 text-sm font-medium text-gray-800">
-                {cvData.languages.map((lang) => (
-                  <span key={lang.id}>
-                    {lang.name} <span className="text-gray-400 font-normal">({lang.proficiency})</span>
-                  </span>
                 ))}
               </div>
-            </div>
-          </section>
+            )}
+          </SectionWrapper>
         );
-      case 'personalDetails':
-        return (personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus) && (
-          <section key="personalDetails" data-page-break="avoid" style={{ marginBottom: `${sectionGap}rem`, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-            <h2 className="text-sm font-bold uppercase tracking-widest border-b-2 mb-4 pb-1" style={{ color: themeColor, borderColor: themeColor }}>Personal Information</h2>
-            <div className="grid grid-cols-2 gap-x-12 gap-y-2 text-sm ml-[130px]">
-              {personalInfo.dob && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Date of Birth:</span><span className="text-gray-800">{personalInfo.dob}</span></div>}
-              {personalInfo.nic && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">NIC:</span><span className="text-gray-800">{personalInfo.nic}</span></div>}
-              {personalInfo.gender && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Gender:</span><span className="text-gray-800">{personalInfo.gender}</span></div>}
-              {personalInfo.maritalStatus && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Marital Status:</span><span className="text-gray-800">{personalInfo.maritalStatus}</span></div>}
-              {personalInfo.nationality && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Nationality:</span><span className="text-gray-800">{personalInfo.nationality}</span></div>}
-              {personalInfo.religion && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Religion:</span><span className="text-gray-800">{personalInfo.religion}</span></div>}
-            </div>
-          </section>
-        );
+
       default:
         return null;
     }
@@ -906,7 +636,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               </header>
 
               <div className="modern-sections-container">
-                {(cvData.sectionOrder || []).map(renderModernSection)}
+                {(cvData.sectionOrder || []).map(renderSection)}
               </div>
             </div>
           </div>
@@ -941,7 +671,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               </header>
 
               <div className="professional-sections-container">
-                {(cvData.sectionOrder || []).map(renderProfessionalSection)}
+                {(cvData.sectionOrder || []).map(renderSection)}
               </div>
             </div>
           </div>
@@ -971,7 +701,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               </div>
             </header>
 
-            {cvData.sectionOrder.map(renderClassicSection)}
+            {cvData.sectionOrder.map(renderSection)}
           </div>
         )}
       </div>

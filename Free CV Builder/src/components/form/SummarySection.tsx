@@ -2,7 +2,7 @@ import React from 'react';
 import { FileText, Loader2, Sparkles } from 'lucide-react';
 import { SortableAccordionSection } from './SortableAccordionSection';
 import { RichTextEditor } from '../RichTextEditor';
-import { AI_BUTTON_CLASS } from './constants';
+import { AI_BUTTON_CLASS, LABEL_CLASS_SM } from './constants';
 
 interface SummarySectionProps {
   summary: string;
@@ -31,7 +31,7 @@ export const SummarySection = React.memo(({
   >
     <div className="grid grid-cols-1 gap-5">
       <div className="md:col-span-2">
-        <label id="summary-label" className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
+        <label id="summary-label" className={LABEL_CLASS_SM}>Professional Summary</label>
         <RichTextEditor
           id="summary"
           labelId="summary-label"
