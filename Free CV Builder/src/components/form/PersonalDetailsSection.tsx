@@ -189,7 +189,7 @@ export const PersonalDetailsSection = React.memo(({
           placeholder="e.g. Christianity"
           value={personalInfo.religion}
           onChange={onChange}
-          className="w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white"
+          className={INPUT_CLASS_MIN_H}
         />
       </div>
     </div>

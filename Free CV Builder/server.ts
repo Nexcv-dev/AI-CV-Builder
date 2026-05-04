@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -29,7 +29,7 @@ app.use(helmet({
 }));
 
 // Permissions-Policy: restrict browser feature access
-app.use((_req, res, next) => {
+app.use((_req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
     next();
 });
@@ -143,11 +143,11 @@ export function sanitizeContextField(value: any): string {
 // ─── API Routes ──────────────────────────────────────────────────────
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req, res) => {
+app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req: Request, res: Response) => {
     try {
         const { base64Data, mimeType } = req.body;
 
@@ -312,7 +312,7 @@ app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req, res) => {
 });
 
 // AI Generate Professional Summary
-app.post('/api/generate-summary', async (req, res) => {
+app.post('/api/generate-summary', async (req: Request, res: Response) => {
     try {
         if (!process.env.GEMINI_API_KEY) {
             return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
@@ -381,7 +381,7 @@ Rules:
 });
 
 // AI Refine Text (for experience, education, project descriptions)
-app.post('/api/refine-text', async (req, res) => {
+app.post('/api/refine-text', async (req: Request, res: Response) => {
     try {
         if (!process.env.GEMINI_API_KEY) {
             return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
@@ -555,277 +555,185 @@ export function generateCVHTML(cvData: any, template: string): string {
     const sectionOrder = cvData.sectionOrder || ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages'];
     const hiddenSections = cvData.hiddenSections || [];
 
-    // Contrast color helper
-    const getContrastColor = (hex: string) => {
-        if (!hex || hex.length < 7) return '#ffffff';
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        return luminance > 0.5 ? '#1a1a1a' : '#ffffff';
-    };
-
-    const sidebarTextColor = getContrastColor(sidebarColor);
-    const sidebarMutedColor = sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)';
-
+    // --- Import shared helpers inline to keep the same export signature ---
     const esc = (str: string) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-    // Sanitization config for rich text
     const sanitize = (html: string) => DOMPurify.sanitize(html || '', {
         ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
         ALLOWED_ATTR: ['href', 'target', 'rel']
     });
 
-    // Skill bars helper
+    const getContrastColor = (hex: string) => {
+        if (!hex || hex.length < 7) return '#ffffff';
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#1a1a1a' : '#ffffff';
+    };
+
+    const sidebarTextColor = getContrastColor(sidebarColor);
+    const sidebarMutedColor = sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)';
+
+    // ─── Reusable micro-templates ────────────────────────────────────
+    const isPro = template === 'professional';
+    const isModern = template === 'modern';
+    const headingFontSize = isPro ? '0.875rem' : '1.125rem';
+    const dateColWidth = isPro ? '114px' : '130px';
+
+    const heading = (title: string) =>
+        `<h2 style="font-size:${headingFontSize};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${title}</h2>`;
+
+    const section = (content: string) =>
+        `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">${content}</section>`;
+
+    const desc = (html: string) => html
+        ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(html)}</div>` : '';
+
+    const dateInline = (s: string, e: string) =>
+        `${esc(s || '')} ${s && e ? '—' : ''} ${esc(e || '')}`;
+
+    const dateStacked = (s: string, e: string) =>
+        `${esc(s || '')}<br>${s && e ? '—' : ''}<br>${esc(e || '')}`;
+
+    const title3 = (t: string) =>
+        `<h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(t)}</h3>`;
+
+    const timelineRow = (dateHtml: string, inner: string) => {
+        const ds = isPro ? 'font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px'
+            : 'font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px';
+        return `<div style="display:grid;grid-template-columns:${dateColWidth} 1fr;gap:16px;break-inside:avoid">
+            <div style="${ds}">${dateHtml}</div><div>${inner}</div></div>`;
+    };
+
+    const modernItem = (titleH: string, leftSub: string, rightSub: string, body: string) =>
+        `<div style="break-inside:avoid">${titleH}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="font-size:0.875rem;font-weight:500;color:${leftSub.startsWith('#') ? leftSub : '#374151'}">${leftSub.startsWith('#') ? '' : leftSub}</span>
+              <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${rightSub}</span>
+            </div>${body}</div>`;
+
+    const itemsList = (items: string[], gap = '24px') =>
+        `<div style="display:flex;flex-direction:column;gap:${gap}">${items.join('')}</div>`;
+
     const renderBars = (level: number) => {
         const pct = ((level || 0) / 5) * 100;
         return `<div style="width:96px;height:6px;background:#e5e7eb;border-radius:9999px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${themeColor};border-radius:9999px"></div></div>`;
     };
 
-    // Section rendering (generates section HTML based on template)
+    const detailRow = (label: string, val: string) =>
+        `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">${label}:</span><span style="color:#1f2937">${esc(val)}</span></div>`;
+
+    const profileImg = (size: number, radius: string, border: string) => profileImage
+        ? `<div style="width:${size}px;height:${size}px;border-radius:${radius};overflow:hidden;border:${border};margin:0 auto;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round ${radius})"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : '';
+
     const renderSection = (key: string): string => {
         if (hiddenSections.includes(key)) return '';
 
         if (key === 'summary' && personalInfo.summary) {
-            if (template === 'professional') {
-                return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-          <h2 style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Professional Summary</h2>
-          <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>
-        </section>`;
-            }
-            return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:12px">Profile</h2>
-        <div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>
-      </section>`;
+            const summaryTitle = isPro ? 'Professional Summary' : 'Profile';
+            const summaryDesc = isPro
+                ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>`
+                : desc(personalInfo.summary);
+            return section(`${heading(summaryTitle)}${summaryDesc}`);
         }
 
         if (key === 'personalDetails' && (personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus)) {
-            if (template === 'modern') return '';
-
+            if (isModern) return '';
             const details = [
-                personalInfo.dob ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Date of Birth:</span><span style="color:#1f2937">${esc(personalInfo.dob)}</span></div>` : '',
-                personalInfo.nic ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">NIC:</span><span style="color:#1f2937">${esc(personalInfo.nic)}</span></div>` : '',
-                personalInfo.gender ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Gender:</span><span style="color:#1f2937">${esc(personalInfo.gender)}</span></div>` : '',
-                personalInfo.maritalStatus ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Marital Status:</span><span style="color:#1f2937">${esc(personalInfo.maritalStatus)}</span></div>` : '',
-                personalInfo.nationality ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Nationality:</span><span style="color:#1f2937">${esc(personalInfo.nationality)}</span></div>` : '',
-                personalInfo.religion ? `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:4px"><span style="font-weight:600;color:#4b5563">Religion:</span><span style="color:#1f2937">${esc(personalInfo.religion)}</span></div>` : '',
+                personalInfo.dob ? detailRow('Date of Birth', personalInfo.dob) : '',
+                personalInfo.nic ? detailRow('NIC', personalInfo.nic) : '',
+                personalInfo.gender ? detailRow('Gender', personalInfo.gender) : '',
+                personalInfo.maritalStatus ? detailRow('Marital Status', personalInfo.maritalStatus) : '',
+                personalInfo.nationality ? detailRow('Nationality', personalInfo.nationality) : '',
+                personalInfo.religion ? detailRow('Religion', personalInfo.religion) : '',
             ].filter(Boolean).join('');
-
-            return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Personal Details</h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:8px;font-size:0.875rem${template === 'professional' ? ';margin-left:130px' : ''}">${details}</div>
-      </section>`;
+            return section(`${heading('Personal Details')}<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:8px;font-size:0.875rem${isPro ? ';margin-left:130px' : ''}">${details}</div>`);
         }
 
         if (key === 'experience' && experience.length > 0) {
             const items = experience.map((exp: any) => {
-                if (template === 'classic') {
-                    return `<div style="display:grid;grid-template-columns:130px 1fr;gap:16px;break-inside:avoid">
-            <div style="font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px">${esc(exp.startDate || '')} ${exp.startDate && exp.endDate ? '—' : ''} ${esc(exp.endDate || '')}</div>
-            <div>
-              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(exp.position || 'Position')}</h3>
-              <div style="font-size:0.875rem;font-weight:500;color:#374151;margin-bottom:8px">${esc(exp.company || 'Company')}</div>
-              ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(exp.description)}</div>` : ''}
-            </div>
-          </div>`;
-                } else if (template === 'professional') {
-                    return `<div style="display:grid;grid-template-columns:114px 1fr;gap:16px;break-inside:avoid">
-            <div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">${esc(exp.startDate || '')}<br>${exp.startDate && exp.endDate ? '—' : ''}<br>${esc(exp.endDate || '')}</div>
-            <div>
-              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(exp.position || 'Position')}</h3>
-              <div style="font-size:0.875rem;font-weight:500;color:${themeColor};margin-bottom:6px">${esc(exp.company || 'Company')}</div>
-              ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(exp.description)}</div>` : ''}
-            </div>
-          </div>`;
-                } else { // modern
-                    return `<div style="break-inside:avoid">
-            <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(exp.position || 'Position')}</h3>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <span style="font-size:0.875rem;font-weight:500;color:${themeColor}">${esc(exp.company || 'Company')}</span>
-              <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(exp.startDate || '')} ${exp.startDate && exp.endDate ? '—' : ''} ${esc(exp.endDate || '')}</span>
-            </div>
-            ${exp.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(exp.description)}</div>` : ''}
-          </div>`;
+                const t = title3(exp.position || 'Position');
+                const d = desc(exp.description);
+                if (isModern) {
+                    return `<div style="break-inside:avoid">${t}
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                          <span style="font-size:0.875rem;font-weight:500;color:${themeColor}">${esc(exp.company || 'Company')}</span>
+                          <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(exp.startDate, exp.endDate)}</span>
+                        </div>${d}</div>`;
                 }
-            }).join('');
-
-            return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Experience</h2>
-        <div style="display:flex;flex-direction:column;gap:24px">${items}</div>
-      </section>`;
+                const sub = `<div style="font-size:0.875rem;font-weight:500;color:${isPro ? themeColor : '#374151'};margin-bottom:${isPro ? '6px' : '8px'}">${esc(exp.company || 'Company')}</div>`;
+                const dateH = isPro ? dateStacked(exp.startDate, exp.endDate) : dateInline(exp.startDate, exp.endDate);
+                return timelineRow(dateH, `${t}${sub}${d}`);
+            });
+            return section(`${heading('Experience')}${itemsList(items)}`);
         }
 
         if (key === 'education' && education.length > 0) {
             const items = education.map((edu: any) => {
-                if (template === 'classic') {
-                    return `<div style="display:grid;grid-template-columns:130px 1fr;gap:16px;break-inside:avoid">
-            <div style="font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px">${esc(edu.startDate || '')} ${edu.startDate && edu.endDate ? '—' : ''} ${esc(edu.endDate || '')}</div>
-            <div>
-              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(edu.degree || 'Degree')}</h3>
-              <div style="font-size:0.875rem;color:#374151;margin-bottom:4px">${esc(edu.institution || 'Institution')}</div>
-              ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(edu.description)}</div>` : ''}
-            </div>
-          </div>`;
-                } else if (template === 'professional') {
-                    return `<div style="display:grid;grid-template-columns:114px 1fr;gap:16px;break-inside:avoid">
-            <div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">${esc(edu.startDate || '')}<br>${edu.startDate && edu.endDate ? '—' : ''}<br>${esc(edu.endDate || '')}</div>
-            <div>
-              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(edu.degree || 'Degree')}</h3>
-              <div style="font-size:0.875rem;font-weight:500;color:${themeColor};margin-bottom:6px">${esc(edu.institution || 'Institution')}</div>
-              ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(edu.description)}</div>` : ''}
-            </div>
-          </div>`;
-                } else { // modern
-                    return `<div style="break-inside:avoid">
-            <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(edu.degree || 'Degree')}</h3>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(edu.institution || 'Institution')}</span>
-              <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(edu.startDate || '')} ${edu.startDate && edu.endDate ? '—' : ''} ${esc(edu.endDate || '')}</span>
-            </div>
-            ${edu.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(edu.description)}</div>` : ''}
-          </div>`;
+                const t = title3(edu.degree || 'Degree');
+                const d = desc(edu.description);
+                if (isModern) {
+                    return `<div style="break-inside:avoid">${t}<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(edu.institution || 'Institution')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(edu.startDate, edu.endDate)}</span></div>${d}</div>`;
                 }
-            }).join('');
-
-            return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Education</h2>
-        <div style="display:flex;flex-direction:column;gap:24px">${items}</div>
-      </section>`;
+                const sub = `<div style="font-size:0.875rem;font-weight:500;color:${isPro ? themeColor : '#374151'};margin-bottom:${isPro ? '6px' : '4px'}">${esc(edu.institution || 'Institution')}</div>`;
+                return timelineRow(isPro ? dateStacked(edu.startDate, edu.endDate) : dateInline(edu.startDate, edu.endDate), `${t}${sub}${d}`);
+            });
+            return section(`${heading('Education')}${itemsList(items)}`);
         }
 
         if (key === 'skills' && skills.length > 0) {
-            // For modern template, skills are in sidebar — skip here
-            if (template === 'modern') return '';
-
-            const skillChips = skills.map((s: any) =>
-                `<span style="font-size:0.875rem;font-weight:600;padding:6px 12px;background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`
-            ).join('');
-
-            if (template === 'professional') {
-                return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-          <h2 style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Skills & Expertise</h2>
-          <div style="display:grid;grid-template-columns:114px 1fr;gap:16px">
-            <div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Core Setup</div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px">${skillChips}</div>
-          </div>
-        </section>`;
+            if (isModern) return '';
+            const chips = skills.map((s: any) => `<span style="font-size:0.875rem;font-weight:600;padding:6px 12px;background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`).join('');
+            if (isPro) {
+                return section(`${heading('Skills & Expertise')}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Core Setup</div><div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div></div>`);
             }
-
-            return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Skills</h2>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">${skillChips}</div>
-      </section>`;
+            return section(`${heading('Skills')}<div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div>`);
         }
 
         if (key === 'projects' && projects.length > 0) {
             const items = projects.map((p: any) => {
                 const link = p.link ? `<a href="${esc(p.link)}" style="font-size:0.75rem;font-weight:500;color:${themeColor};text-decoration:none">View Project</a>` : '';
-                if (template === 'classic' || template === 'professional') {
-                    return `<div style="display:grid;grid-template-columns:${template === 'professional' ? '114px' : '130px'} 1fr;gap:16px;break-inside:avoid">
-            <div style="font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px">${link}</div>
-            <div>
-              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(p.name || 'Project Name')}</h3>
-              ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px;white-space:pre-wrap;word-break:break-word">${sanitize(p.description)}</div>` : ''}
-            </div>
-          </div>`;
-                } else { // modern
-                    return `<div style="break-inside:avoid">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(p.name || 'Project Name')}</h3>
-              ${link}
-            </div>
-            ${p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(p.description)}</div>` : ''}
-          </div>`;
+                const d = p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px;white-space:pre-wrap;word-break:break-word">${sanitize(p.description)}</div>` : '';
+                if (isModern) {
+                    return `<div style="break-inside:avoid"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">${title3(p.name || 'Project Name')}${link}</div>${d}</div>`;
                 }
-            }).join('');
-
-            return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${template === 'professional' ? 'Key Projects' : 'Projects'}</h2>
-        <div style="display:flex;flex-direction:column;gap:24px">${items}</div>
-      </section>`;
+                return timelineRow(link, `${title3(p.name || 'Project Name')}${d}`);
+            });
+            return section(`${heading(isPro ? 'Key Projects' : 'Projects')}${itemsList(items)}`);
         }
 
         if (key === 'courses' && courses.length > 0) {
             const items = courses.map((c: any) => {
-                if (template === 'classic' || template === 'professional') {
-                    return `<div style="display:grid;grid-template-columns:${template === 'professional' ? '114px' : '130px'} 1fr;gap:16px;break-inside:avoid">
-            <div style="font-size:${template === 'professional' ? '0.75rem' : '0.875rem'};color:#6b7280;font-weight:${template === 'professional' ? '700' : '500'};${template === 'professional' ? 'text-transform:uppercase;' : ''}padding-top:2px">${esc(c.startDate || '')} ${c.startDate && c.endDate ? '—' : ''} ${esc(c.endDate || '')}</div>
-            <div>
-              <h3 style="font-size:${template === 'professional' ? '0.875rem' : '1rem'};font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3>
-              <div style="font-size:${template === 'professional' ? '0.75rem' : '0.875rem'};color:#374151;margin-top:2px">${esc(c.institution || 'Institution')}</div>
-            </div>
-          </div>`;
-                } else { // modern
-                    return `<div style="break-inside:avoid">
-            <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(c.institution || 'Institution')}</span>
-              <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(c.startDate || '')} ${c.startDate && c.endDate ? '—' : ''} ${esc(c.endDate || '')}</span>
-            </div>
-          </div>`;
+                if (isModern) {
+                    return `<div style="break-inside:avoid">${title3(c.name || 'Course Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(c.institution || 'Institution')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(c.startDate, c.endDate)}</span></div></div>`;
                 }
-            }).join('');
-
-            return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${template === 'professional' ? 'Certifications & Courses' : 'Courses & Certifications'}</h2>
-        <div style="display:flex;flex-direction:column;gap:${template === 'professional' ? '16px' : '24px'}">${items}</div>
-      </section>`;
+                const fs = isPro ? '0.875rem' : '1rem';
+                const ss = isPro ? '0.75rem' : '0.875rem';
+                return timelineRow(dateInline(c.startDate, c.endDate), `<h3 style="font-size:${fs};font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(c.institution || 'Institution')}</div>`);
+            });
+            return section(`${heading(isPro ? 'Certifications & Courses' : 'Courses & Certifications')}${itemsList(items, isPro ? '16px' : '24px')}`);
         }
 
         if (key === 'awards' && awards.length > 0) {
             const items = awards.map((a: any) => {
-                if (template === 'classic' || template === 'professional') {
-                    return `<div style="display:grid;grid-template-columns:${template === 'professional' ? '114px' : '130px'} 1fr;gap:16px;break-inside:avoid">
-            <div style="font-size:${template === 'professional' ? '0.75rem' : '0.875rem'};color:#6b7280;font-weight:${template === 'professional' ? '700' : '500'};${template === 'professional' ? 'text-transform:uppercase;' : ''}padding-top:2px">${esc(a.date || '')}</div>
-            <div>
-              <h3 style="font-size:${template === 'professional' ? '0.875rem' : '1rem'};font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3>
-              <div style="font-size:${template === 'professional' ? '0.75rem' : '0.875rem'};color:#374151;margin-top:2px">${esc(a.issuer || 'Issuer')}</div>
-            </div>
-          </div>`;
-                } else { // modern
-                    return `<div style="break-inside:avoid">
-            <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(a.issuer || 'Issuer')}</span>
-              <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(a.date || '')}</span>
-            </div>
-          </div>`;
+                if (isModern) {
+                    return `<div style="break-inside:avoid">${title3(a.name || 'Award Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(a.issuer || 'Issuer')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(a.date || '')}</span></div></div>`;
                 }
-            }).join('');
-
-            return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:${template === 'professional' ? '0.875rem' : '1.125rem'};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Awards${template === 'classic' ? '' : ''}</h2>
-        <div style="display:flex;flex-direction:column;gap:${template === 'professional' ? '16px' : '24px'}">${items}</div>
-      </section>`;
+                const fs = isPro ? '0.875rem' : '1rem';
+                const ss = isPro ? '0.75rem' : '0.875rem';
+                return timelineRow(esc(a.date || ''), `<h3 style="font-size:${fs};font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(a.issuer || 'Issuer')}</div>`);
+            });
+            return section(`${heading('Awards')}${itemsList(items, isPro ? '16px' : '24px')}`);
         }
 
         if (key === 'languages' && languages.length > 0) {
-            // For modern template, languages are in sidebar
-            if (template === 'modern') return '';
-
-            if (template === 'professional') {
-                const langItems = languages.map((l: any) => `<span style="font-size:0.875rem;font-weight:500;color:#1f2937">${esc(l.name || '')} <span style="color:#9ca3af;font-weight:400">(${esc(l.proficiency || '')})</span></span>`).join('');
-                return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-          <h2 style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Languages</h2>
-          <div style="display:grid;grid-template-columns:114px 1fr;gap:16px">
-            <div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Spoken</div>
-            <div style="display:flex;flex-wrap:wrap;gap:16px">${langItems}</div>
-          </div>
-        </section>`;
+            if (isModern) return '';
+            if (isPro) {
+                const li = languages.map((l: any) => `<span style="font-size:0.875rem;font-weight:500;color:#1f2937">${esc(l.name || '')} <span style="color:#9ca3af;font-weight:400">(${esc(l.proficiency || '')})</span></span>`).join('');
+                return section(`${heading('Languages')}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Spoken</div><div style="display:flex;flex-wrap:wrap;gap:16px">${li}</div></div>`);
             }
-
-            // Classic
-            const langItems = languages.map((l: any) =>
-                `<div style="display:flex;align-items:center;justify-content:space-between;break-inside:avoid">
-          <span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(l.name || '')}</span>
-          <span style="font-size:0.875rem;color:#6b7280">${esc(l.proficiency || '')}</span>
-        </div>`
-            ).join('');
-
-            return `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">
-        <h2 style="font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">Languages</h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:16px">${langItems}</div>
-      </section>`;
+            const li = languages.map((l: any) => `<div style="display:flex;align-items:center;justify-content:space-between;break-inside:avoid"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(l.name || '')}</span><span style="font-size:0.875rem;color:#6b7280">${esc(l.proficiency || '')}</span></div>`).join('');
+            return section(`${heading('Languages')}<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:16px">${li}</div>`);
         }
 
         return '';
@@ -1069,7 +977,7 @@ function sanitizeCvData(obj: any, depth = 0): any {
     return obj;
 }
 
-app.post('/api/generate-pdf', async (req, res) => {
+app.post('/api/generate-pdf', async (req: Request, res: Response) => {
     let browser: any = null;
     try {
         const { cvData, template } = req.body;
@@ -1193,7 +1101,7 @@ const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
 // Catch-all: serve index.html for any non-API route (React Router support)
-app.get('*', (_req, res) => {
+app.get('*', (_req: Request, res: Response) => {
     res.sendFile(path.join(distPath, 'index.html'));
 });
 
