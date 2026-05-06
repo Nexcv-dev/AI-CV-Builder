@@ -84,7 +84,7 @@ export default function Home() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [scale, setScale] = useState(1);
   const [previewHeight, setPreviewHeight] = useState(1122); // Default A4 height in px
@@ -182,10 +182,12 @@ export default function Home() {
         console.warn('Failed to save CV data:', e);
         // Show specific error for quota exceeded
         if (e?.name === 'QuotaExceededError' || e?.code === 22) {
-          setSaveStatus('error' as any);
+          setSaveStatus('error');
           alert('Storage is full. Try removing your profile image or reducing data to enable auto-save.');
+          setTimeout(() => setSaveStatus('idle'), 5000);
+        } else {
+          setSaveStatus('idle');
         }
-        setSaveStatus('idle');
       }
     }, 500);
     return () => clearTimeout(timer);
@@ -372,13 +374,13 @@ export default function Home() {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className={`fixed inset-0 flex flex-col items-center justify-center z-[200] ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}
+            className={`fixed inset-0 flex flex-col items-center justify-center z-200 ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}
           >
             <div className="relative mb-6">
               <div className={`w-20 h-20 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
               <LayoutTemplate className="absolute inset-0 m-auto text-violet-600 animate-pulse" size={32} />
             </div>
-            <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r animate-pulse ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
+            <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r animate-pulse ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
               CV Builder
             </h2>
             <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Preparing your workspace...</p>
@@ -395,7 +397,7 @@ export default function Home() {
                 <div className={`p-2 rounded-xl mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-violet-500 shadow-violet-500/30' : 'bg-violet-600 shadow-violet-600/20'}`}>
                   <LayoutTemplate className="text-white" size={20} />
                 </div>
-                <span className={`bg-clip-text text-transparent bg-gradient-to-r ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
+                <span className={`bg-clip-text text-transparent bg-linear-to-r ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
                   CV Builder
                 </span>
               </h1>
@@ -448,6 +450,11 @@ export default function Home() {
                     <CheckCircle2 size={13} className="mr-1.5" /> Saved
                   </span>
                 )}
+                {saveStatus === 'error' && (
+                  <span className="flex items-center text-red-500">
+                    <AlertCircle size={13} className="mr-1.5" /> Save failed
+                  </span>
+                )}
               </div>
 
               <button
@@ -481,7 +488,7 @@ export default function Home() {
         <div className="flex-1 overflow-hidden relative flex flex-col lg:flex-row print:overflow-visible print:block">
           {/* Left Side: Form */}
           <div
-            className={`${mobileView === 'edit' ? 'flex max-lg:!w-full max-lg:!min-w-0' : 'hidden'} lg:flex h-full border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
+            className={`${mobileView === 'edit' ? 'flex max-lg:w-full! max-lg:min-w-0!' : 'hidden'} lg:flex h-full border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
             style={{ width: `${formWidth}%`, minWidth: '420px' }}
           >
             <div className="h-full w-full overflow-y-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -508,7 +515,7 @@ export default function Home() {
 
           {/* Right Side: Preview */}
           <div
-            className={`${mobileView === 'preview' ? 'flex max-lg:!w-full' : 'hidden'} lg:flex flex-col h-full bg-transparent print:w-full print:bg-white print:block relative overflow-x-hidden`}
+            className={`${mobileView === 'preview' ? 'flex max-lg:w-full!' : 'hidden'} lg:flex flex-col h-full bg-transparent print:w-full print:bg-white print:block relative overflow-x-hidden`}
             style={{ width: `calc(${100 - formWidth}% - 6px)` }}
           >
             <div
@@ -518,7 +525,7 @@ export default function Home() {
             >
               <div
                 id="cv-preview-wrapper"
-                className={`preview-scale-wrapper transform origin-top print:!transform-none ${isDraggingResizer ? '' : 'transition-transform'}`}
+                className={`preview-scale-wrapper transform origin-top print:transform-none! ${isDraggingResizer ? '' : 'transition-transform'}`}
                 style={{
                   transform: `scale(${scale})`,
                   marginBottom: scale < 1 ? `-${previewHeight * (1 - scale)}px` : '0'
@@ -553,14 +560,14 @@ export default function Home() {
 
         {/* Download Confirmation Modal */}
         {showDownloadConfirm && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div className={`rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-white/20'}`}>
               <div className="p-8">
                 {/* Premium Icon Block */}
                 <div className="relative w-20 h-20 mx-auto mb-6 group">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/20 to-fuchsia-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
+                  <div className="absolute inset-0 bg-linear-to-tr from-violet-500/20 to-fuchsia-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
                   <div className={`relative flex items-center justify-center w-full h-full backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(59,130,246,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden border ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/50 border-white/80'}`}>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                    <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
                     <Download className="text-violet-600 w-9 h-9 drop-shadow-sm group-hover:translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
                   </div>
                 </div>
@@ -592,7 +599,7 @@ export default function Home() {
         {themeTransition && (
           <motion.div
             key={themeTransition.key}
-            className="fixed inset-0 pointer-events-none z-[120] overflow-hidden"
+            className="fixed inset-0 pointer-events-none z-120 overflow-hidden"
             initial={{ opacity: 1 }}
             animate={{ opacity: 0 }}
             transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
@@ -616,14 +623,14 @@ export default function Home() {
 
         {/* Reset Confirmation Modal */}
         {showResetConfirm && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div className={`rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-white/20'}`}>
               <div className="p-8">
                 {/* Premium Icon Block */}
                 <div className="relative w-20 h-20 mx-auto mb-6 group">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-red-500/20 to-orange-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
+                  <div className="absolute inset-0 bg-linear-to-tr from-red-500/20 to-orange-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
                   <div className={`relative flex items-center justify-center w-full h-full backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(239,68,68,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden border ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/50 border-white/80'}`}>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                    <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
                     <RotateCcw className="text-red-500 w-9 h-9 drop-shadow-sm group-hover:-rotate-180 transition-transform duration-500" strokeWidth={1.5} />
                   </div>
                 </div>
@@ -654,7 +661,7 @@ export default function Home() {
 
         {/* Global Loading Overlay */}
         {isGeneratingPDF && (
-          <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center backdrop-blur-md animate-in fade-in duration-300 ${isDarkMode ? 'bg-slate-950/80' : 'bg-white/80'}`}>
+          <div className={`fixed inset-0 z-100 flex flex-col items-center justify-center backdrop-blur-md animate-in fade-in duration-300 ${isDarkMode ? 'bg-slate-950/80' : 'bg-white/80'}`}>
             <div className={`p-8 rounded-3xl shadow-2xl flex flex-col items-center border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-100'}`}>
               <div className="relative mb-6">
                 <div className={`w-16 h-16 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
