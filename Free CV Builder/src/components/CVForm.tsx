@@ -4,6 +4,7 @@ import { FileText, Palette, Check } from 'lucide-react';
 import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import DOMPurify from 'dompurify';
+import toast from 'react-hot-toast';
 
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award } from '../types';
 import { EditorFooter } from './EditorFooter';
@@ -108,6 +109,15 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const [importMessage, setImportMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [refiningIds, setRefiningIds] = useState<Record<string, boolean>>({});
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cancel any ongoing AI generation when changing steps or tabs
+  useEffect(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, [wizardStep, activeMainTab]);
 
   const setRefining = useCallback((id: string, value: boolean) => {
     setRefiningIds(prev => ({ ...prev, [id]: value }));
@@ -116,6 +126,9 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const stripHtml = useCallback((html: string) => DOMPurify.sanitize(html, { ALLOWED_TAGS: [] }), []);
 
   const handleGenerateSummary = useCallback(async () => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+
     setRefining('summary', true);
     try {
       const res = await fetch('/api/generate-summary', {
@@ -126,15 +139,28 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           education: cvData.education,
           skills: cvData.skills,
         }),
+        signal: abortControllerRef.current.signal,
       });
-      if (!res.ok) throw new Error('Failed to generate summary');
+      if (!res.ok) {
+        const errorText = await res.text();
+        let errorMessage = "Failed to generate summary";
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || errorText;
+        } catch (e) {
+          errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       if (data.summary) {
         setCvData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, summary: data.summary } }));
+        toast.success("Summary generated!");
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError' || abortControllerRef.current?.signal.aborted) return;
       console.error('Error generating summary:', error);
-      alert('Failed to generate summary. Please try again.');
+      toast.error(error.message || 'Failed to generate summary. Please try again.');
     } finally {
       setRefining('summary', false);
     }
@@ -143,19 +169,38 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const handleRefineText = async (id: string, text: string, sectionType: string, context: any, onUpdate: (refined: string) => void) => {
     const plainText = stripHtml(text || '');
     if (!plainText.trim()) return;
+
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+
     setRefining(id, true);
     try {
       const res = await fetch('/api/refine-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-App-Source': 'cv-builder-app' },
         body: JSON.stringify({ text: plainText, sectionType, context }),
+        signal: abortControllerRef.current.signal,
       });
-      if (!res.ok) throw new Error('Failed to refine text');
+      if (!res.ok) {
+        const errorText = await res.text();
+        let errorMessage = "Failed to refine text";
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || errorText;
+        } catch (e) {
+          errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
-      if (data.refined) onUpdate(data.refined);
-    } catch (error) {
+      if (data.refined) {
+        onUpdate(data.refined);
+        toast.success("Text refined!");
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError' || abortControllerRef.current?.signal.aborted) return;
       console.error('Error refining text:', error);
-      alert('Failed to refine text. Please try again.');
+      toast.error(error.message || 'Failed to refine text. Please try again.');
     } finally {
       setRefining(id, false);
     }
@@ -189,20 +234,81 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             body: JSON.stringify({ base64Data, mimeType }),
           });
 
-          if (!parseResponse.ok) throw new Error(`Server error: ${await parseResponse.text()}`);
+          if (!parseResponse.ok) {
+            const errorText = await parseResponse.text();
+            let errorMessage = "Unknown server error";
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorMessage = errorJson.error || errorJson.message || errorText;
+            } catch (e) {
+              errorMessage = errorText;
+            }
+            throw new Error(errorMessage);
+          }
 
           const result = await parseResponse.json();
           if (result) {
             setCvData(prev => ({
               ...prev,
-              personalInfo: { ...prev.personalInfo, ...(result.personalInfo || {}) },
-              experience: (result.experience || []).map((e: Omit<Experience, 'id'>) => ({ ...e, id: crypto.randomUUID() })),
-              education: (result.education || []).map((e: Omit<Education, 'id'>) => ({ ...e, id: crypto.randomUUID() })),
-              skills: (result.skills || []).map((s: Omit<Skill, 'id'>) => ({ ...s, id: crypto.randomUUID(), level: s.level || 4 })),
-              courses: (result.courses || []).map((c: Omit<Course, 'id'>) => ({ ...c, id: crypto.randomUUID() })),
-              languages: (result.languages || []).map((l: Omit<Language, 'id'>) => ({ ...l, id: crypto.randomUUID() })),
-              projects: (result.projects || []).map((p: Omit<Project, 'id'>) => ({ ...p, id: crypto.randomUUID() })),
-              awards: (result.awards || []).map((a: Omit<Award, 'id'>) => ({ ...a, id: crypto.randomUUID() })),
+              personalInfo: {
+                ...prev.personalInfo,
+                fullName: result.personalInfo?.fullName || prev.personalInfo.fullName || '',
+                email: result.personalInfo?.email || prev.personalInfo.email || '',
+                phone: result.personalInfo?.phone || prev.personalInfo.phone || '',
+                address: result.personalInfo?.address || prev.personalInfo.address || '',
+                summary: result.personalInfo?.summary || prev.personalInfo.summary || '',
+                dob: result.personalInfo?.dob || prev.personalInfo.dob || '',
+                nic: result.personalInfo?.nic || prev.personalInfo.nic || '',
+                gender: result.personalInfo?.gender || prev.personalInfo.gender || '',
+                nationality: result.personalInfo?.nationality || prev.personalInfo.nationality || '',
+                religion: result.personalInfo?.religion || prev.personalInfo.religion || '',
+                maritalStatus: result.personalInfo?.maritalStatus || prev.personalInfo.maritalStatus || '',
+              },
+              experience: (result.experience || []).map((e: any) => ({
+                id: crypto.randomUUID(),
+                company: e.company || '',
+                position: e.position || '',
+                startDate: e.startDate || '',
+                endDate: e.endDate || '',
+                description: e.description || '',
+              })),
+              education: (result.education || []).map((e: any) => ({
+                id: crypto.randomUUID(),
+                institution: e.institution || '',
+                degree: e.degree || '',
+                startDate: e.startDate || '',
+                endDate: e.endDate || '',
+                description: e.description || '',
+              })),
+              skills: (result.skills || []).map((s: any) => ({
+                id: crypto.randomUUID(),
+                name: s.name || '',
+                level: s.level || 4,
+              })),
+              courses: (result.courses || []).map((c: any) => ({
+                id: crypto.randomUUID(),
+                name: c.name || '',
+                institution: c.institution || '',
+                startDate: c.startDate || '',
+                endDate: c.endDate || '',
+              })),
+              languages: (result.languages || []).map((l: any) => ({
+                id: crypto.randomUUID(),
+                name: l.name || '',
+                proficiency: l.proficiency || '',
+              })),
+              projects: (result.projects || []).map((p: any) => ({
+                id: crypto.randomUUID(),
+                name: p.name || '',
+                description: p.description || '',
+                link: p.link || '',
+              })),
+              awards: (result.awards || []).map((a: any) => ({
+                id: crypto.randomUUID(),
+                name: a.name || '',
+                date: a.date || '',
+                issuer: a.issuer || '',
+              })),
             }));
 
             setImportMessage({ type: 'success', text: 'Data imported successfully!' });
@@ -234,19 +340,23 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > MAX_IMAGE_FILE_SIZE) {
-        alert('Image is too large. Maximum allowed size is 5 MB.');
-        return;
-      }
-      try {
-        const compressedImage = await compressAndResizeImage(file);
-        setCvData((prev) => ({ ...prev, profileImage: compressedImage, imageZoom: 1, imageX: 0, imageY: 0 }));
-      } catch (error) {
-        console.error('Error processing image:', error);
-        alert('Failed to process image.');
-      }
+    const target = e.target;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_IMAGE_FILE_SIZE) {
+      toast.error('Image is too large. Maximum allowed size is 5 MB.');
+      target.value = '';
+      return;
+    }
+    try {
+      const compressedImage = await compressAndResizeImage(file);
+      setCvData((prev) => ({ ...prev, profileImage: compressedImage, imageZoom: 1, imageX: 0, imageY: 0 }));
+    } catch (error) {
+      console.error('Error processing image:', error);
+      toast.error('Failed to process image.');
+    } finally {
+      target.value = '';
     }
   };
 

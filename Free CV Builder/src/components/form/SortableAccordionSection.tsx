@@ -42,7 +42,7 @@ export const SortableAccordionSection = React.memo(({
     <div
       ref={setNodeRef}
       style={style}
-      className={`border rounded-xl mb-4 bg-white transition-colors transition-shadow duration-300 ${isOpen ? 'border-violet-500 shadow-md' : 'border-gray-200 shadow-sm'} ${isDragging ? 'opacity-50 shadow-lg relative' : ''}`}
+      className={`border rounded-xl mb-4 bg-white transition-colors duration-300 ${isOpen ? 'border-violet-500 shadow-md' : 'border-gray-200 shadow-sm'} ${isDragging ? 'opacity-50 shadow-lg relative' : ''}`}
     >
       <div className={`w-full flex items-center transition-colors rounded-t-xl overflow-hidden ${isOpen ? 'bg-violet-50/30' : 'bg-gray-50 hover:bg-gray-100'}`}>
         {showDragHandle && (

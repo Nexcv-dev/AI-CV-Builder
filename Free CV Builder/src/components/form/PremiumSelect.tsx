@@ -66,7 +66,7 @@ export const PremiumSelect = React.memo(({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className={`absolute z-[100] w-full mt-2 overflow-hidden border rounded-xl shadow-2xl ${isDarkMode ? 'bg-slate-800 border-slate-700 shadow-black/50' : 'bg-white border-gray-100 shadow-violet-500/10'}`}
+            className={`absolute z-100 w-full mt-2 overflow-hidden border rounded-xl shadow-2xl ${isDarkMode ? 'bg-slate-800 border-slate-700 shadow-black/50' : 'bg-white border-gray-100 shadow-violet-500/10'}`}
           >
             <div className="p-1 max-h-60 overflow-y-auto scrollbar-hide">
               {options.map((option) => (

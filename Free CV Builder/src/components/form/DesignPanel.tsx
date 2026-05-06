@@ -51,7 +51,7 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
             <button key={t.key} type="button" onClick={() => setTemplate(t.key)}
               className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all duration-200 group ${template === t.key ? 'border-violet-500 bg-violet-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'}`}>
               {template === t.key && (<div className="absolute top-1.5 right-1.5 text-violet-600 z-10"><CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" /></div>)}
-              <div className={`w-full aspect-[3/4] rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === t.key
+              <div className={`w-full aspect-3/4 rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === t.key
                 ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]')
                 : (isDarkMode ? 'border-slate-700 grayscale-[0.4] opacity-70 hover:grayscale-0 hover:opacity-100 hover:border-slate-600' : 'border-gray-200 grayscale-[0.3] opacity-80 hover:grayscale-0 hover:opacity-100 hover:border-gray-300')}`}>
                 <img src={t.img} alt={`${t.label} Template`} className="w-full h-full object-cover" />
@@ -143,7 +143,7 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
             </button>
             <AnimatePresence>
               {isFontDropdownOpen && (
-                <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.2 }} className="absolute z-[100] w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden py-2">
+                <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.2 }} className="absolute z-100 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden py-2">
                   {fonts.map((f) => (
                     <button key={f.name} type="button" onClick={() => { handleThemeChange('fontFamily', f.name); setIsFontDropdownOpen(false); }} className={`w-full flex items-center px-4 py-3 hover:bg-violet-50 transition-colors text-left ${cvData.fontFamily === f.name ? 'bg-violet-50/50' : ''}`}>
                       <div className={`flex flex-col w-full ${f.className}`}>
