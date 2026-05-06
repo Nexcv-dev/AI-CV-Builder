@@ -10,7 +10,7 @@ export default function PrivacyPolicy() {
           <div className="p-2 bg-gray-900 rounded-xl mr-3 shadow-md shadow-gray-900/10">
             <LayoutTemplate className="text-white" size={20} />
           </div>
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 text-xl sm:text-2xl font-extrabold">
+          <span className="bg-clip-text text-transparent bg-linear-to-r from-gray-900 to-gray-600 text-xl sm:text-2xl font-extrabold">
             CV Builder
           </span>
         </Link>
