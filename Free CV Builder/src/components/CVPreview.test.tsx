@@ -173,7 +173,7 @@ describe('CVPreview Component', () => {
     expect(container.querySelector('script')).toBeNull();
   });
 
-  it('applies whitespace-pre-wrap and break-words classes to rich text containers', () => {
+  it('applies whitespace-pre-wrap and wrap-break-word classes to rich text containers', () => {
     const dataWithNewlines: CVData = {
       ...mockCVData,
       personalInfo: {
@@ -186,7 +186,7 @@ describe('CVPreview Component', () => {
     // Find the summary container - it has the prose class
     const summaryContainer = container.querySelector('.prose');
     expect(summaryContainer).toHaveClass('whitespace-pre-wrap');
-    expect(summaryContainer).toHaveClass('break-words');
+    expect(summaryContainer).toHaveClass('wrap-break-word');
     
     // Verify that the content still has two separate lines/blocks
     expect(screen.getByText('Line 1')).toBeInTheDocument();
