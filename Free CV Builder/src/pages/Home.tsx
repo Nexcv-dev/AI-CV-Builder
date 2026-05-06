@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CVData } from '../types';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
+import { Toaster } from 'react-hot-toast';
 import { Download, LayoutTemplate, Loader2, FileText, Edit3, AlertCircle, RotateCcw, Save, CheckCircle2, Moon, Sun } from 'lucide-react';
 
 const STORAGE_KEY = 'cv-builder-data';
@@ -674,6 +675,38 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {/* Global Toaster for Notifications */}
+        <Toaster 
+          position="top-center" 
+          toastOptions={{ 
+            duration: 4000,
+            className: `!rounded-2xl !font-semibold !shadow-2xl border backdrop-blur-md ${isDarkMode ? '!bg-slate-800/95 !text-slate-100 !border-slate-700/80' : '!bg-white/95 !text-slate-800 !border-slate-200/80'}`,
+            style: {
+              padding: '14px 20px',
+              fontSize: '14px',
+              maxWidth: 'calc(100vw - 32px)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#8b5cf6',
+                secondary: isDarkMode ? '#1e293b' : '#ffffff',
+              },
+              style: {
+                border: `1px solid ${isDarkMode ? 'rgba(139, 92, 246, 0.4)' : 'rgba(139, 92, 246, 0.3)'}`,
+              }
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: isDarkMode ? '#1e293b' : '#ffffff',
+              },
+              style: {
+                border: `1px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.3)'}`,
+              }
+            }
+          }} 
+        />
       </div>
     </>
   );

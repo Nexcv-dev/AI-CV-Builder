@@ -6,6 +6,7 @@ import TermsAndConditions from './pages/TermsAndConditions';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import PrintView from './pages/PrintView';
+import { Toaster } from 'react-hot-toast';
 import { Footer } from './components/Footer';
 
 function Layout() {

@@ -33,6 +33,13 @@ vi.mock('../utils/imageUtils', () => ({
   compressAndResizeImage: vi.fn(() => Promise.resolve('data:image/png;base64,mocked-image-data')),
 }));
 
+vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  }
+}));
+
 // Mock fetch globally with a small delay to allow testing intermediate states
 vi.stubGlobal('fetch', vi.fn(() => 
   new Promise(resolve => setTimeout(() => resolve({ 
@@ -185,5 +192,37 @@ describe('CVForm Logic', () => {
     await waitFor(() => {
         expect(screen.queryByText(/Data imported successfully/i)).toBeInTheDocument();
     }, { timeout: 2000 });
+  });
+
+  it('extracts error from JSON and displays toast on API failure', async () => {
+    // Mock fetch to return a JSON error
+    vi.stubGlobal('fetch', vi.fn(() => 
+      Promise.resolve({ 
+        ok: false, 
+        text: () => Promise.resolve(JSON.stringify({ error: 'Mocked server error message' })) 
+      })
+    ));
+
+    const toast = (await import('react-hot-toast')).default;
+
+    render(
+      <MemoryRouter>
+        <CVForm cvData={initialData} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} />
+      </MemoryRouter>
+    );
+
+    // Navigate to Summary step (the progress bar steps correspond to sections)
+    // Wait for the UI to be fully rendered
+    const summaryStep = await screen.findByText('Summary');
+    fireEvent.click(summaryStep);
+
+    // Wait for Generate with AI button
+    const generateBtn = await screen.findByText(/Generate with AI/i);
+    fireEvent.click(generateBtn);
+
+    // Verify toast error is called with the extracted message
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Mocked server error message');
+    });
   });
 });
