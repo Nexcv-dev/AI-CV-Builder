@@ -250,14 +250,65 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           if (result) {
             setCvData(prev => ({
               ...prev,
-              personalInfo: { ...prev.personalInfo, ...(result.personalInfo || {}) },
-              experience: (result.experience || []).map((e: Omit<Experience, 'id'>) => ({ ...e, id: crypto.randomUUID() })),
-              education: (result.education || []).map((e: Omit<Education, 'id'>) => ({ ...e, id: crypto.randomUUID() })),
-              skills: (result.skills || []).map((s: Omit<Skill, 'id'>) => ({ ...s, id: crypto.randomUUID(), level: s.level || 4 })),
-              courses: (result.courses || []).map((c: Omit<Course, 'id'>) => ({ ...c, id: crypto.randomUUID() })),
-              languages: (result.languages || []).map((l: Omit<Language, 'id'>) => ({ ...l, id: crypto.randomUUID() })),
-              projects: (result.projects || []).map((p: Omit<Project, 'id'>) => ({ ...p, id: crypto.randomUUID() })),
-              awards: (result.awards || []).map((a: Omit<Award, 'id'>) => ({ ...a, id: crypto.randomUUID() })),
+              personalInfo: {
+                ...prev.personalInfo,
+                fullName: result.personalInfo?.fullName || prev.personalInfo.fullName || '',
+                email: result.personalInfo?.email || prev.personalInfo.email || '',
+                phone: result.personalInfo?.phone || prev.personalInfo.phone || '',
+                address: result.personalInfo?.address || prev.personalInfo.address || '',
+                summary: result.personalInfo?.summary || prev.personalInfo.summary || '',
+                dob: result.personalInfo?.dob || prev.personalInfo.dob || '',
+                nic: result.personalInfo?.nic || prev.personalInfo.nic || '',
+                gender: result.personalInfo?.gender || prev.personalInfo.gender || '',
+                nationality: result.personalInfo?.nationality || prev.personalInfo.nationality || '',
+                religion: result.personalInfo?.religion || prev.personalInfo.religion || '',
+                maritalStatus: result.personalInfo?.maritalStatus || prev.personalInfo.maritalStatus || '',
+              },
+              experience: (result.experience || []).map((e: any) => ({
+                id: crypto.randomUUID(),
+                company: e.company || '',
+                position: e.position || '',
+                startDate: e.startDate || '',
+                endDate: e.endDate || '',
+                description: e.description || '',
+              })),
+              education: (result.education || []).map((e: any) => ({
+                id: crypto.randomUUID(),
+                institution: e.institution || '',
+                degree: e.degree || '',
+                startDate: e.startDate || '',
+                endDate: e.endDate || '',
+                description: e.description || '',
+              })),
+              skills: (result.skills || []).map((s: any) => ({
+                id: crypto.randomUUID(),
+                name: s.name || '',
+                level: s.level || 4,
+              })),
+              courses: (result.courses || []).map((c: any) => ({
+                id: crypto.randomUUID(),
+                name: c.name || '',
+                institution: c.institution || '',
+                startDate: c.startDate || '',
+                endDate: c.endDate || '',
+              })),
+              languages: (result.languages || []).map((l: any) => ({
+                id: crypto.randomUUID(),
+                name: l.name || '',
+                proficiency: l.proficiency || '',
+              })),
+              projects: (result.projects || []).map((p: any) => ({
+                id: crypto.randomUUID(),
+                name: p.name || '',
+                description: p.description || '',
+                link: p.link || '',
+              })),
+              awards: (result.awards || []).map((a: any) => ({
+                id: crypto.randomUUID(),
+                name: a.name || '',
+                date: a.date || '',
+                issuer: a.issuer || '',
+              })),
             }));
 
             setImportMessage({ type: 'success', text: 'Data imported successfully!' });
