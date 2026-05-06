@@ -46,11 +46,12 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     sidebarColor,
     lineSpacing = 1.5,
     sectionGap = 2,
+    hiddenSections = [],
   } = cvData;
 
   // Helper to determine text color based on background luminance
   const getContrastColor = (hexColor: string) => {
-    if (!hexColor) return '#ffffff';
+    if (!hexColor || hexColor.length < 7) return '#ffffff';
     const r = parseInt(hexColor.slice(1, 3), 16);
     const g = parseInt(hexColor.slice(3, 5), 16);
     const b = parseInt(hexColor.slice(5, 7), 16);
@@ -119,13 +120,13 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             {personalInfo.address && (
               <div className="flex items-center gap-2">
                 <MapPin size={14} className="shrink-0" />
-                <span className="break-words whitespace-normal" style={{ wordBreak: 'break-word' }}>{personalInfo.address}</span>
+                <span className="wrap-break-word whitespace-normal" style={{ wordBreak: 'break-word' }}>{personalInfo.address}</span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="mb-8 break-inside-avoid print:!break-inside-avoid" data-page-break="avoid">
+        <div className="mb-8 break-inside-avoid print:break-inside-avoid!" data-page-break="avoid">
           {(personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus) && (
             <>
               <h2 className="text-base font-bold uppercase tracking-widest border-b border-white/20 mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Personal Info</h2>
@@ -133,37 +134,37 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 {personalInfo.dob && (
                   <div className="flex items-center gap-2.5">
                     <Calendar size={12} className="shrink-0 opacity-80" />
-                    <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.dob}</span>
+                    <span className="wrap-break-word" style={{ wordBreak: 'break-word' }}>{personalInfo.dob}</span>
                   </div>
                 )}
                 {personalInfo.nic && (
                   <div className="flex items-center gap-2.5">
                     <IdCard size={12} className="shrink-0 opacity-80" />
-                    <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.nic}</span>
+                    <span className="wrap-break-word" style={{ wordBreak: 'break-word' }}>{personalInfo.nic}</span>
                   </div>
                 )}
                 {personalInfo.gender && (
                   <div className="flex items-center gap-2.5">
                     <User size={12} className="shrink-0 opacity-80" />
-                    <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.gender}</span>
+                    <span className="wrap-break-word" style={{ wordBreak: 'break-word' }}>{personalInfo.gender}</span>
                   </div>
                 )}
                 {personalInfo.nationality && (
                   <div className="flex items-center gap-2.5">
                     <Globe size={12} className="shrink-0 opacity-80" />
-                    <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.nationality}</span>
+                    <span className="wrap-break-word" style={{ wordBreak: 'break-word' }}>{personalInfo.nationality}</span>
                   </div>
                 )}
                 {personalInfo.religion && (
                   <div className="flex items-center gap-2.5">
                     <Sparkles size={12} className="shrink-0 opacity-80" />
-                    <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.religion}</span>
+                    <span className="wrap-break-word" style={{ wordBreak: 'break-word' }}>{personalInfo.religion}</span>
                   </div>
                 )}
                 {personalInfo.maritalStatus && (
                   <div className="flex items-center gap-2.5">
                     <Heart size={12} className="shrink-0 opacity-80" />
-                    <span className="break-words" style={{ wordBreak: 'break-word' }}>{personalInfo.maritalStatus}</span>
+                    <span className="wrap-break-word" style={{ wordBreak: 'break-word' }}>{personalInfo.maritalStatus}</span>
                   </div>
                 )}
               </div>
@@ -237,6 +238,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
   };
 
   const renderSection = (sectionKey: string) => {
+    if (hiddenSections.includes(sectionKey)) return null;
     const isPro = template === 'professional';
     const isModern = template === 'modern';
 
@@ -257,7 +259,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
 
     const ProseContent = ({ html, className = '' }: { html: string, className?: string }) => (
       <div
-        className={`text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap break-words ${className}`}
+        className={`text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap wrap-break-word ${className}`}
         style={{ lineHeight: lineSpacing }}
         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html, domPurifyConfig) }}
       />
@@ -622,14 +624,14 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         </div>
         {template === 'modern' ? (
           <div className="w-full bg-white modern-template-container flex flex-row items-stretch min-h-[297mm]">
-            <div className="w-[30%] flex-shrink-0">
+            <div className="w-[30%] shrink-0">
               {renderModernSidebar()}
             </div>
 
             {/* Main Content Area */}
             <div className="flex-1 w-[70%] p-[15mm] main-content-area">
               <header className="mb-10 mt-12 relative z-20">
-                <h1 className="text-4xl font-bold uppercase tracking-widest mb-2 break-words" style={{ color: themeColor }}>
+                <h1 className="text-4xl font-bold uppercase tracking-widest mb-2 wrap-break-word" style={{ color: themeColor }}>
                   {personalInfo.fullName || 'Your Name'}
                 </h1>
                 <div className="w-16 h-1 mb-3" style={{ backgroundColor: themeColor }}></div>
@@ -656,7 +658,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   </div>
                 </div>
                 {profileImage && (
-                  <div className="ml-6 flex-shrink-0">
+                  <div className="ml-6 shrink-0">
                     <div className="w-28 h-28 rounded-md overflow-hidden border border-gray-200">
                       <img
                         src={profileImage}
@@ -692,12 +694,16 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               <h1 className="text-3xl font-bold uppercase tracking-widest mb-3" style={{ color: themeColor }}>
                 {personalInfo.fullName || 'Your Name'}
               </h1>
-              <div className="text-sm text-gray-600 flex flex-wrap justify-center gap-x-4 gap-y-1">
-                {personalInfo.email && <span style={{ textDecoration: 'none' }}>{personalInfo.email}</span>}
-                {personalInfo.phone && <span>•</span>}
-                {personalInfo.phone && <span style={{ textDecoration: 'none' }}>{personalInfo.phone}</span>}
-                {personalInfo.address && <span>•</span>}
-                {personalInfo.address && <span style={{ textDecoration: 'none' }}>{personalInfo.address}</span>}
+              <div className="text-sm text-gray-600 flex flex-wrap justify-center gap-x-1 gap-y-1">
+                {[personalInfo.email, personalInfo.phone, personalInfo.address]
+                  .filter(Boolean)
+                  .map((item, i, arr) => (
+                    <React.Fragment key={i}>
+                      <span style={{ textDecoration: 'none' }}>{item}</span>
+                      {i < arr.length - 1 && <span>&nbsp;•&nbsp;</span>}
+                    </React.Fragment>
+                  ))
+                }
               </div>
             </header>
 

@@ -156,7 +156,7 @@ app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req: Request, 
         }
 
         if (base64Data.length > MAX_BASE64_LENGTH) {
-            return res.status(400).json({ error: 'File too large. Maximum allowed size is 10 MB.' });
+            return res.status(400).json({ error: 'File too large. Maximum allowed size is 15 MB.' });
         }
 
         // Validate mimeType against allow-list
@@ -707,9 +707,9 @@ export function generateCVHTML(cvData: any, template: string): string {
                 if (isModern) {
                     return `<div style="break-inside:avoid">${title3(c.name || 'Course Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(c.institution || 'Institution')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(c.startDate, c.endDate)}</span></div></div>`;
                 }
-                const fs = isPro ? '0.875rem' : '1rem';
+                const fontSize = isPro ? '0.875rem' : '1rem';
                 const ss = isPro ? '0.75rem' : '0.875rem';
-                return timelineRow(dateInline(c.startDate, c.endDate), `<h3 style="font-size:${fs};font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(c.institution || 'Institution')}</div>`);
+                return timelineRow(dateInline(c.startDate, c.endDate), `<h3 style="font-size:${fontSize};font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(c.institution || 'Institution')}</div>`);
             });
             return section(`${heading(isPro ? 'Certifications & Courses' : 'Courses & Certifications')}${itemsList(items, isPro ? '16px' : '24px')}`);
         }
@@ -719,9 +719,9 @@ export function generateCVHTML(cvData: any, template: string): string {
                 if (isModern) {
                     return `<div style="break-inside:avoid">${title3(a.name || 'Award Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(a.issuer || 'Issuer')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(a.date || '')}</span></div></div>`;
                 }
-                const fs = isPro ? '0.875rem' : '1rem';
+                const fontSize = isPro ? '0.875rem' : '1rem';
                 const ss = isPro ? '0.75rem' : '0.875rem';
-                return timelineRow(esc(a.date || ''), `<h3 style="font-size:${fs};font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(a.issuer || 'Issuer')}</div>`);
+                return timelineRow(esc(a.date || ''), `<h3 style="font-size:${fontSize};font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(a.issuer || 'Issuer')}</div>`);
             });
             return section(`${heading('Awards')}${itemsList(items, isPro ? '16px' : '24px')}`);
         }
@@ -926,7 +926,7 @@ export function generateCVHTML(cvData: any, template: string): string {
 <html>
 <head>
   <meta charset="utf-8">
-  <link href="https://fonts.googleapis.com/css2?family=${googleFontName}:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=${googleFontName}:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: ${fontFamilyCSS}; background: white; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }

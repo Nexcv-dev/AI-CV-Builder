@@ -13,7 +13,7 @@ function Layout() {
   const isHome = location.pathname === '/';
 
   return (
-    <div className={`flex flex-col bg-slate-50 ${isHome ? 'h-[100dvh] overflow-hidden' : 'min-h-[100dvh]'}`}>
+    <div className={`flex flex-col bg-slate-50 ${isHome ? 'h-dvh overflow-hidden' : 'min-h-dvh'}`}>
       <div className="flex-1 flex flex-col min-h-0">
         <Outlet />
       </div>
