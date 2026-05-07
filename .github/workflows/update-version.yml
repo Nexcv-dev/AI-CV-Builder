@@ -40,4 +40,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: bump version to ${{ steps.get_version.outputs.VERSION }}"
-          file_pattern: "Free CV Builder/package.json Free CV Builder/package-lock.json"
+          branch: ${{ github.event.release.target_commitish }}
