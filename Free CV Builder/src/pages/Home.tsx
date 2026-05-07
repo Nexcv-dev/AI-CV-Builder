@@ -104,6 +104,7 @@ export default function Home() {
     }
   });
   const [themeTransition, setThemeTransition] = useState<{ x: number; y: number; key: number; targetDark: boolean } | null>(null);
+  const [resetKey, setResetKey] = useState(0);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
 
@@ -234,17 +235,25 @@ export default function Home() {
   }, [isThemeAnimating]);
 
   const handleReset = useCallback(() => {
+    setShowResetConfirm(false);
+    setIsInitialLoading(true);
+    
+    // Clear data immediately
     setCvData(initialData);
     setTemplate('classic');
-    setShowResetConfirm(false);
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(TEMPLATE_STORAGE_KEY);
       sessionStorage.removeItem('hasSeenCVPrompt');
-      window.location.reload();
     } catch (e) {
       console.warn('Failed to clear saved data:', e);
     }
+
+    // Wait for animation to finish, then trigger the popup
+    setTimeout(() => {
+      setIsInitialLoading(false);
+      setResetKey(prev => prev + 1);
+    }, 1500);
   }, []);
 
   const contentRef = useRef<HTMLDivElement>(null);
@@ -494,6 +503,7 @@ export default function Home() {
           >
             <div className="h-full w-full overflow-y-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
               <CVForm
+                key={resetKey}
                 cvData={cvData}
                 setCvData={setCvData}
                 template={template}
