@@ -125,13 +125,13 @@ This project uses **GitHub Actions** for continuous integration, deployment, and
 
 ## 🌐 Deployment
 
-This application is optimized for **Render**.
+This application is optimized for **Render** and includes a `render.yaml` Blueprint for 1-click deployment.
 
-1. Connect your GitHub repository to Render.
-2. Select **Web Service**.
-3. **Build Command**: `npm run render-build`
-4. **Start Command**: `npm run start`
-5. Add your `GEMINI_API_KEY` to the Environment Variables.
+1. Go to your [Render Dashboard](https://dashboard.render.com/).
+2. Click **New** and select **Blueprint**.
+3. Connect this GitHub repository.
+4. Render will automatically detect the `render.yaml` file and configure the Web Service.
+5. Provide your `GEMINI_API_KEY` and `ALLOWED_ORIGIN` when prompted during setup.
 
 ---
 

@@ -41,3 +41,14 @@ jobs:
         with:
           commit_message: "chore: bump version to ${{ steps.get_version.outputs.VERSION }}"
           branch: ${{ github.event.release.target_commitish }}
+
+      - name: Trigger Render Deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            echo "Triggering Render deploy..."
+            curl -X POST $RENDER_DEPLOY_HOOK
+          else
+            echo "RENDER_DEPLOY_HOOK secret is not set, skipping auto-deploy."
+          fi
