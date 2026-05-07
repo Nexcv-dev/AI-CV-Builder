@@ -3,23 +3,29 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #29 from bimanthaperera-lab/test/overview (6b83844) - Bimantha Perera, 18 seconds ago
-* Create Changelog.md and make it automated (e37171e) - Bimantha Perera, 3 minutes ago
+* Merge pull request #30 from bimanthaperera-lab/test/overview (027222b) - Bimantha Perera, 11 seconds ago
+* fix update version.yml (03b9e06) - Bimantha Perera, 3 minutes ago
+* fix release drafter.yml issue (c0958e0) - Bimantha Perera, 4 minutes ago
+* Fix Relese drafter.yml issue and add auto version update action (ef0ec39) - Bimantha Perera, 9 minutes ago
+* Add Automated Release Drafter (204d43c) - Bimantha Perera, 28 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (381e1b5) - bimanthaperera-lab, 38 minutes ago
+* Merge pull request #29 from bimanthaperera-lab/test/overview (6b83844) - Bimantha Perera, 38 minutes ago
+* Create Changelog.md and make it automated (e37171e) - Bimantha Perera, 41 minutes ago
 * Merge pull request #26 from bimanthaperera-lab/test/overview (6ff1d1d) - Bimantha Perera, 5 hours ago
 * add automated labeler for PR (cd3f27f) - Bimantha Perera, 5 hours ago
-* Add None option to gender and marital status to unselect status (ca2a3e4) - Bimantha Perera, 5 hours ago
-* Update DesignPanel.tsx (264ac51) - Bimantha Perera, 8 hours ago
-* Merge pull request #25 from bimanthaperera-lab/test/overview (61043ee) - Bimantha Perera, 11 hours ago
+* Add None option to gender and marital status to unselect status (ca2a3e4) - Bimantha Perera, 6 hours ago
+* Update DesignPanel.tsx (264ac51) - Bimantha Perera, 9 hours ago
+* Merge pull request #25 from bimanthaperera-lab/test/overview (61043ee) - Bimantha Perera, 12 hours ago
 * Stop parsing document when user close the popup (1ce34f1) - Bimantha Perera, 12 hours ago
 * Fixing PDF Import pop up not showing issue (43a3808) - Bimantha Perera, 13 hours ago
 * Merge pull request #24 from bimanthaperera-lab/test/overview (924968c) - Bimantha Perera, 24 hours ago
 * improve AI Pdf Parsing (5baae74) - Bimantha Perera, 24 hours ago
-* improve error handling and implement toaster massage (40772d8) - Bimantha Perera, 24 hours ago
+* improve error handling and implement toaster massage (40772d8) - Bimantha Perera, 25 hours ago
 * fix syntax warnings (a01703f) - Bimantha Perera, 27 hours ago
 * Delete code_optimization_report.md (a54932e) - Bimantha Perera, 27 hours ago
-* Merge pull request #23 from bimanthaperera-lab/test/overview (00038a5) - Bimantha Perera, 30 hours ago
+* Merge pull request #23 from bimanthaperera-lab/test/overview (00038a5) - Bimantha Perera, 31 hours ago
 * Update CVPreview.test.tsx (69c16ed) - Bimantha Perera, 31 hours ago
-* Bug Fixing (2abf2f4) - Bimantha Perera, 34 hours ago
+* Bug Fixing (2abf2f4) - Bimantha Perera, 35 hours ago
 * Merge pull request #22 from bimanthaperera-lab/test/overview (f3d5881) - Bimantha Perera, 3 days ago
 * Optimized the code (b754a92) - Bimantha Perera, 3 days ago
 * Merge pull request #21 from bimanthaperera-lab/test/overview (7bc57d0) - Bimantha Perera, 4 days ago
@@ -44,7 +50,7 @@ All notable changes to this project will be documented in this file.
 * Merge pull request #14 from bimanthaperera-lab/test/overview (7619e97) - Bimantha Perera, 7 days ago
 * Fix dark mode issues (4deda14) - Bimantha Perera, 7 days ago
 * Merge pull request #13 from bimanthaperera-lab/test/overview (0508852) - Bimantha Perera, 7 days ago
-* Add Dark mode (d91453b) - Bimantha Perera, 7 days ago
+* Add Dark mode (d91453b) - Bimantha Perera, 8 days ago
 * Merge pull request #12 from bimanthaperera-lab/test/overview (a065710) - Bimantha Perera, 9 days ago
 * Improve UI/UX (09460ab) - Bimantha Perera, 9 days ago
 * add loading animation and cv upload pop up (1d8b904) - Bimantha Perera, 9 days ago
