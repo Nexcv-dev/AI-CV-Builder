@@ -41,3 +41,10 @@ jobs:
         with:
           commit_message: "chore: bump version to ${{ steps.get_version.outputs.VERSION }}"
           branch: ${{ github.event.release.target_commitish }}
+
+      - name: Trigger Render Deploy
+        if: env.RENDER_DEPLOY_HOOK != ''
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          curl -X POST $RENDER_DEPLOY_HOOK
