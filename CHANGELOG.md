@@ -3,32 +3,39 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #31 from bimanthaperera-lab/test/overview (6ecda2c) - Bimantha Perera, 12 seconds ago
-* fix: auto-commit file_pattern issue with spaces (12ec885) - Bimantha Perera, 8 minutes ago
-* Update README.md (52285bf) - Bimantha Perera, 46 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (fc3fa3e) - bimanthaperera-lab, 49 minutes ago
-* Merge pull request #30 from bimanthaperera-lab/test/overview (027222b) - Bimantha Perera, 49 minutes ago
-* fix update version.yml (03b9e06) - Bimantha Perera, 52 minutes ago
-* fix release drafter.yml issue (c0958e0) - Bimantha Perera, 53 minutes ago
-* Fix Relese drafter.yml issue and add auto version update action (ef0ec39) - Bimantha Perera, 58 minutes ago
-* Add Automated Release Drafter (204d43c) - Bimantha Perera, 78 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (381e1b5) - bimanthaperera-lab, 87 minutes ago
-* Merge pull request #29 from bimanthaperera-lab/test/overview (6b83844) - Bimantha Perera, 87 minutes ago
+* Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 18 seconds ago
+* fix: move secrets check into bash script (69dd804) - Bimantha Perera, 7 minutes ago
+* fix: if condition for secret checking in GitHub Action (2884e28) - Bimantha Perera, 11 minutes ago
+* feat: add render deploy hook to release workflow (85477c6) - Bimantha Perera, 12 minutes ago
+* feat: add render.yaml blueprint for automated deployment (97983d5) - Bimantha Perera, 16 minutes ago
+* chore: bump version to 0.1.1 (201936c) - bimanthaperera-lab, 19 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (8db5394) - bimanthaperera-lab, 26 minutes ago
+* Merge pull request #31 from bimanthaperera-lab/test/overview (6ecda2c) - Bimantha Perera, 26 minutes ago
+* fix: auto-commit file_pattern issue with spaces (12ec885) - Bimantha Perera, 34 minutes ago
+* Update README.md (52285bf) - Bimantha Perera, 72 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (fc3fa3e) - bimanthaperera-lab, 75 minutes ago
+* Merge pull request #30 from bimanthaperera-lab/test/overview (027222b) - Bimantha Perera, 75 minutes ago
+* fix update version.yml (03b9e06) - Bimantha Perera, 78 minutes ago
+* fix release drafter.yml issue (c0958e0) - Bimantha Perera, 79 minutes ago
+* Fix Relese drafter.yml issue and add auto version update action (ef0ec39) - Bimantha Perera, 84 minutes ago
+* Add Automated Release Drafter (204d43c) - Bimantha Perera, 2 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (381e1b5) - bimanthaperera-lab, 2 hours ago
+* Merge pull request #29 from bimanthaperera-lab/test/overview (6b83844) - Bimantha Perera, 2 hours ago
 * Create Changelog.md and make it automated (e37171e) - Bimantha Perera, 2 hours ago
-* Merge pull request #26 from bimanthaperera-lab/test/overview (6ff1d1d) - Bimantha Perera, 6 hours ago
-* add automated labeler for PR (cd3f27f) - Bimantha Perera, 6 hours ago
+* Merge pull request #26 from bimanthaperera-lab/test/overview (6ff1d1d) - Bimantha Perera, 7 hours ago
+* add automated labeler for PR (cd3f27f) - Bimantha Perera, 7 hours ago
 * Add None option to gender and marital status to unselect status (ca2a3e4) - Bimantha Perera, 7 hours ago
-* Update DesignPanel.tsx (264ac51) - Bimantha Perera, 9 hours ago
+* Update DesignPanel.tsx (264ac51) - Bimantha Perera, 10 hours ago
 * Merge pull request #25 from bimanthaperera-lab/test/overview (61043ee) - Bimantha Perera, 13 hours ago
-* Stop parsing document when user close the popup (1ce34f1) - Bimantha Perera, 13 hours ago
+* Stop parsing document when user close the popup (1ce34f1) - Bimantha Perera, 14 hours ago
 * Fixing PDF Import pop up not showing issue (43a3808) - Bimantha Perera, 14 hours ago
-* Merge pull request #24 from bimanthaperera-lab/test/overview (924968c) - Bimantha Perera, 25 hours ago
-* improve AI Pdf Parsing (5baae74) - Bimantha Perera, 25 hours ago
-* improve error handling and implement toaster massage (40772d8) - Bimantha Perera, 25 hours ago
-* fix syntax warnings (a01703f) - Bimantha Perera, 28 hours ago
-* Delete code_optimization_report.md (a54932e) - Bimantha Perera, 28 hours ago
+* Merge pull request #24 from bimanthaperera-lab/test/overview (924968c) - Bimantha Perera, 26 hours ago
+* improve AI Pdf Parsing (5baae74) - Bimantha Perera, 26 hours ago
+* improve error handling and implement toaster massage (40772d8) - Bimantha Perera, 26 hours ago
+* fix syntax warnings (a01703f) - Bimantha Perera, 29 hours ago
+* Delete code_optimization_report.md (a54932e) - Bimantha Perera, 29 hours ago
 * Merge pull request #23 from bimanthaperera-lab/test/overview (00038a5) - Bimantha Perera, 32 hours ago
-* Update CVPreview.test.tsx (69c16ed) - Bimantha Perera, 32 hours ago
+* Update CVPreview.test.tsx (69c16ed) - Bimantha Perera, 33 hours ago
 * Bug Fixing (2abf2f4) - Bimantha Perera, 2 days ago
 * Merge pull request #22 from bimanthaperera-lab/test/overview (f3d5881) - Bimantha Perera, 3 days ago
 * Optimized the code (b754a92) - Bimantha Perera, 3 days ago
@@ -42,8 +49,8 @@ All notable changes to this project will be documented in this file.
 * Merge branch 'main' into test/overview (1d5429a) - Bimantha Perera, 5 days ago
 * Add UI Improvements update calendar and drop down menus (8db0167) - Bimantha Perera, 5 days ago
 * Merge branch 'test/overview' of https://github.com/bimanthaperera-lab/AI-CV-Builder into test/overview (36d4ccc) - Bimantha Perera, 5 days ago
-* Merge pull request #18 from bimanthaperera-lab/test/overview (27b409a) - Bimantha Perera, 5 days ago
-* remove demo data and add pdf generation test case (a02aa43) - Bimantha Perera, 5 days ago
+* Merge pull request #18 from bimanthaperera-lab/test/overview (27b409a) - Bimantha Perera, 6 days ago
+* remove demo data and add pdf generation test case (a02aa43) - Bimantha Perera, 6 days ago
 * Merge pull request #17 from bimanthaperera-lab/test/overview (7986118) - Bimantha Perera, 6 days ago
 * Update index.css (8722575) - Bimantha Perera, 6 days ago
 * Fix bug in description box (d99e2b0) - Bimantha Perera, 6 days ago
