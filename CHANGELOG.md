@@ -3,29 +3,33 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #30 from bimanthaperera-lab/test/overview (027222b) - Bimantha Perera, 11 seconds ago
-* fix update version.yml (03b9e06) - Bimantha Perera, 3 minutes ago
-* fix release drafter.yml issue (c0958e0) - Bimantha Perera, 4 minutes ago
-* Fix Relese drafter.yml issue and add auto version update action (ef0ec39) - Bimantha Perera, 9 minutes ago
-* Add Automated Release Drafter (204d43c) - Bimantha Perera, 28 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (381e1b5) - bimanthaperera-lab, 38 minutes ago
-* Merge pull request #29 from bimanthaperera-lab/test/overview (6b83844) - Bimantha Perera, 38 minutes ago
-* Create Changelog.md and make it automated (e37171e) - Bimantha Perera, 41 minutes ago
-* Merge pull request #26 from bimanthaperera-lab/test/overview (6ff1d1d) - Bimantha Perera, 5 hours ago
-* add automated labeler for PR (cd3f27f) - Bimantha Perera, 5 hours ago
-* Add None option to gender and marital status to unselect status (ca2a3e4) - Bimantha Perera, 6 hours ago
+* Merge pull request #31 from bimanthaperera-lab/test/overview (6ecda2c) - Bimantha Perera, 12 seconds ago
+* fix: auto-commit file_pattern issue with spaces (12ec885) - Bimantha Perera, 8 minutes ago
+* Update README.md (52285bf) - Bimantha Perera, 46 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (fc3fa3e) - bimanthaperera-lab, 49 minutes ago
+* Merge pull request #30 from bimanthaperera-lab/test/overview (027222b) - Bimantha Perera, 49 minutes ago
+* fix update version.yml (03b9e06) - Bimantha Perera, 52 minutes ago
+* fix release drafter.yml issue (c0958e0) - Bimantha Perera, 53 minutes ago
+* Fix Relese drafter.yml issue and add auto version update action (ef0ec39) - Bimantha Perera, 58 minutes ago
+* Add Automated Release Drafter (204d43c) - Bimantha Perera, 78 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (381e1b5) - bimanthaperera-lab, 87 minutes ago
+* Merge pull request #29 from bimanthaperera-lab/test/overview (6b83844) - Bimantha Perera, 87 minutes ago
+* Create Changelog.md and make it automated (e37171e) - Bimantha Perera, 2 hours ago
+* Merge pull request #26 from bimanthaperera-lab/test/overview (6ff1d1d) - Bimantha Perera, 6 hours ago
+* add automated labeler for PR (cd3f27f) - Bimantha Perera, 6 hours ago
+* Add None option to gender and marital status to unselect status (ca2a3e4) - Bimantha Perera, 7 hours ago
 * Update DesignPanel.tsx (264ac51) - Bimantha Perera, 9 hours ago
-* Merge pull request #25 from bimanthaperera-lab/test/overview (61043ee) - Bimantha Perera, 12 hours ago
-* Stop parsing document when user close the popup (1ce34f1) - Bimantha Perera, 12 hours ago
-* Fixing PDF Import pop up not showing issue (43a3808) - Bimantha Perera, 13 hours ago
-* Merge pull request #24 from bimanthaperera-lab/test/overview (924968c) - Bimantha Perera, 24 hours ago
-* improve AI Pdf Parsing (5baae74) - Bimantha Perera, 24 hours ago
+* Merge pull request #25 from bimanthaperera-lab/test/overview (61043ee) - Bimantha Perera, 13 hours ago
+* Stop parsing document when user close the popup (1ce34f1) - Bimantha Perera, 13 hours ago
+* Fixing PDF Import pop up not showing issue (43a3808) - Bimantha Perera, 14 hours ago
+* Merge pull request #24 from bimanthaperera-lab/test/overview (924968c) - Bimantha Perera, 25 hours ago
+* improve AI Pdf Parsing (5baae74) - Bimantha Perera, 25 hours ago
 * improve error handling and implement toaster massage (40772d8) - Bimantha Perera, 25 hours ago
-* fix syntax warnings (a01703f) - Bimantha Perera, 27 hours ago
-* Delete code_optimization_report.md (a54932e) - Bimantha Perera, 27 hours ago
-* Merge pull request #23 from bimanthaperera-lab/test/overview (00038a5) - Bimantha Perera, 31 hours ago
-* Update CVPreview.test.tsx (69c16ed) - Bimantha Perera, 31 hours ago
-* Bug Fixing (2abf2f4) - Bimantha Perera, 35 hours ago
+* fix syntax warnings (a01703f) - Bimantha Perera, 28 hours ago
+* Delete code_optimization_report.md (a54932e) - Bimantha Perera, 28 hours ago
+* Merge pull request #23 from bimanthaperera-lab/test/overview (00038a5) - Bimantha Perera, 32 hours ago
+* Update CVPreview.test.tsx (69c16ed) - Bimantha Perera, 32 hours ago
+* Bug Fixing (2abf2f4) - Bimantha Perera, 2 days ago
 * Merge pull request #22 from bimanthaperera-lab/test/overview (f3d5881) - Bimantha Perera, 3 days ago
 * Optimized the code (b754a92) - Bimantha Perera, 3 days ago
 * Merge pull request #21 from bimanthaperera-lab/test/overview (7bc57d0) - Bimantha Perera, 4 days ago
@@ -40,16 +44,16 @@ All notable changes to this project will be documented in this file.
 * Merge branch 'test/overview' of https://github.com/bimanthaperera-lab/AI-CV-Builder into test/overview (36d4ccc) - Bimantha Perera, 5 days ago
 * Merge pull request #18 from bimanthaperera-lab/test/overview (27b409a) - Bimantha Perera, 5 days ago
 * remove demo data and add pdf generation test case (a02aa43) - Bimantha Perera, 5 days ago
-* Merge pull request #17 from bimanthaperera-lab/test/overview (7986118) - Bimantha Perera, 5 days ago
-* Update index.css (8722575) - Bimantha Perera, 5 days ago
-* Fix bug in description box (d99e2b0) - Bimantha Perera, 5 days ago
+* Merge pull request #17 from bimanthaperera-lab/test/overview (7986118) - Bimantha Perera, 6 days ago
+* Update index.css (8722575) - Bimantha Perera, 6 days ago
+* Fix bug in description box (d99e2b0) - Bimantha Perera, 6 days ago
 * Merge pull request #16 from bimanthaperera-lab/test/overview (068cb11) - Bimantha Perera, 7 days ago
 * Fix tab layout (c8a05cd) - Bimantha Perera, 7 days ago
 * Merge pull request #15 from bimanthaperera-lab/test/overview (6e42d8e) - Bimantha Perera, 7 days ago
 * Update Template Preview (b412767) - Bimantha Perera, 7 days ago
-* Merge pull request #14 from bimanthaperera-lab/test/overview (7619e97) - Bimantha Perera, 7 days ago
-* Fix dark mode issues (4deda14) - Bimantha Perera, 7 days ago
-* Merge pull request #13 from bimanthaperera-lab/test/overview (0508852) - Bimantha Perera, 7 days ago
+* Merge pull request #14 from bimanthaperera-lab/test/overview (7619e97) - Bimantha Perera, 8 days ago
+* Fix dark mode issues (4deda14) - Bimantha Perera, 8 days ago
+* Merge pull request #13 from bimanthaperera-lab/test/overview (0508852) - Bimantha Perera, 8 days ago
 * Add Dark mode (d91453b) - Bimantha Perera, 8 days ago
 * Merge pull request #12 from bimanthaperera-lab/test/overview (a065710) - Bimantha Perera, 9 days ago
 * Improve UI/UX (09460ab) - Bimantha Perera, 9 days ago
