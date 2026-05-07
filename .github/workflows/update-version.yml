@@ -43,8 +43,12 @@ jobs:
           branch: ${{ github.event.release.target_commitish }}
 
       - name: Trigger Render Deploy
-        if: ${{ secrets.RENDER_DEPLOY_HOOK != '' }}
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          curl -X POST $RENDER_DEPLOY_HOOK
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            echo "Triggering Render deploy..."
+            curl -X POST $RENDER_DEPLOY_HOOK
+          else
+            echo "RENDER_DEPLOY_HOOK secret is not set, skipping auto-deploy."
+          fi
