@@ -407,9 +407,11 @@ export default function Home() {
                 <div className={`p-2 rounded-xl mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-violet-500 shadow-violet-500/30' : 'bg-violet-600 shadow-violet-600/20'}`}>
                   <LayoutTemplate className="text-white" size={20} />
                 </div>
-                <span className={`bg-clip-text text-transparent bg-linear-to-r ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
-                  CV Builder
-                </span>
+                <div className="flex flex-col justify-center">
+                  <span className={`bg-clip-text text-transparent bg-linear-to-r leading-tight ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
+                    CV Builder
+                  </span>
+                </div>
               </h1>
               <div className="lg:hidden flex items-center gap-2">
                 <button

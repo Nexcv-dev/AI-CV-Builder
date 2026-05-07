@@ -1,6 +1,5 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
-
 categories:
   - title: '🚀 Features'
     labels:
@@ -11,17 +10,11 @@ categories:
       - 'fix'
       - 'bugfix'
       - 'bug'
-  - title: '🧰 Maintenance & Chores'
+  - title: '🧰 Maintenance'
     labels:
       - 'chore'
       - 'dependencies'
-      - 'refactor'
-  - title: '📝 Documentation'
-    labels:
-      - 'docs'
-
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
-
 version-resolver:
   major:
     labels:
@@ -29,19 +22,12 @@ version-resolver:
   minor:
     labels:
       - 'minor'
-      - 'feature'
-      - 'enhancement'
   patch:
     labels:
       - 'patch'
-      - 'fix'
-      - 'bugfix'
-      - 'bug'
   default: patch
-
 template: |
   ## What's Changed
 
   $CHANGES
 
-  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
