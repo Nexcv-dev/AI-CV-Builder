@@ -114,44 +114,44 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
         </div>
         <div className="space-y-5">
           <div>
-            <label htmlFor="themeColor" className="block text-sm font-medium text-gray-700 mb-2">Primary Theme Color</label>
+            <label htmlFor="themeColor" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Primary Theme Color</label>
             <div className="flex items-center space-x-4">
-              <div className="relative"><input id="themeColor" type="color" value={cvData.themeColor} onChange={(e) => handleThemeChange('themeColor', e.target.value)} className="h-10 w-14 p-1 border border-gray-300 rounded-lg cursor-pointer bg-white" /></div>
-              <span className="text-sm font-mono text-gray-600 bg-white px-3 py-1.5 border border-gray-200 rounded-md uppercase">{cvData.themeColor}</span>
+              <div className="relative"><input id="themeColor" type="color" value={cvData.themeColor} onChange={(e) => handleThemeChange('themeColor', e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
+              <span className={`text-sm font-mono px-3 py-1.5 border rounded-md uppercase ${isDarkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>{cvData.themeColor}</span>
             </div>
           </div>
           <div>
-            <label htmlFor="sidebarColor" className="block text-sm font-medium text-gray-700 mb-2">Sidebar Background (Modern Template)</label>
+            <label htmlFor="sidebarColor" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Sidebar Background (Modern Template)</label>
             <div className="flex items-center space-x-4">
-              <div className="relative"><input id="sidebarColor" type="color" value={cvData.sidebarColor} onChange={(e) => handleThemeChange('sidebarColor', e.target.value)} className="h-10 w-14 p-1 border border-gray-300 rounded-lg cursor-pointer bg-white" /></div>
-              <span className="text-sm font-mono text-gray-600 bg-white px-3 py-1.5 border border-gray-200 rounded-md uppercase">{cvData.sidebarColor}</span>
+              <div className="relative"><input id="sidebarColor" type="color" value={cvData.sidebarColor} onChange={(e) => handleThemeChange('sidebarColor', e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
+              <span className={`text-sm font-mono px-3 py-1.5 border rounded-md uppercase ${isDarkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>{cvData.sidebarColor}</span>
             </div>
           </div>
 
           {/* Font Dropdown */}
           <div className="relative" ref={fontDropdownRef}>
-            <label htmlFor="fontFamily" className="block text-sm font-medium text-gray-700 mb-2">Font Family</label>
-            <button type="button" onClick={() => setIsFontDropdownOpen(!isFontDropdownOpen)} className="w-full flex items-center justify-between p-3 bg-white border border-gray-300 rounded-xl hover:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 transition-all shadow-sm">
+            <label htmlFor="fontFamily" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Font Family</label>
+            <button type="button" onClick={() => setIsFontDropdownOpen(!isFontDropdownOpen)} className={`w-full flex items-center justify-between p-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 transition-all shadow-sm border ${isDarkMode ? 'bg-slate-800 border-slate-700 hover:border-violet-500/50' : 'bg-white border-gray-300 hover:border-violet-400'}`}>
               <div className="flex items-center">
-                <span className="text-gray-400 mr-3 shrink-0"><Type size={18} /></span>
+                <span className={`mr-3 shrink-0 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}><Type size={18} /></span>
                 <div className="flex flex-col items-start overflow-hidden">
-                  <span className="text-sm font-bold text-gray-800 truncate">{cvData.fontFamily}</span>
-                  <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider truncate">{fonts.find(f => f.name === cvData.fontFamily)?.description}</span>
+                  <span className={`text-sm font-bold truncate ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>{cvData.fontFamily}</span>
+                  <span className={`text-[10px] font-medium uppercase tracking-wider truncate ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{fonts.find(f => f.name === cvData.fontFamily)?.description}</span>
                 </div>
               </div>
-              <ChevronDown size={18} className={`text-gray-400 shrink-0 transition-transform duration-300 ${isFontDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={18} className={`shrink-0 transition-transform duration-300 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'} ${isFontDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
               {isFontDropdownOpen && (
-                <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.2 }} className="absolute z-100 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden py-2">
+                <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.2 }} className={`absolute z-[100] w-full mt-2 rounded-2xl shadow-xl overflow-hidden py-2 border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
                   {fonts.map((f) => (
-                    <button key={f.name} type="button" onClick={() => { handleThemeChange('fontFamily', f.name); setIsFontDropdownOpen(false); }} className={`w-full flex items-center px-4 py-3 hover:bg-violet-50 transition-colors text-left ${cvData.fontFamily === f.name ? 'bg-violet-50/50' : ''}`}>
+                    <button key={f.name} type="button" onClick={() => { handleThemeChange('fontFamily', f.name); setIsFontDropdownOpen(false); }} className={`w-full flex items-center px-4 py-3 transition-colors text-left ${cvData.fontFamily === f.name ? (isDarkMode ? 'bg-violet-900/40' : 'bg-violet-50/50') : (isDarkMode ? 'hover:bg-slate-700/50' : 'hover:bg-violet-50')}`}>
                       <div className={`flex flex-col w-full ${f.className}`}>
                         <div className="flex items-center justify-between w-full">
-                          <span className={`text-base font-bold ${cvData.fontFamily === f.name ? 'text-violet-600' : 'text-gray-800'}`}>{f.name}</span>
-                          {cvData.fontFamily === f.name && (<Check size={16} className="text-violet-600 shrink-0" />)}
+                          <span className={`text-base font-bold ${cvData.fontFamily === f.name ? (isDarkMode ? 'text-violet-400' : 'text-violet-600') : (isDarkMode ? 'text-slate-200' : 'text-gray-800')}`}>{f.name}</span>
+                          {cvData.fontFamily === f.name && (<Check size={16} className={`shrink-0 ${isDarkMode ? 'text-violet-400' : 'text-violet-600'}`} />)}
                         </div>
-                        <span className="text-xs text-gray-500 font-medium mt-0.5">{f.description}</span>
+                        <span className={`text-xs font-medium mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{f.description}</span>
                       </div>
                     </button>
                   ))}
@@ -161,24 +161,24 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
           </div>
 
           {/* Spacing Controls */}
-          <div className="space-y-6 pt-6 border-t border-gray-200">
+          <div className={`space-y-6 pt-6 border-t ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
             <h4 className={`text-sm font-bold flex items-center gap-2 uppercase tracking-wider ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}><Layout size={16} className="text-violet-600" /> Document Spacing</h4>
             <div className="space-y-5">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label htmlFor="lineSpacing" className="text-xs font-semibold text-gray-600 flex items-center gap-2 uppercase tracking-wider"><MoveVertical size={14} /> Line Spacing</label>
-                  <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100">{cvData.lineSpacing || 1.5}</span>
+                  <label htmlFor="lineSpacing" className={`text-xs font-semibold flex items-center gap-2 uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}><MoveVertical size={14} /> Line Spacing</label>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded border ${isDarkMode ? 'text-violet-300 bg-violet-900/40 border-violet-800/50' : 'text-violet-600 bg-violet-50 border-violet-100'}`}>{cvData.lineSpacing || 1.5}</span>
                 </div>
-                <input id="lineSpacing" type="range" min="1" max="2.5" step="0.1" value={cvData.lineSpacing || 1.5} onChange={(e) => setCvData(prev => ({ ...prev, lineSpacing: parseFloat(e.target.value) }))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-600" />
-                <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase tracking-tighter"><span>Compact</span><span>Relaxed</span></div>
+                <input id="lineSpacing" type="range" min="1" max="2.5" step="0.1" value={cvData.lineSpacing || 1.5} onChange={(e) => setCvData(prev => ({ ...prev, lineSpacing: parseFloat(e.target.value) }))} className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-violet-600 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                <div className={`flex justify-between text-[10px] font-bold uppercase tracking-tighter ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}><span>Compact</span><span>Relaxed</span></div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label htmlFor="sectionGap" className="text-xs font-semibold text-gray-600 flex items-center gap-2 uppercase tracking-wider"><MoveHorizontal size={14} /> Section Gap</label>
-                  <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100">{cvData.sectionGap || 2}</span>
+                  <label htmlFor="sectionGap" className={`text-xs font-semibold flex items-center gap-2 uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}><MoveHorizontal size={14} /> Section Gap</label>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded border ${isDarkMode ? 'text-violet-300 bg-violet-900/40 border-violet-800/50' : 'text-violet-600 bg-violet-50 border-violet-100'}`}>{cvData.sectionGap || 2}</span>
                 </div>
-                <input id="sectionGap" type="range" min="0.5" max="4" step="0.1" value={cvData.sectionGap || 2} onChange={(e) => setCvData(prev => ({ ...prev, sectionGap: parseFloat(e.target.value) }))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-600" />
-                <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase tracking-tighter"><span>Tight</span><span>Spacious</span></div>
+                <input id="sectionGap" type="range" min="0.5" max="4" step="0.1" value={cvData.sectionGap || 2} onChange={(e) => setCvData(prev => ({ ...prev, sectionGap: parseFloat(e.target.value) }))} className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-violet-600 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                <div className={`flex justify-between text-[10px] font-bold uppercase tracking-tighter ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}><span>Tight</span><span>Spacious</span></div>
               </div>
             </div>
           </div>
