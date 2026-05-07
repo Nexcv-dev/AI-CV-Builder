@@ -99,14 +99,19 @@ We prioritize stability and security.
 - **Watch mode**: `npm run test`
 - **Coverage**: `npm run test:coverage`
 
-## ⚙️ CI/CD Pipeline
+## ⚙️ CI/CD Pipeline & Release Management
 
-This project uses **GitHub Actions** for continuous integration and deployment. Every push or pull request triggers an automated workflow that:
+This project uses **GitHub Actions** for continuous integration, deployment, and release management.
 
-1.  **Lints** the codebase to ensure TypeScript standards.
-2.  **Runs Tests** via Vitest to verify all components and AI logic.
-3.  **Builds** the application to check for production readiness.
-4.  **Auto-Deploys** to **Render** whenever changes are merged into the `main` branch.
+**Continuous Integration & Deployment:**
+1.  **Lints & Tests**: Ensures TypeScript standards and verifies all components via Vitest on every push.
+2.  **Builds**: Verifies production readiness.
+3.  **Auto-Deploys**: Automatically deploys to **Render** whenever changes are pushed to the `main` branch.
+
+**Release & Version Management:**
+- **Automated Changelogs**: Generates and updates `CHANGELOG.md` automatically on push.
+- **Release Drafter**: Automatically drafts GitHub Releases with semantic versioning tags based on merged pull request labels (`major`, `minor`, `patch`).
+- **Auto Versioning App Sync**: When a release is published on GitHub, a dedicated workflow automatically bumps the `package.json` version to match the release tag, ensuring the UI always reflects the live version.
 
 > [!IMPORTANT]
 > To enable automatic deployment, you must add a GitHub Secret named `RENDER_DEPLOY_HOOK` containing your Render Deploy Hook URL.
