@@ -110,6 +110,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const [refiningIds, setRefiningIds] = useState<Record<string, boolean>>({});
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const importAbortControllerRef = useRef<AbortController | null>(null);
 
   // Cancel any ongoing AI generation when changing steps or tabs
   useEffect(() => {
@@ -118,6 +119,15 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       abortControllerRef.current = null;
     }
   }, [wizardStep, activeMainTab]);
+
+  // Cancel CV import if modal is closed during import
+  useEffect(() => {
+    if (!showUploadModal && isImporting && importAbortControllerRef.current) {
+      importAbortControllerRef.current.abort();
+      setIsImporting(false);
+      setImportMessage(null);
+    }
+  }, [showUploadModal, isImporting]);
 
   const setRefining = useCallback((id: string, value: boolean) => {
     setRefiningIds(prev => ({ ...prev, [id]: value }));
@@ -220,6 +230,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       return;
     }
 
+    if (importAbortControllerRef.current) {
+      importAbortControllerRef.current.abort();
+    }
+    importAbortControllerRef.current = new AbortController();
+
     try {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -232,6 +247,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-App-Source': 'cv-builder-app' },
             body: JSON.stringify({ base64Data, mimeType }),
+            signal: importAbortControllerRef.current.signal,
           });
 
           if (!parseResponse.ok) {
@@ -315,6 +331,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             setTimeout(() => { setShowUploadModal(false); setImportMessage(null); }, 1500);
           }
         } catch (error: any) {
+          if (error.name === 'AbortError' || importAbortControllerRef.current?.signal.aborted) {
+            console.log('CV Import aborted by user');
+            return;
+          }
           console.error('Error importing CV:', error);
           setImportMessage({ type: 'error', text: `Import failed: ${error.message}` });
         } finally {
