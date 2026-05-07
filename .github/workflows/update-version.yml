@@ -43,7 +43,7 @@ jobs:
           branch: ${{ github.event.release.target_commitish }}
 
       - name: Trigger Render Deploy
-        if: env.RENDER_DEPLOY_HOOK != ''
+        if: ${{ secrets.RENDER_DEPLOY_HOOK != '' }}
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
