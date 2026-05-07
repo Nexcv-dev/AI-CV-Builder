@@ -69,6 +69,19 @@ export const PremiumSelect = React.memo(({
             className={`absolute z-100 w-full mt-2 overflow-hidden border rounded-xl shadow-2xl ${isDarkMode ? 'bg-slate-800 border-slate-700 shadow-black/50' : 'bg-white border-gray-100 shadow-violet-500/10'}`}
           >
             <div className="p-1 max-h-60 overflow-y-auto scrollbar-hide">
+              {optional && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange({ target: { name, value: '' } });
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-between ${!value ? (isDarkMode ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-50 text-violet-600') : (isDarkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-50')}`}
+                >
+                  None
+                  {!value && <Check size={16} />}
+                </button>
+              )}
               {options.map((option) => (
                 <button
                   key={option.value}

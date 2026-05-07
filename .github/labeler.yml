@@ -1,0 +1,37 @@
+# Configuration for GitHub Action: actions/labeler
+
+frontend:
+  - changed-files:
+    - any-glob-to-any-file: 'Free CV Builder/src/**/*'
+    - all-globs-to-all-files: '!Free CV Builder/src/**/*.test.*'
+    - all-globs-to-all-files: '!Free CV Builder/src/**/*.spec.*'
+
+backend:
+  - changed-files:
+    - any-glob-to-any-file: 'Free CV Builder/server.ts'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'Free CV Builder/tests/**/*'
+      - 'Free CV Builder/src/**/*.test.*'
+      - 'Free CV Builder/src/**/*.spec.*'
+
+config:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'Free CV Builder/package.json'
+      - 'Free CV Builder/vite.config.ts'
+      - 'Free CV Builder/tsconfig.json'
+      - 'Free CV Builder/.env*'
+      - 'Free CV Builder/.gitignore'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'README.md'
+      - '**/*.md'
+
+assets:
+  - changed-files:
+    - any-glob-to-any-file: 'Free CV Builder/public/**/*'
