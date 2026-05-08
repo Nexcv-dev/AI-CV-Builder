@@ -106,12 +106,15 @@ export const PersonalDetailsSection = React.memo(({
           <DatePicker
             selected={personalInfo.dob ? new Date(personalInfo.dob) : null}
             onChange={(date) => {
+              const newValue = date ? date.toISOString().split('T')[0] : '';
+              const isSameDate = personalInfo.dob === newValue;
               onChange({
                 target: {
                   name: 'dob',
-                  value: date ? date.toISOString().split('T')[0] : ''
+                  value: isSameDate ? '' : newValue
                 }
               } as any);
+              onDatePickerClose();
             }}
             dateFormat="yyyy-MM-dd"
             placeholderText="Select Date of Birth"
@@ -124,7 +127,6 @@ export const PersonalDetailsSection = React.memo(({
             open={isDatePickerOpen}
             onInputClick={onDatePickerOpen}
             onClickOutside={onDatePickerClose}
-            onSelect={onDatePickerClose}
             popperPlacement="top"
             popperProps={{ middleware: [offset(10)] } as any}
           />
