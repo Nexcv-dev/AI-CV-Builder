@@ -3,41 +3,48 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #36 from bimanthaperera-lab/test/overview (e349ec2) - Bimantha Perera, 16 seconds ago
-* Update Footer (ca6d77c) - Bimantha Perera, 13 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (bfba959) - bimanthaperera-lab, 2 hours ago
-* Merge pull request #35 from bimanthaperera-lab/test/overview (2d28618) - Bimantha Perera, 2 hours ago
-* Update README.md (e1b0841) - Bimantha Perera, 3 hours ago
-* Update main.yml (2922038) - Bimantha Perera, 3 hours ago
-* Dockerization the App (359fe20) - Bimantha Perera, 3 hours ago
-* chore: bump version to 0.1.2 (2d4e777) - bimanthaperera-lab, 13 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (b80c98c) - bimanthaperera-lab, 13 hours ago
-* Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 13 hours ago
-* fix: move secrets check into bash script (69dd804) - Bimantha Perera, 13 hours ago
-* fix: if condition for secret checking in GitHub Action (2884e28) - Bimantha Perera, 13 hours ago
-* feat: add render deploy hook to release workflow (85477c6) - Bimantha Perera, 13 hours ago
-* feat: add render.yaml blueprint for automated deployment (97983d5) - Bimantha Perera, 13 hours ago
-* chore: bump version to 0.1.1 (201936c) - bimanthaperera-lab, 13 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (8db5394) - bimanthaperera-lab, 13 hours ago
-* Merge pull request #31 from bimanthaperera-lab/test/overview (6ecda2c) - Bimantha Perera, 13 hours ago
-* fix: auto-commit file_pattern issue with spaces (12ec885) - Bimantha Perera, 14 hours ago
-* Update README.md (52285bf) - Bimantha Perera, 14 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (fc3fa3e) - bimanthaperera-lab, 14 hours ago
-* Merge pull request #30 from bimanthaperera-lab/test/overview (027222b) - Bimantha Perera, 14 hours ago
-* fix update version.yml (03b9e06) - Bimantha Perera, 14 hours ago
-* fix release drafter.yml issue (c0958e0) - Bimantha Perera, 14 hours ago
-* Fix Relese drafter.yml issue and add auto version update action (ef0ec39) - Bimantha Perera, 14 hours ago
-* Add Automated Release Drafter (204d43c) - Bimantha Perera, 15 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (381e1b5) - bimanthaperera-lab, 15 hours ago
-* Merge pull request #29 from bimanthaperera-lab/test/overview (6b83844) - Bimantha Perera, 15 hours ago
-* Create Changelog.md and make it automated (e37171e) - Bimantha Perera, 15 hours ago
-* Merge pull request #26 from bimanthaperera-lab/test/overview (6ff1d1d) - Bimantha Perera, 19 hours ago
-* add automated labeler for PR (cd3f27f) - Bimantha Perera, 20 hours ago
-* Add None option to gender and marital status to unselect status (ca2a3e4) - Bimantha Perera, 20 hours ago
-* Update DesignPanel.tsx (264ac51) - Bimantha Perera, 23 hours ago
-* Merge pull request #25 from bimanthaperera-lab/test/overview (61043ee) - Bimantha Perera, 26 hours ago
-* Stop parsing document when user close the popup (1ce34f1) - Bimantha Perera, 27 hours ago
-* Fixing PDF Import pop up not showing issue (43a3808) - Bimantha Perera, 27 hours ago
+* Fix issues (60eaf5e) - Bimantha Perera, 11 seconds ago
+* Update ContactUs.tsx (83fca65) - Bimantha Perera, 8 minutes ago
+* Show Download popup when user Click on Finish Button (b6e2539) - Bimantha Perera, 32 minutes ago
+* Make when User Click On Date Twice Unselect the date (6cd575a) - Bimantha Perera, 36 minutes ago
+* Remove None Option From Gender and Marital Satus Drop down, Made when user click Option enable and disable (13334a1) - Bimantha Perera, 46 minutes ago
+* Fix Bug: White Space below the Footer when Scrolling (a676966) - Bimantha Perera, 60 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (fa605d6) - bimanthaperera-lab, 8 hours ago
+* Merge pull request #36 from bimanthaperera-lab/test/overview (e349ec2) - Bimantha Perera, 8 hours ago
+* Update Footer (ca6d77c) - Bimantha Perera, 8 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (bfba959) - bimanthaperera-lab, 10 hours ago
+* Merge pull request #35 from bimanthaperera-lab/test/overview (2d28618) - Bimantha Perera, 10 hours ago
+* Update README.md (e1b0841) - Bimantha Perera, 11 hours ago
+* Update main.yml (2922038) - Bimantha Perera, 11 hours ago
+* Dockerization the App (359fe20) - Bimantha Perera, 11 hours ago
+* chore: bump version to 0.1.2 (2d4e777) - bimanthaperera-lab, 21 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (b80c98c) - bimanthaperera-lab, 21 hours ago
+* Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 21 hours ago
+* fix: move secrets check into bash script (69dd804) - Bimantha Perera, 21 hours ago
+* fix: if condition for secret checking in GitHub Action (2884e28) - Bimantha Perera, 21 hours ago
+* feat: add render deploy hook to release workflow (85477c6) - Bimantha Perera, 21 hours ago
+* feat: add render.yaml blueprint for automated deployment (97983d5) - Bimantha Perera, 21 hours ago
+* chore: bump version to 0.1.1 (201936c) - bimanthaperera-lab, 21 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (8db5394) - bimanthaperera-lab, 21 hours ago
+* Merge pull request #31 from bimanthaperera-lab/test/overview (6ecda2c) - Bimantha Perera, 21 hours ago
+* fix: auto-commit file_pattern issue with spaces (12ec885) - Bimantha Perera, 22 hours ago
+* Update README.md (52285bf) - Bimantha Perera, 22 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (fc3fa3e) - bimanthaperera-lab, 22 hours ago
+* Merge pull request #30 from bimanthaperera-lab/test/overview (027222b) - Bimantha Perera, 22 hours ago
+* fix update version.yml (03b9e06) - Bimantha Perera, 22 hours ago
+* fix release drafter.yml issue (c0958e0) - Bimantha Perera, 22 hours ago
+* Fix Relese drafter.yml issue and add auto version update action (ef0ec39) - Bimantha Perera, 22 hours ago
+* Add Automated Release Drafter (204d43c) - Bimantha Perera, 23 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (381e1b5) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #29 from bimanthaperera-lab/test/overview (6b83844) - Bimantha Perera, 23 hours ago
+* Create Changelog.md and make it automated (e37171e) - Bimantha Perera, 23 hours ago
+* Merge pull request #26 from bimanthaperera-lab/test/overview (6ff1d1d) - Bimantha Perera, 28 hours ago
+* add automated labeler for PR (cd3f27f) - Bimantha Perera, 28 hours ago
+* Add None option to gender and marital status to unselect status (ca2a3e4) - Bimantha Perera, 28 hours ago
+* Update DesignPanel.tsx (264ac51) - Bimantha Perera, 31 hours ago
+* Merge pull request #25 from bimanthaperera-lab/test/overview (61043ee) - Bimantha Perera, 34 hours ago
+* Stop parsing document when user close the popup (1ce34f1) - Bimantha Perera, 35 hours ago
+* Fixing PDF Import pop up not showing issue (43a3808) - Bimantha Perera, 35 hours ago
 * Merge pull request #24 from bimanthaperera-lab/test/overview (924968c) - Bimantha Perera, 2 days ago
 * improve AI Pdf Parsing (5baae74) - Bimantha Perera, 2 days ago
 * improve error handling and implement toaster massage (40772d8) - Bimantha Perera, 2 days ago
@@ -87,7 +94,7 @@ All notable changes to this project will be documented in this file.
 * Implement Step by step wizard (5477892) - Bimantha Perera, 11 days ago
 * Update README.md (f4f3ed7) - Bimantha Perera, 12 days ago
 * Merge pull request #7 from bimanthaperera-lab/test/overview (edfb4a2) - Bimantha Perera, 13 days ago
-* Update CVForm_logic.test.tsx (94867c5) - Bimantha Perera, 13 days ago
+* Update CVForm_logic.test.tsx (94867c5) - Bimantha Perera, 2 weeks ago
 * fix layot issues (60213b1) - Bimantha Perera, 2 weeks ago
 * Fix Pdf layout issues and add blue color theme (ffdb5f3) - Bimantha Perera, 2 weeks ago
 * Update README.md (4cf647f) - Bimantha Perera, 2 weeks ago
