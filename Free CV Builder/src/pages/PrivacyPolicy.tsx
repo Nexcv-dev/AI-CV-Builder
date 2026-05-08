@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 export default function PrivacyPolicy() {
   return (
-    <div className="flex-1 overflow-y-auto bg-[#f8f9fa] w-full">
+    <div className="flex-1 bg-[#f8f9fa] w-full">
       <header className="bg-white border-b border-gray-200/80 flex flex-col sm:flex-row items-center p-4 sm:px-8 z-50 sticky top-0 shadow-sm">
         <Link to="/" className="flex items-center">
           <div className="p-2 bg-gray-900 rounded-xl mr-3 shadow-md shadow-gray-900/10">

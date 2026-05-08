@@ -6,9 +6,10 @@ interface WizardNavProps {
   totalSteps: number;
   onNext: () => void;
   onBack: () => void;
+  onFinish?: () => void;
 }
 
-export function WizardNav({ wizardStep, totalSteps, onNext, onBack }: WizardNavProps) {
+export function WizardNav({ wizardStep, totalSteps, onNext, onBack, onFinish }: WizardNavProps) {
   const isFirst = wizardStep === 0;
   const isLast = wizardStep === totalSteps - 1;
 
@@ -33,7 +34,7 @@ export function WizardNav({ wizardStep, totalSteps, onNext, onBack }: WizardNavP
         {isLast ? (
           <button
             type="button"
-            onClick={onNext}
+            onClick={onFinish || onNext}
             className="wizard-btn wizard-btn-finish"
           >
             <Check size={16} className="wizard-btn-icon" />
