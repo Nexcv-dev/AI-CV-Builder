@@ -37,6 +37,10 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build Docker image
+        run: |
+          docker build -t ai-cv-builder:latest .
+
       - name: Deploy to Render
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
         run: |

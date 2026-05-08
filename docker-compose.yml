@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: "./Free CV Builder"
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+      - "3002:3002"
+    volumes:
+      - "./Free CV Builder:/app"
+      - "/app/node_modules"
+    env_file:
+      - "./Free CV Builder/.env"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - CHROME_PATH=/usr/bin/google-chrome-stable # In case it's needed for puppeteer
+    stdin_open: true
+    tty: true
