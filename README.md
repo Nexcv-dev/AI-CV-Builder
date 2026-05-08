@@ -91,6 +91,17 @@ Free CV Builder/
    ```
    *Access the frontend at `http://localhost:3000` and backend at `http://localhost:3002`.*
 
+### 🐳 Docker Support (Recommended)
+
+For the easiest setup, use Docker Compose. This ensures all system dependencies (like Chromium for PDF generation) are correctly configured.
+
+1. **Prerequisites**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+2. **Build and Start**:
+   ```bash
+   docker compose up --build
+   ```
+3. **Hot-Reloading**: The setup uses Docker volumes, so any changes you make to the code will be reflected instantly.
+
 ## 🧪 Testing
 
 We prioritize stability and security.
@@ -105,8 +116,9 @@ This project uses **GitHub Actions** for continuous integration, deployment, and
 
 **Continuous Integration & Deployment:**
 1.  **Lints & Tests**: Ensures TypeScript standards and verifies all components via Vitest on every push.
-2.  **Builds**: Verifies production readiness.
-3.  **Auto-Deploys**: Automatically deploys to **Render** whenever changes are pushed to the `main` branch.
+2.  **Docker Verification**: Automatically builds a Docker image to ensure the containerization environment remains stable.
+3.  **Builds**: Verifies production readiness of the frontend.
+4.  **Auto-Deploys**: Automatically deploys to **Render** whenever changes are pushed to the `main` branch.
 
 **Release & Version Management:**
 - **Automated Changelogs**: Generates and updates `CHANGELOG.md` automatically on push.
