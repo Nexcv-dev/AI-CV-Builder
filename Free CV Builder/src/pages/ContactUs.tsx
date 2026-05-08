@@ -17,7 +17,7 @@ export default function ContactUs() {
           <div className="p-2 bg-gray-900 rounded-xl mr-3 shadow-md shadow-gray-900/10">
             <LayoutTemplate className="text-white" size={20} />
           </div>
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 text-xl sm:text-2xl font-extrabold">
+          <span className="bg-clip-text text-transparent bg-liner-to-r from-gray-900 to-gray-600 text-xl sm:text-2xl font-extrabold">
             CV Builder
           </span>
         </Link>
@@ -36,7 +36,7 @@ export default function ContactUs() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h2>
               <p className="text-gray-600 mb-2">Your feedback is appreciated.</p>
               <p className="text-xs text-gray-400 mb-6">Note: This is a demo form. For actual inquiries, please email us directly.</p>
-              <button 
+              <button
                 onClick={() => setIsSubmitted(false)}
                 className="bg-white text-gray-900 border border-gray-200 px-6 py-2 rounded-xl font-medium hover:bg-gray-50 transition-colors"
               >
@@ -47,10 +47,10 @@ export default function ContactUs() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                <input 
+                <input
                   id="fullName"
                   name="fullName"
-                  type="text" 
+                  type="text"
                   autoComplete="name"
                   required
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
@@ -59,10 +59,10 @@ export default function ContactUs() {
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                <input 
+                <input
                   id="email"
                   name="email"
-                  type="email" 
+                  type="email"
                   autoComplete="email"
                   required
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
@@ -71,7 +71,7 @@ export default function ContactUs() {
               </div>
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">Message</label>
-                <textarea 
+                <textarea
                   id="message"
                   name="message"
                   required
@@ -80,7 +80,7 @@ export default function ContactUs() {
                   placeholder="How can we help you?"
                 ></textarea>
               </div>
-              <button 
+              <button
                 type="submit"
                 className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-4 px-6 rounded-xl flex items-center justify-center transition-all shadow-md active:scale-[0.98]"
               >
