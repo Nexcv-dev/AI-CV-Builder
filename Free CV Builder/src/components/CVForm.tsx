@@ -41,9 +41,10 @@ interface CVFormProps {
   setTemplate: (template: 'classic' | 'modern' | 'professional') => void;
   isDarkMode?: boolean;
   onPopupVisibleChange?: (visible: boolean) => void;
+  onFinish?: () => void;
 }
 
-export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange }: CVFormProps) {
+export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish }: CVFormProps) {
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design'>('content');
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
@@ -674,6 +675,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
               totalSteps={ALL_STEPS.length}
               onNext={goNext}
               onBack={goBack}
+              onFinish={onFinish}
             />
             <div className="h-8 w-full shrink-0"></div>
           </div>

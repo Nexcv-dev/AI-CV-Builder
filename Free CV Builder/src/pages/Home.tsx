@@ -512,6 +512,7 @@ export default function Home() {
                 setTemplate={setTemplate}
                 isDarkMode={isDarkMode}
                 onPopupVisibleChange={setIsPopupVisible}
+                onFinish={() => setShowDownloadConfirm(true)}
               />
             </div>
           </div>
