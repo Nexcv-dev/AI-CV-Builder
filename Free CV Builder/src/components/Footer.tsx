@@ -7,7 +7,7 @@ export const Footer = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} CV Builder v{__APP_VERSION__}. All rights reserved.
+            © {new Date().getFullYear()} CV Builder. All rights reserved. | v{__APP_VERSION__}
           </div>
           <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-medium text-gray-600">
             <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>

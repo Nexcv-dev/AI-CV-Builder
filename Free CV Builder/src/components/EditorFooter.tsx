@@ -11,7 +11,7 @@ export const EditorFooter = () => {
         <Link to="/terms" className="hover:text-blue-600 transition-colors">Terms</Link>
       </div>
       <div className="text-[10px] text-gray-400">
-        © {new Date().getFullYear()} CV Builder v{__APP_VERSION__}
+        © {new Date().getFullYear()} CV Builder | v{__APP_VERSION__}
       </div>
     </div>
   );
