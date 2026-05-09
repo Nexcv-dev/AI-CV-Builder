@@ -17,6 +17,8 @@ interface PremiumSelectProps {
   placeholder?: string;
   isDarkMode?: boolean;
   optional?: boolean;
+  hideLabel?: boolean;
+  className?: string;
 }
 
 export const PremiumSelect = React.memo(({
@@ -29,6 +31,8 @@ export const PremiumSelect = React.memo(({
   placeholder,
   isDarkMode,
   optional = false,
+  hideLabel = false,
+  className = '',
 }: PremiumSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -46,8 +50,8 @@ export const PremiumSelect = React.memo(({
   const selectedOption = options.find((opt) => opt.value === value);
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <label id={`${id}-label`} htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+    <div className={`relative ${className}`} ref={dropdownRef}>
+      <label id={`${id}-label`} htmlFor={id} className={`${hideLabel ? 'sr-only' : 'block text-sm font-medium text-gray-700 mb-1'}`}>
         {label} {optional && <span className="text-gray-400 font-normal">(Optional)</span>}
       </label>
       <button

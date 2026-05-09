@@ -39,11 +39,12 @@ describe('Accessibility Audit', () => {
     languages: [],
     projects: [],
     awards: [],
+    references: [],
     themeColor: '#3b82f6',
     sidebarColor: '#f8fafc',
     fontFamily: 'Inter',
     profileImage: '',
-    sectionOrder: ['personalDetails', 'summary', 'experience', 'education', 'skills', 'projects', 'courses', 'languages', 'awards']
+    sectionOrder: ['personalDetails', 'summary', 'experience', 'education', 'skills', 'projects', 'courses', 'languages', 'awards', 'references']
   };
 
   it('provides descriptive labels for delete/remove buttons', async () => {

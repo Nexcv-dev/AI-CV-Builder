@@ -14,15 +14,21 @@ import { Download, LayoutTemplate, Loader2, FileText, Edit3, AlertCircle, Rotate
 const STORAGE_KEY = 'cv-builder-data';
 const TEMPLATE_STORAGE_KEY = 'cv-builder-template';
 const THEME_STORAGE_KEY = 'cv-builder-theme';
+const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
 
 function loadSavedData(): CVData | null {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
+      if (!parsed.references) {
+        parsed.references = [];
+      }
       // Ensure sectionOrder exists (backward compat)
       if (!parsed.sectionOrder) {
-        parsed.sectionOrder = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages'];
+        parsed.sectionOrder = DEFAULT_SECTION_ORDER;
+      } else if (!parsed.sectionOrder.includes('references')) {
+        parsed.sectionOrder = [...parsed.sectionOrder, 'references'];
       }
       return parsed as CVData;
     }
@@ -65,6 +71,7 @@ const initialData: CVData = {
   languages: [],
   projects: [],
   awards: [],
+  references: [],
   themeColor: '#7c3aed', // Default violet-600
   fontFamily: 'Inter',
   profileImage: '',
@@ -74,7 +81,7 @@ const initialData: CVData = {
   sidebarColor: '#1e293b', // Default slate-800
   lineSpacing: 1.5,
   sectionGap: 2,
-  sectionOrder: ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages'],
+  sectionOrder: DEFAULT_SECTION_ORDER,
   hiddenSections: [],
 };
 
@@ -93,7 +100,6 @@ export default function Home() {
   const [isDraggingResizer, setIsDraggingResizer] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
-  const [isThemeAnimating, setIsThemeAnimating] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     try {
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
@@ -105,6 +111,7 @@ export default function Home() {
   });
   const [themeTransition, setThemeTransition] = useState<{ x: number; y: number; key: number; targetDark: boolean } | null>(null);
   const [resetKey, setResetKey] = useState(0);
+  const [initialPromptRequest, setInitialPromptRequest] = useState(0);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
 
@@ -223,16 +230,9 @@ export default function Home() {
     const x = event.clientX || rect.left + rect.width / 2;
     const y = event.clientY || rect.top + rect.height / 2;
     const nextDark = !isDarkMode;
-    setIsThemeAnimating(true);
     setThemeTransition({ x, y, key: Date.now(), targetDark: nextDark });
     setIsDarkMode(nextDark);
   }, [isDarkMode]);
-
-  useEffect(() => {
-    if (!isThemeAnimating) return;
-    const timer = setTimeout(() => setIsThemeAnimating(false), 650);
-    return () => clearTimeout(timer);
-  }, [isThemeAnimating]);
 
   const handleReset = useCallback(() => {
     setShowResetConfirm(false);
@@ -253,6 +253,7 @@ export default function Home() {
     setTimeout(() => {
       setIsInitialLoading(false);
       setResetKey(prev => prev + 1);
+      setInitialPromptRequest(prev => prev + 1);
     }, 1500);
   }, []);
 
@@ -388,28 +389,28 @@ export default function Home() {
           >
             <div className="relative mb-6">
               <div className={`w-20 h-20 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
-              <LayoutTemplate className="absolute inset-0 m-auto text-violet-600 animate-pulse" size={32} />
+              <img src="/brand/faviconblack.png" alt="NexCV" className="absolute inset-0 m-auto h-12 w-12 rounded-2xl" />
             </div>
-            <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r animate-pulse ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
-              CV Builder
+            <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
+              NexCV
             </h2>
             <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Preparing your workspace...</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className={`flex flex-col h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isThemeAnimating ? 'theme-switch-animate' : ''} ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+      <div className={`flex flex-col min-h-0 h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
         {/* Top Navigation Bar - hidden when popup is visible */}
         {!isPopupVisible && (
           <header className={`border-b flex flex-col lg:flex-row items-center justify-between p-4 lg:px-8 shrink-0 z-50 print:hidden gap-4 lg:gap-0 sticky top-0 shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}>
             <div className="flex items-center justify-between w-full lg:w-auto">
               <h1 className="text-xl lg:text-2xl font-extrabold flex items-center">
-                <div className={`p-2 rounded-xl mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-violet-500 shadow-violet-500/30' : 'bg-violet-600 shadow-violet-600/20'}`}>
-                  <LayoutTemplate className="text-white" size={20} />
+                <div className={`p-1.5 rounded-xl mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-slate-800 shadow-black/20 ring-1 ring-slate-700' : 'bg-white shadow-violet-600/10 ring-1 ring-violet-100'}`}>
+                  <img src="/brand/faviconblack.png" alt="" className="h-7 w-7 rounded-lg" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className={`bg-clip-text text-transparent bg-linear-to-r leading-tight ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
-                    CV Builder
+                    NexCV
                   </span>
                 </div>
               </h1>
@@ -500,10 +501,10 @@ export default function Home() {
         <div className="flex-1 overflow-hidden relative flex flex-col lg:flex-row print:overflow-visible print:block">
           {/* Left Side: Form */}
           <div
-            className={`${mobileView === 'edit' ? 'flex max-lg:w-full! max-lg:min-w-0!' : 'hidden'} lg:flex h-full border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
+            className={`${mobileView === 'edit' ? 'flex max-lg:w-full! max-lg:min-w-0!' : 'hidden'} lg:flex h-full min-h-0 border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
             style={{ width: `${formWidth}%`, minWidth: '420px' }}
           >
-            <div className="h-full w-full overflow-y-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="h-full min-h-0 w-full overflow-y-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
               <CVForm
                 key={resetKey}
                 cvData={cvData}
@@ -513,6 +514,7 @@ export default function Home() {
                 isDarkMode={isDarkMode}
                 onPopupVisibleChange={setIsPopupVisible}
                 onFinish={() => setShowDownloadConfirm(true)}
+                initialPromptRequest={initialPromptRequest}
               />
             </div>
           </div>
@@ -529,7 +531,7 @@ export default function Home() {
 
           {/* Right Side: Preview */}
           <div
-            className={`${mobileView === 'preview' ? 'flex max-lg:w-full!' : 'hidden'} lg:flex flex-col h-full bg-transparent print:w-full print:bg-white print:block relative overflow-x-hidden`}
+            className={`${mobileView === 'preview' ? 'flex max-lg:w-full!' : 'hidden'} lg:flex flex-col h-full min-h-0 bg-transparent print:w-full print:bg-white print:block relative overflow-x-hidden`}
             style={{ width: `calc(${100 - formWidth}% - 6px)` }}
           >
             <div

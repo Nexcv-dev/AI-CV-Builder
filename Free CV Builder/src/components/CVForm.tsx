@@ -6,7 +6,7 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 import DOMPurify from 'dompurify';
 import toast from 'react-hot-toast';
 
-import { CVData, Experience, Education, Skill, Course, Language, Project, Award } from '../types';
+import { CVData, Experience, Education, Skill, Course, Language, Project, Award, Reference } from '../types';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
@@ -21,6 +21,7 @@ import {
   LanguagesSection,
   ProjectsSection,
   AwardsSection,
+  ReferencesSection,
   DesignPanel,
   ImportModals,
   ALL_STEPS,
@@ -42,12 +43,14 @@ interface CVFormProps {
   isDarkMode?: boolean;
   onPopupVisibleChange?: (visible: boolean) => void;
   onFinish?: () => void;
+  initialPromptRequest?: number;
 }
 
-export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish }: CVFormProps) {
+export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, initialPromptRequest = 0 }: CVFormProps) {
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design'>('content');
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
+  const [isDraggingSection, setIsDraggingSection] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const progressContainerRef = useRef<HTMLDivElement>(null);
@@ -96,6 +99,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       sessionStorage.setItem('hasSeenCVPrompt', 'true');
     }
   }, []);
+
+  useEffect(() => {
+    if (initialPromptRequest <= 0) return;
+    setShowUploadModal(false);
+    setShowInitialPrompt(true);
+    sessionStorage.setItem('hasSeenCVPrompt', 'true');
+  }, [initialPromptRequest]);
 
   useEffect(() => {
     onPopupVisibleChange?.(showInitialPrompt || showUploadModal);
@@ -326,6 +336,14 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                 date: a.date || '',
                 issuer: a.issuer || '',
               })),
+              references: (result.references || []).map((r: any) => ({
+                id: crypto.randomUUID(),
+                name: r.name || '',
+                position: r.position || '',
+                company: r.company || '',
+                email: r.email || '',
+                phone: r.phone || '',
+              })),
             }));
 
             setImportMessage({ type: 'success', text: 'Data imported successfully!' });
@@ -350,6 +368,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    setIsDraggingSection(false);
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setCvData((prev) => {
@@ -359,6 +378,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       });
     }
   };
+
+  const handleDragCancel = useCallback(() => {
+    setIsDraggingSection(false);
+  }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target;
@@ -435,6 +458,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     }));
   }, [setCvData]);
 
+  const handleReferenceChange = useCallback((id: string, field: keyof Reference, value: string) => {
+    setCvData((prev) => ({
+      ...prev,
+      references: prev.references.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+    }));
+  }, [setCvData]);
+
   // Generic Add/Remove helper
   const addSectionItem = useCallback((section: keyof CVData, defaultItem: any) => {
     setCvData(prev => ({ ...prev, [section]: [...(prev[section] as any[]), { ...defaultItem, id: crypto.randomUUID() }] }));
@@ -460,6 +490,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const addLanguage = useCallback(() => addSectionItem('languages', { name: '', proficiency: 'Native' }), [addSectionItem]);
   const addProject = useCallback(() => addSectionItem('projects', { name: '', description: '', link: '' }), [addSectionItem]);
   const addAward = useCallback(() => addSectionItem('awards', { name: '', date: '', issuer: '' }), [addSectionItem]);
+  const addReference = useCallback(() => addSectionItem('references', { name: '', position: '', company: '', email: '', phone: '' }), [addSectionItem]);
 
   const removeExperience = useCallback((id: string) => removeSectionItem('experience', id), [removeSectionItem]);
   const removeEducation = useCallback((id: string) => removeSectionItem('education', id), [removeSectionItem]);
@@ -468,6 +499,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const removeLanguage = useCallback((id: string) => removeSectionItem('languages', id), [removeSectionItem]);
   const removeProject = useCallback((id: string) => removeSectionItem('projects', id), [removeSectionItem]);
   const removeAward = useCallback((id: string) => removeSectionItem('awards', id), [removeSectionItem]);
+  const removeReference = useCallback((id: string) => removeSectionItem('references', id), [removeSectionItem]);
 
   // Stable DatePicker callbacks
   const openDatePicker = useCallback(() => setIsDatePickerOpen(true), []);
@@ -589,13 +621,24 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             onRemove={removeAward}
           />
         );
+      case 'references':
+        return (
+          <ReferencesSection
+            references={cvData.references}
+            isOpen={expandedSection === 'references'}
+            onToggle={() => toggleSection('references')}
+            onChange={handleReferenceChange}
+            onAdd={addReference}
+            onRemove={removeReference}
+          />
+        );
       default:
         return null;
     }
   };
 
   return (
-    <div className="flex flex-col h-full relative overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 relative overflow-hidden">
       {/* Tab Switcher */}
       <div className={TAB_CONTAINER_CLASS}>
         <button
@@ -614,7 +657,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
 
       <div
         ref={formContainerRef}
-        className="flex-1 h-full overflow-y-auto scrollbar-hide px-4 sm:px-6 flex flex-col"
+        className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-4 sm:px-6 flex flex-col"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {activeMainTab === 'content' ? (
@@ -649,30 +692,32 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             </div>
 
             {/* Form Content */}
-            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={wizardStep}
-                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -16, scale: 0.98 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                >
-                  <SortableContext
-                    items={ALL_STEPS[wizardStep] === 'finalize' ? [...FINALIZE_SECTION_KEYS] : [ALL_STEPS[wizardStep]]}
-                    strategy={verticalListSortingStrategy}
+            <div className={`relative ${isDraggingSection ? 'overflow-hidden pb-1' : 'overflow-visible'}`}>
+              <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={() => setIsDraggingSection(true)} onDragCancel={handleDragCancel} onDragEnd={handleDragEnd}>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={wizardStep}
+                    initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -16, scale: 0.98 }}
+                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    {(ALL_STEPS[wizardStep] === 'finalize' ? FINALIZE_SECTION_KEYS : [ALL_STEPS[wizardStep]])
-                      .filter(Boolean)
-                      .map((key) => (
-                        <React.Fragment key={key}>
-                          {renderSection(key as string)}
-                        </React.Fragment>
-                      ))}
-                  </SortableContext>
-                </motion.div>
-              </AnimatePresence>
-            </DndContext>
+                    <SortableContext
+                      items={ALL_STEPS[wizardStep] === 'finalize' ? [...FINALIZE_SECTION_KEYS] : [ALL_STEPS[wizardStep]]}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {(ALL_STEPS[wizardStep] === 'finalize' ? FINALIZE_SECTION_KEYS : [ALL_STEPS[wizardStep]])
+                        .filter(Boolean)
+                        .map((key) => (
+                          <React.Fragment key={key}>
+                            {renderSection(key as string)}
+                          </React.Fragment>
+                        ))}
+                    </SortableContext>
+                  </motion.div>
+                </AnimatePresence>
+              </DndContext>
+            </div>
 
             <WizardNav
               wizardStep={wizardStep}

@@ -9,6 +9,7 @@ export { CoursesSection } from './CoursesSection';
 export { LanguagesSection } from './LanguagesSection';
 export { ProjectsSection } from './ProjectsSection';
 export { AwardsSection } from './AwardsSection';
+export { ReferencesSection } from './ReferencesSection';
 export { DesignPanel } from './DesignPanel';
 export { ImportModals } from './ImportModals';
 export * from './constants';

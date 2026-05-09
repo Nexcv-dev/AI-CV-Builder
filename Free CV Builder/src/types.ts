@@ -51,6 +51,15 @@ export interface Award {
   issuer: string;
 }
 
+export interface Reference {
+  id: string;
+  name: string;
+  position: string;
+  company: string;
+  email: string;
+  phone: string;
+}
+
 export interface CVData {
   personalInfo: {
     fullName: string;
@@ -72,6 +81,7 @@ export interface CVData {
   languages: Language[];
   projects: Project[];
   awards: Award[];
+  references: Reference[];
   themeColor: string;
   fontFamily: string;
   profileImage: string;

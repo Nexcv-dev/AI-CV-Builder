@@ -58,7 +58,7 @@ export const fonts = [
 
 // Wizard configuration — module-level to avoid re-creation every render
 export const MAIN_SECTION_KEYS = ['summary', 'personalDetails', 'experience', 'education', 'skills'] as const;
-export const FINALIZE_SECTION_KEYS = ['projects', 'courses', 'awards', 'languages'] as const;
+export const FINALIZE_SECTION_KEYS = ['projects', 'courses', 'awards', 'languages', 'references'] as const;
 export const ALL_STEPS = [...MAIN_SECTION_KEYS, 'finalize'] as const;
 
 export const WIZARD_STEPS = [
