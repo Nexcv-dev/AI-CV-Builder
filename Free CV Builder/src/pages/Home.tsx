@@ -105,6 +105,7 @@ export default function Home() {
   });
   const [themeTransition, setThemeTransition] = useState<{ x: number; y: number; key: number; targetDark: boolean } | null>(null);
   const [resetKey, setResetKey] = useState(0);
+  const [initialPromptRequest, setInitialPromptRequest] = useState(0);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
 
@@ -253,6 +254,7 @@ export default function Home() {
     setTimeout(() => {
       setIsInitialLoading(false);
       setResetKey(prev => prev + 1);
+      setInitialPromptRequest(prev => prev + 1);
     }, 1500);
   }, []);
 
@@ -513,6 +515,7 @@ export default function Home() {
                 isDarkMode={isDarkMode}
                 onPopupVisibleChange={setIsPopupVisible}
                 onFinish={() => setShowDownloadConfirm(true)}
+                initialPromptRequest={initialPromptRequest}
               />
             </div>
           </div>

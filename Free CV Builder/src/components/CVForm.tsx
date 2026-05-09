@@ -42,9 +42,10 @@ interface CVFormProps {
   isDarkMode?: boolean;
   onPopupVisibleChange?: (visible: boolean) => void;
   onFinish?: () => void;
+  initialPromptRequest?: number;
 }
 
-export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish }: CVFormProps) {
+export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, initialPromptRequest = 0 }: CVFormProps) {
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design'>('content');
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
@@ -96,6 +97,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       sessionStorage.setItem('hasSeenCVPrompt', 'true');
     }
   }, []);
+
+  useEffect(() => {
+    if (initialPromptRequest <= 0) return;
+    setShowUploadModal(false);
+    setShowInitialPrompt(true);
+    sessionStorage.setItem('hasSeenCVPrompt', 'true');
+  }, [initialPromptRequest]);
 
   useEffect(() => {
     onPopupVisibleChange?.(showInitialPrompt || showUploadModal);
