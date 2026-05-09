@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, CloudUpload, Sparkles, Upload, Loader2, Info, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, FileUp, Upload, Loader2, Info, CheckCircle, AlertCircle } from 'lucide-react';
 import { MODAL_OVERLAY_CLASS, MODAL_CONTAINER_BASE } from './constants';
 
 interface ImportModalsProps {
@@ -112,8 +112,7 @@ export const ImportModals = React.memo(({
                       }`}
                   >
                     <div className={`${iconShell} mb-5 ${isDarkMode ? 'bg-violet-500/10 border-violet-400/30' : 'bg-white border-violet-100'}`}>
-                      <CloudUpload className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
-                      <Sparkles className="absolute mt-[-38px] ml-11 h-4 w-4 text-fuchsia-500 opacity-80" />
+                      <FileUp className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
                     </div>
 
                     <h3 className="relative z-10 mb-2 text-lg font-bold sm:text-xl">

@@ -14,7 +14,7 @@ vi.mock('./RichTextEditor', () => ({
 
 vi.mock('lucide-react', () => {
   const icons = [
-    'Plus', 'Trash2', 'Loader2', 'Upload', 'CloudUpload', 'User', 'Briefcase', 'GraduationCap', 
+    'Plus', 'Trash2', 'Loader2', 'Upload', 'CloudUpload', 'FileUp', 'User', 'Briefcase', 'GraduationCap', 
     'Wrench', 'Palette', 'Star', 'FileText', 'BookOpen', 'Globe', 'FolderGit2', 
     'Trophy', 'ChevronDown', 'ChevronUp', 'Image', 'GripVertical', 'Info', 
     'CheckCircle', 'AlertCircle', 'CheckCircle2', 'LayoutTemplate', 
