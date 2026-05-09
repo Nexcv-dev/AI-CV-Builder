@@ -238,8 +238,12 @@ export default function Home() {
     setShowResetConfirm(false);
     setIsInitialLoading(true);
     
+    // Keep the reset prompt reachable on mobile when reset is triggered from Preview.
+    setMobileView('edit');
+
     // Clear data immediately
     setCvData(initialData);
+    setDebouncedCvData(initialData);
     setTemplate('classic');
     try {
       localStorage.removeItem(STORAGE_KEY);
