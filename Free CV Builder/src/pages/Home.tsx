@@ -389,10 +389,10 @@ export default function Home() {
           >
             <div className="relative mb-6">
               <div className={`w-20 h-20 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
-              <LayoutTemplate className="absolute inset-0 m-auto text-violet-600 animate-pulse" size={32} />
+              <img src="/brand/faviconblack.png" alt="NexCV" className="absolute inset-0 m-auto h-12 w-12 rounded-2xl" />
             </div>
-            <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r animate-pulse ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
-              CV Builder
+            <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
+              NexCV
             </h2>
             <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Preparing your workspace...</p>
           </motion.div>
@@ -405,12 +405,12 @@ export default function Home() {
           <header className={`border-b flex flex-col lg:flex-row items-center justify-between p-4 lg:px-8 shrink-0 z-50 print:hidden gap-4 lg:gap-0 sticky top-0 shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}>
             <div className="flex items-center justify-between w-full lg:w-auto">
               <h1 className="text-xl lg:text-2xl font-extrabold flex items-center">
-                <div className={`p-2 rounded-xl mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-violet-500 shadow-violet-500/30' : 'bg-violet-600 shadow-violet-600/20'}`}>
-                  <LayoutTemplate className="text-white" size={20} />
+                <div className={`p-1.5 rounded-xl mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-slate-800 shadow-black/20 ring-1 ring-slate-700' : 'bg-white shadow-violet-600/10 ring-1 ring-violet-100'}`}>
+                  <img src="/brand/faviconblack.png" alt="" className="h-7 w-7 rounded-lg" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className={`bg-clip-text text-transparent bg-linear-to-r leading-tight ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
-                    CV Builder
+                    NexCV
                   </span>
                 </div>
               </h1>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { LayoutTemplate, Send, CheckCircle2 } from 'lucide-react';
+import { Send, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BrandLogo } from '../components/BrandLogo';
 
 export default function ContactUs() {
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -14,12 +15,7 @@ export default function ContactUs() {
     <div className="flex-1 bg-[#f8f9fa] w-full">
       <header className="bg-white border-b border-gray-200/80 flex flex-col sm:flex-row items-center p-4 sm:px-8 z-50 sticky top-0 shadow-sm">
         <Link to="/" className="flex items-center">
-          <div className="p-2 bg-gray-900 rounded-xl mr-3 shadow-md shadow-gray-900/10">
-            <LayoutTemplate className="text-white" size={20} />
-          </div>
-          <span className="bg-clip-text text-transparent bg-liner-to-r from-gray-900 to-gray-600 text-xl sm:text-2xl font-extrabold">
-            CV Builder
-          </span>
+          <BrandLogo markClassName="h-9 w-9" wordmarkClassName="text-xl sm:text-2xl text-gray-900" />
         </Link>
       </header>
 
