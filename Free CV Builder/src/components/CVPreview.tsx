@@ -651,7 +651,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             <div className="p-[20mm] pt-[15mm]">
               <header className="mb-10 flex border-b-2 border-gray-100 pb-6">
                 <div className="flex-1">
-                  <h1 className="text-5xl font-extrabold tracking-tight mb-2 text-gray-900">
+                  <h1 className="text-[2.4rem] leading-tight font-extrabold tracking-tight mb-2 text-gray-900 wrap-break-word">
                     {personalInfo.fullName || 'Your Name'}
                   </h1>
                   <div className="flex flex-col gap-1 text-sm font-medium mt-4">

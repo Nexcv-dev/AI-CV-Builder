@@ -851,7 +851,7 @@ export function generateCVHTML(cvData: any, template: string): string {
           <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
             <header style="margin-bottom:40px;display:flex;border-bottom:2px solid #f3f4f6;padding-bottom:24px">
               <div style="flex:1">
-                <h1 style="font-size:3rem;font-weight:800;letter-spacing:-0.025em;margin-bottom:8px;color:#111827">${esc(personalInfo.fullName || 'Your Name')}</h1>
+                <h1 style="font-size:2.4rem;line-height:1.1;font-weight:800;letter-spacing:-0.025em;margin-bottom:8px;color:#111827;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
                 <div style="display:flex;flex-direction:column;gap:4px;font-size:0.875rem;font-weight:500;margin-top:16px">
                   ${personalInfo.email ? `<div style="color:#4b5563">${esc(personalInfo.email)}</div>` : ''}
                   ${personalInfo.phone ? `<div style="color:#4b5563">${esc(personalInfo.phone)}</div>` : ''}
