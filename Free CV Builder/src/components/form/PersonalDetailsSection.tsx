@@ -101,7 +101,7 @@ export const PersonalDetailsSection = React.memo(({
         />
       </div>
       <div>
-        <label htmlFor="dob" className={LABEL_CLASS_SM}>Date of Birth <span className="text-gray-400 font-normal">(Optional)</span></label>
+        <label htmlFor="dob" className={LABEL_CLASS_SM}>Date of Birth</label>
         <div className="relative date-picker-wrapper">
           <DatePicker
             id="dob"
@@ -138,7 +138,7 @@ export const PersonalDetailsSection = React.memo(({
         </div>
       </div>
       <div>
-        <label htmlFor="nic" className={LABEL_CLASS_SM}>NIC Number <span className="text-gray-400 font-normal">(Optional)</span></label>
+        <label htmlFor="nic" className={LABEL_CLASS_SM}>NIC Number</label>
         <input
           id="nic"
           type="text"
@@ -156,7 +156,6 @@ export const PersonalDetailsSection = React.memo(({
         value={personalInfo.gender}
         onChange={onChange}
         isDarkMode={isDarkMode}
-        optional={true}
         placeholder="Select Gender"
         options={GENDER_OPTIONS}
       />
@@ -167,12 +166,11 @@ export const PersonalDetailsSection = React.memo(({
         value={personalInfo.maritalStatus}
         onChange={onChange}
         isDarkMode={isDarkMode}
-        optional={true}
         placeholder="Select Status"
         options={MARITAL_OPTIONS}
       />
       <div>
-        <label htmlFor="nationality" className={LABEL_CLASS_SM}>Nationality <span className="text-gray-400 font-normal">(Optional)</span></label>
+        <label htmlFor="nationality" className={LABEL_CLASS_SM}>Nationality</label>
         <input
           id="nationality"
           type="text"
@@ -185,7 +183,7 @@ export const PersonalDetailsSection = React.memo(({
         />
       </div>
       <div>
-        <label htmlFor="religion" className={LABEL_CLASS_SM}>Religion <span className="text-gray-400 font-normal">(Optional)</span></label>
+        <label htmlFor="religion" className={LABEL_CLASS_SM}>Religion</label>
         <input
           id="religion"
           type="text"
