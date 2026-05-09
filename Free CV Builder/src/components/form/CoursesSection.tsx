@@ -22,19 +22,19 @@ export const CoursesSection = React.memo(({ courses, isOpen, onToggle, onChange,
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
             <div>
               <label htmlFor={`course-name-${course.id}`} className={LABEL_CLASS}>Course Name</label>
-              <input id={`course-name-${course.id}`} type="text" placeholder="e.g., Advanced React Patterns" value={course.name} onChange={(e) => onChange(course.id, 'name', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`course-name-${course.id}`} name={`course-name-${course.id}`} type="text" placeholder="e.g., Advanced React Patterns" value={course.name} onChange={(e) => onChange(course.id, 'name', e.target.value)} className={INPUT_CLASS_MIN_H} />
             </div>
             <div>
               <label htmlFor={`course-inst-${course.id}`} className={LABEL_CLASS}>Institution</label>
-              <input id={`course-inst-${course.id}`} type="text" autoComplete="organization" placeholder="e.g., Coursera" value={course.institution} onChange={(e) => onChange(course.id, 'institution', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`course-inst-${course.id}`} name={`course-inst-${course.id}`} type="text" autoComplete="organization" placeholder="e.g., Coursera" value={course.institution} onChange={(e) => onChange(course.id, 'institution', e.target.value)} className={INPUT_CLASS_MIN_H} />
             </div>
             <div>
               <label htmlFor={`course-startDate-${course.id}`} className={LABEL_CLASS}>Start Date</label>
-              <input id={`course-startDate-${course.id}`} type="text" placeholder="e.g., Jan 2023" value={course.startDate} onChange={(e) => onChange(course.id, 'startDate', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`course-startDate-${course.id}`} name={`course-startDate-${course.id}`} type="text" placeholder="e.g., Jan 2023" value={course.startDate} onChange={(e) => onChange(course.id, 'startDate', e.target.value)} className={INPUT_CLASS_MIN_H} />
             </div>
             <div>
               <label htmlFor={`course-endDate-${course.id}`} className={LABEL_CLASS}>End Date</label>
-              <input id={`course-endDate-${course.id}`} type="text" placeholder="e.g., Mar 2023" value={course.endDate} onChange={(e) => onChange(course.id, 'endDate', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`course-endDate-${course.id}`} name={`course-endDate-${course.id}`} type="text" placeholder="e.g., Mar 2023" value={course.endDate} onChange={(e) => onChange(course.id, 'endDate', e.target.value)} className={INPUT_CLASS_MIN_H} />
             </div>
           </div>
         </div>

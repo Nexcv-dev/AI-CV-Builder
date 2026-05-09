@@ -47,11 +47,16 @@ export const PremiumSelect = React.memo(({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+      <label id={`${id}-label`} htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
         {label} {optional && <span className="text-gray-400 font-normal">(Optional)</span>}
       </label>
       <button
+        id={id}
+        name={name}
         type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-labelledby={`${id}-label ${id}`}
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full p-3 border rounded-lg text-left flex items-center justify-between transition-all outline-none ring-offset-2 ${isOpen ? 'border-violet-500 ring-4 ring-violet-500/10' : 'border-gray-300 hover:border-gray-400'} ${isDarkMode ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-white text-gray-900'}`}
       >
@@ -62,6 +67,8 @@ export const PremiumSelect = React.memo(({
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            role="listbox"
+            aria-labelledby={`${id}-label`}
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -75,6 +82,8 @@ export const PremiumSelect = React.memo(({
                   <button
                     key={option.value}
                     type="button"
+                    role="option"
+                    aria-selected={isSelected}
                     onClick={() => {
                       onChange({ target: { name, value: isSelected ? '' : option.value } });
                       setIsOpen(false);

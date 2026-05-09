@@ -25,14 +25,14 @@ export const ProjectsSection = React.memo(({ projects, isOpen, onToggle, onChang
           <div className="grid grid-cols-1 gap-4 mt-2">
             <div>
               <label htmlFor={`proj-name-${proj.id}`} className={LABEL_CLASS}>Project Name</label>
-              <input id={`proj-name-${proj.id}`} type="text" placeholder="e.g., E-commerce Website" value={proj.name} onChange={(e) => onChange(proj.id, 'name', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`proj-name-${proj.id}`} name={`proj-name-${proj.id}`} type="text" placeholder="e.g., E-commerce Website" value={proj.name} onChange={(e) => onChange(proj.id, 'name', e.target.value)} className={INPUT_CLASS_MIN_H} />
             </div>
             <div>
               <label htmlFor={`proj-link-${proj.id}`} className={LABEL_CLASS}>Link (Optional)</label>
-              <input id={`proj-link-${proj.id}`} type="text" autoComplete="url" placeholder="e.g., https://github.com/..." value={proj.link} onChange={(e) => onChange(proj.id, 'link', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`proj-link-${proj.id}`} name={`proj-link-${proj.id}`} type="text" autoComplete="url" placeholder="e.g., https://github.com/..." value={proj.link} onChange={(e) => onChange(proj.id, 'link', e.target.value)} className={INPUT_CLASS_MIN_H} />
             </div>
             <div className="space-y-2">
-              <label id={`proj-desc-label-${proj.id}`} className={LABEL_CLASS}>Description</label>
+              <div id={`proj-desc-label-${proj.id}`} className={LABEL_CLASS}>Description</div>
               <RichTextEditor id={`proj-desc-${proj.id}`} labelId={`proj-desc-label-${proj.id}`} value={proj.description} onChange={(val) => onChange(proj.id, 'description', val)} placeholder="Describe the project and your role..." />
               <button type="button" onClick={() => onRefineText(`proj-${proj.id}`, proj.description, 'project', { name: proj.name }, (refined) => onChange(proj.id, 'description', refined))} disabled={refiningIds[`proj-${proj.id}`] || !proj.description?.trim()} className={AI_BUTTON_CLASS}>
                 {refiningIds[`proj-${proj.id}`] ? (<><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>) : (<><Sparkles size={13} className="mr-1.5" /> Refine with AI</>)}

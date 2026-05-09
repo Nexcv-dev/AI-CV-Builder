@@ -48,6 +48,7 @@ export const ExperienceSection = React.memo(({
               <label htmlFor={`exp-company-${exp.id}`} className={LABEL_CLASS}>Company</label>
               <input
                 id={`exp-company-${exp.id}`}
+                name={`exp-company-${exp.id}`}
                 type="text"
                 autoComplete="organization"
                 placeholder="Company Name"
@@ -60,6 +61,7 @@ export const ExperienceSection = React.memo(({
               <label htmlFor={`exp-position-${exp.id}`} className={LABEL_CLASS}>Position</label>
               <input
                 id={`exp-position-${exp.id}`}
+                name={`exp-position-${exp.id}`}
                 type="text"
                 autoComplete="organization-title"
                 placeholder="Job Title"
@@ -72,6 +74,7 @@ export const ExperienceSection = React.memo(({
               <label htmlFor={`exp-startDate-${exp.id}`} className={LABEL_CLASS}>Start Date</label>
               <input
                 id={`exp-startDate-${exp.id}`}
+                name={`exp-startDate-${exp.id}`}
                 type="text"
                 placeholder="e.g., Jan 2020"
                 value={exp.startDate}
@@ -83,6 +86,7 @@ export const ExperienceSection = React.memo(({
               <label htmlFor={`exp-endDate-${exp.id}`} className={LABEL_CLASS}>End Date</label>
               <input
                 id={`exp-endDate-${exp.id}`}
+                name={`exp-endDate-${exp.id}`}
                 type="text"
                 placeholder="e.g., Present"
                 value={exp.endDate}
@@ -92,7 +96,7 @@ export const ExperienceSection = React.memo(({
             </div>
             <div className="md:col-span-2 space-y-2 mt-2">
               <div className="flex justify-between items-center">
-                <label id={`exp-desc-label-${exp.id}`} className={LABEL_CLASS}>Description</label>
+                <div id={`exp-desc-label-${exp.id}`} className={LABEL_CLASS}>Description</div>
               </div>
               <RichTextEditor
                 id={`exp-desc-${exp.id}`}

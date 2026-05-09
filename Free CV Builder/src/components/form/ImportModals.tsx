@@ -129,6 +129,7 @@ export const ImportModals = React.memo(({
                 </div>
 
                 <input
+                  name="cv-upload-modal"
                   type="file"
                   accept=".pdf,image/*"
                   onChange={handleCVImport}

@@ -24,13 +24,13 @@ export const RichTextEditor = React.memo(({ value, onChange, placeholder, id, la
   return (
     <div
       className="rich-text-editor-container border border-gray-300 rounded-xl overflow-hidden focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 hover:border-gray-400 transition-all bg-white shadow-sm"
-      role="textbox"
-      aria-labelledby={labelId}
-      aria-multiline="true"
     >
       <EditorProvider>
         <Editor
           id={id}
+          role="textbox"
+          aria-labelledby={labelId}
+          aria-multiline="true"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
