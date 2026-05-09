@@ -3,6 +3,7 @@ import { Globe, Plus, Trash2 } from 'lucide-react';
 import { Language } from '../../types';
 import { SortableAccordionSection } from './SortableAccordionSection';
 import { INPUT_CLASS_SM, ADD_BUTTON_CLASS } from './constants';
+import { PremiumSelect } from './PremiumSelect';
 
 interface LanguagesSectionProps {
   languages: Language[];
@@ -14,6 +15,14 @@ interface LanguagesSectionProps {
   isDarkMode?: boolean;
 }
 
+const PROFICIENCY_OPTIONS = [
+  { value: 'Native', label: 'Native' },
+  { value: 'Fluent', label: 'Fluent' },
+  { value: 'Advanced', label: 'Advanced' },
+  { value: 'Intermediate', label: 'Intermediate' },
+  { value: 'Beginner', label: 'Beginner' },
+];
+
 export const LanguagesSection = React.memo(({ languages, isOpen, onToggle, onChange, onAdd, onRemove, isDarkMode }: LanguagesSectionProps) => (
   <SortableAccordionSection key="languages" id="languages" title="Languages" icon={Globe} isOpen={isOpen} onToggle={onToggle} showDragHandle>
     <div className="space-y-4">
@@ -23,13 +32,16 @@ export const LanguagesSection = React.memo(({ languages, isOpen, onToggle, onCha
             <input id={`lang-name-${lang.id}`} name={`lang-name-${lang.id}`} type="text" autoComplete="language" aria-label="Language name" placeholder="Language (e.g. English)" value={lang.name} onChange={(e) => onChange(lang.id, 'name', e.target.value)} className={INPUT_CLASS_SM} />
           </div>
           <div className="flex-1">
-            <select id={`lang-prof-${lang.id}`} name={`lang-prof-${lang.id}`} aria-label="Proficiency level" value={lang.proficiency} onChange={(e) => onChange(lang.id, 'proficiency', e.target.value)} className={INPUT_CLASS_SM}>
-              <option value="Native">Native</option>
-              <option value="Fluent">Fluent</option>
-              <option value="Advanced">Advanced</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Beginner">Beginner</option>
-            </select>
+            <PremiumSelect
+              id={`lang-prof-${lang.id}`}
+              name={`lang-prof-${lang.id}`}
+              label="Proficiency level"
+              value={lang.proficiency}
+              options={PROFICIENCY_OPTIONS}
+              onChange={(event) => onChange(lang.id, 'proficiency', event.target.value)}
+              isDarkMode={isDarkMode}
+              hideLabel
+            />
           </div>
           <button onClick={() => onRemove(lang.id)} className="text-gray-400 hover:text-red-500 transition-colors p-1"><Trash2 size={16} /></button>
         </div>
