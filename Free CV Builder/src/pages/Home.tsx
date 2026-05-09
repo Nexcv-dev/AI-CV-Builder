@@ -93,7 +93,6 @@ export default function Home() {
   const [isDraggingResizer, setIsDraggingResizer] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
-  const [isThemeAnimating, setIsThemeAnimating] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     try {
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
@@ -224,16 +223,9 @@ export default function Home() {
     const x = event.clientX || rect.left + rect.width / 2;
     const y = event.clientY || rect.top + rect.height / 2;
     const nextDark = !isDarkMode;
-    setIsThemeAnimating(true);
     setThemeTransition({ x, y, key: Date.now(), targetDark: nextDark });
     setIsDarkMode(nextDark);
   }, [isDarkMode]);
-
-  useEffect(() => {
-    if (!isThemeAnimating) return;
-    const timer = setTimeout(() => setIsThemeAnimating(false), 650);
-    return () => clearTimeout(timer);
-  }, [isThemeAnimating]);
 
   const handleReset = useCallback(() => {
     setShowResetConfirm(false);
@@ -400,7 +392,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <div className={`flex flex-col min-h-0 h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isThemeAnimating ? 'theme-switch-animate' : ''} ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+      <div className={`flex flex-col min-h-0 h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
         {/* Top Navigation Bar - hidden when popup is visible */}
         {!isPopupVisible && (
           <header className={`border-b flex flex-col lg:flex-row items-center justify-between p-4 lg:px-8 shrink-0 z-50 print:hidden gap-4 lg:gap-0 sticky top-0 shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}>
