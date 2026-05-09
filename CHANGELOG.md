@@ -3,27 +3,39 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #56 from bimanthaperera-lab/test/overview (b48f90a) - Bimantha Perera, 8 seconds ago
-* Update CVPreview.tsx (7e88f32) - Bimantha Perera, 9 minutes ago
-* Redesign Download/Reset/CV Import Pop Ups & Reduce name text size from professional template (f15f19f) - Bimantha Perera, 12 minutes ago
-* Fixed the console/accessibility issues (47f1c21) - Bimantha Perera, 58 minutes ago
-* When i refine the data using AI space is too much in the preview while compare with text box issue fix (e1654f3) - Bimantha Perera, 64 minutes ago
-* Fix Text Box Bullet Point Issue (c865d13) - Bimantha Perera, 68 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (e2053b5) - bimanthaperera-lab, 15 hours ago
-* Fix issues (60eaf5e) - Bimantha Perera, 15 hours ago
-* Update ContactUs.tsx (83fca65) - Bimantha Perera, 15 hours ago
-* Show Download popup when user Click on Finish Button (b6e2539) - Bimantha Perera, 15 hours ago
-* Make when User Click On Date Twice Unselect the date (6cd575a) - Bimantha Perera, 15 hours ago
-* Remove None Option From Gender and Marital Satus Drop down, Made when user click Option enable and disable (13334a1) - Bimantha Perera, 15 hours ago
-* Fix Bug: White Space below the Footer when Scrolling (a676966) - Bimantha Perera, 16 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (fa605d6) - bimanthaperera-lab, 23 hours ago
-* Merge pull request #36 from bimanthaperera-lab/test/overview (e349ec2) - Bimantha Perera, 23 hours ago
-* Update Footer (ca6d77c) - Bimantha Perera, 23 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (bfba959) - bimanthaperera-lab, 25 hours ago
-* Merge pull request #35 from bimanthaperera-lab/test/overview (2d28618) - Bimantha Perera, 25 hours ago
-* Update README.md (e1b0841) - Bimantha Perera, 25 hours ago
-* Update main.yml (2922038) - Bimantha Perera, 25 hours ago
-* Dockerization the App (359fe20) - Bimantha Perera, 26 hours ago
+* Merge pull request #57 from bimanthaperera-lab/test/overview (a074a56) - Bimantha Perera, 7 seconds ago
+* Rebranding App name and (9548944) - Bimantha Perera, 5 minutes ago
+* Add Patch to Fix Drag Issue (dcd6bbd) - Bimantha Perera, 64 minutes ago
+* Add New Reference section (9de461e) - Bimantha Perera, 68 minutes ago
+* Fix: Remove pulse animation when change the dark/white mode (078783a) - Bimantha Perera, 74 minutes ago
+* Fix: Show 3 Languages in Classic template first raw and reduce gap between language proficiency (e6d40da) - Bimantha Perera, 76 minutes ago
+* Fix: Change Drop down UI at the Language proficiency (113ef2b) - Bimantha Perera, 79 minutes ago
+* Fix import popup issue and change the icon (13592ad) - Bimantha Perera, 82 minutes ago
+* Change CV Import pop up cloud icon (fda6fd7) - Bimantha Perera, 2 hours ago
+* Fix Footer White Space Issue (a545b13) - Bimantha Perera, 2 hours ago
+* chore: bump version to 0.1.3 (a3265f5) - bimanthaperera-lab, 5 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (eca81c1) - bimanthaperera-lab, 5 hours ago
+* Merge pull request #56 from bimanthaperera-lab/test/overview (b48f90a) - Bimantha Perera, 5 hours ago
+* Update CVPreview.tsx (7e88f32) - Bimantha Perera, 5 hours ago
+* Redesign Download/Reset/CV Import Pop Ups & Reduce name text size from professional template (f15f19f) - Bimantha Perera, 6 hours ago
+* Fixed the console/accessibility issues (47f1c21) - Bimantha Perera, 6 hours ago
+* When i refine the data using AI space is too much in the preview while compare with text box issue fix (e1654f3) - Bimantha Perera, 6 hours ago
+* Fix Text Box Bullet Point Issue (c865d13) - Bimantha Perera, 6 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e2053b5) - bimanthaperera-lab, 20 hours ago
+* Fix issues (60eaf5e) - Bimantha Perera, 20 hours ago
+* Update ContactUs.tsx (83fca65) - Bimantha Perera, 20 hours ago
+* Show Download popup when user Click on Finish Button (b6e2539) - Bimantha Perera, 20 hours ago
+* Make when User Click On Date Twice Unselect the date (6cd575a) - Bimantha Perera, 21 hours ago
+* Remove None Option From Gender and Marital Satus Drop down, Made when user click Option enable and disable (13334a1) - Bimantha Perera, 21 hours ago
+* Fix Bug: White Space below the Footer when Scrolling (a676966) - Bimantha Perera, 21 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (fa605d6) - bimanthaperera-lab, 28 hours ago
+* Merge pull request #36 from bimanthaperera-lab/test/overview (e349ec2) - Bimantha Perera, 28 hours ago
+* Update Footer (ca6d77c) - Bimantha Perera, 28 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (bfba959) - bimanthaperera-lab, 30 hours ago
+* Merge pull request #35 from bimanthaperera-lab/test/overview (2d28618) - Bimantha Perera, 30 hours ago
+* Update README.md (e1b0841) - Bimantha Perera, 31 hours ago
+* Update main.yml (2922038) - Bimantha Perera, 31 hours ago
+* Dockerization the App (359fe20) - Bimantha Perera, 31 hours ago
 * chore: bump version to 0.1.2 (2d4e777) - bimanthaperera-lab, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (b80c98c) - bimanthaperera-lab, 2 days ago
 * Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 2 days ago
@@ -78,7 +90,7 @@ All notable changes to this project will be documented in this file.
 * Update index.css (8722575) - Bimantha Perera, 7 days ago
 * Fix bug in description box (d99e2b0) - Bimantha Perera, 7 days ago
 * Merge pull request #16 from bimanthaperera-lab/test/overview (068cb11) - Bimantha Perera, 8 days ago
-* Fix tab layout (c8a05cd) - Bimantha Perera, 8 days ago
+* Fix tab layout (c8a05cd) - Bimantha Perera, 9 days ago
 * Merge pull request #15 from bimanthaperera-lab/test/overview (6e42d8e) - Bimantha Perera, 9 days ago
 * Update Template Preview (b412767) - Bimantha Perera, 9 days ago
 * Merge pull request #14 from bimanthaperera-lab/test/overview (7619e97) - Bimantha Perera, 9 days ago
