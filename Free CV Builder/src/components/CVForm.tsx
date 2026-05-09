@@ -6,7 +6,7 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 import DOMPurify from 'dompurify';
 import toast from 'react-hot-toast';
 
-import { CVData, Experience, Education, Skill, Course, Language, Project, Award } from '../types';
+import { CVData, Experience, Education, Skill, Course, Language, Project, Award, Reference } from '../types';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
@@ -21,6 +21,7 @@ import {
   LanguagesSection,
   ProjectsSection,
   AwardsSection,
+  ReferencesSection,
   DesignPanel,
   ImportModals,
   ALL_STEPS,
@@ -334,6 +335,14 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                 date: a.date || '',
                 issuer: a.issuer || '',
               })),
+              references: (result.references || []).map((r: any) => ({
+                id: crypto.randomUUID(),
+                name: r.name || '',
+                position: r.position || '',
+                company: r.company || '',
+                email: r.email || '',
+                phone: r.phone || '',
+              })),
             }));
 
             setImportMessage({ type: 'success', text: 'Data imported successfully!' });
@@ -443,6 +452,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     }));
   }, [setCvData]);
 
+  const handleReferenceChange = useCallback((id: string, field: keyof Reference, value: string) => {
+    setCvData((prev) => ({
+      ...prev,
+      references: prev.references.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+    }));
+  }, [setCvData]);
+
   // Generic Add/Remove helper
   const addSectionItem = useCallback((section: keyof CVData, defaultItem: any) => {
     setCvData(prev => ({ ...prev, [section]: [...(prev[section] as any[]), { ...defaultItem, id: crypto.randomUUID() }] }));
@@ -468,6 +484,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const addLanguage = useCallback(() => addSectionItem('languages', { name: '', proficiency: 'Native' }), [addSectionItem]);
   const addProject = useCallback(() => addSectionItem('projects', { name: '', description: '', link: '' }), [addSectionItem]);
   const addAward = useCallback(() => addSectionItem('awards', { name: '', date: '', issuer: '' }), [addSectionItem]);
+  const addReference = useCallback(() => addSectionItem('references', { name: '', position: '', company: '', email: '', phone: '' }), [addSectionItem]);
 
   const removeExperience = useCallback((id: string) => removeSectionItem('experience', id), [removeSectionItem]);
   const removeEducation = useCallback((id: string) => removeSectionItem('education', id), [removeSectionItem]);
@@ -476,6 +493,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const removeLanguage = useCallback((id: string) => removeSectionItem('languages', id), [removeSectionItem]);
   const removeProject = useCallback((id: string) => removeSectionItem('projects', id), [removeSectionItem]);
   const removeAward = useCallback((id: string) => removeSectionItem('awards', id), [removeSectionItem]);
+  const removeReference = useCallback((id: string) => removeSectionItem('references', id), [removeSectionItem]);
 
   // Stable DatePicker callbacks
   const openDatePicker = useCallback(() => setIsDatePickerOpen(true), []);
@@ -595,6 +613,17 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             onChange={handleAwardChange}
             onAdd={addAward}
             onRemove={removeAward}
+          />
+        );
+      case 'references':
+        return (
+          <ReferencesSection
+            references={cvData.references}
+            isOpen={expandedSection === 'references'}
+            onToggle={() => toggleSection('references')}
+            onChange={handleReferenceChange}
+            onAdd={addReference}
+            onRemove={removeReference}
           />
         );
       default:

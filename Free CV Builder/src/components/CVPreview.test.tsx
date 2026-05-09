@@ -49,6 +49,7 @@ const mockCVData: CVData = {
   courses: [],
   awards: [],
   languages: [],
+  references: [],
   themeColor: '#2563eb',
   sidebarColor: '#111827',
   fontFamily: 'Inter',
@@ -133,9 +134,10 @@ describe('CVPreview Component', () => {
       awards: Array(2).fill(null).map((_, i) => ({ id: `award-${i}`, name: 'Global Award', date: '2022', issuer: 'World Org' })),
       languages: Array(2).fill(null).map((_, i) => ({ id: `lang-${i}`, name: 'English', proficiency: 'Native' })),
       courses: Array(2).fill(null).map((_, i) => ({ id: `course-${i}`, name: 'Advanced JS', institution: 'MIT', startDate: '2021', endDate: '2021' })),
+      references: Array(2).fill(null).map((_, i) => ({ id: `ref-${i}`, name: 'Alex Manager', position: 'Director', company: 'World Org', email: 'alex@example.com', phone: '+1 555 0100' })),
       themeColor: '#2563eb',
       sidebarColor: '#1f2937',
-      sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'awards', 'languages', 'courses']
+      sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'awards', 'languages', 'courses', 'references']
     };
 
     const { container } = render(<CVPreview cvData={kitchenSinkData as any} template="modern" />);

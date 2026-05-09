@@ -14,15 +14,21 @@ import { Download, LayoutTemplate, Loader2, FileText, Edit3, AlertCircle, Rotate
 const STORAGE_KEY = 'cv-builder-data';
 const TEMPLATE_STORAGE_KEY = 'cv-builder-template';
 const THEME_STORAGE_KEY = 'cv-builder-theme';
+const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
 
 function loadSavedData(): CVData | null {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
+      if (!parsed.references) {
+        parsed.references = [];
+      }
       // Ensure sectionOrder exists (backward compat)
       if (!parsed.sectionOrder) {
-        parsed.sectionOrder = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages'];
+        parsed.sectionOrder = DEFAULT_SECTION_ORDER;
+      } else if (!parsed.sectionOrder.includes('references')) {
+        parsed.sectionOrder = [...parsed.sectionOrder, 'references'];
       }
       return parsed as CVData;
     }
@@ -65,6 +71,7 @@ const initialData: CVData = {
   languages: [],
   projects: [],
   awards: [],
+  references: [],
   themeColor: '#7c3aed', // Default violet-600
   fontFamily: 'Inter',
   profileImage: '',
@@ -74,7 +81,7 @@ const initialData: CVData = {
   sidebarColor: '#1e293b', // Default slate-800
   lineSpacing: 1.5,
   sectionGap: 2,
-  sectionOrder: ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages'],
+  sectionOrder: DEFAULT_SECTION_ORDER,
   hiddenSections: [],
 };
 

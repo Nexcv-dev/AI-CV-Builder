@@ -16,7 +16,7 @@ vi.mock('lucide-react', () => {
   const icons = [
     'Plus', 'Trash2', 'Loader2', 'Upload', 'CloudUpload', 'FileUp', 'User', 'Briefcase', 'GraduationCap', 
     'Wrench', 'Palette', 'Star', 'FileText', 'BookOpen', 'Globe', 'FolderGit2', 
-    'Trophy', 'ChevronDown', 'ChevronUp', 'Image', 'GripVertical', 'Info', 
+    'Trophy', 'UserCheck', 'ChevronDown', 'ChevronUp', 'Image', 'GripVertical', 'Info', 
     'CheckCircle', 'AlertCircle', 'CheckCircle2', 'LayoutTemplate', 
     'MoveHorizontal', 'MoveVertical', 'Layout', 'Sparkles', 'LogOut', 
     'Mail', 'Phone', 'MapPin', 'Linkedin', 'Github',
@@ -71,11 +71,12 @@ describe('CVForm Logic', () => {
     languages: [],
     projects: [],
     awards: [],
+    references: [],
     themeColor: '#3b82f6',
     sidebarColor: '#f8fafc',
     fontFamily: 'Inter',
     profileImage: '',
-    sectionOrder: ['personalDetails', 'summary', 'experience', 'education', 'skills', 'projects', 'courses', 'languages', 'awards']
+    sectionOrder: ['personalDetails', 'summary', 'experience', 'education', 'skills', 'projects', 'courses', 'languages', 'awards', 'references']
   };
 
   beforeEach(() => {

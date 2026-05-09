@@ -578,6 +578,52 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           </SectionWrapper>
         );
 
+      case 'references':
+        if (!cvData.references || cvData.references.length === 0) return null;
+        return (
+          <SectionWrapper key="references">
+            <SectionHeader title="References" />
+            {isPro ? (
+              <div className="grid grid-cols-[114px_1fr] gap-4">
+                <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">Contacts</div>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                  {cvData.references.map((reference) => (
+                    <div key={reference.id} data-page-break="avoid" className="text-xs" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <h3 className="text-sm font-bold text-gray-900">{reference.name || 'Reference Name'}</h3>
+                      {(reference.position || reference.company) && (
+                        <div className="font-medium text-gray-600 mt-0.5">
+                          {[reference.position, reference.company].filter(Boolean).join(', ')}
+                        </div>
+                      )}
+                      <div className="mt-1 space-y-0.5 text-gray-500">
+                        {reference.email && <div>{reference.email}</div>}
+                        {reference.phone && <div>{reference.phone}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className={`grid gap-x-10 gap-y-4 ${isModern ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                {cvData.references.map((reference) => (
+                  <div key={reference.id} data-page-break="avoid" className="text-sm" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                    <h3 className="font-bold text-gray-900">{reference.name || 'Reference Name'}</h3>
+                    {(reference.position || reference.company) && (
+                      <div className="text-gray-600 mt-0.5">
+                        {[reference.position, reference.company].filter(Boolean).join(', ')}
+                      </div>
+                    )}
+                    <div className="mt-1 space-y-0.5 text-xs text-gray-500">
+                      {reference.email && <div>{reference.email}</div>}
+                      {reference.phone && <div>{reference.phone}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionWrapper>
+        );
+
       default:
         return null;
     }
