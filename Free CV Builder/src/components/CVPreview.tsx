@@ -566,11 +566,11 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-x-12 gap-y-4">
+              <div className="grid grid-cols-3 gap-x-8 gap-y-3">
                 {cvData.languages.map((language) => (
-                  <div key={language.id} data-page-break="avoid" className="flex items-center justify-between" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                    <span className="text-sm font-medium text-gray-700">{language.name}</span>
-                    <span className="text-sm text-gray-500">{language.proficiency}</span>
+                  <div key={language.id} data-page-break="avoid" className="flex items-baseline gap-2.5 min-w-0" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                    <span className="text-sm font-semibold text-gray-700 truncate">{language.name}</span>
+                    <span className="text-xs text-gray-500 shrink-0">{language.proficiency}</span>
                   </div>
                 ))}
               </div>
