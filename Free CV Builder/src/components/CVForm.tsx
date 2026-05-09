@@ -50,6 +50,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design'>('content');
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
+  const [isDraggingSection, setIsDraggingSection] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const progressContainerRef = useRef<HTMLDivElement>(null);
@@ -367,6 +368,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    setIsDraggingSection(false);
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setCvData((prev) => {
@@ -376,6 +378,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       });
     }
   };
+
+  const handleDragCancel = useCallback(() => {
+    setIsDraggingSection(false);
+  }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target;
@@ -686,30 +692,32 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             </div>
 
             {/* Form Content */}
-            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={wizardStep}
-                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -16, scale: 0.98 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                >
-                  <SortableContext
-                    items={ALL_STEPS[wizardStep] === 'finalize' ? [...FINALIZE_SECTION_KEYS] : [ALL_STEPS[wizardStep]]}
-                    strategy={verticalListSortingStrategy}
+            <div className={`relative ${isDraggingSection ? 'overflow-hidden pb-1' : 'overflow-visible'}`}>
+              <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={() => setIsDraggingSection(true)} onDragCancel={handleDragCancel} onDragEnd={handleDragEnd}>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={wizardStep}
+                    initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -16, scale: 0.98 }}
+                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    {(ALL_STEPS[wizardStep] === 'finalize' ? FINALIZE_SECTION_KEYS : [ALL_STEPS[wizardStep]])
-                      .filter(Boolean)
-                      .map((key) => (
-                        <React.Fragment key={key}>
-                          {renderSection(key as string)}
-                        </React.Fragment>
-                      ))}
-                  </SortableContext>
-                </motion.div>
-              </AnimatePresence>
-            </DndContext>
+                    <SortableContext
+                      items={ALL_STEPS[wizardStep] === 'finalize' ? [...FINALIZE_SECTION_KEYS] : [ALL_STEPS[wizardStep]]}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {(ALL_STEPS[wizardStep] === 'finalize' ? FINALIZE_SECTION_KEYS : [ALL_STEPS[wizardStep]])
+                        .filter(Boolean)
+                        .map((key) => (
+                          <React.Fragment key={key}>
+                            {renderSection(key as string)}
+                          </React.Fragment>
+                        ))}
+                    </SortableContext>
+                  </motion.div>
+                </AnimatePresence>
+              </DndContext>
+            </div>
 
             <WizardNav
               wizardStep={wizardStep}
