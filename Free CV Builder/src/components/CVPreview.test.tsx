@@ -173,6 +173,24 @@ describe('CVPreview Component', () => {
     expect(container.querySelector('script')).toBeNull();
   });
 
+  it('compacts AI-formatted list HTML to avoid extra preview spacing', () => {
+    const aiFormattedData: CVData = {
+      ...mockCVData,
+      experience: [{
+        ...mockCVData.experience[0],
+        description: `<ul>
+          <li><strong>Monitored</strong> daily logistics</li>
+          <li><strong>Automated</strong> reporting workflows</li>
+        </ul>`,
+      }],
+    };
+
+    const { container } = render(<CVPreview cvData={aiFormattedData} template="modern" />);
+    const list = container.querySelector('.cv-preview-rich-text ul');
+
+    expect(list?.innerHTML).toBe('<li><strong>Monitored</strong> daily logistics</li><li><strong>Automated</strong> reporting workflows</li>');
+  });
+
   it('applies whitespace-pre-wrap and wrap-break-word classes to rich text containers', () => {
     const dataWithNewlines: CVData = {
       ...mockCVData,

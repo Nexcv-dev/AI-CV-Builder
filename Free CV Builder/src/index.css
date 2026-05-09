@@ -420,6 +420,30 @@
   margin-bottom: 0.125rem !important;
 }
 
+.cv-preview-rich-text ul,
+.cv-preview-rich-text ol {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.cv-preview-rich-text li {
+  margin-top: 0 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.cv-preview-rich-text li:last-child {
+  margin-bottom: 0 !important;
+}
+
+.cv-preview-rich-text p {
+  margin-top: 0 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.cv-preview-rich-text p:last-child {
+  margin-bottom: 0 !important;
+}
+
 .rich-text-editor-container b,
 .rich-text-editor-container strong,
 .prose b,

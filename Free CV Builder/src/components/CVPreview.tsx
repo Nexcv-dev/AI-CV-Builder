@@ -31,6 +31,9 @@ const domPurifyConfig = {
   ALLOWED_ATTR: ['href', 'target', 'rel']
 };
 
+const sanitizeRichText = (html: string): string =>
+  DOMPurify.sanitize(html || '', domPurifyConfig).replace(/>\s+</g, '><');
+
 const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvData, template }, ref) => {
   const {
     personalInfo,
@@ -259,9 +262,9 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
 
     const ProseContent = ({ html, className = '' }: { html: string, className?: string }) => (
       <div
-        className={`text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap wrap-break-word ${className}`}
+        className={`cv-preview-rich-text text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap wrap-break-word ${className}`}
         style={{ lineHeight: lineSpacing }}
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html, domPurifyConfig) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeRichText(html) }}
       />
     );
 
