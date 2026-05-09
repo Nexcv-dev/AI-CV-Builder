@@ -595,7 +595,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   };
 
   return (
-    <div className="flex flex-col h-full relative overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 relative overflow-hidden">
       {/* Tab Switcher */}
       <div className={TAB_CONTAINER_CLASS}>
         <button
@@ -614,7 +614,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
 
       <div
         ref={formContainerRef}
-        className="flex-1 h-full overflow-y-auto scrollbar-hide px-4 sm:px-6 flex flex-col"
+        className="flex-1 min-h-0 overflow-y-auto scrollbar-hide px-4 sm:px-6 flex flex-col"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {activeMainTab === 'content' ? (

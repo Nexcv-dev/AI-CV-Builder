@@ -339,6 +339,13 @@
 }
 
 @layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    background-color: #020617;
+  }
+
   html, body {
     overscroll-behavior: none;
   }

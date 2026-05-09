@@ -398,7 +398,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <div className={`flex flex-col h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isThemeAnimating ? 'theme-switch-animate' : ''} ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+      <div className={`flex flex-col min-h-0 h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isThemeAnimating ? 'theme-switch-animate' : ''} ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
         {/* Top Navigation Bar - hidden when popup is visible */}
         {!isPopupVisible && (
           <header className={`border-b flex flex-col lg:flex-row items-center justify-between p-4 lg:px-8 shrink-0 z-50 print:hidden gap-4 lg:gap-0 sticky top-0 shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}>
@@ -500,10 +500,10 @@ export default function Home() {
         <div className="flex-1 overflow-hidden relative flex flex-col lg:flex-row print:overflow-visible print:block">
           {/* Left Side: Form */}
           <div
-            className={`${mobileView === 'edit' ? 'flex max-lg:w-full! max-lg:min-w-0!' : 'hidden'} lg:flex h-full border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
+            className={`${mobileView === 'edit' ? 'flex max-lg:w-full! max-lg:min-w-0!' : 'hidden'} lg:flex h-full min-h-0 border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
             style={{ width: `${formWidth}%`, minWidth: '420px' }}
           >
-            <div className="h-full w-full overflow-y-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="h-full min-h-0 w-full overflow-y-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
               <CVForm
                 key={resetKey}
                 cvData={cvData}
@@ -529,7 +529,7 @@ export default function Home() {
 
           {/* Right Side: Preview */}
           <div
-            className={`${mobileView === 'preview' ? 'flex max-lg:w-full!' : 'hidden'} lg:flex flex-col h-full bg-transparent print:w-full print:bg-white print:block relative overflow-x-hidden`}
+            className={`${mobileView === 'preview' ? 'flex max-lg:w-full!' : 'hidden'} lg:flex flex-col h-full min-h-0 bg-transparent print:w-full print:bg-white print:block relative overflow-x-hidden`}
             style={{ width: `calc(${100 - formWidth}% - 6px)` }}
           >
             <div
