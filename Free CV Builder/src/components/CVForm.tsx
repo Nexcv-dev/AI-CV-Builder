@@ -740,7 +740,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           />
         )}
         <div className="mt-auto">
-          <EditorFooter />
+
         </div>
       </div>
 

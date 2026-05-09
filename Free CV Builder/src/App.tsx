@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Link } from 'react-router-dom';
 import Home from './pages/Home';
+import LandingPage from './pages/LandingPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import AboutUs from './pages/AboutUs';
@@ -11,14 +12,18 @@ import { Footer } from './components/Footer';
 
 function Layout() {
   const location = useLocation();
-  const isHome = location.pathname === '/';
+  const isBuilder = location.pathname === '/builder';
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
-    <div className={`flex flex-col ${isHome ? 'min-h-[100svh] h-[100svh] overflow-hidden bg-slate-950' : 'min-h-[100svh] bg-slate-50'}`}>
+    <div className={`flex flex-col ${isBuilder ? 'min-h-svh h-svh overflow-hidden bg-slate-950' : 'min-h-svh bg-slate-50'}`}>
       <div className="flex-1 flex flex-col min-h-0">
         <Outlet />
       </div>
-      {!isHome && <Footer />}
+      {!isBuilder && <Footer />}
     </div>
   );
 }
@@ -50,7 +55,8 @@ function App() {
         
         {/* Standard layout routes */}
         <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/builder" element={<Home />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/about" element={<AboutUs />} />

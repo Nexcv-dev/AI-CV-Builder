@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Send, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { BrandLogo } from '../components/BrandLogo';
 
 export default function ContactUs() {
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -12,29 +11,37 @@ export default function ContactUs() {
   };
 
   return (
-    <div className="flex-1 bg-[#f8f9fa] w-full">
-      <header className="bg-white border-b border-gray-200/80 flex flex-col sm:flex-row items-center p-4 sm:px-8 z-50 sticky top-0 shadow-sm">
-        <Link to="/" className="flex items-center">
-          <BrandLogo markClassName="h-9 w-9" wordmarkClassName="text-xl sm:text-2xl text-gray-900" />
-        </Link>
+    <div className="min-h-svh overflow-x-hidden bg-slate-950 text-slate-300">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-slate-950/76 shadow-sm shadow-black/20 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex items-center gap-3">
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-950 shadow-lg shadow-violet-900/20 sm:h-11 sm:w-11">
+              <img src="/brand/faviconblack.png" alt="" className="h-8 w-8 rounded-xl sm:h-9 sm:w-9" />
+            </span>
+            <span className="font-montserrat text-xl font-black text-white sm:text-2xl">NexCV</span>
+          </Link>
+        </div>
       </header>
 
-      <main className="max-w-2xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white p-8 sm:p-12 rounded-3xl shadow-[2px_4px_24px_-8px_rgba(0,0,0,0.05)] border border-gray-100">
+      <main className="relative mx-auto max-w-2xl px-4 py-24 sm:px-6 lg:px-8">
+        <div className="absolute left-0 top-20 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
+
+        <div className="relative rounded-3xl border border-white/10 bg-white/4 p-8 shadow-2xl shadow-black/40 backdrop-blur-sm sm:p-12">
           <div className="text-center mb-10">
-            <h1 className="text-3xl font-extrabold text-gray-900 mb-4">Contact Us</h1>
-            <p className="text-gray-500">Have questions or feedback? We would love to hear from you. Fill out the form below and we'll get back to you shortly.</p>
+            <h1 className="text-3xl font-montserrat font-black text-white mb-4">Contact Us</h1>
+            <p className="text-slate-400">Have questions or feedback? We would love to hear from you. Fill out the form below and we'll get back to you shortly.</p>
           </div>
 
           {isSubmitted ? (
-            <div className="bg-green-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center border border-green-100">
-              <CheckCircle2 className="text-green-500 w-16 h-16 mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h2>
-              <p className="text-gray-600 mb-2">Your feedback is appreciated.</p>
-              <p className="text-xs text-gray-400 mb-6">Note: This is a demo form. For actual inquiries, please email us directly.</p>
+            <div className="bg-emerald-500/10 rounded-2xl p-8 flex flex-col items-center justify-center text-center border border-emerald-500/20">
+              <CheckCircle2 className="text-emerald-400 w-16 h-16 mb-4" />
+              <h2 className="text-2xl font-montserrat font-bold text-white mb-2">Thank You!</h2>
+              <p className="text-slate-300 mb-2">Your feedback is appreciated.</p>
+              <p className="text-xs text-slate-500 mb-6">Note: This is a demo form. For actual inquiries, please email us directly.</p>
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="bg-white text-gray-900 border border-gray-200 px-6 py-2 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                className="bg-white/10 text-white border border-white/20 px-6 py-2 rounded-xl font-medium hover:bg-white/20 transition-colors"
               >
                 Send Another Message
               </button>
@@ -42,43 +49,43 @@ export default function ContactUs() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                <label htmlFor="fullName" className="block text-sm font-medium text-slate-300 mb-2">Full Name</label>
                 <input
                   id="fullName"
                   name="fullName"
                   type="text"
                   autoComplete="name"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                  className="w-full bg-slate-900/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-sm placeholder:text-slate-500"
                   placeholder="John Doe"
                 />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
                 <input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                  className="w-full bg-slate-900/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-sm placeholder:text-slate-500"
                   placeholder="john@example.com"
                 />
               </div>
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <label htmlFor="message" className="block text-sm font-medium text-slate-300 mb-2">Message</label>
                 <textarea
                   id="message"
                   name="message"
                   required
                   rows={5}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm resize-none"
+                  className="w-full bg-slate-900/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-sm resize-none placeholder:text-slate-500"
                   placeholder="How can we help you?"
                 ></textarea>
               </div>
               <button
                 type="submit"
-                className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-4 px-6 rounded-xl flex items-center justify-center transition-all shadow-md active:scale-[0.98]"
+                className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-4 px-6 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-violet-600/25 active:scale-[0.98]"
               >
                 <Send size={18} className="mr-2" />
                 Send Message

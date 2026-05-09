@@ -346,6 +346,11 @@
     background-color: #020617;
   }
 
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 4rem;
+  }
+
   html, body {
     overscroll-behavior: none;
   }
@@ -374,6 +379,251 @@
   }
   .pt-safe {
     padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  .landing-reveal,
+  .landing-workflow-card {
+    animation: landing-rise 0.74s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .landing-reveal:nth-child(2) {
+    animation-delay: 90ms;
+  }
+
+  .landing-reveal:nth-child(3) {
+    animation-delay: 170ms;
+  }
+
+  .landing-reveal:nth-child(4) {
+    animation-delay: 250ms;
+  }
+
+  .landing-reveal:nth-child(5) {
+    animation-delay: 330ms;
+  }
+
+  .landing-hero-sheet {
+    filter: drop-shadow(0 30px 40px rgba(24, 24, 27, 0.22));
+    transform-origin: center;
+  }
+
+  .landing-hero-sheet-main {
+    animation: landing-sheet-main 8s ease-in-out infinite alternate;
+  }
+
+  .landing-hero-sheet-left {
+    animation: landing-sheet-left 9s ease-in-out infinite alternate;
+  }
+
+  .landing-hero-sheet-mobile {
+    animation: landing-sheet-mobile 7.5s ease-in-out infinite alternate;
+  }
+
+  .landing-color-wash {
+    animation: landing-color-wash 8s ease-in-out infinite alternate;
+  }
+
+  .landing-color-wash-two {
+    animation-delay: 1.2s;
+  }
+
+  .landing-feature-tile {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .landing-workflow-card {
+    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+  }
+
+  .landing-workflow-card::after {
+    content: "";
+    position: absolute;
+    inset: auto 16px -36px 16px;
+    height: 56px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(124, 58, 237, 0.2), rgba(16, 185, 129, 0.18));
+    filter: blur(18px);
+    transition: transform 240ms ease, opacity 240ms ease;
+  }
+
+  .landing-workflow-card:hover {
+    border-color: rgba(139, 92, 246, 0.28);
+    box-shadow: 0 22px 40px -28px rgba(30, 41, 59, 0.45);
+    transform: translateY(-5px);
+  }
+
+  .landing-workflow-card:hover::after {
+    opacity: 0.9;
+    transform: translateY(-10px);
+  }
+
+  .landing-testimonial-card {
+    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+  }
+
+  .landing-testimonial-card:hover {
+    border-color: rgba(139, 92, 246, 0.24);
+    box-shadow: 0 24px 50px -34px rgba(30, 41, 59, 0.55);
+    transform: translateY(-6px);
+  }
+
+  .landing-feature-tile::after {
+    content: "";
+    position: absolute;
+    inset: auto -20% -40% 20%;
+    height: 80px;
+    border-radius: 999px;
+    opacity: 0.22;
+    transform: rotate(-8deg);
+    transition: transform 260ms ease, opacity 260ms ease;
+  }
+
+  .landing-feature-tile:hover::after {
+    opacity: 0.34;
+    transform: translateY(-10px) rotate(-8deg);
+  }
+
+  .landing-tone-emerald::after,
+  .landing-tone-emerald .landing-bar {
+    background: #34d399;
+  }
+
+  .landing-tone-violet::after,
+  .landing-tone-violet .landing-bar {
+    background: #8b5cf6;
+  }
+
+  .landing-bar {
+    width: 100%;
+    animation: landing-progress 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .landing-scroll-reveal {
+    opacity: 0;
+    transform: translateY(34px) scale(0.985);
+    transition:
+      opacity 760ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 760ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--scroll-delay, 0ms);
+    will-change: opacity, transform;
+  }
+
+  .landing-scroll-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-icon-pop {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  45% {
+    transform: scale(1.16) rotate(-4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes landing-sheet-main {
+  from {
+    transform: translateY(0) rotate(3deg);
+  }
+  to {
+    transform: translateY(-16px) rotate(1.5deg);
+  }
+}
+
+@keyframes landing-sheet-left {
+  from {
+    transform: translateY(0) rotate(-7deg);
+  }
+  to {
+    transform: translateY(18px) rotate(-4deg);
+  }
+}
+
+@keyframes landing-sheet-mobile {
+  from {
+    transform: translateX(-50%) translateY(0) rotate(2deg);
+  }
+  to {
+    transform: translateX(-50%) translateY(-12px) rotate(-1deg);
+  }
+}
+
+@keyframes landing-color-wash {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.62;
+  }
+  to {
+    transform: translate3d(24px, -18px, 0) scale(1.12);
+    opacity: 0.36;
+  }
+}
+
+@keyframes landing-progress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .landing-hero-sheet {
+    filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.26));
+  }
+
+  .landing-scroll-reveal {
+    transform: translateY(24px) scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-reveal,
+  .landing-feature-tile,
+  .landing-template-card,
+  .landing-workflow-card,
+  .landing-testimonial-card,
+  .landing-scroll-reveal,
+  .landing-hero-sheet-main,
+  .landing-hero-sheet-left,
+  .landing-hero-sheet-mobile,
+  .landing-color-wash,
+  .landing-bar {
+    animation: none;
+  }
+
+  .landing-feature-tile,
+  .landing-feature-tile:hover,
+  .landing-template-card,
+  .landing-template-card:hover,
+  .landing-workflow-card,
+  .landing-workflow-card:hover,
+  .landing-testimonial-card,
+  .landing-testimonial-card:hover,
+  .landing-scroll-reveal {
+    transform: none;
+  }
+
+  .landing-scroll-reveal {
+    opacity: 1;
   }
 }
 

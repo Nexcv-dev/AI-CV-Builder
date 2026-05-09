@@ -1,6 +1,6 @@
 <div align="center">
 
-# ✨ AI CV Builder
+# ✨ NexCV | AI CV Builder
 ### Create Professional Resumes with the Power of AI 🚀
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
@@ -16,7 +16,7 @@
 
 ## 📖 Overview
 
-**Free AI CV Builder** is a premium, open-source web application designed to help job seekers create stunning, ATS-friendly resumes in minutes. By leveraging **Google's Gemini AI**, the application automates the tedious parts of resume building—from parsing old documents to crafting impactful job descriptions.
+**NexCV** is a premium, open-source web application designed to help job seekers create stunning, ATS-friendly resumes in minutes. By leveraging **Google's Gemini AI**, the application automates the tedious parts of resume building—from parsing old documents to crafting impactful job descriptions.
 
 ## 🚀 Key Features
 
@@ -148,5 +148,5 @@ This application is optimized for **Render** and includes a `render.yaml` Bluepr
 ---
 
 <div align="center">
-Made with ❤️ for Job Seekers Everywhere.
+Made with ❤️ by Bimantha Perera for Job Seekers Everywhere.
 </div>

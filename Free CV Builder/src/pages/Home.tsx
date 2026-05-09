@@ -238,8 +238,12 @@ export default function Home() {
     setShowResetConfirm(false);
     setIsInitialLoading(true);
     
+    // Keep the reset prompt reachable on mobile when reset is triggered from Preview.
+    setMobileView('edit');
+
     // Clear data immediately
     setCvData(initialData);
+    setDebouncedCvData(initialData);
     setTemplate('classic');
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -536,7 +540,7 @@ export default function Home() {
           >
             <div
               ref={previewContainerRef}
-              className="preview-container-scroll h-full overflow-y-auto overflow-x-hidden scrollbar-hide p-4 pb-24 lg:pb-8 flex flex-col items-center justify-start overscroll-y-none overscroll-x-none print:p-0 print:overflow-visible"
+              className="preview-container-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide p-4 pb-6 lg:pb-8 flex flex-col items-center justify-start overscroll-y-none overscroll-x-none print:p-0 print:overflow-visible"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <div
@@ -553,7 +557,7 @@ export default function Home() {
 
             {/* Sticky Mobile Download Button */}
             {mobileView === 'preview' && (
-              <div className="lg:hidden absolute bottom-6 left-0 w-full px-4 z-40 print:hidden pointer-events-none will-change-transform">
+              <div className="lg:hidden shrink-0 w-full px-4 pt-3 pb-4 pb-safe z-40 print:hidden pointer-events-none">
                 <button
                   onClick={(e) => {
                     e.preventDefault();
