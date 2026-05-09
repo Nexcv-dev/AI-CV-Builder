@@ -47,7 +47,7 @@ export const SortableAccordionSection = React.memo(({
       <div className={`w-full flex items-center transition-colors rounded-t-xl overflow-hidden ${isOpen ? 'bg-violet-50/30' : 'bg-gray-50 hover:bg-gray-100'}`}>
         {showDragHandle && (
           <div
-            className="flex items-center px-2 py-4 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors"
+            className="flex items-center px-2 py-4 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors touch-none"
             {...attributes}
             {...listeners}
           >
