@@ -31,6 +31,9 @@ const domPurifyConfig = {
   ALLOWED_ATTR: ['href', 'target', 'rel']
 };
 
+const sanitizeRichText = (html: string): string =>
+  DOMPurify.sanitize(html || '', domPurifyConfig).replace(/>\s+</g, '><');
+
 const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvData, template }, ref) => {
   const {
     personalInfo,
@@ -259,9 +262,9 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
 
     const ProseContent = ({ html, className = '' }: { html: string, className?: string }) => (
       <div
-        className={`text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap wrap-break-word ${className}`}
+        className={`cv-preview-rich-text text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap wrap-break-word ${className}`}
         style={{ lineHeight: lineSpacing }}
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html, domPurifyConfig) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeRichText(html) }}
       />
     );
 
@@ -293,7 +296,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             <SectionHeader title={isPro ? 'Personal Information' : 'Personal Details'} />
             <div className={`grid grid-cols-2 gap-x-12 gap-y-2 text-sm ${isPro ? 'ml-[130px]' : ''}`}>
               {personalInfo.dob && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Date of Birth:</span><span className="text-gray-800">{personalInfo.dob}</span></div>}
-              {personalInfo.nic && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">NIC${isPro ? '' : ' Number'}:</span><span className="text-gray-800">{personalInfo.nic}</span></div>}
+              {personalInfo.nic && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">NIC{isPro ? '' : ' Number'}:</span><span className="text-gray-800">{personalInfo.nic}</span></div>}
               {personalInfo.gender && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Gender:</span><span className="text-gray-800">{personalInfo.gender}</span></div>}
               {personalInfo.maritalStatus && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Marital Status:</span><span className="text-gray-800">{personalInfo.maritalStatus}</span></div>}
               {personalInfo.nationality && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Nationality:</span><span className="text-gray-800">{personalInfo.nationality}</span></div>}
@@ -648,7 +651,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             <div className="p-[20mm] pt-[15mm]">
               <header className="mb-10 flex border-b-2 border-gray-100 pb-6">
                 <div className="flex-1">
-                  <h1 className="text-5xl font-extrabold tracking-tight mb-2 text-gray-900">
+                  <h1 className="text-[2.4rem] leading-tight font-extrabold tracking-tight mb-2 text-gray-900 wrap-break-word">
                     {personalInfo.fullName || 'Your Name'}
                   </h1>
                   <div className="flex flex-col gap-1 text-sm font-medium mt-4">

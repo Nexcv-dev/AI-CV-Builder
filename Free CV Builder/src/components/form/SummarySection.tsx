@@ -31,7 +31,7 @@ export const SummarySection = React.memo(({
   >
     <div className="grid grid-cols-1 gap-5">
       <div className="md:col-span-2">
-        <label id="summary-label" className={LABEL_CLASS_SM}>Professional Summary</label>
+        <div id="summary-label" className={LABEL_CLASS_SM}>Professional Summary</div>
         <RichTextEditor
           id="summary"
           labelId="summary-label"

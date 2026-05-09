@@ -48,6 +48,7 @@ export const EducationSection = React.memo(({
               <label htmlFor={`edu-inst-${edu.id}`} className={LABEL_CLASS}>Institution</label>
               <input
                 id={`edu-inst-${edu.id}`}
+                name={`edu-inst-${edu.id}`}
                 type="text"
                 autoComplete="organization"
                 placeholder="University or School"
@@ -60,6 +61,7 @@ export const EducationSection = React.memo(({
               <label htmlFor={`edu-degree-${edu.id}`} className={LABEL_CLASS}>Degree</label>
               <input
                 id={`edu-degree-${edu.id}`}
+                name={`edu-degree-${edu.id}`}
                 type="text"
                 placeholder="e.g., Bachelor of Science"
                 value={edu.degree}
@@ -71,6 +73,7 @@ export const EducationSection = React.memo(({
               <label htmlFor={`edu-startDate-${edu.id}`} className={LABEL_CLASS}>Start Date</label>
               <input
                 id={`edu-startDate-${edu.id}`}
+                name={`edu-startDate-${edu.id}`}
                 type="text"
                 placeholder="e.g., Sep 2015"
                 value={edu.startDate}
@@ -82,6 +85,7 @@ export const EducationSection = React.memo(({
               <label htmlFor={`edu-endDate-${edu.id}`} className={LABEL_CLASS}>End Date</label>
               <input
                 id={`edu-endDate-${edu.id}`}
+                name={`edu-endDate-${edu.id}`}
                 type="text"
                 placeholder="e.g., May 2019"
                 value={edu.endDate}
@@ -90,7 +94,7 @@ export const EducationSection = React.memo(({
               />
             </div>
             <div className="md:col-span-2 mt-2 space-y-2">
-              <label id={`edu-desc-label-${edu.id}`} className={LABEL_CLASS}>Description (Optional)</label>
+              <div id={`edu-desc-label-${edu.id}`} className={LABEL_CLASS}>Description (Optional)</div>
               <RichTextEditor
                 id={`edu-desc-${edu.id}`}
                 labelId={`edu-desc-label-${edu.id}`}

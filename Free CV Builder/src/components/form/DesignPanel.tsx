@@ -83,22 +83,22 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
               </button>
               {cvData.profileImage && (<button type="button" onClick={() => setCvData(prev => ({ ...prev, profileImage: '' }))} className="text-sm text-red-500 hover:text-red-700 font-medium text-left px-1">Remove</button>)}
             </div>
-            <input type="file" ref={fileInputRef} onChange={onImageUpload} accept="image/*" className="hidden" />
+            <input id="profileImageUpload" name="profileImageUpload" type="file" ref={fileInputRef} onChange={onImageUpload} accept="image/*" className="hidden" aria-label="Upload profile picture" />
           </div>
           {cvData.profileImage && (
             <div className="space-y-4 pt-4 border-t border-gray-200">
               <div>
                 <div className="flex justify-between mb-1"><label htmlFor="imageZoom" className="text-xs font-medium text-gray-600 uppercase tracking-wider">Zoom</label><span className="text-xs text-gray-500">{cvData.imageZoom || 1}x</span></div>
-                <input id="imageZoom" type="range" min="0.5" max="3" step="0.1" value={cvData.imageZoom || 1} onChange={(e) => setCvData(prev => ({ ...prev, imageZoom: parseFloat(e.target.value) }))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                <input id="imageZoom" name="imageZoom" type="range" min="0.5" max="3" step="0.1" value={cvData.imageZoom || 1} onChange={(e) => setCvData(prev => ({ ...prev, imageZoom: parseFloat(e.target.value) }))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="flex justify-between mb-1"><label htmlFor="imageX" className="text-xs font-medium text-gray-600 uppercase tracking-wider">Position X</label><span className="text-xs text-gray-500">{cvData.imageX || 0}px</span></div>
-                  <input id="imageX" type="range" min="-100" max="100" step="1" value={cvData.imageX || 0} onChange={(e) => setCvData(prev => ({ ...prev, imageX: parseInt(e.target.value) }))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                  <input id="imageX" name="imageX" type="range" min="-100" max="100" step="1" value={cvData.imageX || 0} onChange={(e) => setCvData(prev => ({ ...prev, imageX: parseInt(e.target.value) }))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-1"><label htmlFor="imageY" className="text-xs font-medium text-gray-600 uppercase tracking-wider">Position Y</label><span className="text-xs text-gray-500">{cvData.imageY || 0}px</span></div>
-                  <input id="imageY" type="range" min="-100" max="100" step="1" value={cvData.imageY || 0} onChange={(e) => setCvData(prev => ({ ...prev, imageY: parseInt(e.target.value) }))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                  <input id="imageY" name="imageY" type="range" min="-100" max="100" step="1" value={cvData.imageY || 0} onChange={(e) => setCvData(prev => ({ ...prev, imageY: parseInt(e.target.value) }))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
                 </div>
               </div>
             </div>
@@ -116,14 +116,14 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
           <div>
             <label htmlFor="themeColor" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Primary Theme Color</label>
             <div className="flex items-center space-x-4">
-              <div className="relative"><input id="themeColor" type="color" value={cvData.themeColor} onChange={(e) => handleThemeChange('themeColor', e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
+              <div className="relative"><input id="themeColor" name="themeColor" type="color" value={cvData.themeColor} onChange={(e) => handleThemeChange('themeColor', e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
               <span className={`text-sm font-mono px-3 py-1.5 border rounded-md uppercase ${isDarkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>{cvData.themeColor}</span>
             </div>
           </div>
           <div>
             <label htmlFor="sidebarColor" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Sidebar Background (Modern Template)</label>
             <div className="flex items-center space-x-4">
-              <div className="relative"><input id="sidebarColor" type="color" value={cvData.sidebarColor} onChange={(e) => handleThemeChange('sidebarColor', e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
+              <div className="relative"><input id="sidebarColor" name="sidebarColor" type="color" value={cvData.sidebarColor} onChange={(e) => handleThemeChange('sidebarColor', e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
               <span className={`text-sm font-mono px-3 py-1.5 border rounded-md uppercase ${isDarkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>{cvData.sidebarColor}</span>
             </div>
           </div>
@@ -131,7 +131,7 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
           {/* Font Dropdown */}
           <div className="relative" ref={fontDropdownRef}>
             <label htmlFor="fontFamily" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Font Family</label>
-            <button type="button" onClick={() => setIsFontDropdownOpen(!isFontDropdownOpen)} className={`w-full flex items-center justify-between p-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 transition-all shadow-sm border ${isDarkMode ? 'bg-slate-800 border-slate-700 hover:border-violet-500/50' : 'bg-white border-gray-300 hover:border-violet-400'}`}>
+            <button id="fontFamily" name="fontFamily" type="button" aria-haspopup="listbox" aria-expanded={isFontDropdownOpen} onClick={() => setIsFontDropdownOpen(!isFontDropdownOpen)} className={`w-full flex items-center justify-between p-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 transition-all shadow-sm border ${isDarkMode ? 'bg-slate-800 border-slate-700 hover:border-violet-500/50' : 'bg-white border-gray-300 hover:border-violet-400'}`}>
               <div className="flex items-center">
                 <span className={`mr-3 shrink-0 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}><Type size={18} /></span>
                 <div className="flex flex-col items-start overflow-hidden">
@@ -169,7 +169,7 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
                   <label htmlFor="lineSpacing" className={`text-xs font-semibold flex items-center gap-2 uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}><MoveVertical size={14} /> Line Spacing</label>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded border ${isDarkMode ? 'text-violet-300 bg-violet-900/40 border-violet-800/50' : 'text-violet-600 bg-violet-50 border-violet-100'}`}>{cvData.lineSpacing || 1.5}</span>
                 </div>
-                <input id="lineSpacing" type="range" min="1" max="2.5" step="0.1" value={cvData.lineSpacing || 1.5} onChange={(e) => setCvData(prev => ({ ...prev, lineSpacing: parseFloat(e.target.value) }))} className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-violet-600 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                <input id="lineSpacing" name="lineSpacing" type="range" min="1" max="2.5" step="0.1" value={cvData.lineSpacing || 1.5} onChange={(e) => setCvData(prev => ({ ...prev, lineSpacing: parseFloat(e.target.value) }))} className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-violet-600 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`} />
                 <div className={`flex justify-between text-[10px] font-bold uppercase tracking-tighter ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}><span>Compact</span><span>Relaxed</span></div>
               </div>
               <div className="space-y-2">
@@ -177,7 +177,7 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
                   <label htmlFor="sectionGap" className={`text-xs font-semibold flex items-center gap-2 uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}><MoveHorizontal size={14} /> Section Gap</label>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded border ${isDarkMode ? 'text-violet-300 bg-violet-900/40 border-violet-800/50' : 'text-violet-600 bg-violet-50 border-violet-100'}`}>{cvData.sectionGap || 2}</span>
                 </div>
-                <input id="sectionGap" type="range" min="0.5" max="4" step="0.1" value={cvData.sectionGap || 2} onChange={(e) => setCvData(prev => ({ ...prev, sectionGap: parseFloat(e.target.value) }))} className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-violet-600 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                <input id="sectionGap" name="sectionGap" type="range" min="0.5" max="4" step="0.1" value={cvData.sectionGap || 2} onChange={(e) => setCvData(prev => ({ ...prev, sectionGap: parseFloat(e.target.value) }))} className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-violet-600 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`} />
                 <div className={`flex justify-between text-[10px] font-bold uppercase tracking-tighter ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}><span>Tight</span><span>Spacious</span></div>
               </div>
             </div>

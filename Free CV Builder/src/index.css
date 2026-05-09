@@ -372,15 +372,29 @@
 
 /* Fix for rich text editor and preview lists overridden by Tailwind preflight */
 .prose {
-  --tw-prose-bullets: #000 !important;
-  --tw-prose-counters: #000 !important;
+  --tw-prose-bullets: currentColor !important;
+  --tw-prose-counters: currentColor !important;
+}
+
+.rich-text-editor-container {
+  --editor-bg: #ffffff;
+  --editor-surface: #f8fafc;
+  --editor-border: #cbd5e1;
+  --editor-divider: #e2e8f0;
+  --editor-text: #0f172a;
+  --editor-muted: #64748b;
+  --editor-accent: #2563eb;
+  --editor-active-bg: #dbeafe;
+  --editor-hover-bg: #eff6ff;
+  background-color: var(--editor-bg);
+  color: var(--editor-text);
 }
 
 .rich-text-editor-container ul li::marker,
 .prose ul li::marker,
 .rich-text-editor-container ol li::marker,
 .prose ol li::marker {
-  color: #000 !important;
+  color: currentColor !important;
 }
 
 .rich-text-editor-container ul,
@@ -406,6 +420,30 @@
   margin-bottom: 0.125rem !important;
 }
 
+.cv-preview-rich-text ul,
+.cv-preview-rich-text ol {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.cv-preview-rich-text li {
+  margin-top: 0 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.cv-preview-rich-text li:last-child {
+  margin-bottom: 0 !important;
+}
+
+.cv-preview-rich-text p {
+  margin-top: 0 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.cv-preview-rich-text p:last-child {
+  margin-bottom: 0 !important;
+}
+
 .rich-text-editor-container b,
 .rich-text-editor-container strong,
 .prose b,
@@ -423,6 +461,63 @@
 .rich-text-editor-container u,
 .prose u {
   text-decoration: underline !important;
+}
+
+.rich-text-editor-container .rsw-editor {
+  border: 0 !important;
+  background-color: var(--editor-bg) !important;
+  color: var(--editor-text) !important;
+}
+
+.rich-text-editor-container .rsw-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.125rem !important;
+  min-height: 2.5rem !important;
+  padding: 0.25rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--editor-divider) !important;
+  background-color: var(--editor-surface) !important;
+}
+
+.rich-text-editor-container .rsw-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  min-width: 2rem !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.5rem !important;
+  background: transparent !important;
+  color: var(--editor-muted) !important;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease !important;
+}
+
+.rich-text-editor-container .rsw-btn:hover {
+  background-color: var(--editor-hover-bg) !important;
+  border-color: var(--editor-divider) !important;
+  color: var(--editor-text) !important;
+}
+
+.rich-text-editor-container .rsw-btn[aria-pressed="true"] {
+  background-color: var(--editor-active-bg) !important;
+  border-color: color-mix(in srgb, var(--editor-accent) 38%, transparent) !important;
+  color: var(--editor-accent) !important;
+}
+
+.rich-text-editor-container .rsw-ce {
+  min-height: 120px !important;
+  padding: 1rem 1.25rem !important;
+  background-color: var(--editor-bg) !important;
+  color: var(--editor-text) !important;
+  line-height: 1.55 !important;
+  outline: none !important;
+}
+
+.rich-text-editor-container .rsw-ce:empty::before {
+  color: var(--editor-muted) !important;
 }
 
 /* Prevent strikethrough on CV contact info during PDF generation (mobile) */
@@ -805,29 +900,51 @@
 }
 
 .dark-cv .cv-form-panel .rich-text-editor-container {
-  background-color: #0b1220 !important;
+  --editor-bg: #0b1220;
+  --editor-surface: #111827;
+  --editor-border: #334155;
+  --editor-divider: #334155;
+  --editor-text: #e2e8f0;
+  --editor-muted: #94a3b8;
+  --editor-accent: #c4b5fd;
+  --editor-active-bg: #312e81;
+  --editor-hover-bg: #1e293b;
+  background-color: var(--editor-bg) !important;
   border-color: #334155 !important;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.2), 0 12px 30px rgba(2, 6, 23, 0.18) !important;
 }
 
 .dark-cv .cv-form-panel .rsw-editor,
 .dark-cv .cv-form-panel .rsw-ce {
-  background-color: #0b1220 !important;
-  color: #e2e8f0 !important;
+  background-color: var(--editor-bg) !important;
+  color: var(--editor-text) !important;
+}
+
+.dark-cv .cv-form-panel .rich-text-editor-container ul li::marker,
+.dark-cv .cv-form-panel .rich-text-editor-container ol li::marker {
+  color: var(--editor-text) !important;
 }
 
 .dark-cv .cv-form-panel .rsw-toolbar {
-  background-color: #111827 !important;
-  border-color: #334155 !important;
+  background-color: var(--editor-surface) !important;
+  border-color: var(--editor-divider) !important;
 }
 
 .dark-cv .cv-form-panel .rsw-btn {
-  color: #cbd5e1 !important;
+  color: var(--editor-muted) !important;
 }
 
 .dark-cv .cv-form-panel .rsw-btn:hover,
 .dark-cv .cv-form-panel .rsw-btn[aria-pressed="true"] {
-  background-color: #1e293b !important;
+  background-color: var(--editor-hover-bg) !important;
+  border-color: #475569 !important;
   color: #f8fafc !important;
+}
+
+.dark-cv .cv-form-panel .rsw-btn[aria-pressed="true"] {
+  background-color: var(--editor-active-bg) !important;
+  border-color: #6d28d9 !important;
+  color: var(--editor-accent) !important;
 }
 
 /* Ensure AI action buttons are dark-mode themed */

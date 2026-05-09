@@ -104,6 +104,8 @@ export const PersonalDetailsSection = React.memo(({
         <label htmlFor="dob" className={LABEL_CLASS_SM}>Date of Birth <span className="text-gray-400 font-normal">(Optional)</span></label>
         <div className="relative date-picker-wrapper">
           <DatePicker
+            id="dob"
+            name="dob"
             selected={personalInfo.dob ? new Date(personalInfo.dob) : null}
             onChange={(date) => {
               const newValue = date ? date.toISOString().split('T')[0] : '';

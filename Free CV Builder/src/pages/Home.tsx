@@ -573,20 +573,29 @@ export default function Home() {
         </div>
 
         {/* Download Confirmation Modal */}
-        {showDownloadConfirm && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className={`rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-white/20'}`}>
-              <div className="p-8">
-                {/* Premium Icon Block */}
-                <div className="relative w-20 h-20 mx-auto mb-6 group">
-                  <div className="absolute inset-0 bg-linear-to-tr from-violet-500/20 to-fuchsia-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
-                  <div className={`relative flex items-center justify-center w-full h-full backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(59,130,246,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden border ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/50 border-white/80'}`}>
-                    <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-                    <Download className="text-violet-600 w-9 h-9 drop-shadow-sm group-hover:translate-y-1 transition-transform duration-300" strokeWidth={1.5} />
-                  </div>
+        <AnimatePresence>
+          {showDownloadConfirm && (
+            <motion.div
+              className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+            >
+              <motion.div
+                className={`relative w-full max-w-sm overflow-hidden rounded-2xl border shadow-2xl ${isDarkMode ? 'bg-slate-900 border-slate-700/80 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              >
+              <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
+              <div className="p-7">
+                <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm ${isDarkMode ? 'bg-violet-500/10 border-violet-400/30' : 'bg-violet-50 border-violet-100'}`}>
+                  <Download className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
                 </div>
-                <h3 className={`text-xl font-bold text-center mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Download Resume</h3>
-                <p className={`text-sm text-center mb-8 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                <h3 className="mb-2 text-center text-xl font-bold">Download Resume</h3>
+                <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   Your resume will be exported as a PDF.
                   <br />
                   This usually takes a few seconds.
@@ -594,21 +603,22 @@ export default function Home() {
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={handlePrint}
-                    className="w-full py-3.5 px-4 bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-600/20 flex items-center justify-center"
+                    className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98]"
                   >
                     <Download size={18} className="mr-2" /> Yes, Download PDF
                   </button>
                   <button
                     onClick={() => setShowDownloadConfirm(false)}
-                    className={`w-full py-3.5 px-4 font-semibold rounded-xl transition-all border ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 border-gray-200'}`}
+                    className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
                   >
                     Cancel
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {themeTransition && (
           <motion.div
@@ -636,20 +646,29 @@ export default function Home() {
         )}
 
         {/* Reset Confirmation Modal */}
-        {showResetConfirm && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className={`rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-white/20'}`}>
-              <div className="p-8">
-                {/* Premium Icon Block */}
-                <div className="relative w-20 h-20 mx-auto mb-6 group">
-                  <div className="absolute inset-0 bg-linear-to-tr from-red-500/20 to-orange-500/20 rounded-full blur-xl scale-125 group-hover:scale-150 transition-transform duration-500 animate-pulse" />
-                  <div className={`relative flex items-center justify-center w-full h-full backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] group-hover:shadow-[0_8px_30px_rgb(239,68,68,0.15)] group-hover:-translate-y-1 transition-all duration-300 overflow-hidden border ${isDarkMode ? 'bg-slate-800/80 border-slate-700' : 'bg-white/50 border-white/80'}`}>
-                    <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-                    <RotateCcw className="text-red-500 w-9 h-9 drop-shadow-sm group-hover:-rotate-180 transition-transform duration-500" strokeWidth={1.5} />
-                  </div>
+        <AnimatePresence>
+          {showResetConfirm && (
+            <motion.div
+              className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+            >
+              <motion.div
+                className={`relative w-full max-w-sm overflow-hidden rounded-2xl border shadow-2xl ${isDarkMode ? 'bg-slate-900 border-slate-700/80 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              >
+              <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-red-600 via-orange-500 to-amber-400" />
+              <div className="p-7">
+                <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm ${isDarkMode ? 'bg-red-500/10 border-red-400/30' : 'bg-red-50 border-red-100'}`}>
+                  <RotateCcw className="h-8 w-8 text-red-500" strokeWidth={1.8} />
                 </div>
-                <h3 className={`text-xl font-bold text-center mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Reset All Data?</h3>
-                <p className={`text-sm text-center mb-8 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                <h3 className="mb-2 text-center text-xl font-bold">Reset All Data?</h3>
+                <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   This will clear all resume content and restore defaults.
                   <br />
                   This action cannot be undone.
@@ -657,26 +676,40 @@ export default function Home() {
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={handleReset}
-                    className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all shadow-lg shadow-red-600/20 flex items-center justify-center"
+                    className="flex w-full items-center justify-center rounded-xl bg-red-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 active:scale-[0.98]"
                   >
                     <RotateCcw size={18} className="mr-2" /> Yes, Reset Everything
                   </button>
                   <button
                     onClick={() => setShowResetConfirm(false)}
-                    className={`w-full py-3.5 px-4 font-semibold rounded-xl transition-all border ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 border-gray-200'}`}
+                    className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
                   >
                     Cancel
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Global Loading Overlay */}
-        {isGeneratingPDF && (
-          <div className={`fixed inset-0 z-100 flex flex-col items-center justify-center backdrop-blur-md animate-in fade-in duration-300 ${isDarkMode ? 'bg-slate-950/80' : 'bg-white/80'}`}>
-            <div className={`p-8 rounded-3xl shadow-2xl flex flex-col items-center border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-100'}`}>
+        <AnimatePresence>
+          {isGeneratingPDF && (
+            <motion.div
+              className={`fixed inset-0 z-100 flex flex-col items-center justify-center backdrop-blur-md ${isDarkMode ? 'bg-slate-950/80' : 'bg-white/80'}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <motion.div
+                className={`p-8 rounded-3xl shadow-2xl flex flex-col items-center border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-100'}`}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
               <div className="relative mb-6">
                 <div className={`w-16 h-16 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
                 <FileText className="absolute inset-0 m-auto text-violet-600" size={24} />
@@ -685,9 +718,10 @@ export default function Home() {
               <p className={`text-center max-w-[200px] ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                 Please wait while we prepare your professional resume...
               </p>
-            </div>
-          </div>
-        )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Global Toaster for Notifications */}
         <Toaster 

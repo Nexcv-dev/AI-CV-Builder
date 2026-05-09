@@ -42,8 +42,8 @@ export const DESIGN_SECTION_TITLE_CLASS = 'text-lg font-semibold';
 export const DESIGN_ICON_CLASS = 'text-violet-600 mr-2';
 
 // Modal styles
-export const MODAL_OVERLAY_CLASS = 'fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200';
-export const MODAL_CONTAINER_BASE = 'rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border';
+export const MODAL_OVERLAY_CLASS = 'fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm';
+export const MODAL_CONTAINER_BASE = 'rounded-3xl shadow-2xl overflow-hidden border';
 
 // Static data
 export const fonts = [

@@ -664,7 +664,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                   >
                     {(ALL_STEPS[wizardStep] === 'finalize' ? FINALIZE_SECTION_KEYS : [ALL_STEPS[wizardStep]])
                       .filter(Boolean)
-                      .map((key) => renderSection(key as string))}
+                      .map((key) => (
+                        <React.Fragment key={key}>
+                          {renderSection(key as string)}
+                        </React.Fragment>
+                      ))}
                   </SortableContext>
                 </motion.div>
               </AnimatePresence>

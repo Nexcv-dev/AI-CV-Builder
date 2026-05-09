@@ -106,12 +106,14 @@ const ImageCropper: React.FC<ImageCropperProps> = ({ image, onCropComplete, onCa
           <div className="flex items-center space-x-4 mb-6">
             <ZoomOut size={18} className="text-gray-400" />
             <input
+              id="cropZoom"
+              name="cropZoom"
               type="range"
               value={zoom}
               min={1}
               max={3}
               step={0.1}
-              aria-labelledby="Zoom"
+              aria-label="Zoom"
               onChange={(e) => onZoomChange(Number(e.target.value))}
               className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />

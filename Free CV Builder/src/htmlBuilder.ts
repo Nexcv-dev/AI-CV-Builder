@@ -13,7 +13,7 @@ export const sanitizeHtml = (html: string): string =>
   DOMPurify.sanitize(html || '', {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
     ALLOWED_ATTR: ['href', 'target', 'rel'],
-  });
+  }).replace(/>\s+</g, '><');
 
 // ─── Contrast color ──────────────────────────────────────────────────
 
