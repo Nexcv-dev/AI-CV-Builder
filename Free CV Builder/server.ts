@@ -542,7 +542,7 @@ function findSystemBrowser(): string | null {
 
 // Generate self-contained HTML from CV data — no SPA navigation needed
 export function generateCVHTML(cvData: any, template: string): string {
-    const { personalInfo = {}, experience = [], education = [], skills = [], projects = [], courses = [], awards = [], languages = [] } = cvData;
+    const { personalInfo = {}, experience = [], education = [], skills = [], projects = [], courses = [], awards = [], languages = [], references = [] } = cvData;
     const themeColor = cvData.themeColor || '#2563eb';
     const sidebarColor = cvData.sidebarColor || '#111827';
     const fontFamily = cvData.fontFamily || 'Inter';
@@ -552,7 +552,7 @@ export function generateCVHTML(cvData: any, template: string): string {
     const imageZoom = cvData.imageZoom || 1;
     const imageX = cvData.imageX || 0;
     const imageY = cvData.imageY || 0;
-    const sectionOrder = cvData.sectionOrder || ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages'];
+    const sectionOrder = cvData.sectionOrder || ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
     const hiddenSections = cvData.hiddenSections || [];
 
     // --- Import shared helpers inline to keep the same export signature ---
@@ -714,6 +714,7 @@ export function generateCVHTML(cvData: any, template: string): string {
             return section(`${heading(isPro ? 'Certifications & Courses' : 'Courses & Certifications')}${itemsList(items, isPro ? '16px' : '24px')}`);
         }
 
+
         if (key === 'awards' && awards.length > 0) {
             const items = awards.map((a: any) => {
                 if (isModern) {
@@ -734,6 +735,25 @@ export function generateCVHTML(cvData: any, template: string): string {
             }
             const li = languages.map((l: any) => `<div style="display:flex;align-items:center;justify-content:space-between;break-inside:avoid"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(l.name || '')}</span><span style="font-size:0.875rem;color:#6b7280">${esc(l.proficiency || '')}</span></div>`).join('');
             return section(`${heading('Languages')}<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:16px">${li}</div>`);
+        }
+
+        if (key === 'references' && references.length > 0) {
+            const items = references.map((r: any) => {
+                const subParts = [r.position, r.company].filter(Boolean).join(', ');
+                const sub = subParts ? `<div style="font-size:${isPro ? '0.75rem' : '0.875rem'};font-weight:500;color:#4b5563;margin-top:2px">${esc(subParts)}</div>` : '';
+                const contacts = [
+                    r.email ? `<div>${esc(r.email)}</div>` : '',
+                    r.phone ? `<div>${esc(r.phone)}</div>` : ''
+                ].filter(Boolean).join('');
+                const contactHtml = contacts ? `<div style="margin-top:4px;font-size:0.75rem;color:#6b7280;line-height:1.4">${contacts}</div>` : '';
+                return `<div style="break-inside:avoid"><h3 style="font-size:${isPro ? '0.875rem' : '1rem'};font-weight:700;color:#111827;margin:0">${esc(r.name || 'Reference Name')}</h3>${sub}${contactHtml}</div>`;
+            });
+
+            if (isPro) {
+                return section(`${heading('References')}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Contacts</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">${items.join('')}</div></div>`);
+            }
+            const gridCols = isModern ? '1fr' : '1fr 1fr';
+            return section(`${heading('References')}<div style="display:grid;grid-template-columns:${gridCols};column-gap:40px;row-gap:16px">${items.join('')}</div>`);
         }
 
         return '';
