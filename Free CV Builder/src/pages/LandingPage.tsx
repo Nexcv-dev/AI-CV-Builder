@@ -43,8 +43,8 @@ function StatCard({ label, value, suffix, color }: typeof stats[0]) {
   }, []);
 
   return (
-    <div ref={ref} className="landing-scroll-reveal flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] px-8 py-8 backdrop-blur-sm sm:py-10">
-      <span className={`bg-gradient-to-br ${color} bg-clip-text font-montserrat text-5xl font-black text-transparent sm:text-6xl`}>
+    <div ref={ref} className="landing-scroll-reveal flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-8 py-8 backdrop-blur-sm sm:py-10">
+      <span className={`bg-linear-to-br ${color} bg-clip-text font-montserrat text-5xl font-black text-transparent sm:text-6xl`}>
         {count.toLocaleString()}{suffix}
       </span>
       <span className="text-sm font-bold uppercase tracking-widest text-slate-400">{label}</span>
@@ -128,7 +128,7 @@ export default function LandingPage() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <div className="min-h-[100svh] overflow-x-hidden bg-slate-950 text-white">
+    <div className="min-h-svh overflow-x-hidden bg-slate-950 text-white">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-slate-950/80 shadow-sm shadow-black/20 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
@@ -157,7 +157,7 @@ export default function LandingPage() {
 
           {/* Mobile Hamburger */}
           <button
-            className="md:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-white transition-all hover:bg-white/[0.12] active:scale-95"
+            className="md:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition-all hover:bg-white/12 active:scale-95"
             onClick={() => setMobileMenuOpen((o) => !o)}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
@@ -209,7 +209,7 @@ export default function LandingPage() {
           }}
         >
           {/* Accent bar */}
-          <div className="h-1 w-full bg-gradient-to-r from-violet-600 to-emerald-500" />
+          <div className="h-1 w-full bg-linear-to-r from-violet-600 to-emerald-500" />
 
           <div className="p-4 flex flex-col gap-1">
             {[
@@ -230,7 +230,7 @@ export default function LandingPage() {
                     transition: `transform 0.35s cubic-bezier(0.22,1,0.36,1) ${delay}, opacity 0.25s ease ${delay}, background 0.15s`,
                   }}
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06]">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/6">
                     <Icon size={15} className="text-violet-400" />
                   </span>
                   {label}
@@ -247,7 +247,7 @@ export default function LandingPage() {
                     transition: `transform 0.35s cubic-bezier(0.22,1,0.36,1) ${delay}, opacity 0.25s ease ${delay}, background 0.15s`,
                   }}
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06]">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/6">
                     <Icon size={15} className="text-violet-400" />
                   </span>
                   {label}
@@ -268,14 +268,14 @@ export default function LandingPage() {
                 key={label}
                 to={href}
                 onClick={closeMobileMenu}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-semibold text-slate-400 transition-all hover:bg-white/[0.05] hover:text-slate-200 active:scale-[0.98]"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-semibold text-slate-400 transition-all hover:bg-white/5 hover:text-slate-200 active:scale-[0.98]"
                 style={{
                   transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
                   opacity: mobileMenuOpen ? 1 : 0,
                   transition: `transform 0.35s cubic-bezier(0.22,1,0.36,1) ${delay}, opacity 0.25s ease ${delay}, background 0.15s`,
                 }}
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.04]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/4">
                   <Icon size={13} className="text-slate-500" />
                 </span>
                 {label}
@@ -312,7 +312,7 @@ export default function LandingPage() {
       </div>
 
       <main>
-        <section className="landing-hero relative min-h-[100svh] overflow-hidden pt-16 md:min-h-[94svh]">
+        <section className="landing-hero relative min-h-svh overflow-hidden pt-16 md:min-h-[94svh]">
           <div className="absolute inset-0">
             <div className="landing-color-wash absolute -left-24 top-20 h-80 w-80 rounded-full bg-violet-500/24 blur-3xl" />
             <div className="landing-color-wash landing-color-wash-two absolute bottom-10 right-1/3 h-72 w-72 rounded-full bg-emerald-400/18 blur-3xl" />
@@ -359,7 +359,7 @@ export default function LandingPage() {
                 </Link>
                 <a
                   href="#templates"
-                  className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-3.5 text-sm font-extrabold text-white backdrop-blur transition-all hover:bg-white/[0.1] active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
+                  className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/6 px-5 py-3.5 text-sm font-extrabold text-white backdrop-blur transition-all hover:bg-white/10 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
                   See Templates
                 </a>
@@ -367,7 +367,7 @@ export default function LandingPage() {
 
               <div className="landing-reveal mt-7 grid max-w-2xl gap-2.5 sm:mt-9 sm:grid-cols-3 sm:gap-3">
                 {steps.map(({ title, label, icon: Icon, color, bg }, index) => (
-                  <div key={title} className="landing-workflow-card group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 shadow-xl shadow-black/20 backdrop-blur sm:p-4">
+                  <div key={title} className="landing-workflow-card group relative overflow-hidden rounded-2xl border border-white/10 bg-white/7 p-3.5 shadow-xl shadow-black/20 backdrop-blur sm:p-4">
                     <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#7c3aed,#10b981)] opacity-70" />
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -415,7 +415,7 @@ export default function LandingPage() {
                 <h2 className="mt-3 max-w-xl font-montserrat text-2xl font-black leading-tight min-[390px]:text-3xl sm:text-5xl">
                   Less typing. More finished resume.
                 </h2>
-                <div className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-bold text-slate-200 sm:mt-7">
+                <div className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-bold text-slate-200 sm:mt-7">
                   <Zap size={18} className="text-emerald-300" />
                   Smart tools, clean controls, fast export
                 </div>
@@ -425,7 +425,7 @@ export default function LandingPage() {
                 {featureTiles.map(({ icon: Icon, title, text, tone }, index) => (
                   <article
                     key={title}
-                    className={`landing-scroll-reveal landing-feature-tile landing-tone-${tone} group rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur transition-all hover:-translate-y-1 hover:bg-white/[0.11] sm:p-5`}
+                    className={`landing-scroll-reveal landing-feature-tile landing-tone-${tone} group rounded-2xl border border-white/10 bg-white/7 p-4 backdrop-blur transition-all hover:-translate-y-1 hover:bg-white/11 sm:p-5`}
                     style={{ '--scroll-delay': `${index * 100}ms` } as React.CSSProperties}
                   >
                     <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-950 transition-transform group-hover:scale-110 sm:mb-5 sm:h-12 sm:w-12">
@@ -460,10 +460,10 @@ export default function LandingPage() {
                 <Link
                   to="/builder"
                   key={template.name}
-                  className="landing-scroll-reveal landing-template-card group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/20"
+                  className="landing-scroll-reveal landing-template-card group overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/20"
                   style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}
                 >
-                  <div className="aspect-[4/5] overflow-hidden bg-slate-800">
+                  <div className="aspect-4/5 overflow-hidden bg-slate-800">
                     <img
                       src={template.src}
                       alt={`${template.name} CV template preview`}
@@ -500,7 +500,7 @@ export default function LandingPage() {
               {testimonials.map((testimonial, index) => (
                 <article
                   key={testimonial.name}
-                  className="landing-scroll-reveal landing-testimonial-card relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] p-5 shadow-xl shadow-black/10 sm:p-6"
+                  className="landing-scroll-reveal landing-testimonial-card relative overflow-hidden rounded-2xl border border-white/10 bg-white/6 p-5 shadow-xl shadow-black/10 sm:p-6"
                   style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}
                 >
                   <div className={`absolute inset-x-0 top-0 h-1.5 ${testimonial.color}`} />
