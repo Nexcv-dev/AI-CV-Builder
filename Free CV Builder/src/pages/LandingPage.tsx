@@ -119,10 +119,33 @@ export default function LandingPage() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Lock body scroll when mobile menu is open
+  // Lock scroll when mobile menu is open (works on iOS Safari too)
   useEffect(() => {
-    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    if (mobileMenuOpen) {
+      const scrollY = window.scrollY;
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      const scrollY = document.body.style.top;
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0', 10) * -1);
+      }
+    }
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
   }, [mobileMenuOpen]);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -305,7 +328,7 @@ export default function LandingPage() {
                 transition: 'opacity 0.3s ease 300ms',
               }}
             >
-              NexCV v1.0.0
+              NexCV v{__APP_VERSION__}
             </p>
           </div>
         </nav>
@@ -458,7 +481,7 @@ export default function LandingPage() {
             <div className="mt-8 grid gap-4 sm:mt-10 md:grid-cols-3 md:gap-5">
               {templates.map((template, index) => (
                 <Link
-                  to="/builder"
+                  to={`/builder?template=${template.name.toLowerCase()}`}
                   key={template.name}
                   className="landing-scroll-reveal landing-template-card group overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/20"
                   style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}
