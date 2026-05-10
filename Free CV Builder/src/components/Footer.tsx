@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, FileText, Mail, ShieldCheck, Sparkles } from 'lucide-react';
 
@@ -30,7 +30,7 @@ export const Footer = () => {
       <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-emerald-400/15 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-        <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] shadow-2xl shadow-black/20 sm:mb-10">
+        <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-2xl shadow-black/20 sm:mb-10">
           <div className="grid gap-5 p-5 sm:gap-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-extrabold text-emerald-200 sm:text-sm">
@@ -66,7 +66,7 @@ export const Footer = () => {
                 { icon: ShieldCheck, label: 'Private editing' },
                 { icon: Mail, label: 'Ready to send' },
               ].map(({ icon: Icon, label }) => (
-                <span key={label} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-bold text-slate-200">
+                <span key={label} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-2 text-xs font-bold text-slate-200">
                   <Icon size={15} className="text-emerald-300" />
                   {label}
                 </span>
@@ -92,7 +92,7 @@ export const Footer = () => {
 
         <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-sm font-medium text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>Copyright {new Date().getFullYear()} NexCV. All rights reserved.</p>
-          <p className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-bold text-slate-300">v{__APP_VERSION__}</p>
+          <p className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-slate-300">v{__APP_VERSION__}</p>
         </div>
       </div>
     </footer>

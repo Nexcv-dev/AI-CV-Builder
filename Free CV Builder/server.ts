@@ -820,7 +820,6 @@ export function generateCVHTML(cvData: any, template: string): string {
         <span style="font-size:0.75rem;color:${sidebarMutedColor}">${esc(l.proficiency || '')}</span>
       </div>`
         ).join('');
-
         bodyContent = `
     <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed; position:relative; z-index:2">
       <tr>

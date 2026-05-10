@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, FileUp, Upload, Loader2, Info, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, FileUp, Upload, Loader2 } from 'lucide-react';
 import { MODAL_OVERLAY_CLASS, MODAL_CONTAINER_BASE } from './constants';
 
 interface ImportModalsProps {
@@ -159,20 +159,17 @@ export const ImportModals = React.memo(({
                     />
                   </label>
 
-                  <p className={`text-center text-xs mt-4 flex items-center justify-center gap-1.5 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}>
-                    <Info size={14} />
+                  <p className={`text-center text-xs mt-4 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}>
                     AI will auto-fill all fields from your resume, or you can skip and fill manually
                   </p>
 
                   {importMessage && (
-                    <div className={`mt-5 p-4 rounded-xl text-sm flex items-center justify-center shadow-sm ${importMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-                      }`}>
-                      {importMessage.type === 'success' ? (
-                        <CheckCircle size={18} className="mr-2 shrink-0" />
-                      ) : (
-                        <AlertCircle size={18} className="mr-2 shrink-0" />
-                      )}
-                      <span className="font-medium text-center">{importMessage.text}</span>
+                    <div className={`mt-5 p-4 rounded-xl text-sm text-center font-medium shadow-sm border ${
+                      importMessage.type === 'success'
+                        ? (isDarkMode ? 'bg-green-900/30 text-green-300 border-green-700/50' : 'bg-green-50 text-green-700 border-green-200')
+                        : (isDarkMode ? 'bg-red-900/30 text-red-300 border-red-700/50' : 'bg-red-50 text-red-700 border-red-200')
+                    }`}>
+                      {importMessage.text}
                     </div>
                   )}
                 </div>
