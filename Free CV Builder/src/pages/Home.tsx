@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
@@ -115,6 +116,20 @@ export default function Home() {
   const [initialPromptRequest, setInitialPromptRequest] = useState(0);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // On mount: pick up ?template= from landing page and pre-select it
+  useEffect(() => {
+    const paramTemplate = searchParams.get('template');
+    if (paramTemplate && ['classic', 'modern', 'professional'].includes(paramTemplate)) {
+      setTemplate(paramTemplate as 'classic' | 'modern' | 'professional');
+    }
+    // Remove the query param so it doesn't persist on manual refresh
+    if (searchParams.has('template')) {
+      setSearchParams({}, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Resizer logic - uses ref to avoid recreating callbacks
   useEffect(() => {
