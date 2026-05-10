@@ -1,6 +1,56 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Download, FileText, Palette, Quote, Sparkles, Star, Wand2, Zap } from 'lucide-react';
+import { ArrowRight, Download, FileText, Palette, Quote, Sparkles, Star, Users, Wand2, Zap } from 'lucide-react';
+
+const stats = [
+  { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
+  { label: 'Active Users', value: 4300, suffix: '+', color: 'from-emerald-400 to-emerald-600' },
+  { label: 'Templates Available', value: 3, suffix: '', color: 'from-violet-400 to-emerald-400' },
+];
+
+function useCountUp(target: number, duration = 2200, started: boolean) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!started) return;
+    let startTime: number | null = null;
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      setCount(Math.floor(easeOut(progress) * target));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [target, duration, started]);
+  return count;
+}
+
+function StatCard({ label, value, suffix, color }: typeof stats[0]) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [started, setStarted] = useState(false);
+  const count = useCountUp(value, 2400, started);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setStarted(true); observer.disconnect(); } },
+      { threshold: 0.4 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className="landing-scroll-reveal flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] px-8 py-8 backdrop-blur-sm sm:py-10">
+      <span className={`bg-gradient-to-br ${color} bg-clip-text font-montserrat text-5xl font-black text-transparent sm:text-6xl`}>
+        {count.toLocaleString()}{suffix}
+      </span>
+      <span className="text-sm font-bold uppercase tracking-widest text-slate-400">{label}</span>
+    </div>
+  );
+}
 
 const templates = [
   { name: 'Professional', src: '/templates/professional.png' },
@@ -165,6 +215,25 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Stats Counter Section ── */}
+        <section className="relative overflow-hidden bg-slate-900 py-12 sm:py-16">
+          <div className="absolute -left-20 top-0 h-64 w-64 rounded-full bg-violet-500/12 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl" />
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-10 text-center landing-scroll-reveal">
+              <p className="text-sm font-black uppercase tracking-widest text-violet-400">By the Numbers</p>
+              <h2 className="mt-3 font-montserrat text-2xl font-black text-white sm:text-4xl">
+                Trusted by resume builders
+              </h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3 sm:gap-6">
+              {stats.map((stat) => (
+                <StatCard key={stat.label} {...stat} />
+              ))}
             </div>
           </div>
         </section>
