@@ -361,7 +361,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             return;
           }
           console.error('Error importing CV:', error);
-          setImportMessage({ type: 'error', text: `Import failed: ${error.message}` });
+          // Use a friendly message — avoid exposing technical details to end users
+          const isNetworkError = !error?.message?.trim() || error?.name === 'TypeError';
+          const errorMsg = isNetworkError
+            ? 'Something went wrong. Please try again in a moment.'
+            : error.message;
+          setImportMessage({ type: 'error', text: errorMsg });
         } finally {
           setIsImporting(false);
         }
