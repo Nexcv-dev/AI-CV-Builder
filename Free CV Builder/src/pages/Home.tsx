@@ -508,7 +508,7 @@ export default function Home() {
             className={`${mobileView === 'edit' ? 'flex max-lg:w-full! max-lg:min-w-0!' : 'hidden'} lg:flex h-full min-h-0 border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
             style={{ width: `${formWidth}%`, minWidth: '420px' }}
           >
-            <div className="h-full min-h-0 w-full overflow-y-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="h-full min-h-0 w-full overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <CVForm
                 key={resetKey}
                 cvData={cvData}
@@ -540,7 +540,7 @@ export default function Home() {
           >
             <div
               ref={previewContainerRef}
-              className="preview-container-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide p-4 pb-6 lg:pb-8 flex flex-col items-center justify-start overscroll-y-none overscroll-x-none print:p-0 print:overflow-visible"
+              className="preview-container-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 pb-6 lg:pb-8 flex flex-col items-center justify-start overscroll-y-none overscroll-x-none print:p-0 print:overflow-visible"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <div
