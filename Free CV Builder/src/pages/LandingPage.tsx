@@ -305,7 +305,7 @@ export default function LandingPage() {
                 transition: 'opacity 0.3s ease 300ms',
               }}
             >
-              NexCV v1.0.0
+              NexCV v{__APP_VERSION__}
             </p>
           </div>
         </nav>
