@@ -143,7 +143,7 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
             </button>
             <AnimatePresence>
               {isFontDropdownOpen && (
-                <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.2 }} className={`absolute z-100 w-full mt-2 max-h-72 overflow-y-auto overscroll-contain rounded-2xl shadow-xl py-2 border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+                <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={{ duration: 0.2 }} className={`absolute z-100 w-full mt-2 max-h-72 overflow-y-auto overscroll-contain rounded-2xl shadow-xl py-2 border light-scrollbar ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
                   {fonts.map((f) => (
                     <button key={f.name} type="button" onClick={() => { handleThemeChange('fontFamily', f.name); setIsFontDropdownOpen(false); }} className={`w-full flex items-center px-4 py-3 transition-colors text-left ${cvData.fontFamily === f.name ? (isDarkMode ? 'bg-violet-900/40' : 'bg-violet-50/50') : (isDarkMode ? 'hover:bg-slate-700/50' : 'hover:bg-violet-50')}`}>
                       <div className={`flex flex-col w-full ${f.className}`}>
