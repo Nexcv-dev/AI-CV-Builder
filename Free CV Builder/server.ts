@@ -561,7 +561,7 @@ export function generateCVHTML(cvData: any, template: string): string {
     const sanitize = (html: string) => DOMPurify.sanitize(html || '', {
         ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
         ALLOWED_ATTR: ['href', 'target', 'rel']
-    });
+    }).replace(/>\s+</g, '><');
 
     const getContrastColor = (hex: string) => {
         if (!hex || hex.length < 7) return '#ffffff';
@@ -587,7 +587,7 @@ export function generateCVHTML(cvData: any, template: string): string {
         `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">${content}</section>`;
 
     const desc = (html: string) => html
-        ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(html)}</div>` : '';
+        ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(html)}</div>` : '';
 
     const dateInline = (s: string, e: string) =>
         `${esc(s || '')} ${s && e ? '—' : ''} ${esc(e || '')}`;
@@ -632,7 +632,7 @@ export function generateCVHTML(cvData: any, template: string): string {
         if (key === 'summary' && personalInfo.summary) {
             const summaryTitle = isPro ? 'Professional Summary' : 'Profile';
             const summaryDesc = isPro
-                ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>`
+                ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>`
                 : desc(personalInfo.summary);
             return section(`${heading(summaryTitle)}${summaryDesc}`);
         }
@@ -693,7 +693,7 @@ export function generateCVHTML(cvData: any, template: string): string {
         if (key === 'projects' && projects.length > 0) {
             const items = projects.map((p: any) => {
                 const link = p.link ? `<a href="${esc(p.link)}" style="font-size:0.75rem;font-weight:500;color:${themeColor};text-decoration:none">View Project</a>` : '';
-                const d = p.description ? `<div style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px;white-space:pre-wrap;word-break:break-word">${sanitize(p.description)}</div>` : '';
+                const d = p.description ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px;white-space:pre-wrap;word-break:break-word">${sanitize(p.description)}</div>` : '';
                 if (isModern) {
                     return `<div style="break-inside:avoid"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">${title3(p.name || 'Project Name')}${link}</div>${d}</div>`;
                 }
@@ -934,6 +934,11 @@ export function generateCVHTML(cvData: any, template: string): string {
     a { color: inherit; text-decoration: none; }
     ul { padding-left: 20px; margin: 4px 0; }
     li { margin-bottom: 4px; }
+    .cv-preview-rich-text ul, .cv-preview-rich-text ol { margin-top: 0; margin-bottom: 0; }
+    .cv-preview-rich-text li { margin-top: 0; margin-bottom: 0.25rem; }
+    .cv-preview-rich-text li:last-child { margin-bottom: 0; }
+    .cv-preview-rich-text p { margin-top: 0; margin-bottom: 0.25rem; }
+    .cv-preview-rich-text p:last-child { margin-bottom: 0; }
     h1, h2, h3 { margin: 0; }
     table, tbody, tr, td, th, thead, tfoot {
       page-break-inside: auto !important;
