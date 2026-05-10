@@ -3,22 +3,26 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #67 from bimanthaperera-lab/test/overview (27e878b) - Bimantha Perera, 9 seconds ago
-* Fix Issues (5486cf6) - Bimantha Perera, 3 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (ad0df7f) - bimanthaperera-lab, 14 hours ago
-* Merge pull request #62 from bimanthaperera-lab/test/overview (2211d7e) - Bimantha Perera, 14 hours ago
-* Remove Optional text (33d9dd4) - Bimantha Perera, 14 hours ago
+* Merge pull request #68 from bimanthaperera-lab/test/overview (85e9feb) - Bimantha Perera, 8 seconds ago
+* fix font scroll bar issues (98e29e7) - Bimantha Perera, 6 minutes ago
+* chore: bump version to 0.1.5 (65e376e) - bimanthaperera-lab, 17 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (98e51e8) - bimanthaperera-lab, 24 minutes ago
+* Merge pull request #67 from bimanthaperera-lab/test/overview (27e878b) - Bimantha Perera, 24 minutes ago
+* Fix Issues (5486cf6) - Bimantha Perera, 27 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (ad0df7f) - bimanthaperera-lab, 15 hours ago
+* Merge pull request #62 from bimanthaperera-lab/test/overview (2211d7e) - Bimantha Perera, 15 hours ago
+* Remove Optional text (33d9dd4) - Bimantha Perera, 15 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (1c87e33) - bimanthaperera-lab, 17 hours ago
 * Merge pull request #58 from bimanthaperera-lab/test/overview (4727886) - Bimantha Perera, 17 hours ago
 * Bug Fixing and UI Improvements (40980bd) - Bimantha Perera, 17 hours ago
-* Update Home.tsx (e903434) - Bimantha Perera, 18 hours ago
+* Update Home.tsx (e903434) - Bimantha Perera, 19 hours ago
 * Fix: When reset at the preview app was bug (362c49e) - Bimantha Perera, 19 hours ago
-* chore: bump version to 0.1.4 (eaa5eba) - bimanthaperera-lab, 19 hours ago
-* Update README.md (3d7b645) - Bimantha Perera, 19 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (f4c8f0f) - bimanthaperera-lab, 19 hours ago
-* Merge pull request #57 from bimanthaperera-lab/test/overview (a074a56) - Bimantha Perera, 19 hours ago
-* Rebranding App name and (9548944) - Bimantha Perera, 19 hours ago
-* Add Patch to Fix Drag Issue (dcd6bbd) - Bimantha Perera, 20 hours ago
+* chore: bump version to 0.1.4 (eaa5eba) - bimanthaperera-lab, 20 hours ago
+* Update README.md (3d7b645) - Bimantha Perera, 20 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (f4c8f0f) - bimanthaperera-lab, 20 hours ago
+* Merge pull request #57 from bimanthaperera-lab/test/overview (a074a56) - Bimantha Perera, 20 hours ago
+* Rebranding App name and (9548944) - Bimantha Perera, 20 hours ago
+* Add Patch to Fix Drag Issue (dcd6bbd) - Bimantha Perera, 21 hours ago
 * Add New Reference section (9de461e) - Bimantha Perera, 21 hours ago
 * Fix: Remove pulse animation when change the dark/white mode (078783a) - Bimantha Perera, 21 hours ago
 * Fix: Show 3 Languages in Classic template first raw and reduce gap between language proficiency (e6d40da) - Bimantha Perera, 21 hours ago
