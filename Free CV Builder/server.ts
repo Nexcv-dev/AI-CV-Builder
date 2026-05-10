@@ -821,45 +821,25 @@ export function generateCVHTML(cvData: any, template: string): string {
       </div>`
         ).join('');
 
-        const sidebarSections = (cvData.sectionOrder || [])
-            .filter((key: string) => ['personalDetails', 'skills', 'languages'].includes(key));
-
-        const renderSidebarSection = (key: string) => {
-            if (key === 'personalDetails' && personalDetails) {
-                return `<div style="margin-bottom:32px">
-            <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Personal Info</h2>
-            <div style="display:flex;flex-direction:column;gap:12px;font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:${sidebarMutedColor}">${personalDetails}</div>
-          </div>`;
-            }
-            if (key === 'skills' && skills.length > 0) {
-                return `<div style="margin-top:16px;margin-bottom:32px">
-            <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Skills</h2>
-            <div style="display:flex;flex-direction:column;gap:16px">${sidebarSkillsHTML}</div>
-          </div>`;
-            }
-            if (key === 'languages' && languages.length > 0) {
-                return `<div style="margin-top:16px;margin-bottom:32px">
-            <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Languages</h2>
-            <div style="display:flex;flex-direction:column;gap:12px">${sidebarLanguages}</div>
-          </div>`;
-            }
-            return '';
-        };
-
-        const sidebarContent = sidebarSections.map(renderSidebarSection).join('');
-
-        bodyContent = `
-    <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed; position:relative; z-index:2">
-      <tr>
-        <td style="width:30%; vertical-align:top; padding:15mm; padding-top:15mm; color:${sidebarTextColor}; position:relative; z-index:2">
-          ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
-          
           <div style="margin-bottom:32px">
             <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Details</h2>
             <div style="display:flex;flex-direction:column;gap:16px;font-size:0.75rem;color:${sidebarMutedColor}">${sidebarDetails}</div>
           </div>
 
-          ${sidebarContent}
+          ${personalDetails ? `<div style="margin-bottom:32px">
+            <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Personal Info</h2>
+            <div style="display:flex;flex-direction:column;gap:12px;font-size:0.625rem;text-transform:uppercase;letter-spacing:0.05em;color:${sidebarMutedColor}">${personalDetails}</div>
+          </div>` : ''}
+
+          ${skills.length > 0 ? `<div style="margin-top:16px">
+            <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Skills</h2>
+            <div style="display:flex;flex-direction:column;gap:16px">${sidebarSkillsHTML}</div>
+          </div>` : ''}
+
+          ${languages.length > 0 ? `<div style="margin-top:32px">
+            <h2 style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid ${sidebarTextColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};margin-bottom:16px;padding-bottom:4px;color:${sidebarTextColor}">Languages</h2>
+            <div style="display:flex;flex-direction:column;gap:12px">${sidebarLanguages}</div>
+          </div>` : ''}
         </td>
         <td style="width:70%; vertical-align:top; padding:20mm; padding-top:0; background:white; position:relative; z-index:2">
           <header style="margin-bottom:40px; padding-top:27mm">

@@ -91,14 +91,47 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
   };
 
   const renderModernSidebar = () => {
-    const sidebarSections = (cvData.sectionOrder || [])
-      .filter(key => ['personalDetails', 'skills', 'languages'].includes(key));
+    return (
+      <div className="w-full text-white p-[15mm] flex flex-col h-full modern-sidebar" style={{ backgroundColor: sidebarColor }}>
+        {profileImage && (
+          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/20 mx-auto mb-6 flex items-center justify-center">
+            <img
+              src={profileImage}
+              alt="Profile"
+              className="w-full h-full object-cover"
+              style={{ transform: `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)` }}
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        )}
 
-    const renderSidebarSection = (key: string) => {
-      switch (key) {
-        case 'personalDetails':
-          return (personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus) ? (
-            <div key="personalDetails" className="mb-8 break-inside-avoid print:break-inside-avoid!" data-page-break="avoid">
+        <div className="mb-8">
+          <h2 className="text-base font-bold uppercase tracking-widest border-b mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Details</h2>
+          <div className="space-y-4 text-xs" style={{ color: sidebarMutedColor }}>
+            {personalInfo.email && (
+              <div className="flex items-center gap-2">
+                <Mail size={14} className="shrink-0" />
+                <span className="break-all whitespace-normal" style={{ wordBreak: 'break-word', textDecoration: 'none' }}>{personalInfo.email}</span>
+              </div>
+            )}
+            {personalInfo.phone && (
+              <div className="flex items-center gap-2">
+                <Phone size={14} className="shrink-0" />
+                <span className="break-all whitespace-normal" style={{ wordBreak: 'break-word', textDecoration: 'none' }}>{personalInfo.phone}</span>
+              </div>
+            )}
+            {personalInfo.address && (
+              <div className="flex items-center gap-2">
+                <MapPin size={14} className="shrink-0" />
+                <span className="wrap-break-word whitespace-normal" style={{ wordBreak: 'break-word' }}>{personalInfo.address}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mb-8 break-inside-avoid print:break-inside-avoid!" data-page-break="avoid">
+          {(personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus) && (
+            <>
               <h2 className="text-base font-bold uppercase tracking-widest border-b border-white/20 mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Personal Info</h2>
               <div className="space-y-3.5 text-[10px] uppercase tracking-wider font-medium" style={{ color: sidebarMutedColor }}>
                 {personalInfo.dob && (
@@ -138,110 +171,71 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   </div>
                 )}
               </div>
-            </div>
-          ) : null;
-        case 'skills':
-          return (skills.length > 0) ? (
-            <div key="skills" className="mt-4 mb-8">
+            </>
+          )}
+        </div>
+
+        {skills.length > 0 && (() => {
+          const hasCategories = skills.some(skill => skill.category?.trim());
+
+          if (!hasCategories) {
+            return (
+              <div className="mt-4">
+                <h2 className="text-base font-bold uppercase tracking-widest border-b border-white/20 mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Skills</h2>
+                <div className="space-y-4">
+                  {skills.map((skill) => (
+                    <div key={skill.id} className="flex flex-col space-y-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: sidebarTextColor }}>{skill.name}</span>
+                      {renderBars(skill.level, themeColor)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          const skillsByCategory = skills.reduce((acc, skill) => {
+            const category = skill.category?.trim() || 'Other Skills';
+            if (!acc[category]) acc[category] = [];
+            acc[category].push(skill);
+            return acc;
+          }, {} as Record<string, typeof skills>);
+
+          return (
+            <div className="mt-4">
               <h2 className="text-base font-bold uppercase tracking-widest border-b border-white/20 mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Skills</h2>
-              {(() => {
-                const hasCategories = skills.some(skill => skill.category?.trim());
-                if (!hasCategories) {
-                  return (
+              <div className="space-y-6">
+                {Object.entries(skillsByCategory).map(([category, catSkills]) => (
+                  <div key={category} className="space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2" style={{ color: sidebarTextColor }}>{category}</h3>
                     <div className="space-y-4">
-                      {skills.map((skill) => (
+                      {catSkills.map((skill) => (
                         <div key={skill.id} className="flex flex-col space-y-1.5">
                           <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: sidebarTextColor }}>{skill.name}</span>
                           {renderBars(skill.level, themeColor)}
                         </div>
                       ))}
                     </div>
-                  );
-                }
-                const skillsByCategory = skills.reduce((acc, skill) => {
-                  const category = skill.category?.trim() || 'Other Skills';
-                  if (!acc[category]) acc[category] = [];
-                  acc[category].push(skill);
-                  return acc;
-                }, {} as Record<string, typeof skills>);
-                return (
-                  <div className="space-y-6">
-                    {Object.entries(skillsByCategory).map(([category, catSkills]) => (
-                      <div key={category} className="space-y-3">
-                        <h3 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2" style={{ color: sidebarTextColor }}>{category}</h3>
-                        <div className="space-y-4">
-                          {catSkills.map((skill) => (
-                            <div key={skill.id} className="flex flex-col space-y-1.5">
-                              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: sidebarTextColor }}>{skill.name}</span>
-                              {renderBars(skill.level, themeColor)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
-          ) : null;
-        case 'languages':
-          return (cvData.languages && cvData.languages.length > 0) ? (
-            <div key="languages" className="mt-4 mb-8">
-              <h2 className="text-base font-bold uppercase tracking-widest border-b border-white/20 mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Languages</h2>
-              <div className="space-y-3">
-                {cvData.languages.map((lang) => (
-                  <div key={lang.id} className="flex justify-between items-center text-sm">
-                    <span className="font-semibold" style={{ color: sidebarTextColor }}>{lang.name}</span>
-                    <span className="text-xs" style={{ color: sidebarMutedColor }}>{lang.proficiency}</span>
                   </div>
                 ))}
               </div>
             </div>
-          ) : null;
-        default:
-          return null;
-      }
-    };
+          );
+        })()}
 
-    return (
-      <div className="w-full text-white p-[15mm] flex flex-col h-full modern-sidebar" style={{ backgroundColor: sidebarColor }}>
-        {profileImage && (
-          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/20 mx-auto mb-6 flex items-center justify-center">
-            <img
-              src={profileImage}
-              alt="Profile"
-              className="w-full h-full object-cover"
-              style={{ transform: `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)` }}
-              referrerPolicy="no-referrer"
-            />
+        {cvData.languages && cvData.languages.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-base font-bold uppercase tracking-widest border-b border-white/20 mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Languages</h2>
+            <div className="space-y-3">
+              {cvData.languages.map((lang) => (
+                <div key={lang.id} className="flex justify-between items-center text-sm">
+                  <span className="font-semibold" style={{ color: sidebarTextColor }}>{lang.name}</span>
+                  <span className="text-xs" style={{ color: sidebarMutedColor }}>{lang.proficiency}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-
-        <div className="mb-8">
-          <h2 className="text-base font-bold uppercase tracking-widest border-b mb-4 pb-1" style={{ color: sidebarTextColor, borderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' }}>Details</h2>
-          <div className="space-y-4 text-xs" style={{ color: sidebarMutedColor }}>
-            {personalInfo.email && (
-              <div className="flex items-center gap-2">
-                <Mail size={14} className="shrink-0" />
-                <span className="break-all whitespace-normal" style={{ wordBreak: 'break-word', textDecoration: 'none' }}>{personalInfo.email}</span>
-              </div>
-            )}
-            {personalInfo.phone && (
-              <div className="flex items-center gap-2">
-                <Phone size={14} className="shrink-0" />
-                <span className="break-all whitespace-normal" style={{ wordBreak: 'break-word', textDecoration: 'none' }}>{personalInfo.phone}</span>
-              </div>
-            )}
-            {personalInfo.address && (
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="shrink-0" />
-                <span className="wrap-break-word whitespace-normal" style={{ wordBreak: 'break-word' }}>{personalInfo.address}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {sidebarSections.map(renderSidebarSection)}
       </div>
     );
   };
