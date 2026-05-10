@@ -3,41 +3,44 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #68 from bimanthaperera-lab/test/overview (85e9feb) - Bimantha Perera, 8 seconds ago
-* fix font scroll bar issues (98e29e7) - Bimantha Perera, 6 minutes ago
-* chore: bump version to 0.1.5 (65e376e) - bimanthaperera-lab, 17 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (98e51e8) - bimanthaperera-lab, 24 minutes ago
-* Merge pull request #67 from bimanthaperera-lab/test/overview (27e878b) - Bimantha Perera, 24 minutes ago
-* Fix Issues (5486cf6) - Bimantha Perera, 27 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (ad0df7f) - bimanthaperera-lab, 15 hours ago
-* Merge pull request #62 from bimanthaperera-lab/test/overview (2211d7e) - Bimantha Perera, 15 hours ago
-* Remove Optional text (33d9dd4) - Bimantha Perera, 15 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (1c87e33) - bimanthaperera-lab, 17 hours ago
-* Merge pull request #58 from bimanthaperera-lab/test/overview (4727886) - Bimantha Perera, 17 hours ago
-* Bug Fixing and UI Improvements (40980bd) - Bimantha Perera, 17 hours ago
-* Update Home.tsx (e903434) - Bimantha Perera, 19 hours ago
-* Fix: When reset at the preview app was bug (362c49e) - Bimantha Perera, 19 hours ago
-* chore: bump version to 0.1.4 (eaa5eba) - bimanthaperera-lab, 20 hours ago
-* Update README.md (3d7b645) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (f4c8f0f) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #57 from bimanthaperera-lab/test/overview (a074a56) - Bimantha Perera, 20 hours ago
-* Rebranding App name and (9548944) - Bimantha Perera, 20 hours ago
-* Add Patch to Fix Drag Issue (dcd6bbd) - Bimantha Perera, 21 hours ago
-* Add New Reference section (9de461e) - Bimantha Perera, 21 hours ago
-* Fix: Remove pulse animation when change the dark/white mode (078783a) - Bimantha Perera, 21 hours ago
-* Fix: Show 3 Languages in Classic template first raw and reduce gap between language proficiency (e6d40da) - Bimantha Perera, 21 hours ago
-* Fix: Change Drop down UI at the Language proficiency (113ef2b) - Bimantha Perera, 21 hours ago
-* Fix import popup issue and change the icon (13592ad) - Bimantha Perera, 21 hours ago
-* Change CV Import pop up cloud icon (fda6fd7) - Bimantha Perera, 21 hours ago
-* Fix Footer White Space Issue (a545b13) - Bimantha Perera, 21 hours ago
-* chore: bump version to 0.1.3 (a3265f5) - bimanthaperera-lab, 25 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (eca81c1) - bimanthaperera-lab, 25 hours ago
-* Merge pull request #56 from bimanthaperera-lab/test/overview (b48f90a) - Bimantha Perera, 25 hours ago
-* Update CVPreview.tsx (7e88f32) - Bimantha Perera, 25 hours ago
-* Redesign Download/Reset/CV Import Pop Ups & Reduce name text size from professional template (f15f19f) - Bimantha Perera, 25 hours ago
-* Fixed the console/accessibility issues (47f1c21) - Bimantha Perera, 26 hours ago
-* When i refine the data using AI space is too much in the preview while compare with text box issue fix (e1654f3) - Bimantha Perera, 26 hours ago
-* Fix Text Box Bullet Point Issue (c865d13) - Bimantha Perera, 26 hours ago
+* Merge pull request #71 from bimanthaperera-lab/test/overview (5a04eee) - Bimantha Perera, 7 seconds ago
+* Update server.ts (5d3b322) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (c7a80fd) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #68 from bimanthaperera-lab/test/overview (85e9feb) - Bimantha Perera, 4 hours ago
+* fix font scroll bar issues (98e29e7) - Bimantha Perera, 4 hours ago
+* chore: bump version to 0.1.5 (65e376e) - bimanthaperera-lab, 5 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (98e51e8) - bimanthaperera-lab, 5 hours ago
+* Merge pull request #67 from bimanthaperera-lab/test/overview (27e878b) - Bimantha Perera, 5 hours ago
+* Fix Issues (5486cf6) - Bimantha Perera, 5 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (ad0df7f) - bimanthaperera-lab, 19 hours ago
+* Merge pull request #62 from bimanthaperera-lab/test/overview (2211d7e) - Bimantha Perera, 19 hours ago
+* Remove Optional text (33d9dd4) - Bimantha Perera, 19 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (1c87e33) - bimanthaperera-lab, 22 hours ago
+* Merge pull request #58 from bimanthaperera-lab/test/overview (4727886) - Bimantha Perera, 22 hours ago
+* Bug Fixing and UI Improvements (40980bd) - Bimantha Perera, 22 hours ago
+* Update Home.tsx (e903434) - Bimantha Perera, 23 hours ago
+* Fix: When reset at the preview app was bug (362c49e) - Bimantha Perera, 23 hours ago
+* chore: bump version to 0.1.4 (eaa5eba) - bimanthaperera-lab, 24 hours ago
+* Update README.md (3d7b645) - Bimantha Perera, 24 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (f4c8f0f) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #57 from bimanthaperera-lab/test/overview (a074a56) - Bimantha Perera, 24 hours ago
+* Rebranding App name and (9548944) - Bimantha Perera, 24 hours ago
+* Add Patch to Fix Drag Issue (dcd6bbd) - Bimantha Perera, 25 hours ago
+* Add New Reference section (9de461e) - Bimantha Perera, 25 hours ago
+* Fix: Remove pulse animation when change the dark/white mode (078783a) - Bimantha Perera, 25 hours ago
+* Fix: Show 3 Languages in Classic template first raw and reduce gap between language proficiency (e6d40da) - Bimantha Perera, 25 hours ago
+* Fix: Change Drop down UI at the Language proficiency (113ef2b) - Bimantha Perera, 25 hours ago
+* Fix import popup issue and change the icon (13592ad) - Bimantha Perera, 25 hours ago
+* Change CV Import pop up cloud icon (fda6fd7) - Bimantha Perera, 26 hours ago
+* Fix Footer White Space Issue (a545b13) - Bimantha Perera, 26 hours ago
+* chore: bump version to 0.1.3 (a3265f5) - bimanthaperera-lab, 29 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (eca81c1) - bimanthaperera-lab, 29 hours ago
+* Merge pull request #56 from bimanthaperera-lab/test/overview (b48f90a) - Bimantha Perera, 29 hours ago
+* Update CVPreview.tsx (7e88f32) - Bimantha Perera, 30 hours ago
+* Redesign Download/Reset/CV Import Pop Ups & Reduce name text size from professional template (f15f19f) - Bimantha Perera, 30 hours ago
+* Fixed the console/accessibility issues (47f1c21) - Bimantha Perera, 30 hours ago
+* When i refine the data using AI space is too much in the preview while compare with text box issue fix (e1654f3) - Bimantha Perera, 31 hours ago
+* Fix Text Box Bullet Point Issue (c865d13) - Bimantha Perera, 31 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (e2053b5) - bimanthaperera-lab, 2 days ago
 * Fix issues (60eaf5e) - Bimantha Perera, 2 days ago
 * Update ContactUs.tsx (83fca65) - Bimantha Perera, 2 days ago
