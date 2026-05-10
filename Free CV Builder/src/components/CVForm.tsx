@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FileText, Palette, Check } from 'lucide-react';
-import { DndContext, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCorners, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import DOMPurify from 'dompurify';
 import toast from 'react-hot-toast';
@@ -113,6 +113,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { 
+      activationConstraint: { 
+        delay: 200, 
+        tolerance: 6 
+      } 
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -702,18 +708,27 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                     exit={{ opacity: 0, y: -16, scale: 0.98 }}
                     transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    <SortableContext
-                      items={ALL_STEPS[wizardStep] === 'finalize' ? [...FINALIZE_SECTION_KEYS] : [ALL_STEPS[wizardStep]]}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {(ALL_STEPS[wizardStep] === 'finalize' ? FINALIZE_SECTION_KEYS : [ALL_STEPS[wizardStep]])
-                        .filter(Boolean)
-                        .map((key) => (
-                          <React.Fragment key={key}>
-                            {renderSection(key as string)}
-                          </React.Fragment>
-                        ))}
-                    </SortableContext>
+                    {(() => {
+                      const isFinalize = ALL_STEPS[wizardStep] === 'finalize';
+                      const currentSectionKeys = isFinalize
+                        ? cvData.sectionOrder.filter(key => (FINALIZE_SECTION_KEYS as readonly string[]).includes(key))
+                        : [ALL_STEPS[wizardStep]];
+
+                      return (
+                        <SortableContext
+                          items={currentSectionKeys}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {currentSectionKeys
+                            .filter(Boolean)
+                            .map((key) => (
+                              <React.Fragment key={key}>
+                                {renderSection(key as string)}
+                              </React.Fragment>
+                            ))}
+                        </SortableContext>
+                      );
+                    })()}
                   </motion.div>
                 </AnimatePresence>
               </DndContext>

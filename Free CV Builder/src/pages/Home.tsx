@@ -169,7 +169,7 @@ export default function Home() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedCvData(cvData);
-    }, 250);
+    }, 150);
     return () => clearTimeout(timer);
   }, [cvData]);
 
