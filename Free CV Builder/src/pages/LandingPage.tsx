@@ -21,18 +21,21 @@ const testimonials = [
     role: 'Marketing Executive',
     quote: 'NexCV helped me turn messy notes into a clean resume in one sitting.',
     color: 'bg-violet-600',
+    rating: 5,
   },
   {
     name: 'Ravindu Perera',
     role: 'Software Engineer',
     quote: 'The live preview made it easy to tune the layout before exporting.',
     color: 'bg-emerald-600',
+    rating: 5,
   },
   {
     name: 'Nethmi Fernando',
     role: 'Graduate Trainee',
     quote: 'Simple, fast, and the final PDF looked much more professional.',
     color: 'bg-violet-600',
+    rating: 5,
   },
 ];
 
@@ -267,6 +270,11 @@ export default function LandingPage() {
                   <div className={`absolute inset-x-0 top-0 h-1.5 ${testimonial.color}`} />
                   <Quote size={30} className="text-violet-300/40" />
                   <p className="mt-5 text-base font-bold leading-7 text-slate-200">"{testimonial.quote}"</p>
+                  <div className="mt-4 flex items-center gap-1 text-amber-400">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} size={14} className="fill-current" />
+                    ))}
+                  </div>
                   <div className="mt-6 flex items-center gap-3">
                     <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${testimonial.color} font-montserrat text-lg font-black text-white shadow-lg`}>
                       {testimonial.name.charAt(0)}
