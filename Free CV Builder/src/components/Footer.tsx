@@ -25,11 +25,11 @@ const linkGroups = [
 
 export const Footer = () => {
   return (
-    <footer className="relative mt-auto overflow-hidden bg-slate-950 text-white print:hidden">
+    <footer className="relative shrink-0 overflow-hidden bg-slate-950 text-white print:hidden">
       <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-violet-500/20 blur-3xl" />
       <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-emerald-400/15 blur-3xl" />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-12 lg:px-8">
         <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-2xl shadow-black/20 sm:mb-10">
           <div className="grid gap-5 p-5 sm:gap-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
