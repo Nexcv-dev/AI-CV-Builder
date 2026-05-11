@@ -11,9 +11,9 @@ const mainLinks = [
 ];
 
 const secondaryLinks = [
-  { label: 'Contact Us', href: '/contact', icon: Mail, delay: '150ms' },
-  { label: 'Privacy Policy', href: '/privacy-policy', icon: Shield, delay: '200ms' },
-  { label: 'Terms & Conditions', href: '/terms', icon: FileText, delay: '250ms' },
+  { label: 'Contact', href: '/contact', icon: Mail },
+  { label: 'Privacy', href: '/privacy-policy', icon: Shield },
+  { label: 'Terms', href: '/terms', icon: FileText },
 ];
 
 export function SiteHeader() {
@@ -143,23 +143,25 @@ export function SiteHeader() {
 
             <div className="my-2 border-t border-white/8" />
 
-            {secondaryLinks.map(({ label, href, icon: Icon, delay }) => (
-              <Link
-                key={label}
-                to={href}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-semibold text-slate-400 transition-all hover:bg-white/5 hover:text-slate-200 active:scale-[0.98]"
-                style={{
-                  transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
-                  opacity: mobileMenuOpen ? 1 : 0,
-                  transition: `transform 0.35s cubic-bezier(0.22,1,0.36,1) ${delay}, opacity 0.25s ease ${delay}, background 0.15s`,
-                }}
-              >
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/4">
-                  <Icon size={13} className="text-slate-500" />
-                </span>
-                {label}
-              </Link>
-            ))}
+            <div
+              className="grid grid-cols-3 gap-2"
+              style={{
+                transform: mobileMenuOpen ? 'translateY(0)' : 'translateY(8px)',
+                opacity: mobileMenuOpen ? 1 : 0,
+                transition: 'transform 0.35s cubic-bezier(0.22,1,0.36,1) 150ms, opacity 0.25s ease 150ms',
+              }}
+            >
+              {secondaryLinks.map(({ label, href, icon: Icon }) => (
+                <Link
+                  key={label}
+                  to={href}
+                  className="flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.03] px-2 py-3 text-center text-[11px] font-bold text-slate-400 transition-all hover:bg-white/7 hover:text-slate-200 active:scale-[0.98]"
+                >
+                  <Icon size={15} className="text-slate-500" />
+                  <span className="max-w-full truncate">{label}</span>
+                </Link>
+              ))}
+            </div>
 
             <Link
               to="/builder"
