@@ -921,7 +921,7 @@ export function generateCVHTML(cvData: any, template: string): string {
     } else if (template === 'timeline') {
         const contactItems = [personalInfo.email, personalInfo.phone, personalInfo.address]
             .filter(Boolean)
-            .map((item: string) => `<div style="word-break:break-word;text-decoration:none">${esc(item)}</div>`)
+            .map((item: string) => `<span style="word-break:break-word;text-decoration:none">${esc(item)}</span>`)
             .join('');
 
         bodyContent = `<div style="display:block;background:white">
@@ -934,8 +934,9 @@ export function generateCVHTML(cvData: any, template: string): string {
                 <div style="min-width:0;flex:1">
                   <div style="width:64px;height:6px;border-radius:9999px;background:${themeColor};margin-bottom:12px"></div>
                   <h1 style="font-size:2.45rem;line-height:1;font-weight:900;letter-spacing:-0.025em;color:#030712;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+                  <div style="margin-top:16px;display:flex;flex-direction:column;gap:2px;font-size:0.75rem;font-weight:500;line-height:1.65;color:#6b7280">${contactItems}</div>
                 </div>
-                <div style="max-width:72mm;padding-top:4px;text-align:right;font-size:0.75rem;font-weight:500;line-height:1.65;color:#6b7280">${contactItems}</div>
+                ${profileImage ? `<div style="flex-shrink:0"><div style="width:112px;height:112px;border-radius:9999px;overflow:hidden;border:3px solid #ffffff;box-shadow:0 0 0 1px #e5e7eb;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImage}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div></div>` : ''}
               </div>
             </header>
             ${sectionsHTML}

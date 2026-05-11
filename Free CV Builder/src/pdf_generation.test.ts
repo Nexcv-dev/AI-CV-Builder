@@ -87,4 +87,18 @@ describe('PDF HTML Generation', () => {
     expect(html).not.toContain('Test Uni');
     expect(html).not.toContain('React');
   });
+
+  it('renders the profile image in the Timeline PDF HTML', () => {
+    const html = generateCVHTML({
+      ...mockCVData,
+      profileImage: 'data:image/png;base64,test-image',
+      imageZoom: 1.2,
+      imageX: 4,
+      imageY: -3,
+    }, 'timeline');
+
+    expect(html).toContain('data:image/png;base64,test-image');
+    expect(html).toContain('width:112px;height:112px;border-radius:9999px');
+    expect(html).toContain('transform:scale(1.2) translate(4px,-3px)');
+  });
 });

@@ -783,15 +783,28 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   <h1 className="text-[2.45rem] font-black leading-none tracking-tight text-gray-950 wrap-break-word">
                     {personalInfo.fullName || 'Your Name'}
                   </h1>
+                  <div className="mt-4 flex flex-col gap-0.5 text-[12px] font-medium leading-5 text-gray-500">
+                    {[personalInfo.email, personalInfo.phone, personalInfo.address]
+                      .filter(Boolean)
+                      .map((item, i) => (
+                        <span key={i} className="wrap-break-word" style={{ wordBreak: 'break-word', textDecoration: 'none' }}>{item}</span>
+                      ))
+                    }
+                  </div>
                 </div>
-                <div className="max-w-[72mm] pt-1 text-right text-[12px] font-medium leading-5 text-gray-500">
-                  {[personalInfo.email, personalInfo.phone, personalInfo.address]
-                    .filter(Boolean)
-                    .map((item, i) => (
-                      <div key={i} className="wrap-break-word" style={{ wordBreak: 'break-word', textDecoration: 'none' }}>{item}</div>
-                    ))
-                  }
-                </div>
+                {profileImage && (
+                  <div className="shrink-0">
+                    <div className="h-28 w-28 rounded-full overflow-hidden border-[3px] border-white shadow-[0_0_0_1px_rgba(229,231,235,1)] flex items-center justify-center">
+                      <img
+                        src={profileImage}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        style={{ transform: `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)` }}
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </header>
 

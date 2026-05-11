@@ -94,6 +94,23 @@ describe('CVPreview Component', () => {
     expect(sidebar).toBeInTheDocument();
   });
 
+  it('renders the profile image in the Timeline template header', () => {
+    const dataWithImage: CVData = {
+      ...mockCVData,
+      profileImage: 'data:image/png;base64,test-image',
+      imageZoom: 1.2,
+      imageX: 4,
+      imageY: -3,
+    };
+
+    render(<CVPreview cvData={dataWithImage} template="timeline" />);
+
+    const image = screen.getByAltText('Profile');
+    expect(image).toBeInTheDocument();
+    expect(image).toHaveAttribute('src', dataWithImage.profileImage);
+    expect(image).toHaveStyle({ transform: 'scale(1.2) translate(4px, -3px)' });
+  });
+
   it('handles "Kitchen Sink" data without crashing (Full fields)', () => {
     const kitchenSinkData = {
       personalInfo: {
