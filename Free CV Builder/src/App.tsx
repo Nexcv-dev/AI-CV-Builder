@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import Home from './pages/Home';
@@ -18,7 +18,7 @@ function PageLoadingOverlay() {
   const [isLoading, setIsLoading] = useState(false);
   const isBuilderRedirect = location.pathname === '/builder';
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       previousPathname.current = location.pathname;
