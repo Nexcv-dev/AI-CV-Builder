@@ -17,6 +17,14 @@ function PageLoadingOverlay() {
   const previousPathname = useRef(location.pathname);
   const [isLoading, setIsLoading] = useState(false);
   const isBuilderRedirect = location.pathname === '/builder';
+  const isHashOnlyLandingNavigation =
+    location.pathname === '/' &&
+    Boolean(location.hash) &&
+    previousPathname.current !== '/builder';
+  const shouldShowImmediately =
+    !isFirstRender.current &&
+    previousPathname.current !== location.pathname &&
+    !isHashOnlyLandingNavigation;
 
   useLayoutEffect(() => {
     if (isFirstRender.current) {
@@ -40,7 +48,7 @@ function PageLoadingOverlay() {
 
   return (
     <AnimatePresence>
-      {isLoading && (
+      {(isLoading || shouldShowImmediately) && (
         <motion.div
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
