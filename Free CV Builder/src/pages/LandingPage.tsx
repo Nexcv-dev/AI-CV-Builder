@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Download, FileText, Home, Info, LayoutTemplate, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
 
 const stats = [
@@ -119,6 +119,8 @@ const faqs = [
 ];
 
 export default function LandingPage() {
+  const location = useLocation();
+
   useEffect(() => {
     const revealItems = document.querySelectorAll<HTMLElement>('.landing-scroll-reveal');
     if (!revealItems.length) return;
@@ -176,6 +178,7 @@ export default function LandingPage() {
   }, [mobileMenuOpen]);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+  const shouldCloseBeforeNavigate = (href: string) => href.startsWith('#') || (href === '/' && location.pathname === '/');
 
   return (
     <div className="min-h-svh overflow-x-hidden bg-slate-950 text-white">
@@ -273,7 +276,7 @@ export default function LandingPage() {
                 <Link
                   key={label}
                   to={href}
-                  onClick={closeMobileMenu}
+                  onClick={shouldCloseBeforeNavigate(href) ? closeMobileMenu : undefined}
                   className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-200 transition-all hover:bg-white/[0.07] hover:text-white active:scale-[0.98]"
                   style={{
                     transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
@@ -318,7 +321,6 @@ export default function LandingPage() {
               <Link
                 key={label}
                 to={href}
-                onClick={closeMobileMenu}
                 className="flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-semibold text-slate-400 transition-all hover:bg-white/5 hover:text-slate-200 active:scale-[0.98]"
                 style={{
                   transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
@@ -336,7 +338,6 @@ export default function LandingPage() {
             {/* CTA */}
             <Link
               to="/builder"
-              onClick={closeMobileMenu}
               className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-500 active:scale-[0.98]"
               style={{
                 transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
