@@ -238,7 +238,6 @@ export default function LandingPage() {
         style={{
           pointerEvents: mobileMenuOpen ? 'auto' : 'none',
         }}
-        aria-hidden={!mobileMenuOpen}
       >
         {/* Backdrop */}
         <div
@@ -277,7 +276,6 @@ export default function LandingPage() {
                   onClick={closeMobileMenu}
                   className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-200 transition-all hover:bg-white/[0.07] hover:text-white active:scale-[0.98]"
                   style={{
-                    transitionDelay: mobileMenuOpen ? delay : '0ms',
                     transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
                     opacity: mobileMenuOpen ? 1 : 0,
                     transition: `transform 0.35s cubic-bezier(0.22,1,0.36,1) ${delay}, opacity 0.25s ease ${delay}, background 0.15s`,

@@ -100,7 +100,6 @@ export function SiteHeader() {
       <div
         className="fixed inset-0 z-40 md:hidden"
         style={{ pointerEvents: mobileMenuOpen ? 'auto' : 'none' }}
-        aria-hidden={!mobileMenuOpen}
       >
         <div
           className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"

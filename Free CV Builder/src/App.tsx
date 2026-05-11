@@ -14,20 +14,28 @@ import { Footer } from './components/Footer';
 function PageLoadingOverlay() {
   const location = useLocation();
   const isFirstRender = useRef(true);
+  const previousPathname = useRef(location.pathname);
   const [isLoading, setIsLoading] = useState(false);
   const isBuilderRedirect = location.pathname === '/builder';
 
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
+      previousPathname.current = location.pathname;
       return;
     }
 
+    if (previousPathname.current === location.pathname || (location.pathname === '/' && location.hash)) {
+      previousPathname.current = location.pathname;
+      return;
+    }
+
+    previousPathname.current = location.pathname;
     setIsLoading(true);
     const timer = window.setTimeout(() => setIsLoading(false), 650);
 
     return () => window.clearTimeout(timer);
-  }, [location.key]);
+  }, [location.pathname]);
 
   return (
     <AnimatePresence>
@@ -61,8 +69,19 @@ function Layout() {
   const isBuilder = location.pathname === '/builder';
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+    if (location.hash) {
+      const targetId = decodeURIComponent(location.hash.slice(1));
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+      return;
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname, location.hash]);
 
   return (
     <div className={`flex flex-col ${isBuilder ? 'min-h-svh h-svh overflow-hidden bg-slate-950' : 'min-h-svh bg-slate-950'}`}>
