@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import Home from './pages/Home';
@@ -27,6 +27,10 @@ function PageLoadingOverlay() {
     !isHashOnlyLandingNavigation;
 
   useLayoutEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
     if (isFirstRender.current) {
       isFirstRender.current = false;
       previousPathname.current = location.pathname;
@@ -102,7 +106,7 @@ function Layout() {
   }, [location.pathname, location.hash]);
 
   return (
-    <div className={`flex flex-col ${isBuilder ? 'min-h-svh h-svh overflow-hidden bg-slate-950' : 'min-h-svh bg-slate-950'}`}>
+    <div className={`flex flex-col ${isBuilder ? 'h-dvh min-h-dvh overflow-hidden bg-slate-950' : 'min-h-dvh bg-slate-950'}`}>
       <div className="flex-1 flex flex-col min-h-0">
         <Outlet />
       </div>
