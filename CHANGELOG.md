@@ -3,33 +3,39 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #82 from bimanthaperera-lab/test/overview (6dc2031) - Bimantha Perera, 16 seconds ago
-* Update README.md (15f3fcd) - Bimantha Perera, 16 minutes ago
-* Add FAQ section to the Landing Page (447d3e7) - Bimantha Perera, 54 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (7fec5af) - bimanthaperera-lab, 10 hours ago
-* Merge pull request #77 from bimanthaperera-lab/test/overview (7eb0802) - Bimantha Perera, 10 hours ago
-* fix hamburger scrolling and template selection (a757e67) - Bimantha Perera, 11 hours ago
-* Update LandingPage.tsx (9c9760c) - Bimantha Perera, 11 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (c1958e2) - bimanthaperera-lab, 12 hours ago
-* Merge pull request #75 from bimanthaperera-lab/test/overview (66b6882) - Bimantha Perera, 12 hours ago
-* improve import error massage (910c841) - Bimantha Perera, 12 hours ago
-* improve error handling (859cce8) - Bimantha Perera, 12 hours ago
-* Improve font selector scroll bar color (7988cbb) - Bimantha Perera, 13 hours ago
-* Add hamburger menu to mobile view (b2687d7) - Bimantha Perera, 13 hours ago
-* Add Users statics to landing page and improve error handling (d2536d6) - Bimantha Perera, 13 hours ago
-* Update server.ts (26a4036) - Bimantha Perera, 14 hours ago
-* remove unnecessary codes (c8e0d74) - Bimantha Perera, 14 hours ago
-* Drag Position Issue in finalize content (da65c9d) - Bimantha Perera, 14 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (79c47de) - bimanthaperera-lab, 17 hours ago
-* Merge pull request #71 from bimanthaperera-lab/test/overview (5a04eee) - Bimantha Perera, 17 hours ago
-* Update server.ts (5d3b322) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (c7a80fd) - bimanthaperera-lab, 21 hours ago
-* Merge pull request #68 from bimanthaperera-lab/test/overview (85e9feb) - Bimantha Perera, 21 hours ago
-* fix font scroll bar issues (98e29e7) - Bimantha Perera, 22 hours ago
-* chore: bump version to 0.1.5 (65e376e) - bimanthaperera-lab, 22 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (98e51e8) - bimanthaperera-lab, 22 hours ago
-* Merge pull request #67 from bimanthaperera-lab/test/overview (27e878b) - Bimantha Perera, 22 hours ago
-* Fix Issues (5486cf6) - Bimantha Perera, 22 hours ago
+* Merge pull request #83 from bimanthaperera-lab/test/overview (a29065d) - Bimantha Perera, 17 seconds ago
+* fix hamburger issues and console errors (185bff6) - Bimantha Perera, 7 minutes ago
+* add home button to hamburger menu (4f8dce3) - Bimantha Perera, 16 minutes ago
+* fix scroll animation issuein mobile (cb1520f) - Bimantha Perera, 23 minutes ago
+* Fix Bugs (6306582) - Bimantha Perera, 25 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (4819d61) - bimanthaperera-lab, 2 hours ago
+* Merge pull request #82 from bimanthaperera-lab/test/overview (6dc2031) - Bimantha Perera, 2 hours ago
+* Update README.md (15f3fcd) - Bimantha Perera, 2 hours ago
+* Add FAQ section to the Landing Page (447d3e7) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (7fec5af) - bimanthaperera-lab, 12 hours ago
+* Merge pull request #77 from bimanthaperera-lab/test/overview (7eb0802) - Bimantha Perera, 12 hours ago
+* fix hamburger scrolling and template selection (a757e67) - Bimantha Perera, 13 hours ago
+* Update LandingPage.tsx (9c9760c) - Bimantha Perera, 14 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (c1958e2) - bimanthaperera-lab, 14 hours ago
+* Merge pull request #75 from bimanthaperera-lab/test/overview (66b6882) - Bimantha Perera, 14 hours ago
+* improve import error massage (910c841) - Bimantha Perera, 14 hours ago
+* improve error handling (859cce8) - Bimantha Perera, 14 hours ago
+* Improve font selector scroll bar color (7988cbb) - Bimantha Perera, 15 hours ago
+* Add hamburger menu to mobile view (b2687d7) - Bimantha Perera, 15 hours ago
+* Add Users statics to landing page and improve error handling (d2536d6) - Bimantha Perera, 15 hours ago
+* Update server.ts (26a4036) - Bimantha Perera, 16 hours ago
+* remove unnecessary codes (c8e0d74) - Bimantha Perera, 16 hours ago
+* Drag Position Issue in finalize content (da65c9d) - Bimantha Perera, 16 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (79c47de) - bimanthaperera-lab, 19 hours ago
+* Merge pull request #71 from bimanthaperera-lab/test/overview (5a04eee) - Bimantha Perera, 19 hours ago
+* Update server.ts (5d3b322) - Bimantha Perera, 22 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (c7a80fd) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #68 from bimanthaperera-lab/test/overview (85e9feb) - Bimantha Perera, 24 hours ago
+* fix font scroll bar issues (98e29e7) - Bimantha Perera, 24 hours ago
+* chore: bump version to 0.1.5 (65e376e) - bimanthaperera-lab, 24 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (98e51e8) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #67 from bimanthaperera-lab/test/overview (27e878b) - Bimantha Perera, 24 hours ago
+* Fix Issues (5486cf6) - Bimantha Perera, 24 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (ad0df7f) - bimanthaperera-lab, 2 days ago
 * Merge pull request #62 from bimanthaperera-lab/test/overview (2211d7e) - Bimantha Perera, 2 days ago
 * Remove Optional text (33d9dd4) - Bimantha Perera, 2 days ago
@@ -74,22 +80,22 @@ All notable changes to this project will be documented in this file.
 * Update README.md (e1b0841) - Bimantha Perera, 3 days ago
 * Update main.yml (2922038) - Bimantha Perera, 3 days ago
 * Dockerization the App (359fe20) - Bimantha Perera, 3 days ago
-* chore: bump version to 0.1.2 (2d4e777) - bimanthaperera-lab, 3 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (b80c98c) - bimanthaperera-lab, 3 days ago
-* Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 3 days ago
-* fix: move secrets check into bash script (69dd804) - Bimantha Perera, 3 days ago
-* fix: if condition for secret checking in GitHub Action (2884e28) - Bimantha Perera, 3 days ago
-* feat: add render deploy hook to release workflow (85477c6) - Bimantha Perera, 3 days ago
-* feat: add render.yaml blueprint for automated deployment (97983d5) - Bimantha Perera, 3 days ago
-* chore: bump version to 0.1.1 (201936c) - bimanthaperera-lab, 3 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (8db5394) - bimanthaperera-lab, 3 days ago
-* Merge pull request #31 from bimanthaperera-lab/test/overview (6ecda2c) - Bimantha Perera, 3 days ago
-* fix: auto-commit file_pattern issue with spaces (12ec885) - Bimantha Perera, 3 days ago
-* Update README.md (52285bf) - Bimantha Perera, 3 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (fc3fa3e) - bimanthaperera-lab, 3 days ago
-* Merge pull request #30 from bimanthaperera-lab/test/overview (027222b) - Bimantha Perera, 3 days ago
-* fix update version.yml (03b9e06) - Bimantha Perera, 3 days ago
-* fix release drafter.yml issue (c0958e0) - Bimantha Perera, 3 days ago
+* chore: bump version to 0.1.2 (2d4e777) - bimanthaperera-lab, 4 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (b80c98c) - bimanthaperera-lab, 4 days ago
+* Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 4 days ago
+* fix: move secrets check into bash script (69dd804) - Bimantha Perera, 4 days ago
+* fix: if condition for secret checking in GitHub Action (2884e28) - Bimantha Perera, 4 days ago
+* feat: add render deploy hook to release workflow (85477c6) - Bimantha Perera, 4 days ago
+* feat: add render.yaml blueprint for automated deployment (97983d5) - Bimantha Perera, 4 days ago
+* chore: bump version to 0.1.1 (201936c) - bimanthaperera-lab, 4 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (8db5394) - bimanthaperera-lab, 4 days ago
+* Merge pull request #31 from bimanthaperera-lab/test/overview (6ecda2c) - Bimantha Perera, 4 days ago
+* fix: auto-commit file_pattern issue with spaces (12ec885) - Bimantha Perera, 4 days ago
+* Update README.md (52285bf) - Bimantha Perera, 4 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (fc3fa3e) - bimanthaperera-lab, 4 days ago
+* Merge pull request #30 from bimanthaperera-lab/test/overview (027222b) - Bimantha Perera, 4 days ago
+* fix update version.yml (03b9e06) - Bimantha Perera, 4 days ago
+* fix release drafter.yml issue (c0958e0) - Bimantha Perera, 4 days ago
 * Fix Relese drafter.yml issue and add auto version update action (ef0ec39) - Bimantha Perera, 4 days ago
 * Add Automated Release Drafter (204d43c) - Bimantha Perera, 4 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (381e1b5) - bimanthaperera-lab, 4 days ago
@@ -110,16 +116,16 @@ All notable changes to this project will be documented in this file.
 * Merge pull request #23 from bimanthaperera-lab/test/overview (00038a5) - Bimantha Perera, 5 days ago
 * Update CVPreview.test.tsx (69c16ed) - Bimantha Perera, 5 days ago
 * Bug Fixing (2abf2f4) - Bimantha Perera, 5 days ago
-* Merge pull request #22 from bimanthaperera-lab/test/overview (f3d5881) - Bimantha Perera, 6 days ago
-* Optimized the code (b754a92) - Bimantha Perera, 6 days ago
-* Merge pull request #21 from bimanthaperera-lab/test/overview (7bc57d0) - Bimantha Perera, 7 days ago
-* CVform.tsx Extract into dedicated section components (6c25dd0) - Bimantha Perera, 7 days ago
+* Merge pull request #22 from bimanthaperera-lab/test/overview (f3d5881) - Bimantha Perera, 7 days ago
+* Optimized the code (b754a92) - Bimantha Perera, 7 days ago
+* Merge pull request #21 from bimanthaperera-lab/test/overview (7bc57d0) - Bimantha Perera, 8 days ago
+* CVform.tsx Extract into dedicated section components (6c25dd0) - Bimantha Perera, 8 days ago
 * Update CVForm.tsx (6ad7c89) - Bimantha Perera, 8 days ago
-* Merge pull request #20 from bimanthaperera-lab/test/overview (8d7f657) - Bimantha Perera, 8 days ago
-* Merge branch 'test/overview' of https://github.com/bimanthaperera-lab/AI-CV-Builder into test/overview (0467b5f) - Bimantha Perera, 8 days ago
-* Update CVForm.tsx (770c56c) - Bimantha Perera, 8 days ago
-* Merge pull request #19 from bimanthaperera-lab/test/overview (a182037) - Bimantha Perera, 8 days ago
-* Merge branch 'main' into test/overview (1d5429a) - Bimantha Perera, 8 days ago
+* Merge pull request #20 from bimanthaperera-lab/test/overview (8d7f657) - Bimantha Perera, 9 days ago
+* Merge branch 'test/overview' of https://github.com/bimanthaperera-lab/AI-CV-Builder into test/overview (0467b5f) - Bimantha Perera, 9 days ago
+* Update CVForm.tsx (770c56c) - Bimantha Perera, 9 days ago
+* Merge pull request #19 from bimanthaperera-lab/test/overview (a182037) - Bimantha Perera, 9 days ago
+* Merge branch 'main' into test/overview (1d5429a) - Bimantha Perera, 9 days ago
 * Add UI Improvements update calendar and drop down menus (8db0167) - Bimantha Perera, 9 days ago
 * Merge branch 'test/overview' of https://github.com/bimanthaperera-lab/AI-CV-Builder into test/overview (36d4ccc) - Bimantha Perera, 9 days ago
 * Merge pull request #18 from bimanthaperera-lab/test/overview (27b409a) - Bimantha Perera, 9 days ago
@@ -128,7 +134,7 @@ All notable changes to this project will be documented in this file.
 * Update index.css (8722575) - Bimantha Perera, 9 days ago
 * Fix bug in description box (d99e2b0) - Bimantha Perera, 9 days ago
 * Merge pull request #16 from bimanthaperera-lab/test/overview (068cb11) - Bimantha Perera, 10 days ago
-* Fix tab layout (c8a05cd) - Bimantha Perera, 10 days ago
+* Fix tab layout (c8a05cd) - Bimantha Perera, 11 days ago
 * Merge pull request #15 from bimanthaperera-lab/test/overview (6e42d8e) - Bimantha Perera, 11 days ago
 * Update Template Preview (b412767) - Bimantha Perera, 11 days ago
 * Merge pull request #14 from bimanthaperera-lab/test/overview (7619e97) - Bimantha Perera, 11 days ago
