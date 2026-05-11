@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, FileText, Info, LayoutTemplate, Mail, Menu, Shield, X, Zap } from 'lucide-react';
+import { ArrowRight, FileText, Home, Info, LayoutTemplate, Mail, Menu, Shield, X, Zap } from 'lucide-react';
 
 const mainLinks = [
-  { label: 'Templates', href: '/#templates', icon: LayoutTemplate, delay: '0ms' },
-  { label: 'Features', href: '/#features', icon: Zap, delay: '50ms' },
-  { label: 'FAQ', href: '/#faq', icon: Info, delay: '100ms' },
-  { label: 'About', href: '/about', icon: Info, delay: '150ms' },
+  { label: 'Home', href: '/', icon: Home, delay: '0ms' },
+  { label: 'Templates', href: '/#templates', icon: LayoutTemplate, delay: '50ms' },
+  { label: 'Features', href: '/#features', icon: Zap, delay: '100ms' },
+  { label: 'FAQ', href: '/#faq', icon: Info, delay: '150ms' },
+  { label: 'About', href: '/about', icon: Info, delay: '200ms' },
 ];
 
 const secondaryLinks = [

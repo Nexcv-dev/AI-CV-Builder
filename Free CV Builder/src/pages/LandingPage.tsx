@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Download, FileText, Info, LayoutTemplate, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
+import { ArrowRight, ChevronDown, Download, FileText, Home, Info, LayoutTemplate, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
 
 const stats = [
   { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
@@ -264,10 +264,11 @@ export default function LandingPage() {
 
           <div className="p-4 flex flex-col gap-1">
             {[
-              { label: 'Templates', href: '#templates', icon: LayoutTemplate, delay: '0ms', isLink: false },
-              { label: 'Features', href: '#features', icon: Zap, delay: '50ms', isLink: false },
-              { label: 'FAQ', href: '#faq', icon: Info, delay: '100ms', isLink: false },
-              { label: 'About', href: '/about', icon: Info, delay: '150ms', isLink: true },
+              { label: 'Home', href: '/', icon: Home, delay: '0ms', isLink: true },
+              { label: 'Templates', href: '#templates', icon: LayoutTemplate, delay: '50ms', isLink: false },
+              { label: 'Features', href: '#features', icon: Zap, delay: '100ms', isLink: false },
+              { label: 'FAQ', href: '#faq', icon: Info, delay: '150ms', isLink: false },
+              { label: 'About', href: '/about', icon: Info, delay: '200ms', isLink: true },
             ].map(({ label, href, icon: Icon, delay, isLink }) => (
               isLink ? (
                 <Link
