@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Download, FileText, Info, LayoutTemplate, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Users, Wand2, X, Zap } from 'lucide-react';
+import { ArrowRight, ChevronDown, Download, FileText, Info, LayoutTemplate, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
 
 const stats = [
   { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
@@ -95,6 +95,29 @@ const steps = [
   { title: 'Export', label: 'PDF ready', icon: Download, color: 'text-violet-300', bg: 'bg-violet-500/15' },
 ];
 
+const faqs = [
+  {
+    question: 'Is NexCV free to use?',
+    answer: 'Yes. You can build, preview, and download your CV without paying.',
+  },
+  {
+    question: 'Can AI help improve my CV content?',
+    answer: 'Yes. The builder can polish rough notes into clearer resume wording while you stay in control of every section.',
+  },
+  {
+    question: 'Can I change templates after adding details?',
+    answer: 'Yes. Your information stays in the builder, so you can switch between available templates and adjust the design.',
+  },
+  {
+    question: 'Does the final CV download as a PDF?',
+    answer: 'Yes. Once your CV is ready, you can export a clean PDF for job applications.',
+  },
+  {
+    question: 'Do I need design experience?',
+    answer: 'No. NexCV gives you ready-made templates, live preview, and simple controls for colors, fonts, and layout.',
+  },
+];
+
 export default function LandingPage() {
   useEffect(() => {
     const revealItems = document.querySelectorAll<HTMLElement>('.landing-scroll-reveal');
@@ -166,6 +189,7 @@ export default function LandingPage() {
           <nav className="hidden items-center gap-7 text-sm font-bold text-slate-300 md:flex">
             <a href="#templates" className="transition-colors hover:text-white">Templates</a>
             <a href="#features" className="transition-colors hover:text-white">Features</a>
+            <a href="#faq" className="transition-colors hover:text-white">FAQ</a>
             <Link to="/about" className="transition-colors hover:text-white">About</Link>
           </nav>
 
@@ -238,7 +262,8 @@ export default function LandingPage() {
             {[
               { label: 'Templates', href: '#templates', icon: LayoutTemplate, delay: '0ms', isLink: false },
               { label: 'Features', href: '#features', icon: Zap, delay: '50ms', isLink: false },
-              { label: 'About', href: '/about', icon: Info, delay: '100ms', isLink: true },
+              { label: 'FAQ', href: '#faq', icon: Info, delay: '100ms', isLink: false },
+              { label: 'About', href: '/about', icon: Info, delay: '150ms', isLink: true },
             ].map(({ label, href, icon: Icon, delay, isLink }) => (
               isLink ? (
                 <Link
@@ -498,6 +523,38 @@ export default function LandingPage() {
                     <ArrowRight size={18} className="text-violet-300 transition-transform group-hover:translate-x-1" />
                   </div>
                 </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="relative overflow-hidden bg-slate-950 py-12 text-white sm:py-20">
+          <div className="absolute left-10 top-10 h-60 w-60 rounded-full bg-violet-500/14 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-emerald-400/12 blur-3xl" />
+          <div id="faq" className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <div className="landing-scroll-reveal text-center">
+              <p className="text-sm font-black uppercase text-violet-300">FAQ</p>
+              <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Questions before you start?</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-sm font-semibold leading-6 text-slate-300 sm:text-base sm:leading-7">
+                Quick answers about creating, styling, and exporting your CV with NexCV.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-3 sm:mt-10">
+              {faqs.map((faq, index) => (
+                <details
+                  key={faq.question}
+                  className="landing-scroll-reveal landing-faq-item group rounded-2xl border border-white/10 bg-white/6 p-4 backdrop-blur transition-all open:border-violet-300/30 open:bg-white/9 sm:p-5"
+                  style={{ '--scroll-delay': `${index * 80}ms` } as React.CSSProperties}
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left font-montserrat text-base font-black text-white marker:hidden sm:text-lg">
+                    <span>{faq.question}</span>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/8 text-violet-300 transition-transform group-open:rotate-180">
+                      <ChevronDown size={18} />
+                    </span>
+                  </summary>
+                  <p className="mt-4 max-w-3xl text-sm font-semibold leading-6 text-slate-300 sm:text-base sm:leading-7">{faq.answer}</p>
+                </details>
               ))}
             </div>
           </div>
