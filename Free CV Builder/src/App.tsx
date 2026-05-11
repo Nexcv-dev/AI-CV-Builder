@@ -25,7 +25,8 @@ function PageLoadingOverlay() {
       return;
     }
 
-    if (previousPathname.current === location.pathname || (location.pathname === '/' && location.hash)) {
+    const previous = previousPathname.current;
+    if (previous === location.pathname || (location.pathname === '/' && location.hash && previous !== '/builder')) {
       previousPathname.current = location.pathname;
       return;
     }
@@ -71,13 +72,13 @@ function Layout() {
   useEffect(() => {
     if (location.hash) {
       const targetId = decodeURIComponent(location.hash.slice(1));
-      window.requestAnimationFrame(() => {
+      const frame = window.requestAnimationFrame(() => {
         const target = document.getElementById(targetId);
         if (target) {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
-      return;
+      return () => window.cancelAnimationFrame(frame);
     }
 
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
