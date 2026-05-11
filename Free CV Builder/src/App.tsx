@@ -67,15 +67,24 @@ function PageLoadingOverlay() {
 
 function Layout() {
   const location = useLocation();
+  const previousPathname = useRef(location.pathname);
   const isBuilder = location.pathname === '/builder';
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const previous = previousPathname.current;
+    previousPathname.current = location.pathname;
+
     if (location.hash) {
       const targetId = decodeURIComponent(location.hash.slice(1));
+      const target = document.getElementById(targetId);
+      if (target && previous === '/builder') {
+        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+
       const frame = window.requestAnimationFrame(() => {
-        const target = document.getElementById(targetId);
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const targetAfterPaint = document.getElementById(targetId);
+        if (targetAfterPaint) {
+          targetAfterPaint.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
       return () => window.cancelAnimationFrame(frame);
