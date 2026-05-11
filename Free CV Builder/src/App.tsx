@@ -7,6 +7,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
+import TemplatesPage from './pages/TemplatesPage';
 import PrintView from './pages/PrintView';
 import { Toaster } from 'react-hot-toast';
 import { Footer } from './components/Footer';
@@ -144,6 +145,7 @@ function App() {
         {/* Standard layout routes */}
         <Route element={<Layout />}>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/builder" element={<Home />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsAndConditions />} />

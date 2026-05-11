@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
+import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
 import { Toaster } from 'react-hot-toast';
@@ -39,11 +40,11 @@ function loadSavedData(): CVData | null {
   return null;
 }
 
-function loadSavedTemplate(): 'classic' | 'modern' | 'professional' | null {
+function loadSavedTemplate(): TemplateName | null {
   try {
     const saved = localStorage.getItem(TEMPLATE_STORAGE_KEY);
-    if (saved && ['classic', 'modern', 'professional'].includes(saved)) {
-      return saved as 'classic' | 'modern' | 'professional';
+    if (isTemplateName(saved)) {
+      return saved;
     }
   } catch (e) {
     console.warn('Failed to load saved template:', e);
@@ -89,7 +90,7 @@ const initialData: CVData = {
 export default function Home() {
   const [cvData, setCvData] = useState<CVData>(() => loadSavedData() || initialData);
   const [debouncedCvData, setDebouncedCvData] = useState<CVData>(() => loadSavedData() || initialData);
-  const [template, setTemplate] = useState<'classic' | 'modern' | 'professional'>(() => loadSavedTemplate() || 'professional');
+  const [template, setTemplate] = useState<TemplateName>(() => loadSavedTemplate() || DEFAULT_TEMPLATE);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -121,8 +122,8 @@ export default function Home() {
   // On mount: pick up ?template= from landing page and pre-select it
   useEffect(() => {
     const paramTemplate = searchParams.get('template');
-    if (paramTemplate && ['classic', 'modern', 'professional'].includes(paramTemplate)) {
-      setTemplate(paramTemplate as 'classic' | 'modern' | 'professional');
+    if (isTemplateName(paramTemplate)) {
+      setTemplate(paramTemplate);
     }
     // Remove the query param so it doesn't persist on manual refresh
     if (searchParams.has('template')) {

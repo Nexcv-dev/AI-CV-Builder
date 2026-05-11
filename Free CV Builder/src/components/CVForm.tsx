@@ -1,12 +1,13 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, Palette, Check } from 'lucide-react';
+import { FileText, Palette, Check, LayoutTemplate } from 'lucide-react';
 import { DndContext, closestCorners, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import DOMPurify from 'dompurify';
 import toast from 'react-hot-toast';
 
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award, Reference } from '../types';
+import { CV_TEMPLATES, TemplateName } from '../templates';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
@@ -38,8 +39,8 @@ import {
 interface CVFormProps {
   cvData: CVData;
   setCvData: React.Dispatch<React.SetStateAction<CVData>>;
-  template: string;
-  setTemplate: (template: 'classic' | 'modern' | 'professional') => void;
+  template: TemplateName;
+  setTemplate: (template: TemplateName) => void;
   isDarkMode?: boolean;
   onPopupVisibleChange?: (visible: boolean) => void;
   onFinish?: () => void;
@@ -47,7 +48,7 @@ interface CVFormProps {
 }
 
 export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, initialPromptRequest = 0 }: CVFormProps) {
-  const [activeMainTab, setActiveMainTab] = useState<'content' | 'design'>('content');
+  const [activeMainTab, setActiveMainTab] = useState<'content' | 'design' | 'templates'>('content');
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
   const [isDraggingSection, setIsDraggingSection] = useState(false);
@@ -664,6 +665,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
         >
           <Palette size={16} className="mr-2" /> Design
         </button>
+        <button
+          onClick={() => setActiveMainTab('templates')}
+          className={`${TAB_BUTTON_BASE} ${activeMainTab === 'templates' ? TAB_BUTTON_ACTIVE : TAB_BUTTON_INACTIVE}`}
+        >
+          <LayoutTemplate size={16} className="mr-2" /> Templates
+        </button>
       </div>
 
       <div
@@ -748,16 +755,64 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             />
             <div className="h-8 w-full shrink-0"></div>
           </div>
-        ) : (
+        ) : activeMainTab === 'design' ? (
           <DesignPanel
             cvData={cvData}
             setCvData={setCvData}
-            template={template}
-            setTemplate={setTemplate}
             isDarkMode={isDarkMode}
             fileInputRef={fileInputRef}
             onImageUpload={handleImageUpload}
           />
+        ) : (
+          <div className="animate-in fade-in duration-300 space-y-5 pb-8">
+            <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-gray-50'}`}>
+              <div className="mb-5 flex items-center gap-3">
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${isDarkMode ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-600'}`}>
+                  <LayoutTemplate size={20} />
+                </span>
+                <div>
+                  <h3 className={`font-montserrat text-lg font-black ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>Templates</h3>
+                  <p className={`text-xs font-semibold ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Select a layout for your CV preview and PDF.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 min-[430px]:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+                {CV_TEMPLATES.map((item) => {
+                  const isSelected = template === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setTemplate(item.key)}
+                      className={`group relative flex min-w-0 flex-col overflow-hidden rounded-xl border-2 text-left transition-all active:scale-[0.99] ${
+                        isSelected
+                          ? (isDarkMode ? 'border-violet-400 bg-violet-500/10 shadow-lg shadow-violet-950/30' : 'border-violet-500 bg-violet-50 shadow-md')
+                          : (isDarkMode ? 'border-slate-700 bg-slate-900 hover:border-slate-600' : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm')
+                      }`}
+                    >
+                      {isSelected && (
+                        <span className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white shadow-md">
+                          <Check size={14} />
+                        </span>
+                      )}
+                      <div className="aspect-[3/4] overflow-hidden bg-slate-900">
+                        <img
+                          src={item.image}
+                          alt={`${item.label} template preview`}
+                          className={`h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03] ${isSelected ? '' : 'opacity-90'}`}
+                        />
+                      </div>
+                      <div className="px-3 py-2.5">
+                        <div className={`truncate text-xs font-black ${isSelected ? 'text-violet-600' : (isDarkMode ? 'text-slate-200' : 'text-gray-700')}`}>
+                          {item.label}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         )}
         <div className="mt-auto">
 

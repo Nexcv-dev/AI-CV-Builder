@@ -1,26 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Palette, LayoutTemplate, Upload, ChevronDown, Check, CheckCircle2, Image as ImageIcon, MoveHorizontal, MoveVertical, Layout, Type } from 'lucide-react';
+import { Palette, Upload, ChevronDown, Check, Image as ImageIcon, MoveHorizontal, MoveVertical, Layout, Type } from 'lucide-react';
 import { CVData } from '../../types';
 import { fonts, DESIGN_CARD_CLASS, DESIGN_CARD_LIGHT, DESIGN_CARD_DARK, DESIGN_SECTION_TITLE_CLASS, DESIGN_ICON_CLASS } from './constants';
 
 interface DesignPanelProps {
   cvData: CVData;
   setCvData: React.Dispatch<React.SetStateAction<CVData>>;
-  template: string;
-  setTemplate: (template: 'classic' | 'modern' | 'professional') => void;
   isDarkMode?: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const TEMPLATES: Array<{ key: 'classic' | 'modern' | 'professional'; label: string; img: string }> = [
-  { key: 'classic', label: 'Classic', img: '/templates/classic.png' },
-  { key: 'modern', label: 'Modern', img: '/templates/modern.png' },
-  { key: 'professional', label: 'Professional', img: '/templates/professional.png' },
-];
-
-export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplate, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
+export const DesignPanel = React.memo(({ cvData, setCvData, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -45,28 +37,6 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
 
   return (
     <div className="animate-in fade-in duration-300 space-y-6 flex flex-col flex-1">
-      {/* Choose Template */}
-      <div className={`${DESIGN_CARD_CLASS} ${isDarkMode ? DESIGN_CARD_DARK : DESIGN_CARD_LIGHT}`}>
-        <div className="flex items-center mb-4">
-          <LayoutTemplate size={20} className={DESIGN_ICON_CLASS} />
-          <h3 className={DESIGN_SECTION_TITLE_CLASS}>Choose Template</h3>
-        </div>
-        <div className="grid grid-cols-3 gap-3 max-w-[480px]">
-          {TEMPLATES.map((t) => (
-            <button key={t.key} type="button" onClick={() => setTemplate(t.key)}
-              className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all duration-200 group ${template === t.key ? 'border-violet-500 bg-violet-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'}`}>
-              {template === t.key && (<div className="absolute top-1.5 right-1.5 text-violet-600 z-10"><CheckCircle2 size={16} fill="currentColor" className="text-white fill-violet-600" /></div>)}
-              <div className={`w-full aspect-3/4 rounded-md border mb-2 overflow-hidden transition-all duration-300 ${template === t.key
-                ? (isDarkMode ? 'border-violet-500 ring-2 ring-violet-500/30 shadow-lg shadow-violet-900/20 scale-[1.02]' : 'border-violet-400 ring-2 ring-violet-500/20 shadow-md scale-[1.02]')
-                : (isDarkMode ? 'border-slate-700 grayscale-[0.4] opacity-70 hover:grayscale-0 hover:opacity-100 hover:border-slate-600' : 'border-gray-200 grayscale-[0.3] opacity-80 hover:grayscale-0 hover:opacity-100 hover:border-gray-300')}`}>
-                <img src={t.img} alt={`${t.label} Template`} className="w-full h-full object-cover" />
-              </div>
-              <span className={`text-xs font-bold ${template === t.key ? 'text-violet-700' : 'text-gray-600'}`}>{t.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Profile Picture */}
       <div className={`${DESIGN_CARD_CLASS} ${isDarkMode ? DESIGN_CARD_DARK : DESIGN_CARD_LIGHT}`}>
         <div className="flex items-center mb-4">

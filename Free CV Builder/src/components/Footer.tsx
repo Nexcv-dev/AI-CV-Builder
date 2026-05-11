@@ -8,7 +8,7 @@ const linkGroups = [
     links: [
       { label: 'Home', to: '/' },
       { label: 'Builder', to: '/builder' },
-      { label: 'Templates', to: '/#templates' },
+      { label: 'Templates', to: '/templates' },
       { label: 'Features', to: '/#features' },
     ],
   },

@@ -4,7 +4,7 @@ import { ArrowRight, FileText, Home, Info, LayoutTemplate, Mail, Menu, Shield, X
 
 const mainLinks = [
   { label: 'Home', href: '/', icon: Home, delay: '0ms' },
-  { label: 'Templates', href: '/#templates', icon: LayoutTemplate, delay: '50ms' },
+  { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms' },
   { label: 'Features', href: '/#features', icon: Zap, delay: '100ms' },
   { label: 'FAQ', href: '/#faq', icon: Info, delay: '150ms' },
   { label: 'About', href: '/about', icon: Info, delay: '200ms' },
@@ -66,7 +66,7 @@ export function SiteHeader() {
           </Link>
 
           <nav className="hidden items-center gap-7 text-sm font-bold text-slate-300 md:flex">
-            <Link to="/#templates" className="transition-colors hover:text-white">Templates</Link>
+            <Link to="/templates" className="transition-colors hover:text-white">Templates</Link>
             <Link to="/#features" className="transition-colors hover:text-white">Features</Link>
             <Link to="/#faq" className="transition-colors hover:text-white">FAQ</Link>
             <Link to="/about" className="transition-colors hover:text-white">About</Link>
