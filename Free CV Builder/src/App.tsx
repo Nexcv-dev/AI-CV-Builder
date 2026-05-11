@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import Home from './pages/Home';
@@ -27,6 +27,10 @@ function PageLoadingOverlay() {
     !isHashOnlyLandingNavigation;
 
   useLayoutEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
     if (isFirstRender.current) {
       isFirstRender.current = false;
       previousPathname.current = location.pathname;
