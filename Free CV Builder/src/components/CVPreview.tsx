@@ -1,11 +1,12 @@
 import React, { forwardRef } from 'react';
 import { Mail, Phone, MapPin, Calendar, IdCard, User, Globe, Sparkles, Heart } from 'lucide-react';
 import { CVData } from '../types';
+import { TemplateName } from '../templates';
 import DOMPurify from 'dompurify';
 
 interface CVPreviewProps {
   cvData: CVData;
-  template: 'classic' | 'modern' | 'professional';
+  template: TemplateName;
 }
 
 const getValidUrl = (url?: string): string | undefined => {
@@ -244,14 +245,24 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     if (hiddenSections.includes(sectionKey)) return null;
     const isPro = template === 'professional';
     const isModern = template === 'modern';
+    const isTimeline = template === 'timeline';
 
     const SectionHeader = ({ title }: { title: string }) => (
-      <h2 
-        className={`${isPro ? 'text-sm' : 'text-lg'} font-bold uppercase tracking-widest border-b-2 mb-4 pb-1`} 
-        style={{ color: themeColor, borderColor: themeColor }}
-      >
-        {title}
-      </h2>
+      isTimeline ? (
+        <div className="mb-4 flex items-center gap-3">
+          <h2 className="shrink-0 text-[11px] font-black uppercase tracking-[0.22em]" style={{ color: themeColor }}>
+            {title}
+          </h2>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+      ) : (
+        <h2 
+          className={`${isPro ? 'text-sm' : 'text-lg'} font-bold uppercase tracking-widest border-b-2 mb-4 pb-1`} 
+          style={{ color: themeColor, borderColor: themeColor }}
+        >
+          {title}
+        </h2>
+      )
     );
 
     const SectionWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -269,12 +280,15 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     );
 
     const GridRow = ({ dateNode, contentNode }: { dateNode: React.ReactNode, contentNode: React.ReactNode }) => {
-      const colClass = isPro ? 'grid-cols-[114px_1fr]' : 'grid-cols-[130px_1fr]';
-      const dateClass = isPro ? 'text-xs text-gray-500 font-bold uppercase pt-0.5' : 'text-sm text-gray-500 font-medium pt-0.5';
+      const colClass = isTimeline ? 'grid-cols-[104px_1fr]' : (isPro ? 'grid-cols-[114px_1fr]' : 'grid-cols-[130px_1fr]');
+      const dateClass = isTimeline ? 'text-[11px] text-gray-500 font-black uppercase tracking-wider pt-0.5' : (isPro ? 'text-xs text-gray-500 font-bold uppercase pt-0.5' : 'text-sm text-gray-500 font-medium pt-0.5');
       return (
         <div className={`grid ${colClass} gap-4`} style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
           <div className={dateClass}>{dateNode}</div>
-          <div>{contentNode}</div>
+          <div className={isTimeline ? 'relative border-l border-gray-200 pl-5' : ''}>
+            {isTimeline && <span className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white" style={{ backgroundColor: themeColor }} />}
+            {contentNode}
+          </div>
         </div>
       );
     };
@@ -294,7 +308,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         return (
           <SectionWrapper key="personalDetails">
             <SectionHeader title={isPro ? 'Personal Information' : 'Personal Details'} />
-            <div className={`grid grid-cols-2 gap-x-12 gap-y-2 text-sm ${isPro ? 'ml-[130px]' : ''}`}>
+            <div className={`grid grid-cols-2 gap-x-12 gap-y-2 text-sm ${isPro ? 'ml-[130px]' : ''} ${isTimeline ? 'text-[13px]' : ''}`}>
               {personalInfo.dob && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Date of Birth:</span><span className="text-gray-800">{personalInfo.dob}</span></div>}
               {personalInfo.nic && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">NIC{isPro ? '' : ' Number'}:</span><span className="text-gray-800">{personalInfo.nic}</span></div>}
               {personalInfo.gender && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Gender:</span><span className="text-gray-800">{personalInfo.gender}</span></div>}
@@ -385,7 +399,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         const renderChips = (skillList: typeof skills) => (
           <div className="flex flex-wrap gap-2">
             {skillList.map((skill) => (
-              <span key={skill.id} className={`font-semibold bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-200 ${isPro ? 'text-xs px-2.5 py-1' : 'text-sm px-3 py-1.5'}`} style={{ pageBreakInside: 'avoid' }}>
+              <span key={skill.id} className={`font-semibold bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-200 ${isPro || isTimeline ? 'text-xs px-2.5 py-1' : 'text-sm px-3 py-1.5'}`} style={{ pageBreakInside: 'avoid' }}>
                 {skill.name}
               </span>
             ))}
@@ -409,6 +423,31 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 {Object.entries(skillsByCategory).map(([category, catSkills]) => (
                   <div key={category} className="grid grid-cols-[114px_1fr] gap-4">
                     <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">{category}</div>
+                    {renderChips(catSkills)}
+                  </div>
+                ))}
+              </div>
+            </SectionWrapper>
+          );
+        }
+
+        if (isTimeline) {
+          const skillsByCategory = hasCategories
+            ? skills.reduce((acc, skill) => {
+                const category = skill.category?.trim() || 'Core Skills';
+                if (!acc[category]) acc[category] = [];
+                acc[category].push(skill);
+                return acc;
+              }, {} as Record<string, typeof skills>)
+            : { 'Core Skills': skills };
+
+          return (
+            <SectionWrapper key="skills">
+              <SectionHeader title="Skills" />
+              <div className="grid gap-3">
+                {Object.entries(skillsByCategory).map(([category, catSkills]) => (
+                  <div key={category} className="grid grid-cols-[104px_1fr] gap-4">
+                    <div className="pt-1 text-[11px] font-black uppercase tracking-wider text-gray-500">{category}</div>
                     {renderChips(catSkills)}
                   </div>
                 ))}
@@ -554,7 +593,16 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         return (
           <SectionWrapper key="languages">
             <SectionHeader title="Languages" />
-            {isPro ? (
+            {isTimeline ? (
+              <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                {cvData.languages.map((lang) => (
+                  <div key={lang.id} data-page-break="avoid" className="min-w-0" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                    <span className="font-bold text-gray-800">{lang.name}</span>
+                    <span className="ml-1.5 text-xs text-gray-500">{lang.proficiency}</span>
+                  </div>
+                ))}
+              </div>
+            ) : isPro ? (
               <div className="grid grid-cols-[114px_1fr] gap-4">
                 <div className="text-xs text-gray-500 font-bold uppercase pt-0.5">Spoken</div>
                 <div className="flex flex-wrap gap-4 text-sm font-medium text-gray-800">
@@ -724,6 +772,31 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               <div className="professional-sections-container">
                 {(cvData.sectionOrder || []).map(renderSection)}
               </div>
+            </div>
+          </div>
+        ) : template === 'timeline' ? (
+          <div className="p-[18mm] min-h-[297mm] flex flex-col bg-white">
+            <header className="mb-9 border-b border-gray-200 pb-6">
+              <div className="flex items-start justify-between gap-8">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-3 h-1.5 w-16 rounded-full" style={{ backgroundColor: themeColor }} />
+                  <h1 className="text-[2.45rem] font-black leading-none tracking-tight text-gray-950 wrap-break-word">
+                    {personalInfo.fullName || 'Your Name'}
+                  </h1>
+                </div>
+                <div className="max-w-[72mm] pt-1 text-right text-[12px] font-medium leading-5 text-gray-500">
+                  {[personalInfo.email, personalInfo.phone, personalInfo.address]
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <div key={i} className="wrap-break-word" style={{ wordBreak: 'break-word', textDecoration: 'none' }}>{item}</div>
+                    ))
+                  }
+                </div>
+              </div>
+            </header>
+
+            <div className="timeline-sections-container">
+              {(cvData.sectionOrder || []).map(renderSection)}
             </div>
           </div>
         ) : (

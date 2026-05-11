@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Download, FileText, Home, Info, LayoutTemplate, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
+import { CV_TEMPLATES } from '../templates';
 
 const stats = [
   { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
   { label: 'Active Users', value: 4300, suffix: '+', color: 'from-emerald-400 to-emerald-600' },
-  { label: 'Templates Available', value: 3, suffix: '', color: 'from-violet-400 to-emerald-400' },
+  { label: 'Templates Available', value: CV_TEMPLATES.length, suffix: '', color: 'from-violet-400 to-emerald-400' },
 ];
 
 function useCountUp(target: number, duration = 2200, started: boolean) {
@@ -52,11 +53,7 @@ function StatCard({ label, value, suffix, color }: typeof stats[0]) {
   );
 }
 
-const templates = [
-  { name: 'Professional', src: '/templates/professional.png' },
-  { name: 'Modern', src: '/templates/modern.png' },
-  { name: 'Classic', src: '/templates/classic.png' },
-];
+const featuredTemplates = CV_TEMPLATES;
 
 const featureTiles = [
   { icon: Wand2, title: 'AI polish', text: 'Improve rough content fast.', tone: 'emerald' },
@@ -194,7 +191,7 @@ export default function LandingPage() {
 
           {/* Desktop Nav */}
           <nav className="hidden items-center gap-7 text-sm font-bold text-slate-300 md:flex">
-            <a href="#templates" className="transition-colors hover:text-white">Templates</a>
+            <Link to="/templates" className="transition-colors hover:text-white">Templates</Link>
             <a href="#features" className="transition-colors hover:text-white">Features</a>
             <a href="#faq" className="transition-colors hover:text-white">FAQ</a>
             <Link to="/about" className="transition-colors hover:text-white">About</Link>
@@ -267,7 +264,7 @@ export default function LandingPage() {
           <div className="p-4 flex flex-col gap-1">
             {[
               { label: 'Home', href: '/', icon: Home, delay: '0ms', isLink: true },
-              { label: 'Templates', href: '#templates', icon: LayoutTemplate, delay: '50ms', isLink: false },
+              { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms', isLink: true },
               { label: 'Features', href: '#features', icon: Zap, delay: '100ms', isLink: false },
               { label: 'FAQ', href: '#faq', icon: Info, delay: '150ms', isLink: false },
               { label: 'About', href: '/about', icon: Info, delay: '200ms', isLink: true },
@@ -411,12 +408,12 @@ export default function LandingPage() {
                   Create CV
                   <ArrowRight size={20} className="ml-2" />
                 </Link>
-                <a
-                  href="#templates"
+                <Link
+                  to="/templates"
                   className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/6 px-5 py-3.5 text-sm font-extrabold text-white backdrop-blur transition-all hover:bg-white/10 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
                   See Templates
-                </a>
+                </Link>
               </div>
 
               <div className="landing-reveal mt-7 grid max-w-2xl gap-2.5 sm:mt-9 sm:grid-cols-3 sm:gap-3">
@@ -504,28 +501,28 @@ export default function LandingPage() {
                 <p className="text-sm font-black uppercase text-violet-700">Templates</p>
                 <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Pick a look and keep moving</h2>
               </div>
-              <Link to="/builder" className="inline-flex items-center text-sm font-black text-violet-700 hover:text-violet-600">
-                Open builder <ArrowRight size={17} className="ml-1.5" />
+              <Link to="/templates" className="inline-flex items-center text-sm font-black text-violet-700 hover:text-violet-600">
+                Templates <ArrowRight size={17} className="ml-1.5" />
               </Link>
             </div>
 
-            <div className="mt-8 grid gap-4 sm:mt-10 md:grid-cols-3 md:gap-5">
-              {templates.map((template, index) => (
+            <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
+              {featuredTemplates.map((template, index) => (
                 <Link
-                  to={`/builder?template=${template.name.toLowerCase()}`}
-                  key={template.name}
+                  to={`/builder?template=${template.key}`}
+                  key={template.key}
                   className="landing-scroll-reveal landing-template-card group overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/20"
                   style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}
                 >
                   <div className="aspect-4/5 overflow-hidden bg-slate-800">
                     <img
-                      src={template.src}
-                      alt={`${template.name} CV template preview`}
+                      src={template.image}
+                      alt={`${template.label} CV template preview`}
                       className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.035]"
                     />
                   </div>
                   <div className="flex items-center justify-between px-5 py-4">
-                    <span className="font-montserrat font-black text-white">{template.name}</span>
+                    <span className="font-montserrat font-black text-white">{template.label}</span>
                     <ArrowRight size={18} className="text-violet-300 transition-transform group-hover:translate-x-1" />
                   </div>
                 </Link>

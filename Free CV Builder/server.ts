@@ -11,6 +11,7 @@ import chromium from '@sparticuz/chromium';
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
+import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
 
 const window = new JSDOM('').window;
 const DOMPurify = createDOMPurify(window);
@@ -577,11 +578,14 @@ export function generateCVHTML(cvData: any, template: string): string {
     // ─── Reusable micro-templates ────────────────────────────────────
     const isPro = template === 'professional';
     const isModern = template === 'modern';
-    const headingFontSize = isPro ? '0.875rem' : '1.125rem';
-    const dateColWidth = isPro ? '114px' : '130px';
+    const isTimeline = template === 'timeline';
+    const headingFontSize = isPro ? '0.875rem' : (isTimeline ? '0.6875rem' : '1.125rem');
+    const dateColWidth = isTimeline ? '104px' : (isPro ? '114px' : '130px');
 
     const heading = (title: string) =>
-        `<h2 style="font-size:${headingFontSize};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${title}</h2>`;
+        isTimeline
+            ? `<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><h2 style="flex-shrink:0;font-size:${headingFontSize};font-weight:900;text-transform:uppercase;letter-spacing:0.22em;color:${themeColor}">${title}</h2><div style="height:1px;flex:1;background:#e5e7eb"></div></div>`
+            : `<h2 style="font-size:${headingFontSize};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${title}</h2>`;
 
     const section = (content: string) =>
         `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">${content}</section>`;
@@ -599,10 +603,17 @@ export function generateCVHTML(cvData: any, template: string): string {
         `<h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(t)}</h3>`;
 
     const timelineRow = (dateHtml: string, inner: string) => {
-        const ds = isPro ? 'font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px'
-            : 'font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px';
+        const ds = isTimeline ? 'font-size:0.6875rem;color:#6b7280;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;padding-top:2px'
+            : (isPro ? 'font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px'
+                : 'font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px');
+        const contentStyle = isTimeline
+            ? `position:relative;border-left:1px solid #e5e7eb;padding-left:20px`
+            : '';
+        const dot = isTimeline
+            ? `<span style="position:absolute;left:-5px;top:4px;width:10px;height:10px;border-radius:9999px;border:2px solid #ffffff;background:${themeColor}"></span>`
+            : '';
         return `<div style="display:grid;grid-template-columns:${dateColWidth} 1fr;gap:16px;break-inside:avoid">
-            <div style="${ds}">${dateHtml}</div><div>${inner}</div></div>`;
+            <div style="${ds}">${dateHtml}</div><div style="${contentStyle}">${dot}${inner}</div></div>`;
     };
 
     const modernItem = (titleH: string, leftSub: string, rightSub: string, body: string) =>
@@ -683,9 +694,28 @@ export function generateCVHTML(cvData: any, template: string): string {
 
         if (key === 'skills' && skills.length > 0) {
             if (isModern) return '';
-            const chips = skills.map((s: any) => `<span style="font-size:0.875rem;font-weight:600;padding:6px 12px;background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`).join('');
+            const chipsFor = (skillList: any[]) => skillList.map((s: any) => `<span style="font-size:${isTimeline ? '0.75rem' : '0.875rem'};font-weight:600;padding:${isTimeline ? '4px 10px' : '6px 12px'};background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`).join('');
+            const chips = chipsFor(skills);
             if (isPro) {
                 return section(`${heading('Skills & Expertise')}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Core Setup</div><div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div></div>`);
+            }
+            if (isTimeline) {
+                const hasCategories = skills.some((s: any) => s.category?.trim());
+                const skillsByCategory = hasCategories
+                    ? skills.reduce((acc: any, skill: any) => {
+                        const category = skill.category?.trim() || 'Core Skills';
+                        if (!acc[category]) acc[category] = [];
+                        acc[category].push(skill);
+                        return acc;
+                    }, {})
+                    : { 'Core Skills': skills };
+                const grouped = Object.entries(skillsByCategory).map(([category, catSkills]: [string, any]) => `
+                  <div style="display:grid;grid-template-columns:104px 1fr;gap:16px">
+                    <div style="font-size:0.6875rem;color:#6b7280;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;padding-top:4px">${esc(category)}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px">${chipsFor(catSkills)}</div>
+                  </div>
+                `).join('');
+                return section(`${heading('Skills')}<div style="display:flex;flex-direction:column;gap:12px">${grouped}</div>`);
             }
             return section(`${heading('Skills')}<div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div>`);
         }
@@ -729,6 +759,10 @@ export function generateCVHTML(cvData: any, template: string): string {
 
         if (key === 'languages' && languages.length > 0) {
             if (isModern) return '';
+            if (isTimeline) {
+                const li = languages.map((l: any) => `<div style="break-inside:avoid;min-width:0"><span style="font-size:0.875rem;font-weight:700;color:#1f2937">${esc(l.name || '')}</span><span style="margin-left:6px;font-size:0.75rem;color:#6b7280">${esc(l.proficiency || '')}</span></div>`).join('');
+                return section(`${heading('Languages')}<div style="display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:24px;row-gap:8px">${li}</div>`);
+            }
             if (isPro) {
                 const li = languages.map((l: any) => `<span style="font-size:0.875rem;font-weight:500;color:#1f2937">${esc(l.name || '')} <span style="color:#9ca3af;font-weight:400">(${esc(l.proficiency || '')})</span></span>`).join('');
                 return section(`${heading('Languages')}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Spoken</div><div style="display:flex;flex-wrap:wrap;gap:16px">${li}</div></div>`);
@@ -884,6 +918,31 @@ export function generateCVHTML(cvData: any, template: string): string {
         </table>
       </div>
     </div>`;
+    } else if (template === 'timeline') {
+        const contactItems = [personalInfo.email, personalInfo.phone, personalInfo.address]
+            .filter(Boolean)
+            .map((item: string) => `<div style="word-break:break-word;text-decoration:none">${esc(item)}</div>`)
+            .join('');
+
+        bodyContent = `<div style="display:block;background:white">
+      <div style="padding:0 18mm;padding-top:18mm;min-height:297mm">
+        <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
+          <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+          <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
+            <header style="margin-bottom:36px;border-bottom:1px solid #e5e7eb;padding-bottom:24px">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:32px">
+                <div style="min-width:0;flex:1">
+                  <div style="width:64px;height:6px;border-radius:9999px;background:${themeColor};margin-bottom:12px"></div>
+                  <h1 style="font-size:2.45rem;line-height:1;font-weight:900;letter-spacing:-0.025em;color:#030712;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+                </div>
+                <div style="max-width:72mm;padding-top:4px;text-align:right;font-size:0.75rem;font-weight:500;line-height:1.65;color:#6b7280">${contactItems}</div>
+              </div>
+            </header>
+            ${sectionsHTML}
+          </td></tr></tbody>
+        </table>
+      </div>
+    </div>`;
     } else {
         // Classic
         bodyContent = `<div style="display:block;background:white">
@@ -978,9 +1037,6 @@ export function generateCVHTML(cvData: any, template: string): string {
 }
 
 // AI Generate PDF via Puppeteer — using setContent() instead of page.goto()
-const ALLOWED_TEMPLATES = ['classic', 'modern', 'professional'] as const;
-type TemplateType = typeof ALLOWED_TEMPLATES[number];
-
 /** Recursively sanitize all string values in an object to prevent XSS in PDF generation */
 function sanitizeCvData(obj: any, depth = 0): any {
     if (depth > 10) return obj; // Prevent infinite recursion
@@ -1011,9 +1067,9 @@ app.post('/api/generate-pdf', async (req: Request, res: Response) => {
         }
 
         // Validate template against allow-list
-        const validatedTemplate: TemplateType = ALLOWED_TEMPLATES.includes(template)
+        const validatedTemplate = isTemplateName(template)
             ? template
-            : 'modern';
+            : DEFAULT_TEMPLATE;
 
         // Sanitize all string values in cvData to prevent injection
         const safeCvData = sanitizeCvData(cvData);
