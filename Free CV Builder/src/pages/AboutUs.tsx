@@ -3,7 +3,7 @@ import { SiteHeader } from '../components/SiteHeader';
 
 export default function AboutUs() {
   return (
-    <div className="min-h-svh overflow-x-hidden bg-slate-950 text-slate-300">
+    <div className="overflow-x-hidden bg-slate-950 text-slate-300">
       <SiteHeader />
 
       <main className="relative mx-auto max-w-4xl px-4 py-24 sm:px-6 lg:px-8">

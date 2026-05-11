@@ -106,7 +106,7 @@ function Layout() {
   }, [location.pathname, location.hash]);
 
   return (
-    <div className={`flex flex-col ${isBuilder ? 'min-h-svh h-svh overflow-hidden bg-slate-950' : 'min-h-svh bg-slate-950'}`}>
+    <div className={`flex flex-col ${isBuilder ? 'h-dvh min-h-dvh overflow-hidden bg-slate-950' : 'min-h-dvh bg-slate-950'}`}>
       <div className="flex-1 flex flex-col min-h-0">
         <Outlet />
       </div>

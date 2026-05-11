@@ -181,7 +181,7 @@ export default function LandingPage() {
   const shouldCloseBeforeNavigate = (href: string) => href.startsWith('#') || (href === '/' && location.pathname === '/');
 
   return (
-    <div className="min-h-svh overflow-x-hidden bg-slate-950 text-white">
+    <div className="overflow-x-hidden bg-slate-950 text-white">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-slate-950/80 shadow-sm shadow-black/20 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
