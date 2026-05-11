@@ -39,6 +39,11 @@ export const PremiumSelect = React.memo(({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest('[data-keep-builder-dropdown-open="true"]')) {
+        return;
+      }
+
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }

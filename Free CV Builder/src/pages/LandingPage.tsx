@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Download, FileText, Info, LayoutTemplate, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
+import { ArrowRight, ChevronDown, Download, FileText, Home, Info, LayoutTemplate, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
 
 const stats = [
   { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
@@ -123,6 +123,7 @@ export default function LandingPage() {
     const revealItems = document.querySelectorAll<HTMLElement>('.landing-scroll-reveal');
     if (!revealItems.length) return;
 
+    const isMobileViewport = window.matchMedia('(max-width: 767px)').matches;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -132,7 +133,10 @@ export default function LandingPage() {
           }
         });
       },
-      { threshold: 0.16, rootMargin: '0px 0px -8% 0px' }
+      {
+        threshold: isMobileViewport ? 0.08 : 0.16,
+        rootMargin: isMobileViewport ? '0px 0px 12% 0px' : '0px 0px -8% 0px',
+      }
     );
 
     revealItems.forEach((item) => observer.observe(item));
@@ -234,7 +238,6 @@ export default function LandingPage() {
         style={{
           pointerEvents: mobileMenuOpen ? 'auto' : 'none',
         }}
-        aria-hidden={!mobileMenuOpen}
       >
         {/* Backdrop */}
         <div
@@ -260,10 +263,11 @@ export default function LandingPage() {
 
           <div className="p-4 flex flex-col gap-1">
             {[
-              { label: 'Templates', href: '#templates', icon: LayoutTemplate, delay: '0ms', isLink: false },
-              { label: 'Features', href: '#features', icon: Zap, delay: '50ms', isLink: false },
-              { label: 'FAQ', href: '#faq', icon: Info, delay: '100ms', isLink: false },
-              { label: 'About', href: '/about', icon: Info, delay: '150ms', isLink: true },
+              { label: 'Home', href: '/', icon: Home, delay: '0ms', isLink: true },
+              { label: 'Templates', href: '#templates', icon: LayoutTemplate, delay: '50ms', isLink: false },
+              { label: 'Features', href: '#features', icon: Zap, delay: '100ms', isLink: false },
+              { label: 'FAQ', href: '#faq', icon: Info, delay: '150ms', isLink: false },
+              { label: 'About', href: '/about', icon: Info, delay: '200ms', isLink: true },
             ].map(({ label, href, icon: Icon, delay, isLink }) => (
               isLink ? (
                 <Link
@@ -272,7 +276,6 @@ export default function LandingPage() {
                   onClick={closeMobileMenu}
                   className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-200 transition-all hover:bg-white/[0.07] hover:text-white active:scale-[0.98]"
                   style={{
-                    transitionDelay: mobileMenuOpen ? delay : '0ms',
                     transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
                     opacity: mobileMenuOpen ? 1 : 0,
                     transition: `transform 0.35s cubic-bezier(0.22,1,0.36,1) ${delay}, opacity 0.25s ease ${delay}, background 0.15s`,

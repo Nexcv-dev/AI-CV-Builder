@@ -26,6 +26,11 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, setTemplat
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest('[data-keep-builder-dropdown-open="true"]')) {
+        return;
+      }
+
       if (fontDropdownRef.current && !fontDropdownRef.current.contains(event.target as Node)) {
         setIsFontDropdownOpen(false);
       }

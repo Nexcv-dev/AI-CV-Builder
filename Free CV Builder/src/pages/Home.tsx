@@ -439,6 +439,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={handleThemeToggle}
+                  data-keep-builder-dropdown-open="true"
                   className={`p-2 active:scale-95 rounded-xl transition-all border ${isDarkMode ? 'text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700' : 'text-slate-700 bg-white border-gray-200 hover:bg-gray-100'}`}
                   aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
@@ -504,6 +505,7 @@ export default function Home() {
               </button>
               <button
                 onClick={handleThemeToggle}
+                data-keep-builder-dropdown-open="true"
                 className={`flex items-center justify-center p-2.5 rounded-xl transition-all duration-200 border active:scale-95 ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-700 border-gray-200 hover:bg-gray-100'}`}
                 aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
