@@ -11,6 +11,10 @@ import chromium from '@sparticuz/chromium';
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
+import session from 'express-session';
+import passport from 'passport';
+import connectDB from './server-models/db';
+import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
 
 const window = new JSDOM('').window;
@@ -19,8 +23,33 @@ const DOMPurify = createDOMPurify(window);
 // Load environment variables from .env
 dotenv.config();
 
+// Connect to MongoDB
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+if (mongoUri) {
+    connectDB();
+} else {
+    console.warn("MongoDB URI not found in .env. MongoDB connection skipped.");
+}
+
 const app = express();
 const PORT = process.env.PORT || 3002;
+
+// ─── Session & Auth Middleware ───────────────────────────────────────
+
+// Configure session middleware (required for passport to maintain login sessions)
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'fallback_secret_key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // ─── Security Middleware ─────────────────────────────────────────────
 
@@ -146,6 +175,38 @@ export function sanitizeContextField(value: any): string {
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ─── Auth Routes (Placeholders) ──────────────────────────────────────
+
+// Initiate Google Login
+app.get('/api/auth/google', passport.authenticate('google', {
+    scope: ['profile', 'email']
+}));
+
+// Google Auth Callback
+app.get('/api/auth/google/callback', passport.authenticate('google', {
+    failureRedirect: '/login?error=true',
+}), (req: Request, res: Response) => {
+    // Successful authentication
+    res.redirect('/dashboard'); // Redirect to appropriate page after login
+});
+
+// Get Current User
+app.get('/api/auth/current-user', (req: Request, res: Response) => {
+    if (req.isAuthenticated()) {
+        res.json({ user: req.user });
+    } else {
+        res.status(401).json({ error: 'Not authenticated' });
+    }
+});
+
+// Logout
+app.post('/api/auth/logout', (req: Request, res: Response, next: NextFunction) => {
+    req.logout((err) => {
+        if (err) { return next(err); }
+        res.json({ message: 'Logged out successfully' });
+    });
 });
 
 app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req: Request, res: Response) => {

@@ -40,6 +40,7 @@
 ### Backend
 - **Runtime**: Node.js & Express
 - **Language**: TypeScript
+- **Database & Auth**: MongoDB (Mongoose) & Google OAuth 2.0 (Passport)
 - **AI Engine**: Google Gemini Pro (`@google/genai`)
 - **PDF Engine**: Puppeteer-core + @sparticuz/chromium
 
@@ -90,6 +91,10 @@
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
    PORT=3002
+   MONGODB_URI=your_mongodb_connection_string
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   SESSION_SECRET=your_session_secret_here
    ```
 
 4. **Start Development Server**:
