@@ -123,6 +123,7 @@ export default function LandingPage() {
     const revealItems = document.querySelectorAll<HTMLElement>('.landing-scroll-reveal');
     if (!revealItems.length) return;
 
+    const isMobileViewport = window.matchMedia('(max-width: 767px)').matches;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -132,7 +133,10 @@ export default function LandingPage() {
           }
         });
       },
-      { threshold: 0.16, rootMargin: '0px 0px -8% 0px' }
+      {
+        threshold: isMobileViewport ? 0.08 : 0.16,
+        rootMargin: isMobileViewport ? '0px 0px 12% 0px' : '0px 0px -8% 0px',
+      }
     );
 
     revealItems.forEach((item) => observer.observe(item));
