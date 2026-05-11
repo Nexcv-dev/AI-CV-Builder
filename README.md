@@ -46,17 +46,24 @@
 ## 📂 Project Structure
 
 ```text
-Free CV Builder/
-├── src/                # Frontend Source
-│   ├── components/     # Reusable UI components
-│   ├── pages/          # Main page layouts
-│   ├── utils/          # Helper functions (AI, PDF, etc.)
-│   ├── types.ts        # TypeScript definitions
-│   └── index.css       # Global styles & Tailwind config
-├── tests/              # Unit & Integration tests
-├── server.ts           # Express backend for PDF generation & AI
-├── vite.config.ts      # Vite configuration
-└── package.json        # Dependencies & scripts
+.
+├── .github/                # GitHub Actions & CI/CD workflows
+├── Free CV Builder/        # Core Application Directory
+│   ├── src/                # Frontend Source
+│   │   ├── components/     # UI components (CV Form, Preview, etc.)
+│   │   ├── pages/          # Main application pages
+│   │   ├── utils/          # AI parsing & PDF generation logic
+│   │   ├── types.ts        # TypeScript interfaces
+│   │   └── index.css       # Styling & Tailwind configuration
+│   ├── public/             # Static assets & templates
+│   ├── tests/              # Vitest unit & integration tests
+│   ├── server.ts           # Express backend (AI & Puppeteer)
+│   ├── Dockerfile          # App containerization
+│   └── package.json        # Project manifest & scripts
+├── docker-compose.yml      # Docker orchestration
+├── render.yaml             # Render deployment blueprint
+├── CHANGELOG.md            # Automated version history
+└── README.md               # Project documentation
 ```
 
 ## 🏁 Getting Started
