@@ -11,6 +11,8 @@ export interface IUser extends Document {
   gender?: string;
   nationality?: string;
   passwordHash?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   authProvider: 'google' | 'email';
   createdAt: Date;
   updatedAt: Date;
@@ -28,6 +30,8 @@ const UserSchema: Schema = new Schema(
     gender: { type: String },
     nationality: { type: String },
     passwordHash: { type: String },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
     authProvider: { type: String, enum: ['google', 'email'], default: 'email', required: true },
   },
   {

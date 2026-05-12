@@ -1,245 +1,200 @@
-# NexCV - AI CV Builder
+# NexCV - Free AI-Powered CV Builder
 
-NexCV is a full-stack AI CV builder for creating, importing, saving, editing, and exporting professional resumes. It includes a polished landing page, guest-friendly builder flow, authenticated dashboard, profile/settings pages, MongoDB-backed saved documents, Google/email authentication, AI-assisted CV import, AI writing tools, template selection, and PDF download.
+NexCV is a modern, full-stack web application designed to help users create professional, ATS-friendly resumes effortlessly. Leveraging the power of AI (Google Gemini), NexCV can intelligently parse existing resumes from PDFs or images, and assist in writing compelling summaries. The app offers a seamless "guest-first" experience, allowing users to build and preview their CVs instantly, with optional cloud saving and PDF exports available upon account creation.
 
-Current app version: `0.0.0`
+Currently in version: `1.0.0` (Beta)
 
-## Features
+## ✨ Key Features
 
-- Guest builder access with login required only for saving and downloading.
-- Email/password signup and login.
-- Google OAuth login with Google profile image support.
-- User avatar fallback using the first letter of the user's name.
-- Dashboard for saved CV documents.
-- Import CV flow from landing page, dashboard, and post-login onboarding.
-- AI CV import from PDF or image files.
-- AI summary generation and text refinement.
-- Template picker with explicit "Use this template" confirmation.
-- Live CV preview with responsive builder layout.
-- Cloud save, edit, and delete for saved CV documents.
-- Profile page with editable personal details and profile picture upload/remove.
-- Settings page for password, session, and account actions.
-- PDF generation through Puppeteer and Chromium.
-- Toast-based success/error/rate-limit feedback.
-- Mobile-optimized builder, dashboard, profile, and settings pages with pill-style navigation.
-- Enhanced Dashboard with activity stats and compact document cards.
-- Reset and Import flow with smooth loading animations and component-level remounting.
-- Docker support for consistent development and deployment environments.
-- Rate limiting, request integrity checks, sanitization, and secure sessions.
+### 🧠 AI-Powered Capabilities
+- **Smart CV Parsing:** Upload an existing CV (PDF or Image), and NexCV's Gemini integration will instantly extract and populate your details into the builder.
+- **AI Summary Generation:** Overcome writer's block with AI-assisted profile summaries tailored to your experience.
 
-## Tech Stack
+### 🛠️ Intuitive Builder Experience
+- **Guest-First Flow:** Start building immediately without the friction of signing up.
+- **Live Preview:** See changes in real-time as you type, with a responsive side-by-side builder layout.
+- **Professional Templates:** Choose from a curated selection of modern, ATS-optimized CV templates.
 
-### Frontend
+### 🔐 Secure Authentication & Management
+- **Flexible Login:** Sign up using Email/Password or instantly with Google OAuth 2.0.
+- **Password Recovery:** Secure password reset flow utilizing Nodemailer with Gmail integration.
+- **Cloud Document Storage:** Safely store, edit, duplicate, and delete multiple CVs in your personal dashboard.
+- **Profile Settings:** Manage your personal details, profile picture (with auto-fallback avatars), and account security.
 
-- React 18
-- Vite 6
+### 🚀 Performance & Export
+- **Pixel-Perfect PDFs:** Server-side rendering using Puppeteer ensures your downloaded CV looks exactly like the preview, with no browser inconsistencies.
+- **Mobile Optimized:** A fully responsive design with pill-style navigation ensures you can edit your CV on the go.
+
+## 💻 Tech Stack
+
+**Frontend:**
+- React 18 (with Vite 6)
 - TypeScript
-- Tailwind CSS 4
-- Motion
-- Lucide React
-- React Hot Toast
-- Vitest and Testing Library
+- Tailwind CSS v4
+- Framer Motion (Animations)
+- Lucide React (Icons)
+- React Hot Toast (Notifications)
+- Vitest & Testing Library
 
-### Backend
-
-- Node.js
-- Express
+**Backend:**
+- Node.js & Express
 - TypeScript
 - MongoDB with Mongoose
-- Passport Google OAuth 2.0
-- Express Session
-- Google Gemini via `@google/genai`
-- Puppeteer Core with `@sparticuz/chromium`
-- DOMPurify and JSDOM
-- Helmet, CORS, and Express Rate Limit
+- Passport.js (Google OAuth 2.0 & Local)
+- Express Session (Stateful Auth)
+- Nodemailer (Email Delivery for Password Resets)
+- `@google/genai` (Gemini API Integration)
+- Puppeteer Core & `@sparticuz/chromium` (PDF Generation)
+- DOMPurify & JSDOM (Sanitization)
+- Helmet, CORS, & Express Rate Limit (Security)
 
-## Project Structure
+## 📁 Project Structure
 
 ```text
 AI-CV-Builder/
-  README.md
-  docker-compose.yml
-  render.yaml
-  Free CV Builder/
-    Dockerfile
-    server.ts             # Express backend entry point
-    package.json
-    vite.config.ts
-    server-models/        # MongoDB Mongoose models & Auth
-      CVDocument.ts
-      User.ts
-      db.ts
-      passportSetup.ts
-    src/                  # Frontend React application
-      App.tsx             # Router & main layout
-      main.tsx            # App entry point
-      components/         # Shared UI components
-        CVForm.tsx        # Main builder form & logic
-        CVPreview.tsx     # Live CV preview & HTML templates
-        AuthModal.tsx     # Login/Signup modal
-      pages/              # Page components
-        Home.tsx          # Builder entry page
-        Dashboard.tsx     # Document management
-        LandingPage.tsx   # Landing page
-        Profile.tsx       # User profile
-        Settings.tsx      # Account settings
-      utils/              # API and helper utilities
-      templates.ts        # CV template configurations
-      htmlBuilder.ts      # PDF HTML generation logic
-      types.ts            # TypeScript definitions
-      index.css           # Global styles & Tailwind CSS 4
-    public/               # Static assets
-      brand/              # Branding assets
-      templates/          # Template previews
-    tests/                # Backend & integration tests
+├── docker-compose.yml
+├── render.yaml
+├── README.md
+└── Free CV Builder/
+    ├── Dockerfile
+    ├── server.ts             # Express backend entry point
+    ├── vite.config.ts        # Vite configuration
+    ├── server-models/        # MongoDB Schemas & Auth Logic
+    │   ├── CVDocument.ts
+    │   ├── User.ts
+    │   ├── db.ts
+    │   └── passportSetup.ts
+    ├── src/                  # React Frontend
+    │   ├── App.tsx           # Router & Layout
+    │   ├── components/       # Reusable UI Components
+    │   ├── pages/            # Main Page Views (Home, Dashboard, etc.)
+    │   ├── utils/            # Helpers & API bindings
+    │   ├── templates.ts      # CV Template definitions
+    │   ├── htmlBuilder.ts    # HTML string generation for PDFs
+    │   └── index.css         # Global styles & Tailwind
+    ├── public/               # Static Assets
+    └── tests/                # Backend & Integration Tests
 ```
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or newer)
+- npm or yarn
+- [MongoDB Atlas](https://www.mongodb.com/atlas) (or local MongoDB instance)
+- [Google Gemini API Key](https://aistudio.google.com/)
+- [Google Cloud Console](https://console.cloud.google.com/) (For Google OAuth Client ID & Secret)
 
-- Node.js 18 or newer
-- npm
-- MongoDB Atlas or a local MongoDB connection string
-- Google Gemini API key
-- Google OAuth credentials if Google login is enabled
+### 1. Installation
 
-### Install
+Clone the repository and install dependencies:
 
 ```bash
 cd "Free CV Builder"
 npm install
 ```
 
-### Environment Variables
+### 2. Environment Variables
 
-Create `Free CV Builder/.env`:
+Create a `.env` file in the `Free CV Builder` directory and configure the following variables:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key
-MONGODB_URI=your_mongodb_connection_string
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-SESSION_SECRET=your_session_secret
+# Server
 PORT=3002
-ALLOWED_ORIGIN=https://your-production-domain.com
+ALLOWED_ORIGIN=http://localhost:3000
+
+# Database
+MONGODB_URI=your_mongodb_connection_string
+
+# AI Integration
+GEMINI_API_KEY=your_gemini_api_key
+
+# Authentication
+SESSION_SECRET=your_super_secret_session_key
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+
+# Email Configuration (for Password Resets)
+EMAIL_USER=your_gmail_address@gmail.com
+EMAIL_PASS=your_gmail_app_password
 ```
+> **Note:** For local development, ensure your Google OAuth authorized redirect URI is set to `http://localhost:3002/api/auth/google/callback`.
 
-For local development, Google OAuth should include the callback URL:
+### 3. Run the Development Server
 
-```text
-http://localhost:3002/api/auth/google/callback
-```
-
-### Run Locally
+Start both the React frontend and Express backend concurrently:
 
 ```bash
 npm run dev:all
 ```
+- **Frontend:** `http://localhost:3000`
+- **Backend API:** `http://localhost:3002`
 
-Frontend: `http://localhost:3000`
-Backend: `http://localhost:3002`
+---
 
-### Run with Docker
+## 🐳 Running with Docker
 
-Ensure you have Docker and Docker Compose installed.
+NexCV includes Docker support for a seamless, containerized development experience.
 
 1. Build and start the containers:
    ```bash
    docker-compose up --build
    ```
-
-2. The app will be available at:
+2. Access the application:
    - Frontend: `http://localhost:3000`
    - Backend: `http://localhost:3002`
 
-3. To run in the background:
+*(Use `docker-compose up -d` to run in detached mode).*
+
+---
+
+## 📜 Available Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev:all` | Starts both frontend and backend concurrently |
+| `npm run dev` | Starts the Vite development server (Frontend) |
+| `npm run server` | Starts the Express development server (Backend) |
+| `npm run build` | Compiles the React app for production |
+| `npm run start` | Runs the production backend server |
+| `npm run test` | Runs Vitest test suites in watch mode |
+| `npm run lint` | Runs TypeScript type checking |
+
+---
+
+## 🛡️ Security Implementation
+
+NexCV prioritizes user data security through multiple layers of protection:
+- **Rate Limiting:** Protects API endpoints, authentication routes, and computationally expensive PDF generation endpoints from abuse.
+- **CSRF Protection:** Non-GET requests require a specific `X-App-Source` header, and origins are strictly verified.
+- **Sanitization:** All user inputs and AI-generated content are sanitized using `DOMPurify` before database storage and PDF rendering to prevent XSS.
+- **Secure Headers:** Implemented via `Helmet.js`, including restrictive Content Security Policies (CSP).
+- **Password Hashing:** Passwords are cryptographically hashed with unique salts using `pbkdf2Sync` before storage.
+
+---
+
+## ☁️ Deployment (Render)
+
+NexCV is structured to be easily deployed on platforms like [Render](https://render.com/).
+
+1. Set your build command to:
    ```bash
-   docker-compose up -d
+   npm run render-build
    ```
+2. Set your start command to:
+   ```bash
+   npm run start
+   ```
+3. Ensure all environment variables (especially `NODE_ENV=production` and `ALLOWED_ORIGIN`) are configured in your Render dashboard.
 
-## Main Scripts
+> **MongoDB Atlas Note:** If deploying on a platform with dynamic IPs (like Render's free tier), you may need to allow `0.0.0.0/0` in your MongoDB Atlas Network Access settings. Ensure you use strong database credentials.
 
-```bash
-npm run dev          # Start Vite frontend
-npm run server       # Start Express backend
-npm run dev:all      # Start frontend and backend together
-npm run build        # Build production frontend
-npm run start        # Start backend
-npm run lint         # Type-check with tsc
-npm run test         # Run Vitest in watch mode
-npm run test:run     # Run Vitest once
-npm run test:coverage
-```
+---
 
-## App Flow
+## 📄 License
 
-1. Guests can click `Get Started` and use the builder without creating an account.
-2. Guests can build and preview CVs.
-3. Downloading requires login; the login modal appears and returns to the download flow.
-4. Saving requires an authenticated user.
-5. New authenticated users can import an existing CV, skip import, choose a template, and continue building.
-6. Saved CVs appear in the dashboard and can be edited or deleted.
-7. Profile details and profile picture can be managed from the profile page.
-8. Password/session/account actions are managed from settings.
+This project is licensed under the MIT License.
 
-## Security Notes
+## 👨‍💻 Author
 
-- API requests use credentials-based sessions.
-- Non-GET API requests require `X-App-Source: cv-builder-app`.
-- API routes are rate-limited.
-- User and AI-generated content is sanitized before PDF rendering.
-- Sensitive environment values must remain server-side.
-- In production, configure `ALLOWED_ORIGIN` and secure MongoDB Atlas access rules.
-
-## MongoDB Atlas Notes
-
-For Render or other hosted deployments, MongoDB Atlas network access must allow the outbound IPs used by the host. Free Render services do not provide a stable static outbound IP. A temporary broad allowlist such as `0.0.0.0/0` works, but it is less restrictive; use strong database credentials and tighten access when possible.
-
-## Deployment
-
-The app is designed for Render-style deployment.
-
-Recommended production settings:
-
-- `NODE_ENV=production`
-- `MONGODB_URI`
-- `GEMINI_API_KEY`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `SESSION_SECRET`
-- `ALLOWED_ORIGIN`
-
-Build command:
-
-```bash
-npm run render-build
-```
-
-Start command:
-
-```bash
-npm run start
-```
-
-## Testing
-
-Run the main verification commands before deploying:
-
-```bash
-npm run lint
-npm run test:run
-```
-
-Current verified status during the latest update:
-
-- TypeScript check passes.
-- Vitest suite passes with 49 tests.
-
-## License
-
-MIT
-
-## Author
-
-Built by Bimantha Perera.
+Built with ❤️ by **Bimantha Perera**.
