@@ -21,7 +21,10 @@ Current app version: `0.0.0`
 - Settings page for password, session, and account actions.
 - PDF generation through Puppeteer and Chromium.
 - Toast-based success/error/rate-limit feedback.
-- Mobile-optimized builder, dashboard, profile, and settings pages.
+- Mobile-optimized builder, dashboard, profile, and settings pages with pill-style navigation.
+- Enhanced Dashboard with activity stats and compact document cards.
+- Reset and Import flow with smooth loading animations and component-level remounting.
+- Docker support for consistent development and deployment environments.
 - Rate limiting, request integrity checks, sanitization, and secure sessions.
 
 ## Tech Stack
@@ -55,31 +58,40 @@ Current app version: `0.0.0`
 ```text
 AI-CV-Builder/
   README.md
+  docker-compose.yml
+  render.yaml
   Free CV Builder/
-    server.ts
+    Dockerfile
+    server.ts             # Express backend entry point
     package.json
     vite.config.ts
-    server-models/
+    server-models/        # MongoDB Mongoose models & Auth
       CVDocument.ts
       User.ts
       db.ts
       passportSetup.ts
-    src/
-      App.tsx
-      components/
-      pages/
-        Dashboard.tsx
-        Home.tsx
-        LandingPage.tsx
-        Profile.tsx
-        Settings.tsx
-      templates/
-      utils/
-      types.ts
-      index.css
-    public/
-      brand/
-      templates/
+    src/                  # Frontend React application
+      App.tsx             # Router & main layout
+      main.tsx            # App entry point
+      components/         # Shared UI components
+        CVForm.tsx        # Main builder form & logic
+        CVPreview.tsx     # Live CV preview & HTML templates
+        AuthModal.tsx     # Login/Signup modal
+      pages/              # Page components
+        Home.tsx          # Builder entry page
+        Dashboard.tsx     # Document management
+        LandingPage.tsx   # Landing page
+        Profile.tsx       # User profile
+        Settings.tsx      # Account settings
+      utils/              # API and helper utilities
+      templates.ts        # CV template configurations
+      htmlBuilder.ts      # PDF HTML generation logic
+      types.ts            # TypeScript definitions
+      index.css           # Global styles & Tailwind CSS 4
+    public/               # Static assets
+      brand/              # Branding assets
+      templates/          # Template previews
+    tests/                # Backend & integration tests
 ```
 
 ## Getting Started
@@ -125,17 +137,26 @@ http://localhost:3002/api/auth/google/callback
 npm run dev:all
 ```
 
-Frontend:
+Frontend: `http://localhost:3000`
+Backend: `http://localhost:3002`
 
-```text
-http://localhost:3000
-```
+### Run with Docker
 
-Backend:
+Ensure you have Docker and Docker Compose installed.
 
-```text
-http://localhost:3002
-```
+1. Build and start the containers:
+   ```bash
+   docker-compose up --build
+   ```
+
+2. The app will be available at:
+   - Frontend: `http://localhost:3000`
+   - Backend: `http://localhost:3002`
+
+3. To run in the background:
+   ```bash
+   docker-compose up -d
+   ```
 
 ## Main Scripts
 
@@ -213,7 +234,7 @@ npm run test:run
 Current verified status during the latest update:
 
 - TypeScript check passes.
-- Vitest suite passes with 46 tests.
+- Vitest suite passes with 49 tests.
 
 ## License
 
