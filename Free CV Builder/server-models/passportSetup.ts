@@ -43,6 +43,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             displayName: profile.displayName,
             email: profile.emails?.[0].value,
             profileImage: profile.photos?.[0].value,
+            authProvider: 'google',
           });
 
           done(null, user);

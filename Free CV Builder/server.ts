@@ -9,11 +9,13 @@ import rateLimit from 'express-rate-limit';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import fs from 'fs';
+import { pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import session from 'express-session';
 import passport from 'passport';
 import connectDB from './server-models/db';
+import User from './server-models/User';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
 
@@ -33,6 +35,7 @@ if (mongoUri) {
 
 const app = express();
 const PORT = process.env.PORT || 3002;
+app.set('trust proxy', 1);
 
 // ─── Session & Auth Middleware ───────────────────────────────────────
 
@@ -44,6 +47,7 @@ app.use(session({
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));
@@ -170,6 +174,41 @@ export function sanitizeContextField(value: any): string {
     return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, 200).trim() || 'Unknown';
 }
 
+const normalizeEmail = (email: unknown) => (
+    typeof email === 'string' ? email.trim().toLowerCase() : ''
+);
+
+const sanitizeDisplayName = (name: unknown) => (
+    typeof name === 'string'
+        ? name.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim().slice(0, 80)
+        : ''
+);
+
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const hashPassword = (password: string) => {
+    const salt = randomBytes(16).toString('hex');
+    const hash = pbkdf2Sync(password, salt, 120000, 32, 'sha256').toString('hex');
+    return `${salt}:${hash}`;
+};
+
+const verifyPassword = (password: string, storedHash: string) => {
+    const [salt, hash] = storedHash.split(':');
+    if (!salt || !hash) return false;
+
+    const expected = Buffer.from(hash, 'hex');
+    const actual = pbkdf2Sync(password, salt, 120000, 32, 'sha256');
+    return expected.length === actual.length && timingSafeEqual(expected, actual);
+};
+
+const publicUser = (user: any) => ({
+    id: user._id?.toString?.() || user.id,
+    email: user.email,
+    displayName: user.displayName,
+    profileImage: user.profileImage,
+    authProvider: user.authProvider,
+});
+
 // ─── API Routes ──────────────────────────────────────────────────────
 
 // Health check endpoint
@@ -179,6 +218,68 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 // ─── Auth Routes (Placeholders) ──────────────────────────────────────
 
+app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const email = normalizeEmail(req.body.email);
+        const displayName = sanitizeDisplayName(req.body.displayName);
+        const password = typeof req.body.password === 'string' ? req.body.password : '';
+
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ error: 'Enter a valid email address.' });
+        }
+
+        if (!displayName) {
+            return res.status(400).json({ error: 'Enter your name.' });
+        }
+
+        if (password.length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(409).json({ error: 'An account already exists for this email.' });
+        }
+
+        const user = await User.create({
+            email,
+            displayName,
+            passwordHash: hashPassword(password),
+            authProvider: 'email',
+        });
+
+        req.login(user, (err) => {
+            if (err) return next(err);
+            return res.status(201).json({ user: publicUser(user) });
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not create your account.', error);
+    }
+});
+
+app.post('/api/auth/login', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const email = normalizeEmail(req.body.email);
+        const password = typeof req.body.password === 'string' ? req.body.password : '';
+
+        if (!isValidEmail(email) || !password) {
+            return res.status(400).json({ error: 'Enter your email and password.' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user || !user.passwordHash || !verifyPassword(password, user.passwordHash)) {
+            return res.status(401).json({ error: 'Email or password is incorrect.' });
+        }
+
+        req.login(user, (err) => {
+            if (err) return next(err);
+            return res.json({ user: publicUser(user) });
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not sign you in.', error);
+    }
+});
+
 // Initiate Google Login
 app.get('/api/auth/google', passport.authenticate('google', {
     scope: ['profile', 'email']
@@ -186,16 +287,16 @@ app.get('/api/auth/google', passport.authenticate('google', {
 
 // Google Auth Callback
 app.get('/api/auth/google/callback', passport.authenticate('google', {
-    failureRedirect: '/login?error=true',
+    failureRedirect: '/?auth=failed',
 }), (req: Request, res: Response) => {
     // Successful authentication
-    res.redirect('/dashboard'); // Redirect to appropriate page after login
+    res.redirect('/builder');
 });
 
 // Get Current User
 app.get('/api/auth/current-user', (req: Request, res: Response) => {
     if (req.isAuthenticated()) {
-        res.json({ user: req.user });
+        res.json({ user: publicUser(req.user) });
     } else {
         res.status(401).json({ error: 'Not authenticated' });
     }

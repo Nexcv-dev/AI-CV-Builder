@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Download, FileText, Home, Info, LayoutTemplate, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
+import { ArrowRight, ChevronDown, Download, FileText, Home, Info, LayoutTemplate, LogIn, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
+import { AuthModal } from '../components/AuthModal';
 import { CV_TEMPLATES } from '../templates';
 
 const stats = [
@@ -117,6 +118,15 @@ const faqs = [
 
 export default function LandingPage() {
   const location = useLocation();
+  const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({
+    isOpen: false,
+    mode: 'signup',
+  });
+  const openAuthModal = (mode: 'login' | 'signup') => {
+    setMobileMenuOpen(false);
+    setAuthModal({ isOpen: true, mode });
+  };
+  const closeAuthModal = () => setAuthModal((current) => ({ ...current, isOpen: false }));
 
   useEffect(() => {
     const revealItems = document.querySelectorAll<HTMLElement>('.landing-scroll-reveal');
@@ -197,14 +207,17 @@ export default function LandingPage() {
             <Link to="/about" className="transition-colors hover:text-white">About</Link>
           </nav>
 
-          {/* Desktop CTA */}
-          <Link
-            to="/builder"
-            className="hidden md:inline-flex items-center justify-center rounded-xl bg-violet-600 px-3.5 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/25 transition-all hover:bg-violet-500 active:scale-[0.98] sm:px-4"
-          >
-            Start
-            <ArrowRight size={17} className="ml-1.5" />
-          </Link>
+          {/* Desktop Auth */}
+          <div className="hidden items-center md:flex">
+            <button
+              type="button"
+              onClick={() => openAuthModal('login')}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white px-4 py-2.5 text-sm font-extrabold text-slate-950 shadow-lg shadow-white/10 transition-all hover:bg-slate-100 active:scale-[0.98]"
+            >
+              <LogIn size={16} />
+              Login
+            </button>
+          </div>
 
           {/* Mobile Hamburger */}
           <button
@@ -334,19 +347,24 @@ export default function LandingPage() {
               ))}
             </div>
 
-            {/* CTA */}
-            <Link
-              to="/builder"
-              className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-500 active:scale-[0.98]"
+            {/* Auth actions */}
+            <div
+              className="grid"
               style={{
                 transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
                 opacity: mobileMenuOpen ? 1 : 0,
                 transition: `transform 0.35s cubic-bezier(0.22,1,0.36,1) 150ms, opacity 0.25s ease 150ms, background 0.15s`,
               }}
             >
-              Create My CV
-              <ArrowRight size={17} />
-            </Link>
+              <button
+                type="button"
+                onClick={() => openAuthModal('login')}
+                className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3.5 text-sm font-extrabold text-slate-950 shadow-lg shadow-white/10 transition-all hover:bg-slate-100 active:scale-[0.98]"
+              >
+                <LogIn size={16} />
+                Login
+              </button>
+            </div>
 
             {/* Version badge */}
             <p
@@ -401,13 +419,14 @@ export default function LandingPage() {
               </p>
 
               <div className="landing-reveal mt-7 grid gap-3 sm:mt-8 sm:flex sm:flex-row">
-                <Link
-                  to="/builder"
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('signup')}
                   className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-violet-600/30 transition-all hover:bg-violet-500 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
-                  Create CV
+                  Sign up free
                   <ArrowRight size={20} className="ml-2" />
-                </Link>
+                </button>
                 <Link
                   to="/templates"
                   className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/6 px-5 py-3.5 text-sm font-extrabold text-white backdrop-blur transition-all hover:bg-white/10 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
@@ -610,6 +629,11 @@ export default function LandingPage() {
         </section>
 
       </main>
+      <AuthModal
+        isOpen={authModal.isOpen}
+        initialMode={authModal.mode}
+        onClose={closeAuthModal}
+      />
     </div>
   );
 }
