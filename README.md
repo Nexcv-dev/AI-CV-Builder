@@ -17,6 +17,7 @@ Currently in version: `1.0.0` (Beta)
 
 ### 🔐 Secure Authentication & Management
 - **Flexible Login:** Sign up using Email/Password or instantly with Google OAuth 2.0.
+- **Password Recovery:** Secure password reset flow utilizing Nodemailer with Gmail integration.
 - **Cloud Document Storage:** Safely store, edit, duplicate, and delete multiple CVs in your personal dashboard.
 - **Profile Settings:** Manage your personal details, profile picture (with auto-fallback avatars), and account security.
 
@@ -41,6 +42,7 @@ Currently in version: `1.0.0` (Beta)
 - MongoDB with Mongoose
 - Passport.js (Google OAuth 2.0 & Local)
 - Express Session (Stateful Auth)
+- Nodemailer (Email Delivery for Password Resets)
 - `@google/genai` (Gemini API Integration)
 - Puppeteer Core & `@sparticuz/chromium` (PDF Generation)
 - DOMPurify & JSDOM (Sanitization)
@@ -111,6 +113,10 @@ GEMINI_API_KEY=your_gemini_api_key
 SESSION_SECRET=your_super_secret_session_key
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
 GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+
+# Email Configuration (for Password Resets)
+EMAIL_USER=your_gmail_address@gmail.com
+EMAIL_PASS=your_gmail_app_password
 ```
 > **Note:** For local development, ensure your Google OAuth authorized redirect URI is set to `http://localhost:3002/api/auth/google/callback`.
 
