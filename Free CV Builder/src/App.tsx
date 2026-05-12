@@ -12,6 +12,8 @@ import PrintView from './pages/PrintView';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import { Toaster } from 'react-hot-toast';
 import { Footer } from './components/Footer';
 import { getCurrentUser } from './utils/api';
@@ -214,6 +216,8 @@ function App() {
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

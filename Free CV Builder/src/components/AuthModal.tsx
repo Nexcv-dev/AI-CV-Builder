@@ -204,7 +204,21 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-xs font-extrabold uppercase text-slate-400">Password</span>
+              <span className="mb-1.5 flex items-center justify-between text-xs font-extrabold uppercase text-slate-400">
+                <span>Password</span>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigate('/forgot-password');
+                    }}
+                    className="font-bold normal-case text-violet-400 hover:text-violet-300 transition-colors"
+                  >
+                    forgot password?
+                  </button>
+                )}
+              </span>
               <span className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950 px-3 py-3 focus-within:border-violet-400">
                 <Lock size={17} className="text-slate-500" />
                 <input

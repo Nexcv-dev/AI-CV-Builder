@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import * as dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
+import nodemailer from 'nodemailer';
 import rateLimit from 'express-rate-limit';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
@@ -139,6 +140,14 @@ const authLimiter = rateLimit({
     legacyHeaders: false,
     skipSuccessfulRequests: true,
     message: { error: 'Too many login attempts. Please wait a few minutes before trying again.' },
+});
+
+const passwordResetLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // limit each IP to 3 requests per hour
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many password reset attempts. Please wait an hour before trying again.' },
 });
 
 app.use('/api/', apiLimiter);
@@ -564,6 +573,88 @@ app.delete('/api/auth/account', requireAuth, async (req: Request, res: Response,
         });
     } catch (error) {
         return sendError(res, 500, 'Could not delete your account.', error);
+    }
+});
+
+// Initiate Google Login
+app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request, res: Response) => {
+    try {
+        const email = normalizeEmail(req.body.email);
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ error: 'Enter a valid email address.' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            // Return success even if user not found to prevent email enumeration
+            return res.json({ message: 'Reset link sent! Please check your email inbox.' });
+        }
+
+        // Generate token
+        const token = randomBytes(20).toString('hex');
+        user.resetPasswordToken = token;
+        user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+        await user.save();
+
+        // Create transporter
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+        const mailOptions = {
+            to: user.email,
+            from: process.env.EMAIL_USER,
+            subject: 'Password Reset - Free CV Builder',
+            text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
+                `Please click on the following link, or paste this into your browser to complete the process:\n\n` +
+                `${resetUrl}\n\n` +
+                `If you did not request this, please ignore this email and your password will remain unchanged.\n`
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.json({ message: 'Reset link sent! Please check your email inbox.' });
+    } catch (error) {
+        return sendError(res, 500, 'Could not send reset password email.', error);
+    }
+});
+
+app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Response) => {
+    try {
+        const token = req.body.token;
+        const newPassword = typeof req.body.password === 'string' ? req.body.password : '';
+
+        if (!token) {
+            return res.status(400).json({ error: 'Password reset token is missing.' });
+        }
+
+        if (!validatePasswordStrength(newPassword)) {
+            return res.status(400).json({ error: passwordPolicyMessage });
+        }
+
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
+        }
+
+        user.passwordHash = hashPassword(newPassword);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+
+        res.json({ message: 'Password has been successfully reset.' });
+    } catch (error) {
+        return sendError(res, 500, 'Could not reset password.', error);
     }
 });
 
