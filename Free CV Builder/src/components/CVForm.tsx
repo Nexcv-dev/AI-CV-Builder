@@ -44,11 +44,12 @@ interface CVFormProps {
   isDarkMode?: boolean;
   onPopupVisibleChange?: (visible: boolean) => void;
   onFinish?: () => void;
-  initialPromptRequest?: number;
+  showImportPromptOnMount?: boolean;
 }
 
-export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, initialPromptRequest = 0 }: CVFormProps) {
+export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false }: CVFormProps) {
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design' | 'templates'>('content');
+  const [pendingTemplate, setPendingTemplate] = useState<TemplateName | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
   const [isDraggingSection, setIsDraggingSection] = useState(false);
@@ -91,22 +92,20 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
 
   const [showInitialPrompt, setShowInitialPrompt] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const hasHandledLoginImportPrompt = useRef(false);
+  const shouldOpenTemplatesAfterImport = useRef(showImportPromptOnMount);
 
-  useEffect(() => {
-    const hasSeenPrompt = sessionStorage.getItem('hasSeenCVPrompt');
-    const hasSavedData = localStorage.getItem('cv-builder-data');
-    if (!hasSeenPrompt && !hasSavedData) {
-      setShowInitialPrompt(true);
-      sessionStorage.setItem('hasSeenCVPrompt', 'true');
-    }
+  const completeLoginImportStep = useCallback(() => {
+    if (!shouldOpenTemplatesAfterImport.current) return;
+    shouldOpenTemplatesAfterImport.current = false;
+    setActiveMainTab('templates');
   }, []);
 
   useEffect(() => {
-    if (initialPromptRequest <= 0) return;
-    setShowUploadModal(false);
+    if (!showImportPromptOnMount || hasHandledLoginImportPrompt.current) return;
+    hasHandledLoginImportPrompt.current = true;
     setShowInitialPrompt(true);
-    sessionStorage.setItem('hasSeenCVPrompt', 'true');
-  }, [initialPromptRequest]);
+  }, [showImportPromptOnMount]);
 
   useEffect(() => {
     onPopupVisibleChange?.(showInitialPrompt || showUploadModal);
@@ -171,7 +170,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       });
       if (!res.ok) {
         const errorText = await res.text();
-        let errorMessage = "Failed to generate summary";
+        let errorMessage = res.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Failed to generate summary";
         try {
           const errorJson = JSON.parse(errorText);
           errorMessage = errorJson.error || errorJson.message || errorText;
@@ -211,7 +210,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       });
       if (!res.ok) {
         const errorText = await res.text();
-        let errorMessage = "Failed to refine text";
+        let errorMessage = res.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Failed to refine text";
         try {
           const errorJson = JSON.parse(errorText);
           errorMessage = errorJson.error || errorJson.message || errorText;
@@ -270,7 +269,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
 
           if (!parseResponse.ok) {
             const errorText = await parseResponse.text();
-            let errorMessage = "Unknown server error";
+            let errorMessage = parseResponse.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Unknown server error";
             try {
               const errorJson = JSON.parse(errorText);
               errorMessage = errorJson.error || errorJson.message || errorText;
@@ -354,7 +353,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             }));
 
             setImportMessage({ type: 'success', text: 'Data imported successfully!' });
-            setTimeout(() => { setShowUploadModal(false); setImportMessage(null); }, 1500);
+            setTimeout(() => {
+              setShowUploadModal(false);
+              setImportMessage(null);
+              completeLoginImportStep();
+            }, 1500);
           }
         } catch (error: any) {
           if (error.name === 'AbortError' || importAbortControllerRef.current?.signal.aborted) {
@@ -652,7 +655,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   return (
     <div className="flex flex-col h-full min-h-0 relative overflow-hidden">
       {/* Tab Switcher */}
-      <div className={TAB_CONTAINER_CLASS}>
+      <div className={`${TAB_CONTAINER_CLASS} items-center`}>
         <button
           onClick={() => setActiveMainTab('content')}
           className={`${TAB_BUTTON_BASE} ${activeMainTab === 'content' ? TAB_BUTTON_ACTIVE : TAB_BUTTON_INACTIVE}`}
@@ -666,7 +669,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <Palette size={16} className="mr-2" /> Design
         </button>
         <button
-          onClick={() => setActiveMainTab('templates')}
+          onClick={() => {
+            setActiveMainTab('templates');
+            setPendingTemplate(null);
+          }}
           className={`${TAB_BUTTON_BASE} ${activeMainTab === 'templates' ? TAB_BUTTON_ACTIVE : TAB_BUTTON_INACTIVE}`}
         >
           <LayoutTemplate size={16} className="mr-2" /> Templates
@@ -779,19 +785,22 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
               <div className="grid grid-cols-2 gap-3 min-[430px]:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
                 {CV_TEMPLATES.map((item) => {
                   const isSelected = template === item.key;
+                  const isPending = pendingTemplate === item.key;
                   return (
                     <button
                       key={item.key}
                       type="button"
-                      onClick={() => setTemplate(item.key)}
+                      onClick={() => setPendingTemplate(item.key)}
                       className={`group relative flex min-w-0 flex-col overflow-hidden rounded-xl border-2 text-left transition-all active:scale-[0.99] ${
-                        isSelected
+                        isPending
+                          ? (isDarkMode ? 'border-emerald-300 bg-emerald-500/10 shadow-lg shadow-emerald-950/30' : 'border-emerald-500 bg-emerald-50 shadow-md')
+                          : isSelected
                           ? (isDarkMode ? 'border-violet-400 bg-violet-500/10 shadow-lg shadow-violet-950/30' : 'border-violet-500 bg-violet-50 shadow-md')
                           : (isDarkMode ? 'border-slate-700 bg-slate-900 hover:border-slate-600' : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm')
                       }`}
                     >
-                      {isSelected && (
-                        <span className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white shadow-md">
+                      {(isSelected || isPending) && (
+                        <span className={`absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full text-white shadow-md ${isPending ? 'bg-emerald-500' : 'bg-violet-600'}`}>
                           <Check size={14} />
                         </span>
                       )}
@@ -803,7 +812,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                         />
                       </div>
                       <div className="px-3 py-2.5">
-                        <div className={`truncate text-xs font-black ${isSelected ? 'text-violet-600' : (isDarkMode ? 'text-slate-200' : 'text-gray-700')}`}>
+                        <div className={`truncate text-xs font-black ${isPending ? 'text-emerald-500' : isSelected ? 'text-violet-600' : (isDarkMode ? 'text-slate-200' : 'text-gray-700')}`}>
                           {item.label}
                         </div>
                       </div>
@@ -811,6 +820,29 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                   );
                 })}
               </div>
+              {pendingTemplate && (
+                <div className={`sticky bottom-0 mt-4 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl ${isDarkMode ? 'border-slate-700 bg-slate-900/95' : 'border-slate-200 bg-white/95'}`}>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className={`text-xs font-black uppercase ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Selected template</p>
+                      <p className={`text-sm font-extrabold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                        {CV_TEMPLATES.find((item) => item.key === pendingTemplate)?.label}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTemplate(pendingTemplate);
+                        setPendingTemplate(null);
+                        setActiveMainTab('content');
+                      }}
+                      className="inline-flex items-center justify-center rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.98]"
+                    >
+                      Use this template
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -828,6 +860,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
         importMessage={importMessage}
         handleCVImport={handleCVImport}
         isDarkMode={isDarkMode}
+        onImportSkipped={completeLoginImportStep}
       />
     </div>
   );

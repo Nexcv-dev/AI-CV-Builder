@@ -34,6 +34,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           let user = await User.findOne({ googleId: profile.id });
 
           if (user) {
+            const latestProfileImage = profile.photos?.[0].value;
+            if (latestProfileImage && user.profileImage !== latestProfileImage) {
+              user.profileImage = latestProfileImage;
+              await user.save();
+            }
             return done(null, user);
           }
 

@@ -1,164 +1,224 @@
-<div align="center">
+# NexCV - AI CV Builder
 
-# ✨ NexCV | AI CV Builder
-### Create Professional Resumes with the Power of AI 🚀
+NexCV is a full-stack AI CV builder for creating, importing, saving, editing, and exporting professional resumes. It includes a polished landing page, guest-friendly builder flow, authenticated dashboard, profile/settings pages, MongoDB-backed saved documents, Google/email authentication, AI-assisted CV import, AI writing tools, template selection, and PDF download.
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-[![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?logo=vite)](https://vitejs.dev/)
-[![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)](https://reactjs.org/)
+Current app version: `0.0.0`
 
-![Project Preview](cv_builder_preview_1776875844654.png)
+## Features
 
-</div>
+- Guest builder access with login required only for saving and downloading.
+- Email/password signup and login.
+- Google OAuth login with Google profile image support.
+- User avatar fallback using the first letter of the user's name.
+- Dashboard for saved CV documents.
+- Import CV flow from landing page, dashboard, and post-login onboarding.
+- AI CV import from PDF or image files.
+- AI summary generation and text refinement.
+- Template picker with explicit "Use this template" confirmation.
+- Live CV preview with responsive builder layout.
+- Cloud save, edit, and delete for saved CV documents.
+- Profile page with editable personal details and profile picture upload/remove.
+- Settings page for password, session, and account actions.
+- PDF generation through Puppeteer and Chromium.
+- Toast-based success/error/rate-limit feedback.
+- Mobile-optimized builder, dashboard, profile, and settings pages.
+- Rate limiting, request integrity checks, sanitization, and secure sessions.
 
----
-
-## 📖 Overview
-
-**NexCV** is a premium, open-source web application designed to help job seekers create stunning, ATS-friendly resumes in minutes. By leveraging **Google's Gemini AI**, the application automates the tedious parts of resume building—from parsing old documents to crafting impactful job descriptions.
-
-## 🚀 Key Features
-
-- 🤖 **AI-Powered Parsing**: Upload your existing PDF or image-based CV and let Gemini AI extract your details automatically.
-- ✍️ **Content Refinement**: One-click professional summary generation and description rewriting using advanced AI.
-- 🎨 **Premium Templates**: Choose between **Modern**, **Classic**, and **Professional** layouts, all designed for maximum impact.
-- 🖨️ **Pixel-Perfect PDF**: High-quality export using Puppeteer, ensuring your CV looks identical on screen and in print.
-- ⚡ **Real-time Preview**: See your changes instantly with a side-by-side live editor and preview.
-- 🖼️ **Image Processing**: Built-in image cropping and optimization for profile pictures.
-- 🛡️ **Enterprise-Grade Security**: XSS prevention, rate limiting, and secure HTML sanitization.
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
-- **Framework**: React 18 (Vite)
-- **Styling**: Tailwind CSS 4.x
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
-- **State Management**: React Hooks & Context API
+
+- React 18
+- Vite 6
+- TypeScript
+- Tailwind CSS 4
+- Motion
+- Lucide React
+- React Hot Toast
+- Vitest and Testing Library
 
 ### Backend
-- **Runtime**: Node.js & Express
-- **Language**: TypeScript
-- **Database & Auth**: MongoDB (Mongoose) & Google OAuth 2.0 (Passport)
-- **AI Engine**: Google Gemini Pro (`@google/genai`)
-- **PDF Engine**: Puppeteer-core + @sparticuz/chromium
 
-## 📂 Project Structure
+- Node.js
+- Express
+- TypeScript
+- MongoDB with Mongoose
+- Passport Google OAuth 2.0
+- Express Session
+- Google Gemini via `@google/genai`
+- Puppeteer Core with `@sparticuz/chromium`
+- DOMPurify and JSDOM
+- Helmet, CORS, and Express Rate Limit
+
+## Project Structure
 
 ```text
-.
-├── .github/                # GitHub Actions & CI/CD workflows
-├── Free CV Builder/        # Core Application Directory
-│   ├── src/                # Frontend Source
-│   │   ├── components/     # UI components (CV Form, Preview, etc.)
-│   │   ├── pages/          # Main application pages
-│   │   ├── utils/          # AI parsing & PDF generation logic
-│   │   ├── types.ts        # TypeScript interfaces
-│   │   └── index.css       # Styling & Tailwind configuration
-│   ├── public/             # Static assets & templates
-│   ├── tests/              # Vitest unit & integration tests
-│   ├── server.ts           # Express backend (AI & Puppeteer)
-│   ├── Dockerfile          # App containerization
-│   └── package.json        # Project manifest & scripts
-├── docker-compose.yml      # Docker orchestration
-├── render.yaml             # Render deployment blueprint
-├── CHANGELOG.md            # Automated version history
-└── README.md               # Project documentation
+AI-CV-Builder/
+  README.md
+  Free CV Builder/
+    server.ts
+    package.json
+    vite.config.ts
+    server-models/
+      CVDocument.ts
+      User.ts
+      db.ts
+      passportSetup.ts
+    src/
+      App.tsx
+      components/
+      pages/
+        Dashboard.tsx
+        Home.tsx
+        LandingPage.tsx
+        Profile.tsx
+        Settings.tsx
+      templates/
+      utils/
+      types.ts
+      index.css
+    public/
+      brand/
+      templates/
 ```
 
-## 🏁 Getting Started
+## Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- A [Google Gemini API Key](https://aistudio.google.com/app/apikey)
 
-### Installation
+- Node.js 18 or newer
+- npm
+- MongoDB Atlas or a local MongoDB connection string
+- Google Gemini API key
+- Google OAuth credentials if Google login is enabled
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/bimanthaperera-lab/Free-AI-CV-Builder.git
-   cd "Free CV Builder"
-   ```
+### Install
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+```bash
+cd "Free CV Builder"
+npm install
+```
 
-3. **Configure Environment Variables**:
-   Create a `.env` file in the `Free CV Builder` directory:
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   PORT=3002
-   MONGODB_URI=your_mongodb_connection_string
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
-   SESSION_SECRET=your_session_secret_here
-   ```
+### Environment Variables
 
-4. **Start Development Server**:
-   ```bash
-   npm run dev:all
-   ```
-   *Access the frontend at `http://localhost:3000` and backend at `http://localhost:3002`.*
+Create `Free CV Builder/.env`:
 
-### 🐳 Docker Support (Recommended)
+```env
+GEMINI_API_KEY=your_gemini_api_key
+MONGODB_URI=your_mongodb_connection_string
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+SESSION_SECRET=your_session_secret
+PORT=3002
+ALLOWED_ORIGIN=https://your-production-domain.com
+```
 
-For the easiest setup, use Docker Compose. This ensures all system dependencies (like Chromium for PDF generation) are correctly configured.
+For local development, Google OAuth should include the callback URL:
 
-1. **Prerequisites**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
-2. **Build and Start**:
-   ```bash
-   docker compose up --build
-   ```
-3. **Hot-Reloading**: The setup uses Docker volumes, so any changes you make to the code will be reflected instantly.
+```text
+http://localhost:3002/api/auth/google/callback
+```
 
-## 🧪 Testing
+### Run Locally
 
-We prioritize stability and security.
+```bash
+npm run dev:all
+```
 
-- **Run all tests**: `npm run test:run`
-- **Watch mode**: `npm run test`
-- **Coverage**: `npm run test:coverage`
+Frontend:
 
-## ⚙️ CI/CD Pipeline & Release Management
+```text
+http://localhost:3000
+```
 
-This project uses **GitHub Actions** for continuous integration, deployment, and release management.
+Backend:
 
-**Continuous Integration & Deployment:**
-1.  **Lints & Tests**: Ensures TypeScript standards and verifies all components via Vitest on every push.
-2.  **Docker Verification**: Automatically builds a Docker image to ensure the containerization environment remains stable.
-3.  **Builds**: Verifies production readiness of the frontend.
-4.  **Auto-Deploys**: Automatically deploys to **Render** whenever changes are pushed to the `main` branch.
+```text
+http://localhost:3002
+```
 
-**Release & Version Management:**
-- **Automated Changelogs**: Generates and updates `CHANGELOG.md` automatically on push.
-- **Release Drafter**: Automatically drafts GitHub Releases with semantic versioning tags based on merged pull request labels (`major`, `minor`, `patch`).
-- **Auto Versioning App Sync**: When a release is published on GitHub, a dedicated workflow automatically bumps the `package.json` version to match the release tag, ensuring the UI always reflects the live version.
+## Main Scripts
 
-> [!IMPORTANT]
-> To enable automatic deployment, you must add a GitHub Secret named `RENDER_DEPLOY_HOOK` containing your Render Deploy Hook URL.
+```bash
+npm run dev          # Start Vite frontend
+npm run server       # Start Express backend
+npm run dev:all      # Start frontend and backend together
+npm run build        # Build production frontend
+npm run start        # Start backend
+npm run lint         # Type-check with tsc
+npm run test         # Run Vitest in watch mode
+npm run test:run     # Run Vitest once
+npm run test:coverage
+```
 
-## 🛡️ Security Features
+## App Flow
 
-- **Content Security Policy (CSP)**: Hardened via Helmet.js.
-- **Rate Limiting**: Protection against brute-force and DDoS.
-- **Sanitization**: All AI-generated and user content is sanitized via `DOMPurify`.
-- **Environment Safety**: Sensitive keys are never exposed to the client.
+1. Guests can click `Get Started` and use the builder without creating an account.
+2. Guests can build and preview CVs.
+3. Downloading requires login; the login modal appears and returns to the download flow.
+4. Saving requires an authenticated user.
+5. New authenticated users can import an existing CV, skip import, choose a template, and continue building.
+6. Saved CVs appear in the dashboard and can be edited or deleted.
+7. Profile details and profile picture can be managed from the profile page.
+8. Password/session/account actions are managed from settings.
 
-## 🌐 Deployment
+## Security Notes
 
-This application is optimized for **Render** and includes a `render.yaml` Blueprint for 1-click deployment.
+- API requests use credentials-based sessions.
+- Non-GET API requests require `X-App-Source: cv-builder-app`.
+- API routes are rate-limited.
+- User and AI-generated content is sanitized before PDF rendering.
+- Sensitive environment values must remain server-side.
+- In production, configure `ALLOWED_ORIGIN` and secure MongoDB Atlas access rules.
 
-1. Go to your [Render Dashboard](https://dashboard.render.com/).
-2. Click **New** and select **Blueprint**.
-3. Connect this GitHub repository.
-4. Render will automatically detect the `render.yaml` file and configure the Web Service.
-5. Provide your `GEMINI_API_KEY` and `ALLOWED_ORIGIN` when prompted during setup.
+## MongoDB Atlas Notes
 
----
+For Render or other hosted deployments, MongoDB Atlas network access must allow the outbound IPs used by the host. Free Render services do not provide a stable static outbound IP. A temporary broad allowlist such as `0.0.0.0/0` works, but it is less restrictive; use strong database credentials and tighten access when possible.
 
-<div align="center">
-Made with ❤️ by Bimantha Perera for Job Seekers Everywhere.
-</div>
+## Deployment
+
+The app is designed for Render-style deployment.
+
+Recommended production settings:
+
+- `NODE_ENV=production`
+- `MONGODB_URI`
+- `GEMINI_API_KEY`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `SESSION_SECRET`
+- `ALLOWED_ORIGIN`
+
+Build command:
+
+```bash
+npm run render-build
+```
+
+Start command:
+
+```bash
+npm run start
+```
+
+## Testing
+
+Run the main verification commands before deploying:
+
+```bash
+npm run lint
+npm run test:run
+```
+
+Current verified status during the latest update:
+
+- TypeScript check passes.
+- Vitest suite passes with 46 tests.
+
+## License
+
+MIT
+
+## Author
+
+Built by Bimantha Perera.

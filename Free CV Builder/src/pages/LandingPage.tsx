@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Download, FileText, Home, Info, LayoutTemplate, LogIn, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Wand2, X, Zap } from 'lucide-react';
+import { ArrowRight, ChevronDown, Download, FileText, Home, Info, LayoutTemplate, LogIn, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Upload, Wand2, X, Zap } from 'lucide-react';
 import { AuthModal } from '../components/AuthModal';
 import { CV_TEMPLATES } from '../templates';
 
@@ -419,20 +419,21 @@ export default function LandingPage() {
               </p>
 
               <div className="landing-reveal mt-7 grid gap-3 sm:mt-8 sm:flex sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => openAuthModal('signup')}
+                <Link
+                  to="/builder"
                   className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-violet-600/30 transition-all hover:bg-violet-500 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
-                  Sign up free
+                  Get Started
                   <ArrowRight size={20} className="ml-2" />
-                </button>
-                <Link
-                  to="/templates"
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('login')}
                   className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/6 px-5 py-3.5 text-sm font-extrabold text-white backdrop-blur transition-all hover:bg-white/10 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
-                  See Templates
-                </Link>
+                  <Upload size={19} className="mr-2" />
+                  Import CV
+                </button>
               </div>
 
               <div className="landing-reveal mt-7 grid max-w-2xl gap-2.5 sm:mt-9 sm:grid-cols-3 sm:gap-3">

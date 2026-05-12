@@ -57,13 +57,13 @@ export const fonts = [
 ];
 
 // Wizard configuration — module-level to avoid re-creation every render
-export const MAIN_SECTION_KEYS = ['summary', 'personalDetails', 'experience', 'education', 'skills'] as const;
+export const MAIN_SECTION_KEYS = ['personalDetails', 'summary', 'experience', 'education', 'skills'] as const;
 export const FINALIZE_SECTION_KEYS = ['projects', 'courses', 'awards', 'languages', 'references'] as const;
 export const ALL_STEPS = [...MAIN_SECTION_KEYS, 'finalize'] as const;
 
 export const WIZARD_STEPS = [
-  { key: 'summary', title: 'Summary', icon: FileText },
   { key: 'personalDetails', title: 'Personal', icon: User },
+  { key: 'summary', title: 'Summary', icon: FileText },
   { key: 'experience', title: 'Experience', icon: Briefcase },
   { key: 'education', title: 'Education', icon: GraduationCap },
   { key: 'skills', title: 'Skills', icon: Wrench },

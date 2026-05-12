@@ -1,6 +1,7 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, Lock, Mail, User, X } from 'lucide-react';
+import { AuthUser } from '../utils/api';
 
 type AuthMode = 'login' | 'signup';
 
@@ -8,6 +9,8 @@ interface AuthModalProps {
   isOpen: boolean;
   initialMode: AuthMode;
   onClose: () => void;
+  redirectTo?: string;
+  onAuthenticated?: (user: AuthUser) => void;
 }
 
 const authCopy = {
@@ -54,7 +57,13 @@ async function authRequest(mode: AuthMode, payload: Record<string, string>) {
   return data;
 }
 
-export function AuthModal({ isOpen, initialMode, onClose }: AuthModalProps) {
+function googleNextParam(redirectTo: string) {
+  if (redirectTo.includes('download=1')) return '?next=download';
+  if (redirectTo.includes('import=1')) return '?next=import';
+  return '?next=builder';
+}
+
+export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder?import=1', onAuthenticated }: AuthModalProps) {
   const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [displayName, setDisplayName] = useState('');
@@ -63,11 +72,13 @@ export function AuthModal({ isOpen, initialMode, onClose }: AuthModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     setMode(initialMode);
     setError('');
+    setIsRedirecting(false);
   }, [initialMode, isOpen]);
 
   useEffect(() => {
@@ -97,13 +108,17 @@ export function AuthModal({ isOpen, initialMode, onClose }: AuthModalProps) {
     setIsSubmitting(true);
 
     try {
-      await authRequest(mode, {
+      const data = await authRequest(mode, {
         displayName,
         email,
         password,
       });
-      onClose();
-      navigate('/builder');
+      if (data.user) onAuthenticated?.(data.user);
+      setIsRedirecting(true);
+      navigate(redirectTo);
+      if (redirectTo === '/builder') {
+        onClose();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
     } finally {
@@ -140,7 +155,7 @@ export function AuthModal({ isOpen, initialMode, onClose }: AuthModalProps) {
           </div>
 
           <a
-            href="/api/auth/google"
+            href={`/api/auth/google${googleNextParam(redirectTo)}`}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white px-4 py-3 text-sm font-extrabold text-slate-950 shadow-lg shadow-white/10 transition hover:bg-slate-100 active:scale-[0.99]"
           >
             <GoogleLogo />
@@ -241,6 +256,16 @@ export function AuthModal({ isOpen, initialMode, onClose }: AuthModalProps) {
             </button>
           </p>
         </div>
+
+        {isRedirecting && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/92 backdrop-blur-md">
+            <div className="relative mb-5">
+              <div className="h-14 w-14 animate-spin rounded-full border-4 border-violet-900/70 border-t-violet-500" />
+              <img src="/brand/faviconblack.png" alt="" className="absolute inset-0 m-auto h-8 w-8 rounded-xl" />
+            </div>
+            <p className="text-sm font-extrabold text-slate-200">Preparing your workspace...</p>
+          </div>
+        )}
       </div>
     </div>
   );

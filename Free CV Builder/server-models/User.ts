@@ -5,6 +5,11 @@ export interface IUser extends Document {
   email: string;
   displayName: string;
   profileImage?: string;
+  phone?: string;
+  address?: string;
+  dob?: string;
+  gender?: string;
+  nationality?: string;
   passwordHash?: string;
   authProvider: 'google' | 'email';
   createdAt: Date;
@@ -17,6 +22,11 @@ const UserSchema: Schema = new Schema(
     email: { type: String, required: true, unique: true },
     displayName: { type: String, required: true },
     profileImage: { type: String },
+    phone: { type: String },
+    address: { type: String },
+    dob: { type: String },
+    gender: { type: String },
+    nationality: { type: String },
     passwordHash: { type: String },
     authProvider: { type: String, enum: ['google', 'email'], default: 'email', required: true },
   },

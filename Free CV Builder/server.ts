@@ -16,6 +16,7 @@ import session from 'express-session';
 import passport from 'passport';
 import connectDB from './server-models/db';
 import User from './server-models/User';
+import CVDocument from './server-models/CVDocument';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
 
@@ -184,6 +185,12 @@ const sanitizeDisplayName = (name: unknown) => (
         : ''
 );
 
+const sanitizeProfileField = (value: unknown, maxLength = 160) => (
+    typeof value === 'string'
+        ? value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim().slice(0, maxLength)
+        : ''
+);
+
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const hashPassword = (password: string) => {
@@ -206,8 +213,40 @@ const publicUser = (user: any) => ({
     email: user.email,
     displayName: user.displayName,
     profileImage: user.profileImage,
+    phone: user.phone,
+    address: user.address,
+    dob: user.dob,
+    gender: user.gender,
+    nationality: user.nationality,
     authProvider: user.authProvider,
 });
+
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+    next();
+};
+
+const currentUserId = (req: Request) => (req.user as any)._id || (req.user as any).id;
+
+const documentSummary = (document: any) => ({
+    id: document._id.toString(),
+    title: document.title,
+    template: document.template,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+});
+
+const documentDetails = (document: any) => ({
+    ...documentSummary(document),
+    cvData: document.cvData,
+});
+
+const titleFromCvData = (cvData: any) => {
+    const fullName = cvData?.personalInfo?.fullName?.trim?.();
+    return fullName ? `${fullName} CV` : 'Untitled CV';
+};
 
 // ─── API Routes ──────────────────────────────────────────────────────
 
@@ -280,8 +319,99 @@ app.post('/api/auth/login', async (req: Request, res: Response, next: NextFuncti
     }
 });
 
+app.patch('/api/auth/profile', requireAuth, async (req: Request, res: Response) => {
+    try {
+        const displayName = sanitizeDisplayName(req.body.displayName);
+        const profileImage = typeof req.body.profileImage === 'string' ? req.body.profileImage.trim() : '';
+        const phone = sanitizeProfileField(req.body.phone, 40);
+        const address = sanitizeProfileField(req.body.address, 220);
+        const dob = sanitizeProfileField(req.body.dob, 30);
+        const gender = sanitizeProfileField(req.body.gender, 40);
+        const nationality = sanitizeProfileField(req.body.nationality, 80);
+
+        if (!displayName) {
+            return res.status(400).json({ error: 'Enter your name.' });
+        }
+
+        if (profileImage && profileImage.length > 2 * 1024 * 1024) {
+            return res.status(400).json({ error: 'Profile image is too large.' });
+        }
+
+        if (profileImage && !profileImage.startsWith('data:image/') && !profileImage.startsWith('https://')) {
+            return res.status(400).json({ error: 'Profile image format is not supported.' });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            currentUserId(req),
+            { displayName, profileImage, phone, address, dob, gender, nationality },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        res.json({ user: publicUser(user) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update your profile.', error);
+    }
+});
+
+app.patch('/api/auth/password', requireAuth, async (req: Request, res: Response) => {
+    try {
+        const currentPassword = typeof req.body.currentPassword === 'string' ? req.body.currentPassword : '';
+        const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : '';
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({ error: 'New password must be at least 8 characters.' });
+        }
+
+        const user = await User.findById(currentUserId(req));
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        if (user.passwordHash && !verifyPassword(currentPassword, user.passwordHash)) {
+            return res.status(401).json({ error: 'Current password is incorrect.' });
+        }
+
+        user.passwordHash = hashPassword(newPassword);
+        user.authProvider = user.authProvider || 'email';
+        await user.save();
+
+        res.json({ message: 'Password updated successfully.' });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update your password.', error);
+    }
+});
+
+app.delete('/api/auth/account', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = currentUserId(req);
+        await CVDocument.deleteMany({ userId });
+        await User.findByIdAndDelete(userId);
+
+        req.logout((err) => {
+            if (err) return next(err);
+            req.session.destroy(() => {
+                res.clearCookie('connect.sid');
+                res.json({ message: 'Account deleted successfully.' });
+            });
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not delete your account.', error);
+    }
+});
+
 // Initiate Google Login
-app.get('/api/auth/google', passport.authenticate('google', {
+app.get('/api/auth/google', (req: Request, _res: Response, next: NextFunction) => {
+    const nextTarget = typeof req.query.next === 'string' ? req.query.next : 'import';
+    (req.session as any).authRedirect =
+        nextTarget === 'download' ? '/builder?download=1' :
+        nextTarget === 'builder' ? '/builder' :
+        '/builder?import=1';
+    next();
+}, passport.authenticate('google', {
     scope: ['profile', 'email']
 }));
 
@@ -290,7 +420,9 @@ app.get('/api/auth/google/callback', passport.authenticate('google', {
     failureRedirect: '/?auth=failed',
 }), (req: Request, res: Response) => {
     // Successful authentication
-    res.redirect('/builder');
+    const redirectTo = (req.session as any).authRedirect || '/builder?import=1';
+    delete (req.session as any).authRedirect;
+    res.redirect(redirectTo);
 });
 
 // Get Current User
@@ -308,6 +440,90 @@ app.post('/api/auth/logout', (req: Request, res: Response, next: NextFunction) =
         if (err) { return next(err); }
         res.json({ message: 'Logged out successfully' });
     });
+});
+
+app.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
+    try {
+        const documents = await CVDocument.find({ userId: currentUserId(req) })
+            .sort({ updatedAt: -1 })
+            .select('title template createdAt updatedAt');
+        res.json({ documents: documents.map(documentSummary) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load your documents.', error);
+    }
+});
+
+app.get('/api/documents/:id', requireAuth, async (req: Request, res: Response) => {
+    try {
+        const document = await CVDocument.findOne({ _id: req.params.id, userId: currentUserId(req) });
+        if (!document) {
+            return res.status(404).json({ error: 'Document not found.' });
+        }
+        res.json({ document: documentDetails(document) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load this document.', error);
+    }
+});
+
+app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
+    try {
+        const { cvData } = req.body;
+        const template = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
+        const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
+
+        if (!cvData || typeof cvData !== 'object') {
+            return res.status(400).json({ error: 'Missing CV data.' });
+        }
+
+        const document = await CVDocument.create({
+            userId: currentUserId(req),
+            title,
+            template,
+            cvData,
+        });
+
+        res.status(201).json({ document: documentDetails(document) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not save your document.', error);
+    }
+});
+
+app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) => {
+    try {
+        const { cvData } = req.body;
+        const template = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
+        const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
+
+        if (!cvData || typeof cvData !== 'object') {
+            return res.status(400).json({ error: 'Missing CV data.' });
+        }
+
+        const document = await CVDocument.findOneAndUpdate(
+            { _id: req.params.id, userId: currentUserId(req) },
+            { title, template, cvData },
+            { new: true, runValidators: true }
+        );
+
+        if (!document) {
+            return res.status(404).json({ error: 'Document not found.' });
+        }
+
+        res.json({ document: documentDetails(document) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update your document.', error);
+    }
+});
+
+app.delete('/api/documents/:id', requireAuth, async (req: Request, res: Response) => {
+    try {
+        const document = await CVDocument.findOneAndDelete({ _id: req.params.id, userId: currentUserId(req) });
+        if (!document) {
+            return res.status(404).json({ error: 'Document not found.' });
+        }
+        res.json({ message: 'Document deleted successfully.' });
+    } catch (error) {
+        return sendError(res, 500, 'Could not delete this document.', error);
+    }
 });
 
 app.post('/api/parse-cv', express.json({ limit: '15mb' }), async (req: Request, res: Response) => {

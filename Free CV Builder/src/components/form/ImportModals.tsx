@@ -12,6 +12,7 @@ interface ImportModalsProps {
   importMessage: { type: 'success' | 'error'; text: string } | null;
   handleCVImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   isDarkMode?: boolean;
+  onImportSkipped?: () => void;
 }
 
 const overlayTransition = { duration: 0.14, ease: 'easeOut' as const };
@@ -27,7 +28,8 @@ export const ImportModals = React.memo(({
   isImporting,
   importMessage,
   handleCVImport,
-  isDarkMode
+  isDarkMode,
+  onImportSkipped
 }: ImportModalsProps) => {
   const activeModal = showInitialPrompt ? 'prompt' : showUploadModal ? 'upload' : null;
 
@@ -71,7 +73,10 @@ export const ImportModals = React.memo(({
                     Yes, I have one
                   </button>
                   <button
-                    onClick={() => setShowInitialPrompt(false)}
+                    onClick={() => {
+                      setShowInitialPrompt(false);
+                      onImportSkipped?.();
+                    }}
                     className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
                   >
                     No, start from scratch
@@ -94,7 +99,10 @@ export const ImportModals = React.memo(({
                     <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>PDF, JPG, or PNG. We will fill the form for you.</p>
                   </div>
                   <button
-                    onClick={() => setShowUploadModal(false)}
+                    onClick={() => {
+                      setShowUploadModal(false);
+                      onImportSkipped?.();
+                    }}
                     className={`flex h-9 w-9 items-center justify-center rounded-full border text-xl leading-none transition-colors ${isDarkMode ? 'border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-100' : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}
                     aria-label="Close upload modal"
                   >
@@ -176,7 +184,10 @@ export const ImportModals = React.memo(({
                 {!isImporting && (
                   <div className="mt-6 flex justify-end">
                     <button
-                      onClick={() => setShowUploadModal(false)}
+                      onClick={() => {
+                        setShowUploadModal(false);
+                        onImportSkipped?.();
+                      }}
                       className={`px-6 py-2.5 text-sm font-bold rounded-xl border transition-all ${isDarkMode ? 'text-slate-300 border-slate-700 hover:text-slate-100 hover:bg-slate-800 hover:border-slate-600' : 'text-gray-600 border-gray-200 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300'}`}
                     >
                       Skip for now

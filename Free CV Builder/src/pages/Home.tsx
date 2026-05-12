@@ -8,49 +8,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
 import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
+import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
-import { Toaster } from 'react-hot-toast';
-import { Download, LayoutTemplate, Loader2, FileText, Edit3, AlertCircle, RotateCcw, Save, CheckCircle2, Moon, Sun } from 'lucide-react';
+import { AccountMenu } from '../components/AccountMenu';
+import { AuthModal } from '../components/AuthModal';
+import toast from 'react-hot-toast';
+import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Moon, Sun } from 'lucide-react';
 
-const STORAGE_KEY = 'cv-builder-data';
-const TEMPLATE_STORAGE_KEY = 'cv-builder-template';
 const THEME_STORAGE_KEY = 'cv-builder-theme';
 const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
-
-function loadSavedData(): CVData | null {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (!parsed.references) {
-        parsed.references = [];
-      }
-      // Ensure sectionOrder exists (backward compat)
-      if (!parsed.sectionOrder) {
-        parsed.sectionOrder = DEFAULT_SECTION_ORDER;
-      } else if (!parsed.sectionOrder.includes('references')) {
-        parsed.sectionOrder = [...parsed.sectionOrder, 'references'];
-      }
-      return parsed as CVData;
-    }
-  } catch (e) {
-    console.warn('Failed to load saved CV data:', e);
-  }
-  return null;
-}
-
-function loadSavedTemplate(): TemplateName | null {
-  try {
-    const saved = localStorage.getItem(TEMPLATE_STORAGE_KEY);
-    if (isTemplateName(saved)) {
-      return saved;
-    }
-  } catch (e) {
-    console.warn('Failed to load saved template:', e);
-  }
-  return null;
-}
 
 const initialData: CVData = {
   personalInfo: {
@@ -88,13 +55,18 @@ const initialData: CVData = {
 };
 
 export default function Home() {
-  const [cvData, setCvData] = useState<CVData>(() => loadSavedData() || initialData);
-  const [debouncedCvData, setDebouncedCvData] = useState<CVData>(() => loadSavedData() || initialData);
-  const [template, setTemplate] = useState<TemplateName>(() => loadSavedTemplate() || DEFAULT_TEMPLATE);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const showImportPromptOnLoad = useRef(searchParams.get('import') === '1');
+  const showDownloadAfterAuthOnLoad = useRef(searchParams.get('download') === '1');
+  const [cvData, setCvData] = useState<CVData>(initialData);
+  const [debouncedCvData, setDebouncedCvData] = useState<CVData>(initialData);
+  const [template, setTemplate] = useState<TemplateName>(DEFAULT_TEMPLATE);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [cloudSaveStatus, setCloudSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [documentId, setDocumentId] = useState<string | null>(() => searchParams.get('document'));
+  const [documentTitle, setDocumentTitle] = useState('Untitled CV');
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [scale, setScale] = useState(1);
   const [previewHeight, setPreviewHeight] = useState(1122); // Default A4 height in px
@@ -103,6 +75,8 @@ export default function Home() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [downloadError, setDownloadError] = useState<{ title: string; message: string } | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authRedirectTo, setAuthRedirectTo] = useState('/builder');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     try {
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
@@ -113,11 +87,33 @@ export default function Home() {
     }
   });
   const [themeTransition, setThemeTransition] = useState<{ x: number; y: number; key: number; targetDark: boolean } | null>(null);
-  const [resetKey, setResetKey] = useState(0);
-  const [initialPromptRequest, setInitialPromptRequest] = useState(0);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    let ignore = false;
+    getCurrentUser()
+      .then((user) => {
+        if (!ignore) setCurrentUser(user);
+      })
+      .catch(() => {
+        if (!ignore) setCurrentUser(null);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleAuthUserChanged = (event: Event) => {
+      const user = (event as CustomEvent<AuthUser | undefined>).detail;
+      setCurrentUser(user || null);
+    };
+
+    window.addEventListener('auth-user-changed', handleAuthUserChanged);
+    return () => window.removeEventListener('auth-user-changed', handleAuthUserChanged);
+  }, []);
 
   // On mount: pick up ?template= from landing page and pre-select it
   useEffect(() => {
@@ -125,10 +121,51 @@ export default function Home() {
     if (isTemplateName(paramTemplate)) {
       setTemplate(paramTemplate);
     }
-    // Remove the query param so it doesn't persist on manual refresh
-    if (searchParams.has('template')) {
-      setSearchParams({}, { replace: true });
+    // Remove one-time query params so they do not persist on manual refresh.
+    if (searchParams.has('template') || searchParams.has('import') || searchParams.has('download')) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('template');
+      nextParams.delete('import');
+      nextParams.delete('download');
+      setSearchParams(nextParams, { replace: true });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!showDownloadAfterAuthOnLoad.current || !currentUser) return;
+    showDownloadAfterAuthOnLoad.current = false;
+    setShowDownloadConfirm(true);
+  }, [currentUser]);
+
+  useEffect(() => {
+    const id = searchParams.get('document');
+    if (!id) return;
+
+    let ignore = false;
+
+    async function loadDocument() {
+      try {
+        const data = await apiFetch<{ document: { id: string; title: string; template: TemplateName; cvData: CVData } }>(`/api/documents/${id}`);
+        if (ignore) return;
+
+        setDocumentId(data.document.id);
+        setDocumentTitle(data.document.title);
+        setCvData(data.document.cvData);
+        setDebouncedCvData(data.document.cvData);
+        if (isTemplateName(data.document.template)) {
+          setTemplate(data.document.template);
+        }
+      } catch (error) {
+        console.warn('Failed to load saved document:', error);
+        setCloudSaveStatus('error');
+      }
+    }
+
+    loadDocument();
+    return () => {
+      ignore = true;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -190,44 +227,6 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [cvData]);
 
-  // Auto-save CV data to localStorage (debounced)
-  useEffect(() => {
-    setSaveStatus('saving');
-    const timer = setTimeout(() => {
-      try {
-        const dataStr = JSON.stringify(cvData);
-        // Check if data size is approaching localStorage limit (~5MB)
-        if (dataStr.length > 4.5 * 1024 * 1024) {
-          console.warn('CV data is very large, save may fail. Consider removing the profile image.');
-        }
-        localStorage.setItem(STORAGE_KEY, dataStr);
-        setSaveStatus('saved');
-        // Reset status after 2 seconds
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      } catch (e: any) {
-        console.warn('Failed to save CV data:', e);
-        // Show specific error for quota exceeded
-        if (e?.name === 'QuotaExceededError' || e?.code === 22) {
-          setSaveStatus('error');
-          alert('Storage is full. Try removing your profile image or reducing data to enable auto-save.');
-          setTimeout(() => setSaveStatus('idle'), 5000);
-        } else {
-          setSaveStatus('idle');
-        }
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [cvData]);
-
-  // Auto-save template selection
-  useEffect(() => {
-    try {
-      localStorage.setItem(TEMPLATE_STORAGE_KEY, template);
-    } catch (e) {
-      console.warn('Failed to save template:', e);
-    }
-  }, [template]);
-
   useEffect(() => {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light');
@@ -251,32 +250,30 @@ export default function Home() {
     setIsDarkMode(nextDark);
   }, [isDarkMode]);
 
-  const handleReset = useCallback(() => {
-    setShowResetConfirm(false);
-    setIsInitialLoading(true);
-    
-    // Keep the reset prompt reachable on mobile when reset is triggered from Preview.
-    setMobileView('edit');
-
-    // Clear data immediately
-    setCvData(initialData);
-    setDebouncedCvData(initialData);
-    setTemplate('classic');
+  const handleCloudSave = useCallback(async () => {
+    setCloudSaveStatus('saving');
     try {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(TEMPLATE_STORAGE_KEY);
-      sessionStorage.removeItem('hasSeenCVPrompt');
-    } catch (e) {
-      console.warn('Failed to clear saved data:', e);
-    }
+      const title = cvData.personalInfo.fullName?.trim() ? `${cvData.personalInfo.fullName.trim()} CV` : documentTitle;
+      const data = await apiFetch<{ document: { id: string; title: string } }>(
+        documentId ? `/api/documents/${documentId}` : '/api/documents',
+        {
+          method: documentId ? 'PUT' : 'POST',
+          body: JSON.stringify({ title, template, cvData }),
+        }
+      );
 
-    // Wait for animation to finish, then trigger the popup
-    setTimeout(() => {
-      setIsInitialLoading(false);
-      setResetKey(prev => prev + 1);
-      setInitialPromptRequest(prev => prev + 1);
-    }, 1500);
-  }, []);
+      setDocumentId(data.document.id);
+      setDocumentTitle(data.document.title);
+      setCloudSaveStatus('saved');
+      toast.success('CV saved successfully.');
+      setTimeout(() => setCloudSaveStatus('idle'), 2200);
+    } catch (error) {
+      console.warn('Failed to save document:', error);
+      setCloudSaveStatus('error');
+      toast.error('Could not save your CV. Please try again.');
+      setTimeout(() => setCloudSaveStatus('idle'), 4000);
+    }
+  }, [cvData, documentId, documentTitle, template]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -393,6 +390,20 @@ export default function Home() {
     }
   };
 
+  const openBuilderLogin = useCallback(() => {
+    setAuthRedirectTo('/builder');
+    setAuthModalOpen(true);
+  }, []);
+
+  const requestDownload = useCallback(() => {
+    if (!currentUser) {
+      setAuthRedirectTo('/builder?download=1');
+      setAuthModalOpen(true);
+      return;
+    }
+    setShowDownloadConfirm(true);
+  }, [currentUser]);
+
   return (
     <>
       <AnimatePresence>
@@ -418,11 +429,11 @@ export default function Home() {
       <div className={`flex flex-col min-h-0 h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
         {/* Top Navigation Bar - hidden when popup is visible */}
         {!isPopupVisible && (
-          <header className={`border-b flex flex-col lg:flex-row items-center justify-between p-4 lg:px-8 shrink-0 z-50 print:hidden gap-4 lg:gap-0 sticky top-0 shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}>
+          <header className={`border-b flex flex-col lg:flex-row items-center justify-between px-4 py-3 lg:px-8 lg:py-4 shrink-0 z-50 print:hidden gap-3 lg:gap-0 sticky top-0 shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}>
             <div className="flex items-center justify-between w-full lg:w-auto">
-              <h1 className="text-xl lg:text-2xl font-extrabold flex items-center">
-                <div className={`p-1.5 rounded-xl mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-slate-800 shadow-black/20 ring-1 ring-slate-700' : 'bg-white shadow-violet-600/10 ring-1 ring-violet-100'}`}>
-                  <img src="/brand/faviconblack.png" alt="" className="h-7 w-7 rounded-lg" />
+              <h1 className="text-lg lg:text-2xl font-extrabold flex items-center">
+                <div className={`p-1.5 rounded-xl mr-2.5 lg:mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-slate-800 shadow-black/20 ring-1 ring-slate-700' : 'bg-white shadow-violet-600/10 ring-1 ring-violet-100'}`}>
+                  <img src="/brand/faviconblack.png" alt="" className="h-6 w-6 rounded-lg lg:h-7 lg:w-7" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className={`bg-clip-text text-transparent bg-linear-to-r leading-tight ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
@@ -431,17 +442,22 @@ export default function Home() {
                 </div>
               </h1>
               <div className="lg:hidden flex items-center gap-2">
-                <button
-                  onClick={() => setShowResetConfirm(true)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95 ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                  aria-label="Reset Resume"
-                >
-                  Reset
-                </button>
+                {currentUser ? (
+                  <AccountMenu isDarkMode={isDarkMode} size="sm" displayName={currentUser.displayName} profileImage={currentUser.profileImage} />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={openBuilderLogin}
+                    className={`inline-flex h-10 items-center justify-center gap-2 rounded-full border px-3 text-xs font-extrabold shadow-lg transition-all active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
+                  >
+                    <LogIn size={15} />
+                    Login
+                  </button>
+                )}
                 <button
                   onClick={handleThemeToggle}
                   data-keep-builder-dropdown-open="true"
-                  className={`p-2 active:scale-95 rounded-xl transition-all border ${isDarkMode ? 'text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700' : 'text-slate-700 bg-white border-gray-200 hover:bg-gray-100'}`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border shadow-lg transition-all active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
                   aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
                   {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -450,7 +466,7 @@ export default function Home() {
             </div>
 
             {/* Mobile View Toggle - Segmented Control */}
-            <div className={`lg:hidden flex p-1.5 rounded-2xl w-full max-w-sm mx-auto border shadow-inner transition-colors duration-500 ${isDarkMode ? 'bg-slate-800/70 border-slate-700/70' : 'bg-gray-100/50 border-gray-200/40'}`}>
+            <div className={`lg:hidden flex p-1 rounded-2xl w-full max-w-sm mx-auto border shadow-inner transition-colors duration-500 ${isDarkMode ? 'bg-slate-800/70 border-slate-700/70' : 'bg-gray-100/50 border-gray-200/40'}`}>
               <button
                 onClick={() => setMobileView('edit')}
                 className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'edit' ? (isDarkMode ? 'bg-slate-700 text-violet-300 shadow-sm ring-1 ring-violet-200/10 scale-100' : 'bg-white text-violet-600 shadow-sm ring-1 ring-slate-800/5 scale-100') : (isDarkMode ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/80 scale-95' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 scale-95')}`}
@@ -467,47 +483,51 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="hidden lg:flex flex-wrap items-center justify-center gap-3 lg:space-x-4 w-full lg:w-auto">
-              {/* Save Status Indicator */}
-              <div className="flex items-center text-xs font-medium transition-all duration-300">
-                {saveStatus === 'saving' && (
-                  <span className="flex items-center text-gray-400 animate-pulse">
-                    <Save size={13} className="mr-1.5" /> Saving...
-                  </span>
-                )}
-                {saveStatus === 'saved' && (
-                  <span className="flex items-center text-green-500">
-                    <CheckCircle2 size={13} className="mr-1.5" /> Saved
-                  </span>
-                )}
-                {saveStatus === 'error' && (
-                  <span className="flex items-center text-red-500">
-                    <AlertCircle size={13} className="mr-1.5" /> Save failed
-                  </span>
-                )}
-              </div>
-
+            <div className="hidden lg:flex items-center gap-2">
+              {currentUser && (
+                <button
+                  onClick={handleCloudSave}
+                  disabled={cloudSaveStatus === 'saving'}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-500 active:scale-95 disabled:opacity-70"
+                  aria-label="Save CV"
+                >
+                  {cloudSaveStatus === 'saving' ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : cloudSaveStatus === 'saved' ? (
+                    <CheckCircle2 size={18} />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                </button>
+              )}
               <button
-                onClick={() => setShowResetConfirm(true)}
-                className={`flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 border active:scale-95 ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-              >
-                <RotateCcw size={15} className="mr-2" /> Reset
-              </button>
-              <button
-                onClick={() => setShowDownloadConfirm(true)}
+                onClick={requestDownload}
                 disabled={isGeneratingPDF}
-                className="flex items-center px-5 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 hover:shadow-violet-600/20 transition-all duration-200 shadow-md active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet-500 active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+                aria-label="Download PDF"
               >
                 {isGeneratingPDF ? (
-                  <><Loader2 size={16} className="mr-2 animate-spin" /> Generating...</>
+                  <Loader2 size={18} className="animate-spin" />
                 ) : (
-                  <><Download size={16} className="mr-2" /> Download PDF</>
+                  <Download size={18} />
                 )}
               </button>
+              {currentUser ? (
+                <AccountMenu isDarkMode={isDarkMode} displayName={currentUser.displayName} profileImage={currentUser.profileImage} showName />
+              ) : (
+                <button
+                  type="button"
+                  onClick={openBuilderLogin}
+                  className={`inline-flex h-12 items-center justify-center gap-2 rounded-full border px-4 text-sm font-extrabold shadow-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
+                >
+                  <LogIn size={17} />
+                  Login
+                </button>
+              )}
               <button
                 onClick={handleThemeToggle}
                 data-keep-builder-dropdown-open="true"
-                className={`flex items-center justify-center p-2.5 rounded-xl transition-all duration-200 border active:scale-95 ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-700 border-gray-200 hover:bg-gray-100'}`}
+                className={`flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
                 aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
@@ -520,19 +540,18 @@ export default function Home() {
           {/* Left Side: Form */}
           <div
             className={`${mobileView === 'edit' ? 'flex max-lg:w-full! max-lg:min-w-0!' : 'hidden'} lg:flex h-full min-h-0 border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
-            style={{ width: `${formWidth}%`, minWidth: '420px' }}
+            style={{ width: `${formWidth}%`, minWidth: 'min(420px, 100%)' }}
           >
             <div className="h-full min-h-0 w-full overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <CVForm
-                key={resetKey}
                 cvData={cvData}
                 setCvData={setCvData}
                 template={template}
                 setTemplate={setTemplate}
                 isDarkMode={isDarkMode}
                 onPopupVisibleChange={setIsPopupVisible}
-                onFinish={() => setShowDownloadConfirm(true)}
-                initialPromptRequest={initialPromptRequest}
+                onFinish={requestDownload}
+                showImportPromptOnMount={showImportPromptOnLoad.current}
               />
             </div>
           </div>
@@ -568,27 +587,6 @@ export default function Home() {
                 <CVPreview ref={contentRef} cvData={debouncedCvData} template={template} />
               </div>
             </div>
-
-            {/* Sticky Mobile Download Button */}
-            {mobileView === 'preview' && (
-              <div className="lg:hidden shrink-0 w-full px-4 pt-3 pb-4 pb-safe z-40 print:hidden pointer-events-none">
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowDownloadConfirm(true);
-                  }}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  disabled={isGeneratingPDF}
-                  className="pointer-events-auto touch-manipulation select-none [-webkit-tap-highlight-color:transparent] w-full flex items-center justify-center px-4 py-3.5 bg-violet-600 text-white text-sm font-semibold rounded-2xl hover:bg-violet-700 active:scale-[0.98] transition-all shadow-xl shadow-violet-600/20 disabled:opacity-70"
-                >
-                  {isGeneratingPDF ? (
-                    <><Loader2 size={18} className="mr-2 animate-spin" /> Generating...</>
-                  ) : (
-                    <><Download size={18} className="mr-2" /> Download PDF</>
-                  )}
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -726,54 +724,6 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* Reset Confirmation Modal */}
-        <AnimatePresence>
-          {showResetConfirm && (
-            <motion.div
-              className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-            >
-              <motion.div
-                className={`relative w-full max-w-sm overflow-hidden rounded-2xl border shadow-2xl ${isDarkMode ? 'bg-slate-900 border-slate-700/80 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              >
-              <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-red-600 via-orange-500 to-amber-400" />
-              <div className="p-7">
-                <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm ${isDarkMode ? 'bg-red-500/10 border-red-400/30' : 'bg-red-50 border-red-100'}`}>
-                  <RotateCcw className="h-8 w-8 text-red-500" strokeWidth={1.8} />
-                </div>
-                <h3 className="mb-2 text-center text-xl font-bold">Reset All Data?</h3>
-                <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  This will clear all resume content and restore defaults.
-                  <br />
-                  This action cannot be undone.
-                </p>
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={handleReset}
-                    className="flex w-full items-center justify-center rounded-xl bg-red-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 active:scale-[0.98]"
-                  >
-                    <RotateCcw size={18} className="mr-2" /> Yes, Reset Everything
-                  </button>
-                  <button
-                    onClick={() => setShowResetConfirm(false)}
-                    className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Global Loading Overlay */}
         <AnimatePresence>
           {isGeneratingPDF && (
@@ -804,38 +754,19 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* Global Toaster for Notifications */}
-        <Toaster 
-          position="top-center" 
-          toastOptions={{ 
-            duration: 4000,
-            className: `!rounded-2xl !font-semibold !shadow-2xl border backdrop-blur-md ${isDarkMode ? '!bg-slate-800/95 !text-slate-100 !border-slate-700/80' : '!bg-white/95 !text-slate-800 !border-slate-200/80'}`,
-            style: {
-              padding: '14px 20px',
-              fontSize: '14px',
-              maxWidth: 'calc(100vw - 32px)',
-            },
-            success: {
-              iconTheme: {
-                primary: '#8b5cf6',
-                secondary: isDarkMode ? '#1e293b' : '#ffffff',
-              },
-              style: {
-                border: `1px solid ${isDarkMode ? 'rgba(139, 92, 246, 0.4)' : 'rgba(139, 92, 246, 0.3)'}`,
-              }
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: isDarkMode ? '#1e293b' : '#ffffff',
-              },
-              style: {
-                border: `1px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.3)'}`,
-              }
-            }
-          }} 
-        />
       </div>
+      <AuthModal
+        isOpen={authModalOpen}
+        initialMode="login"
+        onClose={() => setAuthModalOpen(false)}
+        redirectTo={authRedirectTo}
+        onAuthenticated={(user) => {
+          setCurrentUser(user);
+          if (authRedirectTo.includes('download=1')) {
+            setShowDownloadConfirm(true);
+          }
+        }}
+      />
     </>
   );
 }
