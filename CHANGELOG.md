@@ -3,55 +3,59 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #96 from bimanthaperera-lab/test/overview (07d9859) - Bimantha Perera, 18 seconds ago
-* replace download button position in desktop mode (915c97b) - Bimantha Perera, 10 minutes ago
-* add download button for gest users and fix zoom issue (d8fec4d) - Bimantha Perera, 16 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (126ea0f) - bimanthaperera-lab, 57 minutes ago
-* Merge pull request #95 from bimanthaperera-lab/test/overview (1cc5124) - Bimantha Perera, 58 minutes ago
-* Update README.md (0a6a861) - Bimantha Perera, 59 minutes ago
-* Fix security issues (71cf799) - Bimantha Perera, 64 minutes ago
-* fix security issues (32c0076) - Bimantha Perera, 75 minutes ago
+* Merge pull request #97 from bimanthaperera-lab/test/overview (2011582) - Bimantha Perera, 9 seconds ago
+* add  strong password check (21ba805) - Bimantha Perera, 12 minutes ago
+* update login issue (e898d20) - Bimantha Perera, 22 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (dcff1d8) - bimanthaperera-lab, 34 minutes ago
+* Merge pull request #96 from bimanthaperera-lab/test/overview (07d9859) - Bimantha Perera, 34 minutes ago
+* replace download button position in desktop mode (915c97b) - Bimantha Perera, 44 minutes ago
+* add download button for gest users and fix zoom issue (d8fec4d) - Bimantha Perera, 49 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (126ea0f) - bimanthaperera-lab, 2 hours ago
+* Merge pull request #95 from bimanthaperera-lab/test/overview (1cc5124) - Bimantha Perera, 2 hours ago
+* Update README.md (0a6a861) - Bimantha Perera, 2 hours ago
+* Fix security issues (71cf799) - Bimantha Perera, 2 hours ago
+* fix security issues (32c0076) - Bimantha Perera, 2 hours ago
 * Improve UI/UX with user logins and create profile, dashboard,settings pages (61d7944) - Bimantha Perera, 2 hours ago
 * Create User Login (0ab92c2) - Bimantha Perera, 7 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (e1f7032) - bimanthaperera-lab, 16 hours ago
-* Merge pull request #92 from bimanthaperera-lab/test/overview (f6ee3e1) - Bimantha Perera, 16 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e1f7032) - bimanthaperera-lab, 17 hours ago
+* Merge pull request #92 from bimanthaperera-lab/test/overview (f6ee3e1) - Bimantha Perera, 17 hours ago
 * Implement MongoDB database and Google Auth for Future Developments (65dd7b5) - Bimantha Perera, 18 hours ago
-* Update App.tsx (e9775cd) - Bimantha Perera, 20 hours ago
+* Update App.tsx (e9775cd) - Bimantha Perera, 21 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (09d756a) - bimanthaperera-lab, 23 hours ago
 * Merge pull request #90 from bimanthaperera-lab/test/overview (9b45594) - Bimantha Perera, 23 hours ago
-* New Timeline Template Added (ec8ae73) - Bimantha Perera, 23 hours ago
+* New Timeline Template Added (ec8ae73) - Bimantha Perera, 24 hours ago
 * Improve UI/UX , Create new templates page, optimized the code, (af66d58) - Bimantha Perera, 24 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (45ba3b7) - bimanthaperera-lab, 25 hours ago
-* Merge pull request #89 from bimanthaperera-lab/test/overview (051a546) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (45ba3b7) - bimanthaperera-lab, 26 hours ago
+* Merge pull request #89 from bimanthaperera-lab/test/overview (051a546) - Bimantha Perera, 26 hours ago
 * improve hamburger layout (8bbf410) - Bimantha Perera, 26 hours ago
-* fix footer bug (fdadb67) - Bimantha Perera, 26 hours ago
-* fix loader issue (32529af) - Bimantha Perera, 26 hours ago
+* fix footer bug (fdadb67) - Bimantha Perera, 27 hours ago
+* fix loader issue (32529af) - Bimantha Perera, 27 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (737ce9f) - bimanthaperera-lab, 27 hours ago
 * Merge pull request #88 from bimanthaperera-lab/test/overview (c76f275) - Bimantha Perera, 27 hours ago
 * Update App.tsx (23e7980) - Bimantha Perera, 27 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (4e27d01) - bimanthaperera-lab, 27 hours ago
 * Merge pull request #87 from bimanthaperera-lab/test/overview (9569d9e) - Bimantha Perera, 27 hours ago
-* fix loading animation flickering (613c258) - Bimantha Perera, 27 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (798a6ee) - bimanthaperera-lab, 27 hours ago
-* Merge pull request #86 from bimanthaperera-lab/test/overview (cf53d76) - Bimantha Perera, 27 hours ago
-* fix loading issue (9611f71) - Bimantha Perera, 27 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (64a6b34) - bimanthaperera-lab, 27 hours ago
-* Merge pull request #85 from bimanthaperera-lab/test/overview (faa0922) - Bimantha Perera, 27 hours ago
+* fix loading animation flickering (613c258) - Bimantha Perera, 28 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (798a6ee) - bimanthaperera-lab, 28 hours ago
+* Merge pull request #86 from bimanthaperera-lab/test/overview (cf53d76) - Bimantha Perera, 28 hours ago
+* fix loading issue (9611f71) - Bimantha Perera, 28 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (64a6b34) - bimanthaperera-lab, 28 hours ago
+* Merge pull request #85 from bimanthaperera-lab/test/overview (faa0922) - Bimantha Perera, 28 hours ago
 * Update App.tsx (4055aef) - Bimantha Perera, 28 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (08d1f5e) - bimanthaperera-lab, 28 hours ago
 * Merge pull request #84 from bimanthaperera-lab/test/overview (ded6fa0) - Bimantha Perera, 28 hours ago
-* Update App.tsx (2fdd4c6) - Bimantha Perera, 28 hours ago
-* chore: bump version to 0.1.6 (5a1cf11) - bimanthaperera-lab, 28 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (21efd33) - bimanthaperera-lab, 28 hours ago
-* Merge pull request #83 from bimanthaperera-lab/test/overview (a29065d) - Bimantha Perera, 28 hours ago
-* fix hamburger issues and console errors (185bff6) - Bimantha Perera, 28 hours ago
+* Update App.tsx (2fdd4c6) - Bimantha Perera, 29 hours ago
+* chore: bump version to 0.1.6 (5a1cf11) - bimanthaperera-lab, 29 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (21efd33) - bimanthaperera-lab, 29 hours ago
+* Merge pull request #83 from bimanthaperera-lab/test/overview (a29065d) - Bimantha Perera, 29 hours ago
+* fix hamburger issues and console errors (185bff6) - Bimantha Perera, 29 hours ago
 * add home button to hamburger menu (4f8dce3) - Bimantha Perera, 29 hours ago
 * fix scroll animation issuein mobile (cb1520f) - Bimantha Perera, 29 hours ago
 * Fix Bugs (6306582) - Bimantha Perera, 29 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (4819d61) - bimanthaperera-lab, 30 hours ago
-* Merge pull request #82 from bimanthaperera-lab/test/overview (6dc2031) - Bimantha Perera, 30 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (4819d61) - bimanthaperera-lab, 31 hours ago
+* Merge pull request #82 from bimanthaperera-lab/test/overview (6dc2031) - Bimantha Perera, 31 hours ago
 * Update README.md (15f3fcd) - Bimantha Perera, 31 hours ago
-* Add FAQ section to the Landing Page (447d3e7) - Bimantha Perera, 31 hours ago
+* Add FAQ section to the Landing Page (447d3e7) - Bimantha Perera, 32 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (7fec5af) - bimanthaperera-lab, 2 days ago
 * Merge pull request #77 from bimanthaperera-lab/test/overview (7eb0802) - Bimantha Perera, 2 days ago
 * fix hamburger scrolling and template selection (a757e67) - Bimantha Perera, 2 days ago
