@@ -13,6 +13,7 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const passwordPolicyHint = '8+ characters with uppercase, lowercase, number, and symbol.';
 
   useEffect(() => {
     let ignore = false;
@@ -109,7 +110,7 @@ export default function Settings() {
                 </span>
                 <div>
                   <h2 className="font-montserrat text-xl font-black">Password</h2>
-                  <p className="text-sm font-semibold text-slate-400">Use at least 8 characters for the new password.</p>
+                  <p className="text-sm font-semibold text-slate-400">Use {passwordPolicyHint}</p>
                 </div>
               </div>
 

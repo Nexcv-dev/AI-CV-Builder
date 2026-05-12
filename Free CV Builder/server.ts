@@ -317,6 +317,22 @@ const sanitizeProfileField = (value: unknown, maxLength = 160) => (
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+const isMongoDuplicateKeyError = (error: any) => (
+    error?.code === 11000 || error?.name === 'MongoServerError' && error?.code === 11000
+);
+
+const isMongoValidationError = (error: any) => error?.name === 'ValidationError';
+
+const passwordPolicyMessage = 'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.';
+
+const validatePasswordStrength = (password: string) => (
+    password.length >= 8 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
+);
+
 const sanitizePdfImageSource = (value: unknown) => {
     if (typeof value !== 'string') return '';
     const source = value.trim();
@@ -395,6 +411,10 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunction) => {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(503).json({ error: 'Database is not connected. Check MongoDB settings and try again.' });
+        }
+
         const email = normalizeEmail(req.body.email);
         const displayName = sanitizeDisplayName(req.body.displayName);
         const password = typeof req.body.password === 'string' ? req.body.password : '';
@@ -407,8 +427,8 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             return res.status(400).json({ error: 'Enter your name.' });
         }
 
-        if (password.length < 8) {
-            return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+        if (!validatePasswordStrength(password)) {
+            return res.status(400).json({ error: passwordPolicyMessage });
         }
 
         const existingUser = await User.findOne({ email });
@@ -428,6 +448,14 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             return res.status(201).json({ user: publicUser(user) });
         });
     } catch (error) {
+        if (isMongoDuplicateKeyError(error)) {
+            return res.status(409).json({ error: 'An account already exists for this email.' });
+        }
+
+        if (isMongoValidationError(error)) {
+            return res.status(400).json({ error: 'Please check your signup details and try again.' });
+        }
+
         return sendError(res, 500, 'Could not create your account.', error);
     }
 });
@@ -498,8 +526,8 @@ app.patch('/api/auth/password', requireAuth, async (req: Request, res: Response)
         const currentPassword = typeof req.body.currentPassword === 'string' ? req.body.currentPassword : '';
         const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : '';
 
-        if (newPassword.length < 8) {
-            return res.status(400).json({ error: 'New password must be at least 8 characters.' });
+        if (!validatePasswordStrength(newPassword)) {
+            return res.status(400).json({ error: passwordPolicyMessage });
         }
 
         const user = await User.findById(currentUserId(req));
