@@ -32,7 +32,14 @@ describe('Advanced Server Security', () => {
       const req = { 
         method: 'POST', 
         path: '/api/generate-pdf', 
-        header: vi.fn().mockReturnValue('cv-builder-app') 
+        protocol: 'http',
+        header: vi.fn((name: string) => {
+          if (name === 'X-App-Source') return 'cv-builder-app';
+          if (name === 'Origin') return 'http://localhost:3000';
+          if (name === 'host') return 'localhost:3000';
+          return undefined;
+        }),
+        get: vi.fn((name: string) => name === 'host' ? 'localhost:3000' : undefined),
       } as any;
       const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
       const next = vi.fn();
@@ -40,6 +47,43 @@ describe('Advanced Server Security', () => {
       integrityCheck(req, res, next);
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('should block PATCH requests without integrity header', () => {
+      const req = {
+        method: 'PATCH',
+        path: '/api/auth/profile',
+        header: vi.fn().mockReturnValue(undefined),
+      } as any;
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+      const next = vi.fn();
+
+      integrityCheck(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Unauthorized request source' }));
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should block state-changing requests from untrusted origins', () => {
+      const req = {
+        method: 'DELETE',
+        path: '/api/documents/123',
+        protocol: 'http',
+        header: vi.fn((name: string) => {
+          if (name === 'X-App-Source') return 'cv-builder-app';
+          if (name === 'Origin') return 'https://evil.example';
+          if (name === 'host') return 'localhost:3000';
+          return undefined;
+        }),
+        get: vi.fn((name: string) => name === 'host' ? 'localhost:3000' : undefined),
+      } as any;
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+      const next = vi.fn();
+
+      integrityCheck(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Untrusted request origin' }));
+      expect(next).not.toHaveBeenCalled();
     });
   });
 

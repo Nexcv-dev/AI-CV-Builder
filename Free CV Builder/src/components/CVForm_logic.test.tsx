@@ -169,13 +169,13 @@ describe('CVForm Logic', () => {
   it('clears import message and shows starting message on new CV import', async () => {
     render(
       <MemoryRouter>
-        <CVForm cvData={initialData} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} />
+        <CVForm cvData={initialData} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} showImportPromptOnMount />
       </MemoryRouter>
     );
     
     const user = userEvent.setup();
-    const yesButton = await screen.findByText(/Yes, I have one/i);
-    await user.click(yesButton);
+    const importPromptButton = await screen.findByText(/Yes, I have one/i);
+    await user.click(importPromptButton);
     
     // Confirm the upload modal title appears
     expect(await screen.findByText(/Upload Resume/i)).toBeInTheDocument();

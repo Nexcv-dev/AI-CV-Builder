@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Link, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import Home from './pages/Home';
 import LandingPage from './pages/LandingPage';
@@ -9,8 +9,12 @@ import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import TemplatesPage from './pages/TemplatesPage';
 import PrintView from './pages/PrintView';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import { Toaster } from 'react-hot-toast';
 import { Footer } from './components/Footer';
+import { getCurrentUser } from './utils/api';
 
 function PageLoadingOverlay() {
   const location = useLocation();
@@ -82,6 +86,7 @@ function Layout() {
   const location = useLocation();
   const previousPathname = useRef(location.pathname);
   const isBuilder = location.pathname === '/builder';
+  const hidesFooter = isBuilder || ['/dashboard', '/profile', '/settings'].includes(location.pathname);
 
   useLayoutEffect(() => {
     const previous = previousPathname.current;
@@ -111,9 +116,42 @@ function Layout() {
       <div className="flex-1 flex flex-col min-h-0">
         <Outlet />
       </div>
-      {!isBuilder && <Footer />}
+      {!hidesFooter && <Footer />}
     </div>
   );
+}
+
+function ProtectedRoute({ children }: { children: React.ReactElement }) {
+  const [status, setStatus] = useState<'loading' | 'authed' | 'guest'>('loading');
+
+  useLayoutEffect(() => {
+    let ignore = false;
+    getCurrentUser()
+      .then(() => {
+        if (!ignore) setStatus('authed');
+      })
+      .catch(() => {
+        if (!ignore) setStatus('guest');
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm font-bold text-slate-400">
+        Loading...
+      </div>
+    );
+  }
+
+  if (status === 'guest') {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
 }
 
 function NotFound() {
@@ -138,6 +176,28 @@ function App() {
   return (
     <Router>
       <PageLoadingOverlay />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          className: '!rounded-2xl !border !border-slate-700 !bg-slate-900 !px-4 !py-3 !text-sm !font-bold !text-slate-100 !shadow-2xl',
+          style: {
+            maxWidth: 'calc(100vw - 32px)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#8b5cf6',
+              secondary: '#0f172a',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#0f172a',
+            },
+          },
+        }}
+      />
       <Routes>
         {/* Headless print route - no layout */}
         <Route path="/print" element={<PrintView />} />
@@ -145,6 +205,9 @@ function App() {
         {/* Standard layout routes */}
         <Route element={<Layout />}>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/builder" element={<Home />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
