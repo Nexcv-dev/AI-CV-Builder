@@ -13,6 +13,7 @@ import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import session from 'express-session';
 import passport from 'passport';
+import mongoose from 'mongoose';
 import connectDB from './server-models/db';
 import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
@@ -61,9 +62,24 @@ app.use(passport.session());
 
 // ─── Security Middleware ─────────────────────────────────────────────
 
-// Helmet: set secure HTTP headers
+const productionCspDirectives = {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+    fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+    imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+    connectSrc: ["'self'"],
+    objectSrc: ["'none'"],
+    baseUri: ["'self'"],
+    formAction: ["'self'"],
+    frameAncestors: ["'none'"],
+};
+
+// Helmet: set secure HTTP headers. Production gets a stricter CSP header than the dev meta tag.
 app.use(helmet({
-    contentSecurityPolicy: false, // CSP is handled via index.html meta tag
+    contentSecurityPolicy: process.env.NODE_ENV === 'production'
+        ? { useDefaults: true, directives: productionCspDirectives }
+        : false,
 }));
 
 // Permissions-Policy: restrict browser feature access
@@ -77,27 +93,25 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
     ? [process.env.ALLOWED_ORIGIN || ''].filter(Boolean)
     : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
 
+const isAllowedOrigin = (origin: string) => {
+    if (process.env.NODE_ENV === 'production') {
+        return allowedOrigins.length > 0 && allowedOrigins.includes(origin);
+    }
+    return origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1');
+};
+
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like server-side or same-origin)
         if (!origin) return callback(null, true);
 
-        // In production, MUST have ALLOWED_ORIGIN set
-        if (process.env.NODE_ENV === 'production') {
-            if (allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
-            return callback(new Error('Cross-Origin Request Blocked by Security Policy'));
-        }
-
-        // In development mode, allow localhost origins
-        if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+        if (isAllowedOrigin(origin)) {
             return callback(null, true);
         }
 
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error('Cross-Origin Request Blocked by Security Policy'));
     },
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'X-App-Source'],
 }));
 
@@ -118,24 +132,82 @@ const pdfLimiter = rateLimit({
     message: { error: 'PDF generation limit reached. Please wait a few minutes before trying again.' },
 });
 
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 8,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    message: { error: 'Too many login attempts. Please wait a few minutes before trying again.' },
+});
+
 app.use('/api/', apiLimiter);
 app.use('/api/generate-pdf', pdfLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/signup', authLimiter);
 
-// Default JSON limit for most endpoints (1MB)
-app.use(express.json({ limit: '20mb' }));
+const defaultJsonParser = express.json({ limit: '1mb' });
+const cvImportJsonParser = express.json({ limit: '16mb' });
+const pdfJsonParser = express.json({ limit: '5mb' });
+
+// Default JSON limit for most endpoints. Larger payloads are allowed only on specific routes.
+app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf') {
+        return next();
+    }
+    return defaultJsonParser(req, res, next);
+});
 
 // ─── Security Helpers & Middleware ───────────────────────────────────
 
-// Middleware to check request integrity via custom header
-export const integrityCheck = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    // Only check POST requests to /api/ as they are the sensitive ones
-    if (req.method === 'POST' && req.path.startsWith('/api/')) {
-        const appSource = req.header('X-App-Source');
-        if (appSource !== 'cv-builder-app') {
-            return res.status(403).json({ error: 'Unauthorized request source' });
-        }
+const stateChangingMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+const getRequestOrigin = (req: express.Request) => {
+    const origin = req.header('Origin');
+    if (origin) return origin;
+
+    const referer = req.header('Referer');
+    if (!referer) return '';
+
+    try {
+        return new URL(referer).origin;
+    } catch {
+        return '';
     }
-    next();
+};
+
+const getSameOrigin = (req: express.Request) => {
+    const protocol = req.protocol;
+    const host = typeof req.get === 'function' ? req.get('host') : req.header('host');
+    return host ? `${protocol}://${host}` : '';
+};
+
+const isTrustedRequestOrigin = (req: express.Request) => {
+    const requestOrigin = getRequestOrigin(req);
+    if (!requestOrigin) {
+        return process.env.NODE_ENV !== 'production';
+    }
+
+    const sameOrigin = getSameOrigin(req);
+    return requestOrigin === sameOrigin || isAllowedOrigin(requestOrigin);
+};
+
+// Middleware to reduce CSRF risk on state-changing API requests.
+export const integrityCheck = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!req.path.startsWith('/api/') || !stateChangingMethods.has(req.method)) {
+        return next();
+    }
+
+    const appSource = req.header('X-App-Source');
+    if (appSource !== 'cv-builder-app') {
+        return res.status(403).json({ error: 'Unauthorized request source' });
+    }
+
+    if (!isTrustedRequestOrigin(req)) {
+        return res.status(403).json({ error: 'Untrusted request origin' });
+    }
+
+    return next();
 };
 
 app.use(integrityCheck);
@@ -289,6 +361,10 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const currentUserId = (req: Request) => (req.user as any)._id || (req.user as any).id;
+
+const isValidDocumentId = (id: unknown) => (
+    typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)
+);
 
 const documentSummary = (document: any) => ({
     id: document._id.toString(),
@@ -515,6 +591,10 @@ app.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
 
 app.get('/api/documents/:id', requireAuth, async (req: Request, res: Response) => {
     try {
+        if (!isValidDocumentId(req.params.id)) {
+            return res.status(400).json({ error: 'Invalid document id.' });
+        }
+
         const document = await CVDocument.findOne({ _id: req.params.id, userId: currentUserId(req) });
         if (!document) {
             return res.status(404).json({ error: 'Document not found.' });
@@ -550,6 +630,10 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
 
 app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) => {
     try {
+        if (!isValidDocumentId(req.params.id)) {
+            return res.status(400).json({ error: 'Invalid document id.' });
+        }
+
         const { cvData } = req.body;
         const template = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
@@ -576,6 +660,10 @@ app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) =
 
 app.delete('/api/documents/:id', requireAuth, async (req: Request, res: Response) => {
     try {
+        if (!isValidDocumentId(req.params.id)) {
+            return res.status(400).json({ error: 'Invalid document id.' });
+        }
+
         const document = await CVDocument.findOneAndDelete({ _id: req.params.id, userId: currentUserId(req) });
         if (!document) {
             return res.status(404).json({ error: 'Document not found.' });
@@ -586,7 +674,7 @@ app.delete('/api/documents/:id', requireAuth, async (req: Request, res: Response
     }
 });
 
-app.post('/api/parse-cv', requireAuth, express.json({ limit: '15mb' }), async (req: Request, res: Response) => {
+app.post('/api/parse-cv', requireAuth, cvImportJsonParser, async (req: Request, res: Response) => {
     try {
         const { base64Data, mimeType } = req.body;
 
@@ -1481,7 +1569,7 @@ function sanitizeCvData(obj: any, depth = 0): any {
     return obj;
 }
 
-app.post('/api/generate-pdf', requireAuth, async (req: Request, res: Response) => {
+app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, res: Response) => {
     let browser: any = null;
     try {
         const { cvData, template } = req.body;
