@@ -323,6 +323,16 @@ const isMongoDuplicateKeyError = (error: any) => (
 
 const isMongoValidationError = (error: any) => error?.name === 'ValidationError';
 
+const passwordPolicyMessage = 'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.';
+
+const validatePasswordStrength = (password: string) => (
+    password.length >= 8 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
+);
+
 const sanitizePdfImageSource = (value: unknown) => {
     if (typeof value !== 'string') return '';
     const source = value.trim();
@@ -417,8 +427,8 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             return res.status(400).json({ error: 'Enter your name.' });
         }
 
-        if (password.length < 8) {
-            return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+        if (!validatePasswordStrength(password)) {
+            return res.status(400).json({ error: passwordPolicyMessage });
         }
 
         const existingUser = await User.findOne({ email });
@@ -516,8 +526,8 @@ app.patch('/api/auth/password', requireAuth, async (req: Request, res: Response)
         const currentPassword = typeof req.body.currentPassword === 'string' ? req.body.currentPassword : '';
         const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : '';
 
-        if (newPassword.length < 8) {
-            return res.status(400).json({ error: 'New password must be at least 8 characters.' });
+        if (!validatePasswordStrength(newPassword)) {
+            return res.status(400).json({ error: passwordPolicyMessage });
         }
 
         const user = await User.findById(currentUserId(req));
