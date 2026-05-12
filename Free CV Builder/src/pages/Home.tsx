@@ -502,18 +502,6 @@ export default function Home() {
                   )}
                 </button>
               )}
-              <button
-                onClick={requestDownload}
-                disabled={isGeneratingPDF}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet-500 active:scale-95 disabled:opacity-70 disabled:active:scale-100"
-                aria-label="Download PDF"
-              >
-                {isGeneratingPDF ? (
-                  <Loader2 size={18} className="animate-spin" />
-                ) : (
-                  <Download size={18} />
-                )}
-              </button>
               {currentUser ? (
                 <AccountMenu isDarkMode={isDarkMode} displayName={currentUser.displayName} profileImage={currentUser.profileImage} showName />
               ) : (
@@ -589,6 +577,31 @@ export default function Home() {
               >
                 <CVPreview ref={contentRef} cvData={debouncedCvData} template={template} />
               </div>
+            </div>
+
+            <div className="pointer-events-none absolute bottom-8 right-8 z-40 hidden lg:flex print:hidden">
+              <motion.button
+                onClick={requestDownload}
+                disabled={isGeneratingPDF}
+                className="group pointer-events-auto relative flex h-14 items-center justify-center gap-2.5 overflow-hidden rounded-full bg-violet-600 px-5 pr-6 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/30 ring-1 ring-white/15 transition-colors hover:bg-violet-500 disabled:opacity-70"
+                aria-label="Download PDF"
+                initial={{ opacity: 0, y: 18, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <span className="absolute inset-0 bg-linear-to-r from-white/0 via-white/18 to-white/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <span className="absolute -inset-1 rounded-full bg-violet-400/25 blur-xl transition-opacity duration-300 group-hover:opacity-100" />
+                <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/14 ring-1 ring-white/15">
+                  {isGeneratingPDF ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Download size={18} />
+                  )}
+                </span>
+                <span className="relative">{isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
+              </motion.button>
             </div>
 
             {mobileView === 'preview' && (
