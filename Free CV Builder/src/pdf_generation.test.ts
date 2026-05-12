@@ -91,14 +91,24 @@ describe('PDF HTML Generation', () => {
   it('renders the profile image in the Timeline PDF HTML', () => {
     const html = generateCVHTML({
       ...mockCVData,
-      profileImage: 'data:image/png;base64,test-image',
+      profileImage: 'data:image/png;base64,dGVzdC1pbWFnZQ==',
       imageZoom: 1.2,
       imageX: 4,
       imageY: -3,
     }, 'timeline');
 
-    expect(html).toContain('data:image/png;base64,test-image');
+    expect(html).toContain('data:image/png;base64,dGVzdC1pbWFnZQ==');
     expect(html).toContain('width:112px;height:112px;border-radius:9999px');
     expect(html).toContain('transform:scale(1.2) translate(4px,-3px)');
+  });
+
+  it('strips unsafe profile image sources from PDF HTML', () => {
+    const html = generateCVHTML({
+      ...mockCVData,
+      profileImage: 'https://example.com/avatar.png" onerror="alert(1)',
+    }, 'timeline');
+
+    expect(html).not.toContain('https://example.com/avatar.png');
+    expect(html).not.toContain('onerror');
   });
 });
