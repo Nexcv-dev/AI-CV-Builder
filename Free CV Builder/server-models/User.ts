@@ -18,7 +18,7 @@ export interface IUser extends Document {
 
 const UserSchema: Schema = new Schema(
   {
-    googleId: { type: String, unique: true, sparse: true },
+    googleId: { type: String },
     email: { type: String, required: true, unique: true },
     displayName: { type: String, required: true },
     profileImage: { type: String },
@@ -32,6 +32,15 @@ const UserSchema: Schema = new Schema(
   },
   {
     timestamps: true,
+  }
+);
+
+UserSchema.index(
+  { googleId: 1 },
+  {
+    name: 'googleId_1',
+    unique: true,
+    partialFilterExpression: { googleId: { $type: 'string' } },
   }
 );
 

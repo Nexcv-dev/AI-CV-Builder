@@ -317,6 +317,12 @@ const sanitizeProfileField = (value: unknown, maxLength = 160) => (
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+const isMongoDuplicateKeyError = (error: any) => (
+    error?.code === 11000 || error?.name === 'MongoServerError' && error?.code === 11000
+);
+
+const isMongoValidationError = (error: any) => error?.name === 'ValidationError';
+
 const sanitizePdfImageSource = (value: unknown) => {
     if (typeof value !== 'string') return '';
     const source = value.trim();
@@ -395,6 +401,10 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunction) => {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(503).json({ error: 'Database is not connected. Check MongoDB settings and try again.' });
+        }
+
         const email = normalizeEmail(req.body.email);
         const displayName = sanitizeDisplayName(req.body.displayName);
         const password = typeof req.body.password === 'string' ? req.body.password : '';
@@ -428,6 +438,14 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             return res.status(201).json({ user: publicUser(user) });
         });
     } catch (error) {
+        if (isMongoDuplicateKeyError(error)) {
+            return res.status(409).json({ error: 'An account already exists for this email.' });
+        }
+
+        if (isMongoValidationError(error)) {
+            return res.status(400).json({ error: 'Please check your signup details and try again.' });
+        }
+
         return sendError(res, 500, 'Could not create your account.', error);
     }
 });

@@ -1495,30 +1495,53 @@
 .dark-cv .cv-form-panel input:-webkit-autofill,
 .dark-cv .cv-form-panel input:-webkit-autofill:hover, 
 .dark-cv .cv-form-panel input:-webkit-autofill:focus,
+.dark-cv .cv-form-panel input:-webkit-autofill:active,
+.dark-cv .cv-form-panel input:autofill,
 .dark-cv .cv-form-panel textarea:-webkit-autofill,
 .dark-cv .cv-form-panel textarea:-webkit-autofill:hover,
-.dark-cv .cv-form-panel textarea:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #0b1220 inset !important;
+.dark-cv .cv-form-panel textarea:-webkit-autofill:focus,
+.dark-cv .cv-form-panel textarea:-webkit-autofill:active,
+.dark-cv .cv-form-panel textarea:autofill {
+  caret-color: #e2e8f0 !important;
+  background-color: #0b1220 !important;
+  background-clip: content-box !important;
+  -webkit-background-clip: text !important;
+  -webkit-box-shadow: 0 0 0 1000px #0b1220 inset !important;
+  box-shadow: 0 0 0 1000px #0b1220 inset !important;
   -webkit-text-fill-color: #e2e8f0 !important;
   border: 1px solid #334155 !important;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
 }
 
 /* Light mode defaults */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:autofill,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+textarea:autofill {
+  caret-color: #1f2937 !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
   -webkit-text-fill-color: #1f2937 !important;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
 }
 
 .auth-modal input:-webkit-autofill,
 .auth-modal input:-webkit-autofill:hover,
 .auth-modal input:-webkit-autofill:focus,
-.auth-modal input:-webkit-autofill:active {
+.auth-modal input:-webkit-autofill:active,
+.auth-modal input:autofill {
   caret-color: #f8fafc !important;
-  -webkit-box-shadow: 0 0 0px 1000px #020617 inset !important;
+  background-color: #020617 !important;
+  -webkit-box-shadow: 0 0 0 1000px #020617 inset !important;
+  box-shadow: 0 0 0 1000px #020617 inset !important;
   -webkit-text-fill-color: #f8fafc !important;
-  transition: background-color 9999s ease-in-out 0s !important;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
 }
 
 .account-page input:-webkit-autofill,
@@ -1528,10 +1551,14 @@ input:-webkit-autofill:focus {
 .account-page textarea:-webkit-autofill,
 .account-page textarea:-webkit-autofill:hover,
 .account-page textarea:-webkit-autofill:focus,
-.account-page textarea:-webkit-autofill:active {
+.account-page textarea:-webkit-autofill:active,
+.account-page input:autofill,
+.account-page textarea:autofill {
   caret-color: #f8fafc !important;
-  -webkit-box-shadow: 0 0 0px 1000px #020617 inset !important;
+  background-color: #020617 !important;
+  -webkit-box-shadow: 0 0 0 1000px #020617 inset !important;
+  box-shadow: 0 0 0 1000px #020617 inset !important;
   -webkit-text-fill-color: #f8fafc !important;
-  transition: background-color 9999s ease-in-out 0s !important;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
 }
 

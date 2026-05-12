@@ -30,11 +30,16 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
+          const email = profile.emails?.[0]?.value?.trim().toLowerCase();
+          if (!email) {
+            return done(new Error('Google account did not provide an email address.'), undefined);
+          }
+
           // Check if user already exists
           let user = await User.findOne({ googleId: profile.id });
+          const latestProfileImage = profile.photos?.[0].value;
 
           if (user) {
-            const latestProfileImage = profile.photos?.[0].value;
             if (latestProfileImage && user.profileImage !== latestProfileImage) {
               user.profileImage = latestProfileImage;
               await user.save();
@@ -42,12 +47,21 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             return done(null, user);
           }
 
+          user = await User.findOne({ email });
+          if (user) {
+            user.googleId = profile.id;
+            user.authProvider = 'google';
+            user.profileImage = latestProfileImage || user.profileImage;
+            await user.save();
+            return done(null, user);
+          }
+
           // If not, create a new user
           user = await User.create({
             googleId: profile.id,
             displayName: profile.displayName,
-            email: profile.emails?.[0].value,
-            profileImage: profile.photos?.[0].value,
+            email,
+            profileImage: latestProfileImage,
             authProvider: 'google',
           });
 
