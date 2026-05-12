@@ -127,7 +127,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   };
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto px-4 py-4 sm:py-6" role="dialog" aria-modal="true">
       <button
         type="button"
         className="absolute inset-0 bg-slate-950/78 backdrop-blur-md"
@@ -135,7 +135,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
         onClick={onClose}
       />
 
-      <div className="auth-modal relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-slate-900 text-white shadow-2xl shadow-black/40">
+      <div className="auth-modal relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-slate-900 text-white shadow-2xl shadow-black/40">
         <div className="h-1 w-full bg-linear-to-r from-violet-600 to-emerald-500" />
 
         <div className="p-5 sm:p-6">
@@ -177,7 +177,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   <input
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
-                    className="w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-600"
+                    className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
                     placeholder="Your name"
                     autoComplete="name"
                   />
@@ -193,7 +193,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-600"
+                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
@@ -209,7 +209,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-600"
+                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
                   placeholder={mode === 'signup' ? 'At least 8 characters' : 'Your password'}
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   minLength={mode === 'signup' ? 8 : undefined}

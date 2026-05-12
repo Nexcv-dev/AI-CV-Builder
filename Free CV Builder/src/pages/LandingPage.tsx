@@ -420,7 +420,7 @@ export default function LandingPage() {
 
               <div className="landing-reveal mt-7 grid gap-3 sm:mt-8 sm:flex sm:flex-row">
                 <Link
-                  to="/builder"
+                  to="/builder?templates=1"
                   className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-violet-600/30 transition-all hover:bg-violet-500 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
                   Get Started

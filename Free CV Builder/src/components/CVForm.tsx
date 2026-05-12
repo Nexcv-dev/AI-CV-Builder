@@ -45,10 +45,11 @@ interface CVFormProps {
   onPopupVisibleChange?: (visible: boolean) => void;
   onFinish?: () => void;
   showImportPromptOnMount?: boolean;
+  showTemplatesOnMount?: boolean;
 }
 
-export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false }: CVFormProps) {
-  const [activeMainTab, setActiveMainTab] = useState<'content' | 'design' | 'templates'>('content');
+export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false }: CVFormProps) {
+  const [activeMainTab, setActiveMainTab] = useState<'content' | 'design' | 'templates'>(showTemplatesOnMount ? 'templates' : 'content');
   const [pendingTemplate, setPendingTemplate] = useState<TemplateName | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);

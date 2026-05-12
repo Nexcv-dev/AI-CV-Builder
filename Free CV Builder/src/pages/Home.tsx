@@ -58,6 +58,7 @@ export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const showImportPromptOnLoad = useRef(searchParams.get('import') === '1');
   const showDownloadAfterAuthOnLoad = useRef(searchParams.get('download') === '1');
+  const showTemplatesOnLoad = useRef(searchParams.get('templates') === '1');
   const [cvData, setCvData] = useState<CVData>(initialData);
   const [debouncedCvData, setDebouncedCvData] = useState<CVData>(initialData);
   const [template, setTemplate] = useState<TemplateName>(DEFAULT_TEMPLATE);
@@ -122,11 +123,12 @@ export default function Home() {
       setTemplate(paramTemplate);
     }
     // Remove one-time query params so they do not persist on manual refresh.
-    if (searchParams.has('template') || searchParams.has('import') || searchParams.has('download')) {
+    if (searchParams.has('template') || searchParams.has('import') || searchParams.has('download') || searchParams.has('templates')) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete('template');
       nextParams.delete('import');
       nextParams.delete('download');
+      nextParams.delete('templates');
       setSearchParams(nextParams, { replace: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -448,10 +450,10 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={openBuilderLogin}
-                    className={`inline-flex h-10 items-center justify-center gap-2 rounded-full border px-3 text-xs font-extrabold shadow-lg transition-all active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-full border shadow-lg transition-all active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
+                    aria-label="Login"
                   >
                     <LogIn size={15} />
-                    Login
                   </button>
                 )}
                 <button
@@ -552,6 +554,7 @@ export default function Home() {
                 onPopupVisibleChange={setIsPopupVisible}
                 onFinish={requestDownload}
                 showImportPromptOnMount={showImportPromptOnLoad.current}
+                showTemplatesOnMount={showTemplatesOnLoad.current}
               />
             </div>
           </div>
@@ -587,6 +590,24 @@ export default function Home() {
                 <CVPreview ref={contentRef} cvData={debouncedCvData} template={template} />
               </div>
             </div>
+
+            {mobileView === 'preview' && (
+              <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:hidden print:hidden">
+                <button
+                  onClick={requestDownload}
+                  disabled={isGeneratingPDF}
+                  className="pointer-events-auto flex h-13 w-full max-w-md items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/35 ring-1 ring-white/15 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
+                  aria-label="Download PDF"
+                >
+                  {isGeneratingPDF ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <Download size={20} />
+                  )}
+                  <span>{isGeneratingPDF ? 'Preparing PDF...' : 'Download PDF'}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
