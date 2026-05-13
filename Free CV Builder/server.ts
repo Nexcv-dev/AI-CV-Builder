@@ -413,8 +413,8 @@ const buildGmailRawMessage = ({ to, from, subject, text }: AppEmailOptions) => {
 };
 
 async function getGmailAccessToken() {
-    const clientId = process.env.GMAIL_CLIENT_ID?.trim();
-    const clientSecret = process.env.GMAIL_CLIENT_SECRET?.trim();
+    const clientId = process.env.GMAIL_CLIENT_ID?.trim() || process.env.GOOGLE_CLIENT_ID?.trim();
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET?.trim() || process.env.GOOGLE_CLIENT_SECRET?.trim();
     const refreshToken = process.env.GMAIL_REFRESH_TOKEN?.trim();
 
     if (!clientId || !clientSecret || !refreshToken) {
@@ -441,24 +441,29 @@ async function getGmailAccessToken() {
 }
 
 async function sendGmailApiEmail(options: AppEmailOptions) {
-    const accessToken = await getGmailAccessToken();
-    if (!accessToken) return false;
+    try {
+        const accessToken = await getGmailAccessToken();
+        if (!accessToken) return false;
 
-    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ raw: buildGmailRawMessage(options) }),
-    });
+        const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ raw: buildGmailRawMessage(options) }),
+        });
 
-    if (!response.ok) {
-        const details = await response.text().catch(() => '');
-        throw new Error(`Gmail API send failed with ${response.status}: ${details || response.statusText}`);
+        if (!response.ok) {
+            const details = await response.text().catch(() => '');
+            throw new Error(`Gmail API send failed with ${response.status}: ${details || response.statusText}`);
+        }
+
+        return true;
+    } catch (error) {
+        console.warn('Gmail API sending failed, falling back to other methods:', error instanceof Error ? error.message : String(error));
+        return false;
     }
-
-    return true;
 }
 
 async function sendAppEmail({ to, from, subject, text }: AppEmailOptions) {
@@ -852,8 +857,8 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
         }
 
         const hasGmailApi = Boolean(
-            process.env.GMAIL_CLIENT_ID?.trim() &&
-            process.env.GMAIL_CLIENT_SECRET?.trim() &&
+            (process.env.GMAIL_CLIENT_ID?.trim() || process.env.GOOGLE_CLIENT_ID?.trim()) &&
+            (process.env.GMAIL_CLIENT_SECRET?.trim() || process.env.GOOGLE_CLIENT_SECRET?.trim()) &&
             process.env.GMAIL_REFRESH_TOKEN?.trim()
         );
         const resendApiKey = process.env.RESEND_API_KEY?.trim();
@@ -1000,8 +1005,8 @@ app.get('/api/auth/google', (req: Request, _res: Response, next: NextFunction) =
     const nextTarget = typeof req.query.next === 'string' ? req.query.next : 'import';
     (req.session as any).authRedirect =
         nextTarget === 'download' ? '/builder?download=1' :
-        nextTarget === 'builder' ? '/builder' :
-        '/builder?import=1';
+            nextTarget === 'builder' ? '/builder' :
+                '/builder?import=1';
     next();
 }, passport.authenticate('google', {
     scope: ['profile', 'email']
