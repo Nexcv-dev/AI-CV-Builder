@@ -3,33 +3,38 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #102 from bimanthaperera-lab/test/overview (a37a15b) - Bimantha Perera, 11 seconds ago
-* Add CV Creation limit and improve UI/UX (7ee85d4) - Bimantha Perera, 41 minutes ago
-* improve layout issues (d613b27) - Bimantha Perera, 84 minutes ago
-* create Superuser (bcce7c7) - Bimantha Perera, 2 hours ago
-* fix template section selected icon overlap issue (4fae2a8) - Bimantha Perera, 2 hours ago
-* Improve password reset modal (a62979c) - Bimantha Perera, 2 hours ago
-* Fix mail not sending issue in render (b81eb1c) - Bimantha Perera, 3 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2771e1b) - bimanthaperera-lab, 14 hours ago
-* Merge pull request #101 from bimanthaperera-lab/test/overview (5a4a254) - Bimantha Perera, 14 hours ago
-* Update README.md (c070926) - Bimantha Perera, 14 hours ago
-* Add Password Reset with email link (18586b2) - Bimantha Perera, 14 hours ago
-* chore: bump version to 0.1.7 (728bea8) - bimanthaperera-lab, 19 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (74198b8) - bimanthaperera-lab, 19 hours ago
-* Merge pull request #97 from bimanthaperera-lab/test/overview (2011582) - Bimantha Perera, 19 hours ago
-* add  strong password check (21ba805) - Bimantha Perera, 19 hours ago
-* update login issue (e898d20) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (dcff1d8) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #96 from bimanthaperera-lab/test/overview (07d9859) - Bimantha Perera, 20 hours ago
-* replace download button position in desktop mode (915c97b) - Bimantha Perera, 20 hours ago
-* add download button for gest users and fix zoom issue (d8fec4d) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (126ea0f) - bimanthaperera-lab, 21 hours ago
-* Merge pull request #95 from bimanthaperera-lab/test/overview (1cc5124) - Bimantha Perera, 21 hours ago
-* Update README.md (0a6a861) - Bimantha Perera, 21 hours ago
-* Fix security issues (71cf799) - Bimantha Perera, 21 hours ago
-* fix security issues (32c0076) - Bimantha Perera, 21 hours ago
-* Improve UI/UX with user logins and create profile, dashboard,settings pages (61d7944) - Bimantha Perera, 21 hours ago
-* Create User Login (0ab92c2) - Bimantha Perera, 27 hours ago
+* Merge pull request #103 from bimanthaperera-lab/test/overview (77e2a1c) - Bimantha Perera, 18 seconds ago
+* fix layout issues (d563d82) - Bimantha Perera, 18 minutes ago
+* Add download limit and improve layout (4180760) - Bimantha Perera, 58 minutes ago
+* Fix email not send issue and bug fixing (7adec93) - Bimantha Perera, 75 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (bb9bed8) - bimanthaperera-lab, 2 hours ago
+* Merge pull request #102 from bimanthaperera-lab/test/overview (a37a15b) - Bimantha Perera, 2 hours ago
+* Add CV Creation limit and improve UI/UX (7ee85d4) - Bimantha Perera, 2 hours ago
+* improve layout issues (d613b27) - Bimantha Perera, 3 hours ago
+* create Superuser (bcce7c7) - Bimantha Perera, 3 hours ago
+* fix template section selected icon overlap issue (4fae2a8) - Bimantha Perera, 4 hours ago
+* Improve password reset modal (a62979c) - Bimantha Perera, 4 hours ago
+* Fix mail not sending issue in render (b81eb1c) - Bimantha Perera, 4 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2771e1b) - bimanthaperera-lab, 16 hours ago
+* Merge pull request #101 from bimanthaperera-lab/test/overview (5a4a254) - Bimantha Perera, 16 hours ago
+* Update README.md (c070926) - Bimantha Perera, 16 hours ago
+* Add Password Reset with email link (18586b2) - Bimantha Perera, 16 hours ago
+* chore: bump version to 0.1.7 (728bea8) - bimanthaperera-lab, 21 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (74198b8) - bimanthaperera-lab, 21 hours ago
+* Merge pull request #97 from bimanthaperera-lab/test/overview (2011582) - Bimantha Perera, 21 hours ago
+* add  strong password check (21ba805) - Bimantha Perera, 21 hours ago
+* update login issue (e898d20) - Bimantha Perera, 21 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (dcff1d8) - bimanthaperera-lab, 22 hours ago
+* Merge pull request #96 from bimanthaperera-lab/test/overview (07d9859) - Bimantha Perera, 22 hours ago
+* replace download button position in desktop mode (915c97b) - Bimantha Perera, 22 hours ago
+* add download button for gest users and fix zoom issue (d8fec4d) - Bimantha Perera, 22 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (126ea0f) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #95 from bimanthaperera-lab/test/overview (1cc5124) - Bimantha Perera, 23 hours ago
+* Update README.md (0a6a861) - Bimantha Perera, 23 hours ago
+* Fix security issues (71cf799) - Bimantha Perera, 23 hours ago
+* fix security issues (32c0076) - Bimantha Perera, 23 hours ago
+* Improve UI/UX with user logins and create profile, dashboard,settings pages (61d7944) - Bimantha Perera, 23 hours ago
+* Create User Login (0ab92c2) - Bimantha Perera, 28 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (e1f7032) - bimanthaperera-lab, 2 days ago
 * Merge pull request #92 from bimanthaperera-lab/test/overview (f6ee3e1) - Bimantha Perera, 2 days ago
 * Implement MongoDB database and Google Auth for Future Developments (65dd7b5) - Bimantha Perera, 2 days ago
