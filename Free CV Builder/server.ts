@@ -377,7 +377,94 @@ interface AppEmailOptions {
     text: string;
 }
 
+const stripEnvAssignment = (value: string) => value.replace(/^[A-Z0-9_]+\s*=\s*/i, '').trim();
+
+const stripWrappingQuotes = (value: string) => value.replace(/^['"]|['"]$/g, '').trim();
+
+const isValidEmailFrom = (value: string) => (
+    /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(value) ||
+    /^.+\s<[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+>$/.test(value)
+);
+
+const normalizeEmailFrom = (value: string | undefined, fallback: string) => {
+    const normalized = stripWrappingQuotes(stripEnvAssignment(value || ''));
+    return isValidEmailFrom(normalized) ? normalized : fallback;
+};
+
+const encodeBase64Url = (value: string) => (
+    Buffer.from(value)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '')
+);
+
+const buildGmailRawMessage = ({ to, from, subject, text }: AppEmailOptions) => {
+    const headers = [
+        `From: ${from}`,
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset="UTF-8"',
+        'Content-Transfer-Encoding: 7bit',
+    ];
+
+    return encodeBase64Url(`${headers.join('\r\n')}\r\n\r\n${text}`);
+};
+
+async function getGmailAccessToken() {
+    const clientId = process.env.GMAIL_CLIENT_ID?.trim();
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET?.trim();
+    const refreshToken = process.env.GMAIL_REFRESH_TOKEN?.trim();
+
+    if (!clientId || !clientSecret || !refreshToken) {
+        return '';
+    }
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            client_id: clientId,
+            client_secret: clientSecret,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
+        }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.access_token) {
+        throw new Error(`Gmail API token refresh failed with ${response.status}: ${data.error_description || data.error || response.statusText}`);
+    }
+
+    return data.access_token as string;
+}
+
+async function sendGmailApiEmail(options: AppEmailOptions) {
+    const accessToken = await getGmailAccessToken();
+    if (!accessToken) return false;
+
+    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ raw: buildGmailRawMessage(options) }),
+    });
+
+    if (!response.ok) {
+        const details = await response.text().catch(() => '');
+        throw new Error(`Gmail API send failed with ${response.status}: ${details || response.statusText}`);
+    }
+
+    return true;
+}
+
 async function sendAppEmail({ to, from, subject, text }: AppEmailOptions) {
+    const gmailSent = await sendGmailApiEmail({ to, from, subject, text });
+    if (gmailSent) return;
+
     const resendApiKey = process.env.RESEND_API_KEY?.trim();
     if (resendApiKey) {
         const response = await fetch('https://api.resend.com/emails', {
@@ -463,7 +550,13 @@ const isEmailVerified = (user: any) => user?.authProvider === 'google' || user?.
 const sendEmailVerification = async (user: any, token: string) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
-    const from = process.env.EMAIL_FROM?.trim() || process.env.EMAIL_USER?.trim();
+    const senderEmail = process.env.GMAIL_SENDER_EMAIL?.trim() || process.env.EMAIL_USER?.trim() || 'onboarding@resend.dev';
+    const fromFallback = process.env.GMAIL_REFRESH_TOKEN?.trim()
+        ? `NexCV <${senderEmail}>`
+        : process.env.RESEND_API_KEY?.trim()
+            ? 'NexCV <onboarding@resend.dev>'
+            : process.env.EMAIL_USER?.trim() || '';
+    const from = normalizeEmailFrom(process.env.EMAIL_FROM, fromFallback);
 
     if (!from) {
         throw new Error('Email sender is not configured.');
@@ -758,11 +851,22 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
             return res.status(404).json({ error: 'No account found for this email address.' });
         }
 
+        const hasGmailApi = Boolean(
+            process.env.GMAIL_CLIENT_ID?.trim() &&
+            process.env.GMAIL_CLIENT_SECRET?.trim() &&
+            process.env.GMAIL_REFRESH_TOKEN?.trim()
+        );
         const resendApiKey = process.env.RESEND_API_KEY?.trim();
         const emailUser = process.env.EMAIL_USER?.trim();
         const emailPass = process.env.EMAIL_PASS?.trim();
-        const emailFrom = process.env.EMAIL_FROM?.trim() || emailUser;
-        if (!emailFrom || (!resendApiKey && (!emailUser || !emailPass))) {
+        const senderEmail = process.env.GMAIL_SENDER_EMAIL?.trim() || emailUser || 'onboarding@resend.dev';
+        const emailFromFallback = hasGmailApi
+            ? `NexCV <${senderEmail}>`
+            : resendApiKey
+                ? 'NexCV <onboarding@resend.dev>'
+                : emailUser || '';
+        const emailFrom = normalizeEmailFrom(process.env.EMAIL_FROM, emailFromFallback);
+        if (!emailFrom || (!hasGmailApi && !resendApiKey && (!emailUser || !emailPass))) {
             return res.status(500).json({ error: 'Email service is not configured.' });
         }
 

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { AlertCircle, ArrowLeft, Clock3, Edit3, FileText, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import { AppShellHeader } from '../components/AppShellHeader';
 import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
+import { clearPageScrollLock } from '../utils/scrollLock';
 
 interface SavedDocument {
   id: string;
@@ -40,6 +41,7 @@ export default function Dashboard() {
   const [isResendingVerification, setIsResendingVerification] = useState(false);
 
   useEffect(() => {
+    clearPageScrollLock();
     setDashboardNotification(false);
 
     let ignore = false;
