@@ -3,6 +3,7 @@ export interface AuthUser {
   email: string;
   displayName: string;
   role: 'user' | 'super_admin';
+  emailVerified: boolean;
   profileImage?: string;
   phone?: string;
   address?: string;

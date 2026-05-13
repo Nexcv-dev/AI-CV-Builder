@@ -103,10 +103,10 @@ export default function Dashboard() {
 
     if (creationLimitReached) {
       return (
-        <div className="relative">
-          <div className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs font-black text-amber-200 shadow-lg shadow-black/20">
+        <div className="flex flex-col items-end gap-2">
+          <span className="inline-block rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs font-black text-amber-200 shadow-lg shadow-black/20">
             Limit reached
-          </div>
+          </span>
           <div className={wrapperClass}>
             <button type="button" disabled className={`${createClass} ${disabledClass}`} aria-label="Create New CV disabled: limit reached">
               <Plus size={17} />
@@ -142,12 +142,12 @@ export default function Dashboard() {
         <div className="flex flex-row items-start justify-between gap-3 border-b border-white/10 pb-6 sm:gap-5 sm:pb-8">
           <Link
             to="/builder"
-            className="order-last inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-2 text-[10px] font-black uppercase tracking-wider text-slate-100 shadow-lg shadow-black/20 transition hover:bg-white/15 hover:text-white active:scale-[0.98] sm:px-3.5 sm:py-2.5 sm:text-sm sm:normal-case sm:tracking-normal"
+            className="order-last -mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-2 text-[10px] font-black uppercase tracking-wider text-slate-100 shadow-lg shadow-black/20 transition hover:bg-white/15 hover:text-white active:scale-[0.98] sm:mt-0 sm:px-3.5 sm:py-2.5 sm:text-sm sm:normal-case sm:tracking-normal"
           >
             <ArrowLeft size={14} />
             Back to builder
           </Link>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 pt-3 sm:pt-0">
             <p className="text-sm font-black uppercase text-emerald-300">Dashboard</p>
             <h1 className="mt-2 break-words font-montserrat text-2xl font-black leading-tight min-[390px]:text-3xl sm:text-5xl">
               Hi, {user?.displayName || 'there'}

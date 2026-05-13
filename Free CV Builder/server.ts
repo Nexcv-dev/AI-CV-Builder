@@ -10,7 +10,7 @@ import rateLimit from 'express-rate-limit';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import fs from 'fs';
-import { pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import session from 'express-session';
@@ -332,23 +332,35 @@ const sanitizeProfileField = (value: unknown, maxLength = 160) => (
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const numberFromEnv = (value: string | undefined, fallback: number) => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
+    const normalized = value?.trim();
+    if (!normalized) return fallback;
+
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const smtpFamilyFromEnv = (value: string | undefined) => {
+    const normalized = value?.trim();
+    return normalized === '6' ? 6 : 4;
 };
 
 export const buildPasswordResetTransportOptions = () => {
     const port = numberFromEnv(process.env.SMTP_PORT, 465);
+    const host = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
 
     return {
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        host,
         port,
         secure: process.env.SMTP_SECURE
             ? process.env.SMTP_SECURE === 'true'
             : port === 465,
-        family: numberFromEnv(process.env.SMTP_FAMILY, 4),
+        family: smtpFamilyFromEnv(process.env.SMTP_FAMILY),
         connectionTimeout: numberFromEnv(process.env.SMTP_CONNECTION_TIMEOUT_MS, 10000),
         greetingTimeout: numberFromEnv(process.env.SMTP_GREETING_TIMEOUT_MS, 10000),
         socketTimeout: numberFromEnv(process.env.SMTP_SOCKET_TIMEOUT_MS, 20000),
+        tls: {
+            servername: host,
+        },
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
@@ -363,6 +375,7 @@ const isMongoDuplicateKeyError = (error: any) => (
 const isMongoValidationError = (error: any) => error?.name === 'ValidationError';
 
 const passwordPolicyMessage = 'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.';
+const emailVerificationExpiresMs = 24 * 60 * 60 * 1000;
 
 const validatePasswordStrength = (password: string) => (
     password.length >= 8 &&
@@ -395,11 +408,38 @@ const verifyPassword = (password: string, storedHash: string) => {
     return expected.length === actual.length && timingSafeEqual(expected, actual);
 };
 
+const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
+
+const generateEmailVerificationToken = () => {
+    const token = randomBytes(32).toString('hex');
+    return {
+        token,
+        tokenHash: hashToken(token),
+        expires: new Date(Date.now() + emailVerificationExpiresMs),
+    };
+};
+
+const isEmailVerified = (user: any) => user?.authProvider === 'google' || user?.emailVerified !== false;
+
+const sendEmailVerification = async (user: any, token: string) => {
+    const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+
+    await transporter.sendMail({
+        to: user.email,
+        from: process.env.EMAIL_USER,
+        subject: 'Verify your NexCV email',
+        text: `Welcome to NexCV.\n\nPlease verify your email address by opening this link:\n\n${verifyUrl}\n\nThis link expires in 24 hours.\n\nIf you did not create this account, you can ignore this email.\n`,
+    });
+};
+
 const publicUser = (user: any) => ({
     id: user._id?.toString?.() || user.id,
     email: user.email,
     displayName: user.displayName,
     role: user.role || 'user',
+    emailVerified: isEmailVerified(user),
     profileImage: user.profileImage,
     phone: user.phone,
     address: user.address,
@@ -414,6 +454,15 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
         return res.status(401).json({ error: 'Not authenticated' });
     }
     next();
+};
+
+const requireVerifiedEmail = (req: Request, res: Response) => {
+    if (!isEmailVerified(req.user)) {
+        res.status(403).json({ error: 'Verify your email to save CVs.' });
+        return false;
+    }
+
+    return true;
 };
 
 const currentUserId = (req: Request) => (req.user as any)._id || (req.user as any).id;
@@ -486,17 +535,34 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             return res.status(409).json({ error: 'An account already exists for this email.' });
         }
 
+        const verification = generateEmailVerificationToken();
         const user = await User.create({
             email,
             displayName,
             passwordHash: hashPassword(password),
             role: roleForEmail(email),
+            emailVerified: false,
+            emailVerificationToken: verification.tokenHash,
+            emailVerificationExpires: verification.expires,
             authProvider: 'email',
         });
 
+        let verificationEmailSent = true;
+        try {
+            await sendEmailVerification(user, verification.token);
+        } catch (emailError) {
+            verificationEmailSent = false;
+            console.error('Could not send verification email:', emailError);
+        }
+
         req.login(user, (err) => {
             if (err) return next(err);
-            return res.status(201).json({ user: publicUser(user) });
+            return res.status(201).json({
+                user: publicUser(user),
+                message: verificationEmailSent
+                    ? 'Account created. Please check your email to verify your account.'
+                    : 'Account created, but verification email could not be sent. Try resend verification.',
+            });
         });
     } catch (error) {
         if (isMongoDuplicateKeyError(error)) {
@@ -696,6 +762,64 @@ app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Resp
     }
 });
 
+app.post('/api/auth/verify-email', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const token = typeof req.body.token === 'string' ? req.body.token : '';
+        if (!token) {
+            return res.status(400).json({ error: 'Verification token is missing.' });
+        }
+
+        const user = await User.findOne({
+            emailVerificationToken: hashToken(token),
+            emailVerificationExpires: { $gt: new Date() },
+        });
+
+        if (!user) {
+            return res.status(400).json({ error: 'Verification link is invalid or has expired.' });
+        }
+
+        user.emailVerified = true;
+        user.emailVerificationToken = undefined;
+        user.emailVerificationExpires = undefined;
+        await user.save();
+
+        const authenticatedUserId = req.isAuthenticated() ? currentUserId(req)?.toString?.() : '';
+        if (authenticatedUserId === user._id.toString()) {
+            return res.json({ user: publicUser(user), message: 'Email verified successfully.' });
+        }
+
+        req.login(user, (err) => {
+            if (err) return next(err);
+            return res.json({ user: publicUser(user), message: 'Email verified successfully.' });
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not verify email.', error);
+    }
+});
+
+app.post('/api/auth/resend-verification', authLimiter, requireAuth, async (req: Request, res: Response) => {
+    try {
+        const user = await User.findById(currentUserId(req));
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        if (isEmailVerified(user)) {
+            return res.json({ user: publicUser(user), message: 'Email is already verified.' });
+        }
+
+        const verification = generateEmailVerificationToken();
+        user.emailVerificationToken = verification.tokenHash;
+        user.emailVerificationExpires = verification.expires;
+        await user.save();
+
+        await sendEmailVerification(user, verification.token);
+        return res.json({ user: publicUser(user), message: 'Verification email sent. Please check your inbox.' });
+    } catch (error) {
+        return sendError(res, 500, 'Could not send verification email.', error);
+    }
+});
+
 // Initiate Google Login
 app.get('/api/auth/google', (req: Request, _res: Response, next: NextFunction) => {
     const nextTarget = typeof req.query.next === 'string' ? req.query.next : 'import';
@@ -769,6 +893,10 @@ app.get('/api/documents/:id', requireAuth, async (req: Request, res: Response) =
 
 app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
     try {
+        if (!requireVerifiedEmail(req, res)) {
+            return;
+        }
+
         const { cvData } = req.body;
         const template = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
@@ -792,7 +920,8 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
             cvData,
         });
 
-        res.status(201).json({ document: documentDetails(document) });
+        const updatedQuota = await getCvCreationQuota(req.user);
+        res.status(201).json({ document: documentDetails(document), quota: updatedQuota });
     } catch (error) {
         return sendError(res, 500, 'Could not save your document.', error);
     }
@@ -800,6 +929,10 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
 
 app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) => {
     try {
+        if (!requireVerifiedEmail(req, res)) {
+            return;
+        }
+
         if (!isValidDocumentId(req.params.id)) {
             return res.status(400).json({ error: 'Invalid document id.' });
         }
@@ -1746,6 +1879,14 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
 
         if (!cvData || typeof cvData !== 'object') {
             return res.status(400).json({ error: 'Missing or invalid CV data' });
+        }
+
+        const quota = await getCvCreationQuota(req.user);
+        if (quota.reached) {
+            return res.status(403).json({
+                error: 'Daily CV creation limit reached.',
+                quota,
+            });
         }
 
         // Validate template against allow-list

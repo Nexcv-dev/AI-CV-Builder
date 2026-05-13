@@ -113,6 +113,38 @@ describe('Server Utils', () => {
         }
       });
     });
+
+    it('should ignore blank SMTP env values and keep IPv4 enabled', () => {
+      const originalEnv = {
+        SMTP_HOST: process.env.SMTP_HOST,
+        SMTP_PORT: process.env.SMTP_PORT,
+        SMTP_SECURE: process.env.SMTP_SECURE,
+        SMTP_FAMILY: process.env.SMTP_FAMILY,
+      };
+
+      process.env.SMTP_HOST = ' ';
+      process.env.SMTP_PORT = '';
+      process.env.SMTP_SECURE = '';
+      process.env.SMTP_FAMILY = '';
+
+      expect(buildPasswordResetTransportOptions()).toEqual(expect.objectContaining({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        family: 4,
+        tls: {
+          servername: 'smtp.gmail.com',
+        },
+      }));
+
+      Object.entries(originalEnv).forEach(([key, value]) => {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      });
+    });
   });
 
   describe('sanitizeTextForPrompt', () => {

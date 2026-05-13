@@ -576,6 +576,19 @@
   .auth-mode-fade {
     animation: auth-mode-fade 220ms ease-out both;
   }
+
+  .auth-modal-shell {
+    animation: auth-modal-shell-in 180ms ease-out both;
+  }
+
+  .auth-modal-backdrop {
+    animation: auth-modal-backdrop-in 220ms ease-out both;
+  }
+
+  .auth-modal {
+    animation: auth-modal-card-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: center;
+  }
 }
 
 @keyframes landing-rise {
@@ -656,6 +669,37 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes auth-modal-shell-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes auth-modal-backdrop-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+  }
+}
+
+@keyframes auth-modal-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -1535,26 +1579,36 @@ textarea:autofill {
 .auth-modal input:-webkit-autofill:hover,
 .auth-modal input:-webkit-autofill:focus,
 .auth-modal input:-webkit-autofill:active,
-.auth-modal input:autofill {
-  caret-color: #f8fafc !important;
-  background-color: #020617 !important;
-  -webkit-box-shadow: 0 0 0 1000px #020617 inset !important;
-  box-shadow: 0 0 0 1000px #020617 inset !important;
-  -webkit-text-fill-color: #f8fafc !important;
-  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
-}
-
+.auth-modal input:autofill,
 .password-reset-page input:-webkit-autofill,
 .password-reset-page input:-webkit-autofill:hover,
 .password-reset-page input:-webkit-autofill:focus,
 .password-reset-page input:-webkit-autofill:active,
 .password-reset-page input:autofill {
+  appearance: none !important;
+  -webkit-appearance: none !important;
   caret-color: #f8fafc !important;
   background-color: #020617 !important;
+  background-image: none !important;
+  background-clip: border-box !important;
+  -webkit-background-clip: border-box !important;
   -webkit-box-shadow: 0 0 0 1000px #020617 inset !important;
   box-shadow: 0 0 0 1000px #020617 inset !important;
   -webkit-text-fill-color: #f8fafc !important;
+  color: #f8fafc !important;
+  color-scheme: dark !important;
   transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
+}
+
+.auth-modal input,
+.password-reset-page input {
+  caret-color: #f8fafc !important;
+  color-scheme: dark;
+}
+
+.auth-modal input::first-line,
+.password-reset-page input::first-line {
+  color: #f8fafc !important;
 }
 
 .account-page input:-webkit-autofill,

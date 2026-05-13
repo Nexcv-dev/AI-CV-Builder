@@ -19,6 +19,13 @@ import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, Rotate
 const THEME_STORAGE_KEY = 'cv-builder-theme';
 const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
 
+interface CvCreationQuota {
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  reached: boolean;
+}
+
 const initialData: CVData = {
   personalInfo: {
     fullName: '',
@@ -59,6 +66,7 @@ export default function Home() {
   const showImportPromptOnLoad = useRef(searchParams.get('import') === '1');
   const showDownloadAfterAuthOnLoad = useRef(searchParams.get('download') === '1');
   const showTemplatesOnLoad = useRef(searchParams.get('templates') === '1');
+  const shouldScrollTopOnLoad = useRef(searchParams.has('template'));
   const [cvData, setCvData] = useState<CVData>(initialData);
   const [debouncedCvData, setDebouncedCvData] = useState<CVData>(initialData);
   const [template, setTemplate] = useState<TemplateName>(DEFAULT_TEMPLATE);
@@ -66,6 +74,8 @@ export default function Home() {
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const [cloudSaveStatus, setCloudSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [creationQuota, setCreationQuota] = useState<CvCreationQuota | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(() => searchParams.get('document'));
   const [documentTitle, setDocumentTitle] = useState('Untitled CV');
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
@@ -116,6 +126,26 @@ export default function Home() {
     return () => window.removeEventListener('auth-user-changed', handleAuthUserChanged);
   }, []);
 
+  useEffect(() => {
+    if (!currentUser) {
+      setCreationQuota(null);
+      return;
+    }
+
+    let ignore = false;
+    apiFetch<{ documents: unknown[]; quota: CvCreationQuota }>('/api/documents')
+      .then((data) => {
+        if (!ignore) setCreationQuota(data.quota);
+      })
+      .catch((error) => {
+        console.warn('Failed to load CV quota:', error);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [currentUser]);
+
   // On mount: pick up ?template= from landing page and pre-select it
   useEffect(() => {
     const paramTemplate = searchParams.get('template');
@@ -131,7 +161,7 @@ export default function Home() {
       nextParams.delete('templates');
       setSearchParams(nextParams, { replace: true });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -168,7 +198,7 @@ export default function Home() {
     return () => {
       ignore = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Resizer logic - uses ref to avoid recreating callbacks
@@ -253,10 +283,15 @@ export default function Home() {
   }, [isDarkMode]);
 
   const handleCloudSave = useCallback(async () => {
+    if (currentUser && !currentUser.emailVerified) {
+      toast.error('Verify your email to save CVs.');
+      return;
+    }
+
     setCloudSaveStatus('saving');
     try {
       const title = cvData.personalInfo.fullName?.trim() ? `${cvData.personalInfo.fullName.trim()} CV` : documentTitle;
-      const data = await apiFetch<{ document: { id: string; title: string } }>(
+      const data = await apiFetch<{ document: { id: string; title: string }; quota?: CvCreationQuota }>(
         documentId ? `/api/documents/${documentId}` : '/api/documents',
         {
           method: documentId ? 'PUT' : 'POST',
@@ -266,6 +301,7 @@ export default function Home() {
 
       setDocumentId(data.document.id);
       setDocumentTitle(data.document.title);
+      if (data.quota) setCreationQuota(data.quota);
       setCloudSaveStatus('saved');
       setDashboardNotification(true);
       toast.success('CV saved successfully.');
@@ -276,10 +312,50 @@ export default function Home() {
       toast.error(error instanceof Error ? error.message : 'Could not save your CV. Please try again.');
       setTimeout(() => setCloudSaveStatus('idle'), 4000);
     }
-  }, [cvData, documentId, documentTitle, template]);
+  }, [currentUser, cvData, documentId, documentTitle, template]);
+
+  const handleResendVerification = useCallback(async () => {
+    if (!currentUser || isResendingVerification) return;
+
+    setIsResendingVerification(true);
+    try {
+      const data = await apiFetch<{ user: AuthUser; message: string }>('/api/auth/resend-verification', {
+        method: 'POST',
+      });
+      setCurrentUser(data.user);
+      toast.success(data.message || 'Verification email sent.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send verification email.');
+    } finally {
+      setIsResendingVerification(false);
+    }
+  }, [currentUser, isResendingVerification]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const formScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!shouldScrollTopOnLoad.current) return;
+    shouldScrollTopOnLoad.current = false;
+
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      formScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      previewContainerRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    };
+
+    scrollToTop();
+    const frame = window.requestAnimationFrame(scrollToTop);
+    const timer = window.setTimeout(scrollToTop, 120);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   // Use ResizeObserver to track preview container width changes reliably
   // This fires AFTER CSS layout is complete, so clientWidth is always accurate
@@ -325,6 +401,12 @@ export default function Home() {
   }, [mobileView, template]);
 
   const handlePrint = async () => {
+    if (creationQuota?.reached) {
+      setShowDownloadConfirm(false);
+      toast.error('Daily CV creation limit reached.');
+      return;
+    }
+
     setShowDownloadConfirm(false);
     setIsGeneratingPDF(true);
 
@@ -404,8 +486,20 @@ export default function Home() {
       setAuthModalOpen(true);
       return;
     }
+    if (creationQuota?.reached) {
+      toast.error('Daily CV creation limit reached.');
+      return;
+    }
     setShowDownloadConfirm(true);
-  }, [currentUser]);
+  }, [creationQuota, currentUser]);
+
+  const downloadLimitReached = Boolean(creationQuota?.reached);
+
+  useEffect(() => {
+    if (downloadLimitReached) {
+      setShowDownloadConfirm(false);
+    }
+  }, [downloadLimitReached]);
 
   return (
     <>
@@ -527,13 +621,34 @@ export default function Home() {
           </header>
         )}
 
+        {!isPopupVisible && currentUser && !currentUser.emailVerified && (
+          <div className={`shrink-0 border-b px-4 py-3 print:hidden ${isDarkMode ? 'border-amber-300/20 bg-amber-950/35' : 'border-amber-200 bg-amber-50'}`}>
+            <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-2">
+                <AlertCircle size={18} className={`mt-0.5 shrink-0 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
+                <p className={`text-sm font-bold leading-5 ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
+                  Verify your email to save CVs. Check your inbox for the verification link.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResendingVerification}
+                className={`inline-flex h-9 shrink-0 items-center justify-center rounded-full px-4 text-xs font-extrabold transition active:scale-95 disabled:opacity-70 ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
+              >
+                {isResendingVerification ? 'Sending...' : 'Resend email'}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-hidden relative flex flex-col lg:flex-row print:overflow-visible print:block">
           {/* Left Side: Form */}
           <div
             className={`${mobileView === 'edit' ? 'flex max-lg:w-full! max-lg:min-w-0!' : 'hidden'} lg:flex h-full min-h-0 border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
             style={{ width: `${formWidth}%`, minWidth: 'min(420px, 100%)' }}
           >
-            <div className="h-full min-h-0 w-full overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div ref={formScrollRef} className="h-full min-h-0 w-full overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <CVForm
                 cvData={cvData}
                 setCvData={setCvData}
@@ -583,9 +698,10 @@ export default function Home() {
             <div className="pointer-events-none absolute bottom-8 right-8 z-40 hidden lg:flex print:hidden">
               <motion.button
                 onClick={requestDownload}
-                disabled={isGeneratingPDF}
-                className="group pointer-events-auto relative flex h-14 items-center justify-center gap-2.5 overflow-hidden rounded-full bg-violet-600 px-5 pr-6 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/30 ring-1 ring-white/15 transition-colors hover:bg-violet-500 disabled:opacity-70"
-                aria-label="Download PDF"
+                disabled={isGeneratingPDF || downloadLimitReached}
+                title={downloadLimitReached ? 'Limit reached' : undefined}
+                className="group pointer-events-auto relative flex h-14 items-center justify-center gap-2.5 overflow-hidden rounded-full bg-violet-600 px-5 pr-6 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/30 ring-1 ring-white/15 transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45"
+                aria-label={downloadLimitReached ? 'Download PDF disabled: limit reached' : 'Download PDF'}
                 initial={{ opacity: 0, y: 18, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 whileHover={{ y: -3, scale: 1.02 }}
@@ -601,7 +717,7 @@ export default function Home() {
                     <Download size={18} />
                   )}
                 </span>
-                <span className="relative">{isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
+                <span className="relative">{downloadLimitReached ? 'Limit reached' : isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
               </motion.button>
             </div>
 
@@ -611,11 +727,10 @@ export default function Home() {
                   <button
                     onClick={currentUser ? handleCloudSave : openBuilderLogin}
                     disabled={cloudSaveStatus === 'saving'}
-                    className={`pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-extrabold shadow-2xl ring-1 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 ${
-                      isDarkMode
+                    className={`pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-extrabold shadow-2xl ring-1 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 ${isDarkMode
                         ? 'border-slate-700 bg-slate-900/95 text-slate-100 shadow-black/35 ring-white/10'
                         : 'border-slate-200 bg-white/95 text-slate-900 shadow-slate-900/15 ring-slate-900/5'
-                    }`}
+                      }`}
                     aria-label="Save CV"
                   >
                     {cloudSaveStatus === 'saving' ? (
@@ -627,19 +742,20 @@ export default function Home() {
                     )}
                     <span className="truncate">{cloudSaveStatus === 'saving' ? 'Saving...' : cloudSaveStatus === 'saved' ? 'Saved' : 'Save'}</span>
                   </button>
-                <button
-                  onClick={requestDownload}
-                  disabled={isGeneratingPDF}
-                    className="pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/35 ring-1 ring-white/15 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
-                  aria-label="Download PDF"
-                >
-                  {isGeneratingPDF ? (
-                    <Loader2 size={19} className="shrink-0 animate-spin" />
-                  ) : (
-                    <Download size={19} className="shrink-0" />
-                  )}
-                    <span className="truncate">{isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
-                </button>
+                  <button
+                    onClick={requestDownload}
+                    disabled={isGeneratingPDF || downloadLimitReached}
+                    title={downloadLimitReached ? 'Limit reached' : undefined}
+                    className="pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/35 ring-1 ring-white/15 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
+                    aria-label={downloadLimitReached ? 'Download PDF disabled: limit reached' : 'Download PDF'}
+                  >
+                    {isGeneratingPDF ? (
+                      <Loader2 size={19} className="shrink-0 animate-spin" />
+                    ) : (
+                      <Download size={19} className="shrink-0" />
+                    )}
+                    <span className="truncate">{downloadLimitReached ? 'Limit reached' : isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -663,32 +779,33 @@ export default function Home() {
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               >
-              <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
-              <div className="p-7">
-                <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm ${isDarkMode ? 'bg-violet-500/10 border-violet-400/30' : 'bg-violet-50 border-violet-100'}`}>
-                  <Download className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
+                <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
+                <div className="p-7">
+                  <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm ${isDarkMode ? 'bg-violet-500/10 border-violet-400/30' : 'bg-violet-50 border-violet-100'}`}>
+                    <Download className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
+                  </div>
+                  <h3 className="mb-2 text-center text-xl font-bold">Download Resume</h3>
+                  <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Your resume will be exported as a PDF.
+                    <br />
+                    This usually takes a few seconds.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={handlePrint}
+                      disabled={downloadLimitReached}
+                      className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
+                    >
+                      <Download size={18} className="mr-2" /> {downloadLimitReached ? 'Limit reached' : 'Yes, Download PDF'}
+                    </button>
+                    <button
+                      onClick={() => setShowDownloadConfirm(false)}
+                      className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                <h3 className="mb-2 text-center text-xl font-bold">Download Resume</h3>
-                <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Your resume will be exported as a PDF.
-                  <br />
-                  This usually takes a few seconds.
-                </p>
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={handlePrint}
-                    className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98]"
-                  >
-                    <Download size={18} className="mr-2" /> Yes, Download PDF
-                  </button>
-                  <button
-                    onClick={() => setShowDownloadConfirm(false)}
-                    className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
               </motion.div>
             </motion.div>
           )}
@@ -797,14 +914,14 @@ export default function Home() {
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               >
-              <div className="relative mb-6">
-                <div className={`w-16 h-16 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
-                <FileText className="absolute inset-0 m-auto text-violet-600" size={24} />
-              </div>
-              <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Generating PDF</h3>
-              <p className={`text-center max-w-[200px] ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                Please wait while we prepare your professional resume...
-              </p>
+                <div className="relative mb-6">
+                  <div className={`w-16 h-16 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
+                  <FileText className="absolute inset-0 m-auto text-violet-600" size={24} />
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Generating PDF</h3>
+                <p className={`text-center max-w-[200px] ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                  Please wait while we prepare your professional resume...
+                </p>
               </motion.div>
             </motion.div>
           )}
