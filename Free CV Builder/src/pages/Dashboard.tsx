@@ -103,10 +103,10 @@ export default function Dashboard() {
 
     if (creationLimitReached) {
       return (
-        <div className="relative">
-          <div className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs font-black text-amber-200 shadow-lg shadow-black/20">
+        <div className="flex flex-col items-end gap-2">
+          <span className="inline-block rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs font-black text-amber-200 shadow-lg shadow-black/20">
             Limit reached
-          </div>
+          </span>
           <div className={wrapperClass}>
             <button type="button" disabled className={`${createClass} ${disabledClass}`} aria-label="Create New CV disabled: limit reached">
               <Plus size={17} />

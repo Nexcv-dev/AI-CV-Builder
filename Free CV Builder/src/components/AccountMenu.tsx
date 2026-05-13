@@ -97,7 +97,7 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
         {visibleImage ? (
           <img src={visibleImage} alt="" className={`${size === 'sm' ? 'h-7 w-7' : 'h-8 w-8'} rounded-full object-cover`} referrerPolicy="no-referrer" />
         ) : visibleName ? (
-          <span className={`${size === 'sm' ? 'h-7 w-7 text-xs' : 'h-8 w-8 text-sm'} flex items-center justify-center rounded-full bg-violet-500/20 font-black text-violet-200`}>
+          <span className={`${size === 'sm' ? 'h-7 w-7 text-xs' : 'h-8 w-8 text-sm'} flex items-center justify-center rounded-full font-black ${isDarkMode ? 'bg-violet-500/20 text-violet-200' : 'bg-violet-100 text-violet-700'}`}>
             {initial}
           </span>
         ) : (
@@ -107,7 +107,7 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
           <span className="min-w-0 truncate text-sm font-extrabold">{visibleName}</span>
         )}
         {dashboardNotification && location.pathname !== '/dashboard' && (
-          <span className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-slate-900" aria-hidden="true" />
+          <span className={`absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ${isDarkMode ? 'ring-slate-900' : 'ring-white'}`} aria-hidden="true" />
         )}
       </button>
 

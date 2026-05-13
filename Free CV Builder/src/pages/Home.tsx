@@ -161,7 +161,7 @@ export default function Home() {
       nextParams.delete('templates');
       setSearchParams(nextParams, { replace: true });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -198,7 +198,7 @@ export default function Home() {
     return () => {
       ignore = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Resizer logic - uses ref to avoid recreating callbacks
@@ -727,11 +727,10 @@ export default function Home() {
                   <button
                     onClick={currentUser ? handleCloudSave : openBuilderLogin}
                     disabled={cloudSaveStatus === 'saving'}
-                    className={`pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-extrabold shadow-2xl ring-1 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 ${
-                      isDarkMode
+                    className={`pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-extrabold shadow-2xl ring-1 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 ${isDarkMode
                         ? 'border-slate-700 bg-slate-900/95 text-slate-100 shadow-black/35 ring-white/10'
                         : 'border-slate-200 bg-white/95 text-slate-900 shadow-slate-900/15 ring-slate-900/5'
-                    }`}
+                      }`}
                     aria-label="Save CV"
                   >
                     {cloudSaveStatus === 'saving' ? (
@@ -743,20 +742,20 @@ export default function Home() {
                     )}
                     <span className="truncate">{cloudSaveStatus === 'saving' ? 'Saving...' : cloudSaveStatus === 'saved' ? 'Saved' : 'Save'}</span>
                   </button>
-                <button
-                  onClick={requestDownload}
-                  disabled={isGeneratingPDF || downloadLimitReached}
-                  title={downloadLimitReached ? 'Limit reached' : undefined}
+                  <button
+                    onClick={requestDownload}
+                    disabled={isGeneratingPDF || downloadLimitReached}
+                    title={downloadLimitReached ? 'Limit reached' : undefined}
                     className="pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/35 ring-1 ring-white/15 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
-                  aria-label={downloadLimitReached ? 'Download PDF disabled: limit reached' : 'Download PDF'}
-                >
-                  {isGeneratingPDF ? (
-                    <Loader2 size={19} className="shrink-0 animate-spin" />
-                  ) : (
-                    <Download size={19} className="shrink-0" />
-                  )}
+                    aria-label={downloadLimitReached ? 'Download PDF disabled: limit reached' : 'Download PDF'}
+                  >
+                    {isGeneratingPDF ? (
+                      <Loader2 size={19} className="shrink-0 animate-spin" />
+                    ) : (
+                      <Download size={19} className="shrink-0" />
+                    )}
                     <span className="truncate">{downloadLimitReached ? 'Limit reached' : isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
-                </button>
+                  </button>
                 </div>
               </div>
             )}
@@ -780,33 +779,33 @@ export default function Home() {
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               >
-              <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
-              <div className="p-7">
-                <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm ${isDarkMode ? 'bg-violet-500/10 border-violet-400/30' : 'bg-violet-50 border-violet-100'}`}>
-                  <Download className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
+                <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
+                <div className="p-7">
+                  <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm ${isDarkMode ? 'bg-violet-500/10 border-violet-400/30' : 'bg-violet-50 border-violet-100'}`}>
+                    <Download className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
+                  </div>
+                  <h3 className="mb-2 text-center text-xl font-bold">Download Resume</h3>
+                  <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Your resume will be exported as a PDF.
+                    <br />
+                    This usually takes a few seconds.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={handlePrint}
+                      disabled={downloadLimitReached}
+                      className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
+                    >
+                      <Download size={18} className="mr-2" /> {downloadLimitReached ? 'Limit reached' : 'Yes, Download PDF'}
+                    </button>
+                    <button
+                      onClick={() => setShowDownloadConfirm(false)}
+                      className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                <h3 className="mb-2 text-center text-xl font-bold">Download Resume</h3>
-                <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Your resume will be exported as a PDF.
-                  <br />
-                  This usually takes a few seconds.
-                </p>
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={handlePrint}
-                    disabled={downloadLimitReached}
-                    className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
-                  >
-                    <Download size={18} className="mr-2" /> {downloadLimitReached ? 'Limit reached' : 'Yes, Download PDF'}
-                  </button>
-                  <button
-                    onClick={() => setShowDownloadConfirm(false)}
-                    className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
               </motion.div>
             </motion.div>
           )}
@@ -915,14 +914,14 @@ export default function Home() {
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               >
-              <div className="relative mb-6">
-                <div className={`w-16 h-16 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
-                <FileText className="absolute inset-0 m-auto text-violet-600" size={24} />
-              </div>
-              <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Generating PDF</h3>
-              <p className={`text-center max-w-[200px] ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                Please wait while we prepare your professional resume...
-              </p>
+                <div className="relative mb-6">
+                  <div className={`w-16 h-16 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
+                  <FileText className="absolute inset-0 m-auto text-violet-600" size={24} />
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Generating PDF</h3>
+                <p className={`text-center max-w-[200px] ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                  Please wait while we prepare your professional resume...
+                </p>
               </motion.div>
             </motion.div>
           )}
