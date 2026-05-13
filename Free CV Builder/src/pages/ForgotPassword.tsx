@@ -2,6 +2,7 @@ import React, { FormEvent, useState } from 'react';
 import { ArrowRight, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { PasswordResetFooter } from '../components/PasswordResetFooter';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -37,7 +38,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/40 overflow-hidden">
         <div className="h-1 w-full bg-linear-to-r from-violet-600 to-emerald-500" />
         
@@ -84,6 +85,7 @@ export default function ForgotPassword() {
           </p>
         </div>
       </div>
+      <PasswordResetFooter />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, LogOut, Settings, User } from 'lucide-react';
-import { apiFetch, AuthUser, getCurrentUser } from '../utils/api';
+import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification } from '../utils/api';
 
 interface AccountMenuProps {
   isDarkMode?: boolean;
@@ -22,6 +22,7 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loadedUser, setLoadedUser] = useState<AuthUser | null>(null);
+  const [dashboardNotification, setDashboardNotificationState] = useState(() => hasDashboardNotification());
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonSize = size === 'sm' ? 'h-10 w-10' : 'h-12 w-12';
   const iconSize = size === 'sm' ? 17 : 18;
@@ -53,6 +54,15 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
   }, []);
 
   useEffect(() => {
+    const handleDashboardNotificationChanged = (event: Event) => {
+      setDashboardNotificationState((event as CustomEvent<boolean>).detail);
+    };
+
+    window.addEventListener(DASHBOARD_NOTIFICATION_EVENT, handleDashboardNotificationChanged);
+    return () => window.removeEventListener(DASHBOARD_NOTIFICATION_EVENT, handleDashboardNotificationChanged);
+  }, []);
+
+  useEffect(() => {
     if (!menuOpen) return;
 
     const closeMenu = (event: MouseEvent) => {
@@ -76,7 +86,7 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
       <button
         type="button"
         onClick={() => setMenuOpen((open) => !open)}
-        className={`flex ${showName && visibleName ? `h-12 max-w-[190px] gap-2 rounded-full px-3` : `${buttonSize} rounded-full`} items-center justify-center border shadow-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-95 ${
+        className={`relative flex ${showName && visibleName ? `h-12 max-w-[190px] gap-2 rounded-full px-3` : `${buttonSize} rounded-full`} items-center justify-center border shadow-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-95 ${
           isDarkMode
             ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700'
             : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'
@@ -96,6 +106,9 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
         {showName && visibleName && (
           <span className="min-w-0 truncate text-sm font-extrabold">{visibleName}</span>
         )}
+        {dashboardNotification && location.pathname !== '/dashboard' && (
+          <span className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-slate-900" aria-hidden="true" />
+        )}
       </button>
 
       {menuOpen && (
@@ -114,7 +127,7 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
                 key={item.to}
                 to={item.to}
                 onClick={() => setMenuOpen(false)}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                className={`relative flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
                   active
                     ? isDarkMode
                       ? 'bg-violet-500/15 text-violet-200'
@@ -126,6 +139,9 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
               >
                 <Icon size={16} className={active ? 'text-violet-300' : 'text-slate-400'} />
                 {item.label}
+                {item.to === '/dashboard' && dashboardNotification && !active && (
+                  <span className="ml-auto h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.16)]" aria-label="Dashboard has new saved CV activity" />
+                )}
               </Link>
             );
           })}

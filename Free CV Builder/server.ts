@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dns from 'node:dns';
 import * as dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -20,6 +21,10 @@ import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
+import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
+import { buildCvCreationQuota, getUtcDayBounds } from './server-models/cvQuota';
+
+dns.setDefaultResultOrder('ipv4first');
 
 const window = new JSDOM('').window;
 const DOMPurify = createDOMPurify(window);
@@ -326,6 +331,31 @@ const sanitizeProfileField = (value: unknown, maxLength = 160) => (
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+const numberFromEnv = (value: string | undefined, fallback: number) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+export const buildPasswordResetTransportOptions = () => {
+    const port = numberFromEnv(process.env.SMTP_PORT, 465);
+
+    return {
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port,
+        secure: process.env.SMTP_SECURE
+            ? process.env.SMTP_SECURE === 'true'
+            : port === 465,
+        family: numberFromEnv(process.env.SMTP_FAMILY, 4),
+        connectionTimeout: numberFromEnv(process.env.SMTP_CONNECTION_TIMEOUT_MS, 10000),
+        greetingTimeout: numberFromEnv(process.env.SMTP_GREETING_TIMEOUT_MS, 10000),
+        socketTimeout: numberFromEnv(process.env.SMTP_SOCKET_TIMEOUT_MS, 20000),
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    };
+};
+
 const isMongoDuplicateKeyError = (error: any) => (
     error?.code === 11000 || error?.name === 'MongoServerError' && error?.code === 11000
 );
@@ -369,6 +399,7 @@ const publicUser = (user: any) => ({
     id: user._id?.toString?.() || user.id,
     email: user.email,
     displayName: user.displayName,
+    role: user.role || 'user',
     profileImage: user.profileImage,
     phone: user.phone,
     address: user.address,
@@ -386,6 +417,16 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const currentUserId = (req: Request) => (req.user as any)._id || (req.user as any).id;
+
+const getCvCreationQuota = async (user: any) => {
+    const { start, end } = getUtcDayBounds();
+    const usedToday = await CVDocument.countDocuments({
+        userId: user._id || user.id,
+        createdAt: { $gte: start, $lt: end },
+    });
+
+    return buildCvCreationQuota(user, usedToday);
+};
 
 const isValidDocumentId = (id: unknown) => (
     typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)
@@ -449,6 +490,7 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             email,
             displayName,
             passwordHash: hashPassword(password),
+            role: roleForEmail(email),
             authProvider: 'email',
         });
 
@@ -482,6 +524,8 @@ app.post('/api/auth/login', async (req: Request, res: Response, next: NextFuncti
         if (!user || !user.passwordHash || !verifyPassword(password, user.passwordHash)) {
             return res.status(401).json({ error: 'Email or password is incorrect.' });
         }
+
+        await syncUserRoleFromAllowlist(user);
 
         req.login(user, (err) => {
             if (err) return next(err);
@@ -596,14 +640,8 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
         user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
         await user.save();
 
-        // Create transporter
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
+        // Render can resolve Gmail SMTP to IPv6 first, so the transport defaults to IPv4.
+        const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
 
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
@@ -681,11 +719,15 @@ app.get('/api/auth/google/callback', passport.authenticate('google', {
 });
 
 // Get Current User
-app.get('/api/auth/current-user', (req: Request, res: Response) => {
-    if (req.isAuthenticated()) {
-        res.json({ user: publicUser(req.user) });
-    } else {
-        res.status(401).json({ error: 'Not authenticated' });
+app.get('/api/auth/current-user', async (req: Request, res: Response) => {
+    try {
+        if (req.isAuthenticated() && req.user) {
+            await syncUserRoleFromAllowlist(req.user as any);
+            return res.json({ user: publicUser(req.user) });
+        }
+        return res.status(401).json({ error: 'Not authenticated' });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load current user.', error);
     }
 });
 
@@ -702,7 +744,8 @@ app.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
         const documents = await CVDocument.find({ userId: currentUserId(req) })
             .sort({ updatedAt: -1 })
             .select('title template createdAt updatedAt');
-        res.json({ documents: documents.map(documentSummary) });
+        const quota = await getCvCreationQuota(req.user);
+        res.json({ documents: documents.map(documentSummary), quota });
     } catch (error) {
         return sendError(res, 500, 'Could not load your documents.', error);
     }
@@ -732,6 +775,14 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
 
         if (!cvData || typeof cvData !== 'object') {
             return res.status(400).json({ error: 'Missing CV data.' });
+        }
+
+        const quota = await getCvCreationQuota(req.user);
+        if (quota.reached) {
+            return res.status(403).json({
+                error: 'Daily CV creation limit reached.',
+                quota,
+            });
         }
 
         const document = await CVDocument.create({

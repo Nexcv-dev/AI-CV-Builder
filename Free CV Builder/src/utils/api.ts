@@ -2,6 +2,7 @@ export interface AuthUser {
   id: string;
   email: string;
   displayName: string;
+  role: 'user' | 'super_admin';
   profileImage?: string;
   phone?: string;
   address?: string;
@@ -43,4 +44,29 @@ export async function getCurrentUser() {
 
 export function notifyAuthUserChanged(user?: AuthUser) {
   window.dispatchEvent(new CustomEvent<AuthUser | undefined>('auth-user-changed', { detail: user }));
+}
+
+export const DASHBOARD_NOTIFICATION_STORAGE_KEY = 'nexcv-dashboard-notification';
+export const DASHBOARD_NOTIFICATION_EVENT = 'dashboard-notification-changed';
+
+export function hasDashboardNotification() {
+  try {
+    return localStorage.getItem(DASHBOARD_NOTIFICATION_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function setDashboardNotification(active: boolean) {
+  try {
+    if (active) {
+      localStorage.setItem(DASHBOARD_NOTIFICATION_STORAGE_KEY, '1');
+    } else {
+      localStorage.removeItem(DASHBOARD_NOTIFICATION_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage failures; the notification dot is a visual hint only.
+  }
+
+  window.dispatchEvent(new CustomEvent<boolean>(DASHBOARD_NOTIFICATION_EVENT, { detail: active }));
 }

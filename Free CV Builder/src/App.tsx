@@ -88,7 +88,13 @@ function Layout() {
   const location = useLocation();
   const previousPathname = useRef(location.pathname);
   const isBuilder = location.pathname === '/builder';
-  const hidesFooter = isBuilder || ['/dashboard', '/profile', '/settings'].includes(location.pathname);
+  const hidesFooter = isBuilder || [
+    '/dashboard',
+    '/profile',
+    '/settings',
+    '/forgot-password',
+    '/reset-password',
+  ].includes(location.pathname);
 
   useLayoutEffect(() => {
     const previous = previousPathname.current;

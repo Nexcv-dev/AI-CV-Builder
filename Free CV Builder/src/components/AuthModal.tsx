@@ -28,8 +28,6 @@ const authCopy = {
   },
 };
 
-const passwordPolicyHint = '8+ chars with uppercase, lowercase, number, and symbol';
-
 function GoogleLogo() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -86,23 +84,47 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   useEffect(() => {
     if (!isOpen) return;
 
+    const scrollY = window.scrollY;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyPosition = document.body.style.position;
+    const previousBodyTop = document.body.style.top;
+    const previousBodyWidth = document.body.style.width;
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
 
     document.addEventListener('keydown', onKeyDown);
-    const previousOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
 
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.position = previousBodyPosition;
+      document.body.style.top = previousBodyTop;
+      document.body.style.width = previousBodyWidth;
+      window.scrollTo(0, scrollY);
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const copy = authCopy[mode];
+
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setDisplayName('');
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
+    setError('');
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -203,13 +225,15 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               </span>
             </label>
 
-            <label className="block">
+            <div className="block">
               <span className="mb-1.5 flex items-center justify-between text-xs font-extrabold uppercase text-slate-400">
                 <span>Password</span>
                 {mode === 'login' && (
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
                       onClose();
                       navigate('/forgot-password');
                     }}
@@ -226,7 +250,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
-                  placeholder={mode === 'signup' ? passwordPolicyHint : 'Your password'}
+                  placeholder={mode === 'signup' ? 'Enter new password' : 'Your password'}
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   minLength={mode === 'signup' ? 8 : undefined}
                   required
@@ -240,13 +264,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </span>
-            </label>
-
-            {mode === 'signup' && (
-              <p className="text-xs font-semibold leading-5 text-slate-500">
-                Use {passwordPolicyHint}.
-              </p>
-            )}
+            </div>
 
             {error && (
               <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-200">
@@ -270,8 +288,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               type="button"
               className="font-extrabold text-violet-300 transition hover:text-violet-200"
               onClick={() => {
-                setMode(mode === 'login' ? 'signup' : 'login');
-                setError('');
+                switchMode(mode === 'login' ? 'signup' : 'login');
               }}
             >
               {mode === 'login' ? 'Sign up' : 'Login'}

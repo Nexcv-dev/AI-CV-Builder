@@ -1,7 +1,120 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeTextForPrompt, sanitizeContextField, generateCVHTML } from '../server';
+import { sanitizeTextForPrompt, sanitizeContextField, generateCVHTML, buildPasswordResetTransportOptions } from '../server';
+import { isSuperAdminEmail, roleForEmail } from '../server-models/userRole';
+import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
 
 describe('Server Utils', () => {
+  describe('super admin roles', () => {
+    it('should assign super_admin only to allowlisted emails', () => {
+      const original = process.env.SUPER_ADMIN_EMAILS;
+      process.env.SUPER_ADMIN_EMAILS = 'owner@example.com, Admin@Example.com ';
+
+      expect(isSuperAdminEmail('owner@example.com')).toBe(true);
+      expect(isSuperAdminEmail('admin@example.com')).toBe(true);
+      expect(roleForEmail('owner@example.com')).toBe('super_admin');
+      expect(roleForEmail('user@example.com')).toBe('user');
+
+      if (original === undefined) {
+        delete process.env.SUPER_ADMIN_EMAILS;
+      } else {
+        process.env.SUPER_ADMIN_EMAILS = original;
+      }
+    });
+  });
+
+  describe('CV creation quota', () => {
+    it('should default to 3 daily CV creations', () => {
+      const original = process.env.DAILY_CV_CREATION_LIMIT;
+      delete process.env.DAILY_CV_CREATION_LIMIT;
+
+      expect(getDailyCvCreationLimit()).toBe(3);
+
+      if (original === undefined) {
+        delete process.env.DAILY_CV_CREATION_LIMIT;
+      } else {
+        process.env.DAILY_CV_CREATION_LIMIT = original;
+      }
+    });
+
+    it('should mark regular users as limited after reaching daily quota', () => {
+      const original = process.env.DAILY_CV_CREATION_LIMIT;
+      process.env.DAILY_CV_CREATION_LIMIT = '2';
+
+      expect(buildCvCreationQuota({ role: 'user' } as any, 1)).toEqual({
+        limit: 2,
+        used: 1,
+        remaining: 1,
+        reached: false,
+      });
+      expect(buildCvCreationQuota({ role: 'user' } as any, 2)).toEqual({
+        limit: 2,
+        used: 2,
+        remaining: 0,
+        reached: true,
+      });
+
+      if (original === undefined) {
+        delete process.env.DAILY_CV_CREATION_LIMIT;
+      } else {
+        process.env.DAILY_CV_CREATION_LIMIT = original;
+      }
+    });
+
+    it('should not limit super admins', () => {
+      expect(buildCvCreationQuota({ role: 'super_admin' } as any, 999)).toEqual({
+        limit: null,
+        used: 999,
+        remaining: null,
+        reached: false,
+      });
+    });
+
+    it('should calculate UTC day bounds', () => {
+      const { start, end } = getUtcDayBounds(new Date('2026-05-13T18:30:00.000Z'));
+      expect(start.toISOString()).toBe('2026-05-13T00:00:00.000Z');
+      expect(end.toISOString()).toBe('2026-05-14T00:00:00.000Z');
+    });
+  });
+
+  describe('buildPasswordResetTransportOptions', () => {
+    it('should default password reset SMTP to Gmail over IPv4', () => {
+      const originalEnv = {
+        SMTP_HOST: process.env.SMTP_HOST,
+        SMTP_PORT: process.env.SMTP_PORT,
+        SMTP_SECURE: process.env.SMTP_SECURE,
+        SMTP_FAMILY: process.env.SMTP_FAMILY,
+        EMAIL_USER: process.env.EMAIL_USER,
+        EMAIL_PASS: process.env.EMAIL_PASS,
+      };
+
+      delete process.env.SMTP_HOST;
+      delete process.env.SMTP_PORT;
+      delete process.env.SMTP_SECURE;
+      delete process.env.SMTP_FAMILY;
+      process.env.EMAIL_USER = 'sender@example.com';
+      process.env.EMAIL_PASS = 'app-password';
+
+      expect(buildPasswordResetTransportOptions()).toEqual(expect.objectContaining({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        family: 4,
+        auth: {
+          user: 'sender@example.com',
+          pass: 'app-password',
+        },
+      }));
+
+      Object.entries(originalEnv).forEach(([key, value]) => {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      });
+    });
+  });
+
   describe('sanitizeTextForPrompt', () => {
     it('should strip control characters', () => {
       const input = 'Hello\x00World\x1F';

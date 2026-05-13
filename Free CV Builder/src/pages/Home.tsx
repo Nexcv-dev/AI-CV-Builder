@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
 import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
-import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
+import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
 import { AccountMenu } from '../components/AccountMenu';
@@ -267,12 +267,13 @@ export default function Home() {
       setDocumentId(data.document.id);
       setDocumentTitle(data.document.title);
       setCloudSaveStatus('saved');
+      setDashboardNotification(true);
       toast.success('CV saved successfully.');
       setTimeout(() => setCloudSaveStatus('idle'), 2200);
     } catch (error) {
       console.warn('Failed to save document:', error);
       setCloudSaveStatus('error');
-      toast.error('Could not save your CV. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Could not save your CV. Please try again.');
       setTimeout(() => setCloudSaveStatus('idle'), 4000);
     }
   }, [cvData, documentId, documentTitle, template]);
@@ -606,19 +607,40 @@ export default function Home() {
 
             {mobileView === 'preview' && (
               <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:hidden print:hidden">
+                <div className="grid w-full max-w-md grid-cols-[0.9fr_1.1fr] gap-2">
+                  <button
+                    onClick={currentUser ? handleCloudSave : openBuilderLogin}
+                    disabled={cloudSaveStatus === 'saving'}
+                    className={`pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-extrabold shadow-2xl ring-1 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 ${
+                      isDarkMode
+                        ? 'border-slate-700 bg-slate-900/95 text-slate-100 shadow-black/35 ring-white/10'
+                        : 'border-slate-200 bg-white/95 text-slate-900 shadow-slate-900/15 ring-slate-900/5'
+                    }`}
+                    aria-label="Save CV"
+                  >
+                    {cloudSaveStatus === 'saving' ? (
+                      <Loader2 size={19} className="shrink-0 animate-spin" />
+                    ) : cloudSaveStatus === 'saved' ? (
+                      <CheckCircle2 size={19} className="shrink-0 text-emerald-400" />
+                    ) : (
+                      <Save size={19} className="shrink-0" />
+                    )}
+                    <span className="truncate">{cloudSaveStatus === 'saving' ? 'Saving...' : cloudSaveStatus === 'saved' ? 'Saved' : 'Save'}</span>
+                  </button>
                 <button
                   onClick={requestDownload}
                   disabled={isGeneratingPDF}
-                  className="pointer-events-auto flex h-13 w-full max-w-md items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/35 ring-1 ring-white/15 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
+                    className="pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/35 ring-1 ring-white/15 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
                   aria-label="Download PDF"
                 >
                   {isGeneratingPDF ? (
-                    <Loader2 size={20} className="animate-spin" />
+                    <Loader2 size={19} className="shrink-0 animate-spin" />
                   ) : (
-                    <Download size={20} />
+                    <Download size={19} className="shrink-0" />
                   )}
-                  <span>{isGeneratingPDF ? 'Preparing PDF...' : 'Download PDF'}</span>
+                    <span className="truncate">{isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
                 </button>
+                </div>
               </div>
             )}
           </div>
