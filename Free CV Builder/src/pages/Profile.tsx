@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Camera, Loader2, Mail, MapPin, Phone, Save, User, X } from 'lucide-react';
 import { AppShellHeader } from '../components/AppShellHeader';
 import { AuthUser, apiFetch, getCurrentUser, notifyAuthUserChanged } from '../utils/api';
+import { clearPageScrollLock } from '../utils/scrollLock';
 import { compressAndResizeImage } from '../utils/imageUtils';
 
 export default function Profile() {
@@ -22,6 +23,7 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    clearPageScrollLock();
     let ignore = false;
 
     getCurrentUser()

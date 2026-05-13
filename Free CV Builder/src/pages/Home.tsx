@@ -690,26 +690,26 @@ export default function Home() {
 
         {!isPopupVisible && currentUser && !currentUser.emailVerified && !verificationBannerDismissed && (
           <div className="shrink-0 px-3 py-2 print:hidden sm:px-4">
-            <div className={`mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border px-3 py-3 shadow-lg sm:flex-row sm:items-center sm:justify-between sm:px-4 ${isDarkMode ? 'border-amber-300/20 bg-amber-950/80 shadow-black/20' : 'border-amber-200 bg-amber-50 shadow-amber-900/5'}`}>
-              <div className="flex min-w-0 items-start gap-2">
-                <AlertCircle size={18} className={`mt-0.5 shrink-0 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
-                <p className={`text-sm font-bold leading-5 ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
-                  Verify your email to save CVs. Check your inbox for the verification link.
+            <div className={`relative mx-auto grid max-w-xl gap-2 rounded-2xl border py-2.5 pl-3 pr-12 shadow-lg sm:flex sm:max-w-2xl sm:items-center sm:justify-between sm:gap-3 sm:px-4 ${isDarkMode ? 'border-amber-300/20 bg-amber-950/80 shadow-black/20' : 'border-amber-200 bg-amber-50 shadow-amber-900/5'}`}>
+              <div className="flex min-w-0 items-start gap-2 sm:items-center">
+                <AlertCircle size={17} className={`mt-0.5 shrink-0 sm:mt-0 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
+                <p className={`text-xs font-extrabold leading-5 sm:text-sm ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
+                  Verify your email to save and download.
                 </p>
               </div>
-              <div className="flex shrink-0 items-center justify-end gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={handleResendVerification}
                   disabled={isResendingVerification}
-                  className={`inline-flex h-9 shrink-0 items-center justify-center rounded-full px-4 text-xs font-extrabold transition active:scale-95 disabled:opacity-70 ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
+                  className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3 text-[11px] font-extrabold transition active:scale-95 disabled:opacity-70 sm:h-9 sm:px-4 sm:text-xs ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
                 >
                   {isResendingVerification ? 'Sending...' : 'Resend email'}
                 </button>
                 <button
                   type="button"
                   onClick={dismissVerificationBanner}
-                  className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition active:scale-95 ${isDarkMode ? 'border-amber-200/20 text-amber-100 hover:bg-amber-200/10' : 'border-amber-700/20 text-amber-900 hover:bg-amber-100'}`}
+                  className={`absolute right-2 top-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition active:scale-95 sm:static sm:h-9 sm:w-9 ${isDarkMode ? 'border-amber-200/20 text-amber-100 hover:bg-amber-200/10' : 'border-amber-700/20 text-amber-900 hover:bg-amber-100'}`}
                   aria-label="Dismiss verification banner"
                 >
                   <X size={15} />

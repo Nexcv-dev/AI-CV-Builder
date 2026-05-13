@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, KeyRound, Loader2, LogOut, Save, ShieldAlert } from 'lucide-react';
 import { AppShellHeader } from '../components/AppShellHeader';
 import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
+import { clearPageScrollLock } from '../utils/scrollLock';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function Settings() {
   const passwordPolicyHint = '8+ characters with uppercase, lowercase, number, and symbol.';
 
   useEffect(() => {
+    clearPageScrollLock();
     let ignore = false;
 
     getCurrentUser()
