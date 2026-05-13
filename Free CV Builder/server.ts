@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dns from 'node:dns';
 import * as dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -20,6 +21,8 @@ import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
+
+dns.setDefaultResultOrder('ipv4first');
 
 const window = new JSDOM('').window;
 const DOMPurify = createDOMPurify(window);
@@ -326,6 +329,31 @@ const sanitizeProfileField = (value: unknown, maxLength = 160) => (
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+const numberFromEnv = (value: string | undefined, fallback: number) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+export const buildPasswordResetTransportOptions = () => {
+    const port = numberFromEnv(process.env.SMTP_PORT, 465);
+
+    return {
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port,
+        secure: process.env.SMTP_SECURE
+            ? process.env.SMTP_SECURE === 'true'
+            : port === 465,
+        family: numberFromEnv(process.env.SMTP_FAMILY, 4),
+        connectionTimeout: numberFromEnv(process.env.SMTP_CONNECTION_TIMEOUT_MS, 10000),
+        greetingTimeout: numberFromEnv(process.env.SMTP_GREETING_TIMEOUT_MS, 10000),
+        socketTimeout: numberFromEnv(process.env.SMTP_SOCKET_TIMEOUT_MS, 20000),
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    };
+};
+
 const isMongoDuplicateKeyError = (error: any) => (
     error?.code === 11000 || error?.name === 'MongoServerError' && error?.code === 11000
 );
@@ -596,14 +624,8 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
         user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
         await user.save();
 
-        // Create transporter
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
+        // Render can resolve Gmail SMTP to IPv6 first, so the transport defaults to IPv4.
+        const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
 
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
