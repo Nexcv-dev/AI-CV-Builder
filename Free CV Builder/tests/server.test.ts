@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { sanitizeTextForPrompt, sanitizeContextField, generateCVHTML, buildPasswordResetTransportOptions } from '../server';
 import { isSuperAdminEmail, roleForEmail } from '../server-models/userRole';
 import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
+import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getUtcDayKey } from '../server-models/downloadQuotaUtils';
 
 describe('Server Utils', () => {
   describe('super admin roles', () => {
@@ -73,6 +74,52 @@ describe('Server Utils', () => {
       const { start, end } = getUtcDayBounds(new Date('2026-05-13T18:30:00.000Z'));
       expect(start.toISOString()).toBe('2026-05-13T00:00:00.000Z');
       expect(end.toISOString()).toBe('2026-05-14T00:00:00.000Z');
+    });
+  });
+
+  describe('download quota', () => {
+    it('should default unverified users to 3 daily downloads', () => {
+      const original = process.env.DAILY_UNVERIFIED_DOWNLOAD_LIMIT;
+      delete process.env.DAILY_UNVERIFIED_DOWNLOAD_LIMIT;
+
+      expect(getDailyUnverifiedDownloadLimit()).toBe(3);
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: false } as any, 2)).toEqual({
+        limit: 3,
+        used: 2,
+        remaining: 1,
+        reached: false,
+      });
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: false } as any, 3)).toEqual({
+        limit: 3,
+        used: 3,
+        remaining: 0,
+        reached: true,
+      });
+
+      if (original === undefined) {
+        delete process.env.DAILY_UNVERIFIED_DOWNLOAD_LIMIT;
+      } else {
+        process.env.DAILY_UNVERIFIED_DOWNLOAD_LIMIT = original;
+      }
+    });
+
+    it('should not limit verified or Google users', () => {
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true } as any, 99)).toEqual({
+        limit: null,
+        used: 99,
+        remaining: null,
+        reached: false,
+      });
+      expect(buildDownloadQuota({ authProvider: 'google', emailVerified: false } as any, 99)).toEqual({
+        limit: null,
+        used: 99,
+        remaining: null,
+        reached: false,
+      });
+    });
+
+    it('should build a UTC day key', () => {
+      expect(getUtcDayKey(new Date('2026-05-13T18:30:00.000Z'))).toBe('2026-05-13');
     });
   });
 

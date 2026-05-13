@@ -19,10 +19,12 @@ import mongoose from 'mongoose';
 import connectDB from './server-models/db';
 import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
+import DownloadQuota from './server-models/DownloadQuotaModel';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
 import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { buildCvCreationQuota, getUtcDayBounds } from './server-models/cvQuota';
+import { buildDownloadQuota, getUtcDayKey } from './server-models/downloadQuotaUtils';
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -477,6 +479,22 @@ const getCvCreationQuota = async (user: any) => {
     return buildCvCreationQuota(user, usedToday);
 };
 
+const getDownloadQuota = async (user: any) => {
+    const day = getUtcDayKey();
+    const record = await DownloadQuota.findOne({ userId: user._id || user.id, day });
+    return buildDownloadQuota(user, record?.count || 0);
+};
+
+const incrementDownloadQuota = async (user: any) => {
+    const day = getUtcDayKey();
+    const record = await DownloadQuota.findOneAndUpdate(
+        { userId: user._id || user.id, day },
+        { $inc: { count: 1 } },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    return buildDownloadQuota(user, record.count);
+};
+
 const isValidDocumentId = (id: unknown) => (
     typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)
 );
@@ -883,7 +901,8 @@ app.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
             .sort({ updatedAt: -1 })
             .select('title template createdAt updatedAt');
         const quota = await getCvCreationQuota(req.user);
-        res.json({ documents: documents.map(documentSummary), quota });
+        const downloadQuota = await getDownloadQuota(req.user);
+        res.json({ documents: documents.map(documentSummary), quota, downloadQuota });
     } catch (error) {
         return sendError(res, 500, 'Could not load your documents.', error);
     }
@@ -1889,14 +1908,18 @@ function sanitizeCvData(obj: any, depth = 0): any {
 app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, res: Response) => {
     let browser: any = null;
     try {
-        if (!requireVerifiedEmail(req, res)) {
-            return;
-        }
-
         const { cvData, template } = req.body;
 
         if (!cvData || typeof cvData !== 'object') {
             return res.status(400).json({ error: 'Missing or invalid CV data' });
+        }
+
+        const downloadQuota = await getDownloadQuota(req.user);
+        if (downloadQuota.reached) {
+            return res.status(403).json({
+                error: 'Daily download limit reached.',
+                quota: downloadQuota,
+            });
         }
 
         const quota = await getCvCreationQuota(req.user);
@@ -2010,6 +2033,8 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
 
         await browser.close();
         browser = null;
+
+        await incrementDownloadQuota(req.user);
 
         res.set({
             'Content-Type': 'application/pdf',

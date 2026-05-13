@@ -14,12 +14,20 @@ import CVPreview from '../components/CVPreview';
 import { AccountMenu } from '../components/AccountMenu';
 import { AuthModal } from '../components/AuthModal';
 import toast from 'react-hot-toast';
-import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Moon, Sun } from 'lucide-react';
+import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Moon, Sun, X } from 'lucide-react';
 
 const THEME_STORAGE_KEY = 'cv-builder-theme';
+const VERIFY_BANNER_DISMISSED_KEY = 'nexcv-verify-banner-dismissed';
 const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
 
 interface CvCreationQuota {
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  reached: boolean;
+}
+
+interface DownloadQuota {
   limit: number | null;
   used: number;
   remaining: number | null;
@@ -76,6 +84,7 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
   const [creationQuota, setCreationQuota] = useState<CvCreationQuota | null>(null);
+  const [downloadQuota, setDownloadQuota] = useState<DownloadQuota | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(() => searchParams.get('document'));
   const [documentTitle, setDocumentTitle] = useState('Untitled CV');
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
@@ -85,6 +94,13 @@ export default function Home() {
   const [isDraggingResizer, setIsDraggingResizer] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
+  const [verificationBannerDismissed, setVerificationBannerDismissed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(VERIFY_BANNER_DISMISSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
   const [downloadError, setDownloadError] = useState<{ title: string; message: string } | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authRedirectTo, setAuthRedirectTo] = useState('/builder');
@@ -129,13 +145,26 @@ export default function Home() {
   useEffect(() => {
     if (!currentUser) {
       setCreationQuota(null);
+      setDownloadQuota(null);
       return;
     }
 
+    if (currentUser.emailVerified) {
+      try {
+        localStorage.removeItem(VERIFY_BANNER_DISMISSED_KEY);
+      } catch {
+        // Ignore storage failures; this only controls the local banner visibility.
+      }
+      setVerificationBannerDismissed(false);
+    }
+
     let ignore = false;
-    apiFetch<{ documents: unknown[]; quota: CvCreationQuota }>('/api/documents')
+    apiFetch<{ documents: unknown[]; quota: CvCreationQuota; downloadQuota?: DownloadQuota }>('/api/documents')
       .then((data) => {
-        if (!ignore) setCreationQuota(data.quota);
+        if (!ignore) {
+          setCreationQuota(data.quota);
+          setDownloadQuota(data.downloadQuota || null);
+        }
       })
       .catch((error) => {
         console.warn('Failed to load CV quota:', error);
@@ -145,6 +174,15 @@ export default function Home() {
       ignore = true;
     };
   }, [currentUser]);
+
+  const dismissVerificationBanner = useCallback(() => {
+    setVerificationBannerDismissed(true);
+    try {
+      localStorage.setItem(VERIFY_BANNER_DISMISSED_KEY, '1');
+    } catch {
+      // Ignore storage failures; dismissing is only a local preference.
+    }
+  }, []);
 
   // On mount: pick up ?template= from landing page and pre-select it
   useEffect(() => {
@@ -401,9 +439,9 @@ export default function Home() {
   }, [mobileView, template]);
 
   const handlePrint = async () => {
-    if (currentUser && !currentUser.emailVerified) {
+    if (currentUser && !currentUser.emailVerified && downloadQuota?.reached) {
       setShowDownloadConfirm(false);
-      toast.error('Verify your email to download PDFs.');
+      toast.error('Daily download limit reached.');
       return;
     }
 
@@ -428,6 +466,9 @@ export default function Home() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (errorData.quota && errorData.error === 'Daily download limit reached.') {
+          setDownloadQuota(errorData.quota);
+        }
         const err = new Error(`Failed to generate PDF: ${response.statusText}`);
         (err as any).responseBody = JSON.stringify(errorData);
         throw err;
@@ -458,6 +499,14 @@ export default function Home() {
 
       // Clean up after a delay to ensure mobile browser handled it
       setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      if (currentUser && !currentUser.emailVerified && downloadQuota?.limit !== null) {
+        setDownloadQuota((current) => {
+          if (!current || current.limit === null) return current;
+          const used = current.used + 1;
+          const remaining = Math.max(current.limit - used, 0);
+          return { ...current, used, remaining, reached: remaining <= 0 };
+        });
+      }
     } catch (error: any) {
       console.error("Error generating PDF:", error);
 
@@ -468,6 +517,11 @@ export default function Home() {
       } else if (error?.responseBody) {
         try {
           const parsed = JSON.parse(error.responseBody);
+          if (parsed.error === 'Daily download limit reached.') {
+            toast.error('Daily download limit reached.');
+            setShowDownloadConfirm(false);
+            return;
+          }
           if (parsed.details) details = parsed.details;
           else if (parsed.error) details = parsed.error;
         } catch { /* ignore */ }
@@ -492,8 +546,8 @@ export default function Home() {
       setAuthModalOpen(true);
       return;
     }
-    if (!currentUser.emailVerified) {
-      toast.error('Verify your email to download PDFs.');
+    if (!currentUser.emailVerified && downloadQuota?.reached) {
+      toast.error('Daily download limit reached.');
       return;
     }
     if (creationQuota?.reached) {
@@ -501,18 +555,18 @@ export default function Home() {
       return;
     }
     setShowDownloadConfirm(true);
-  }, [creationQuota, currentUser]);
+  }, [creationQuota, currentUser, downloadQuota]);
 
   const downloadLimitReached = Boolean(creationQuota?.reached);
-  const downloadVerificationBlocked = Boolean(currentUser && !currentUser.emailVerified);
-  const downloadBlocked = downloadLimitReached || downloadVerificationBlocked;
-  const downloadBlockedLabel = downloadVerificationBlocked ? 'Verify email' : 'Limit reached';
+  const unverifiedDownloadLimitReached = Boolean(currentUser && !currentUser.emailVerified && downloadQuota?.reached);
+  const downloadBlocked = downloadLimitReached;
+  const downloadBlockedLabel = downloadLimitReached ? 'Limit reached' : 'Download PDF';
 
   useEffect(() => {
-    if (downloadBlocked) {
+    if (downloadBlocked || unverifiedDownloadLimitReached) {
       setShowDownloadConfirm(false);
     }
-  }, [downloadBlocked]);
+  }, [downloadBlocked, unverifiedDownloadLimitReached]);
 
   return (
     <>
@@ -634,23 +688,33 @@ export default function Home() {
           </header>
         )}
 
-        {!isPopupVisible && currentUser && !currentUser.emailVerified && (
-          <div className={`shrink-0 border-b px-4 py-3 print:hidden ${isDarkMode ? 'border-amber-300/20 bg-amber-950/35' : 'border-amber-200 bg-amber-50'}`}>
-            <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {!isPopupVisible && currentUser && !currentUser.emailVerified && !verificationBannerDismissed && (
+          <div className="shrink-0 px-3 py-2 print:hidden sm:px-4">
+            <div className={`mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border px-3 py-3 shadow-lg sm:flex-row sm:items-center sm:justify-between sm:px-4 ${isDarkMode ? 'border-amber-300/20 bg-amber-950/80 shadow-black/20' : 'border-amber-200 bg-amber-50 shadow-amber-900/5'}`}>
               <div className="flex min-w-0 items-start gap-2">
                 <AlertCircle size={18} className={`mt-0.5 shrink-0 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
                 <p className={`text-sm font-bold leading-5 ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
                   Verify your email to save CVs. Check your inbox for the verification link.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={isResendingVerification}
-                className={`inline-flex h-9 shrink-0 items-center justify-center rounded-full px-4 text-xs font-extrabold transition active:scale-95 disabled:opacity-70 ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
-              >
-                {isResendingVerification ? 'Sending...' : 'Resend email'}
-              </button>
+              <div className="flex shrink-0 items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={isResendingVerification}
+                  className={`inline-flex h-9 shrink-0 items-center justify-center rounded-full px-4 text-xs font-extrabold transition active:scale-95 disabled:opacity-70 ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
+                >
+                  {isResendingVerification ? 'Sending...' : 'Resend email'}
+                </button>
+                <button
+                  type="button"
+                  onClick={dismissVerificationBanner}
+                  className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition active:scale-95 ${isDarkMode ? 'border-amber-200/20 text-amber-100 hover:bg-amber-200/10' : 'border-amber-700/20 text-amber-900 hover:bg-amber-100'}`}
+                  aria-label="Dismiss verification banner"
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
           </div>
         )}
