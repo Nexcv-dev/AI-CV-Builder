@@ -86,23 +86,47 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   useEffect(() => {
     if (!isOpen) return;
 
+    const scrollY = window.scrollY;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyPosition = document.body.style.position;
+    const previousBodyTop = document.body.style.top;
+    const previousBodyWidth = document.body.style.width;
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
 
     document.addEventListener('keydown', onKeyDown);
-    const previousOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
 
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.position = previousBodyPosition;
+      document.body.style.top = previousBodyTop;
+      document.body.style.width = previousBodyWidth;
+      window.scrollTo(0, scrollY);
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const copy = authCopy[mode];
+
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setDisplayName('');
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
+    setError('');
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -264,8 +288,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               type="button"
               className="font-extrabold text-violet-300 transition hover:text-violet-200"
               onClick={() => {
-                setMode(mode === 'login' ? 'signup' : 'login');
-                setError('');
+                switchMode(mode === 'login' ? 'signup' : 'login');
               }}
             >
               {mode === 'login' ? 'Sign up' : 'Login'}

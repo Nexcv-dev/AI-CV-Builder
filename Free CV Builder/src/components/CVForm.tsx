@@ -822,7 +822,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                 })}
               </div>
               {pendingTemplate && (
-                <div className={`sticky bottom-0 mt-4 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl ${isDarkMode ? 'border-slate-700 bg-slate-900/95' : 'border-slate-200 bg-white/95'}`}>
+                <div className={`sticky bottom-3 z-30 mt-5 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl ${isDarkMode ? 'border-slate-700 bg-slate-900/95' : 'border-slate-200 bg-white/95'}`}>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className={`text-xs font-black uppercase ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Selected template</p>
