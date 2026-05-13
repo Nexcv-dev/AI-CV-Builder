@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Clock3, Edit3, FileText, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Clock3, Edit3, FileText, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import { AppShellHeader } from '../components/AppShellHeader';
 import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 
@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<SavedDocument | null>(null);
   const [quota, setQuota] = useState<CvCreationQuota | null>(null);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
 
   useEffect(() => {
     setDashboardNotification(false);
@@ -87,6 +88,24 @@ export default function Dashboard() {
   };
 
   const creationLimitReached = Boolean(quota?.reached);
+
+  const resendVerification = async () => {
+    if (isResendingVerification) return;
+
+    setIsResendingVerification(true);
+    try {
+      const data = await apiFetch<{ user: AuthUser; message: string }>('/api/auth/resend-verification', {
+        method: 'POST',
+      });
+      setUser(data.user);
+      toast.success(data.message || 'Verification email sent.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not send verification email.';
+      toast.error(message);
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
 
   const renderCreationActions = (variant: 'empty' | 'toolbar') => {
     const wrapperClass = variant === 'empty'
@@ -171,6 +190,30 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
+
+        {user && !user.emailVerified && (
+          <section className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 shadow-lg shadow-black/10 sm:flex sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-300/15 text-amber-200 ring-1 ring-amber-200/20">
+                <AlertCircle size={18} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="font-montserrat text-base font-black text-amber-100">Verify your email</h2>
+                <p className="mt-1 text-sm font-semibold leading-6 text-amber-100/75">
+                  Verify your email to save CVs and download PDFs.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={resendVerification}
+              disabled={isResendingVerification}
+              className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-amber-300 px-4 py-2.5 text-xs font-black text-slate-950 transition hover:bg-amber-200 active:scale-[0.98] disabled:opacity-70 sm:mt-0 sm:w-auto"
+            >
+              {isResendingVerification ? 'Sending...' : 'Resend email'}
+            </button>
+          </section>
+        )}
 
         {isLoading ? (
           <div className="mt-12 flex items-center gap-3 text-sm font-bold text-slate-400">

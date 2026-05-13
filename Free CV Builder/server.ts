@@ -19,10 +19,12 @@ import mongoose from 'mongoose';
 import connectDB from './server-models/db';
 import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
+import DownloadQuota from './server-models/DownloadQuotaModel';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
 import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { buildCvCreationQuota, getUtcDayBounds } from './server-models/cvQuota';
+import { buildDownloadQuota, getUtcDayKey } from './server-models/downloadQuotaUtils';
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -477,6 +479,22 @@ const getCvCreationQuota = async (user: any) => {
     return buildCvCreationQuota(user, usedToday);
 };
 
+const getDownloadQuota = async (user: any) => {
+    const day = getUtcDayKey();
+    const record = await DownloadQuota.findOne({ userId: user._id || user.id, day });
+    return buildDownloadQuota(user, record?.count || 0);
+};
+
+const incrementDownloadQuota = async (user: any) => {
+    const day = getUtcDayKey();
+    const record = await DownloadQuota.findOneAndUpdate(
+        { userId: user._id || user.id, day },
+        { $inc: { count: 1 } },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    return buildDownloadQuota(user, record.count);
+};
+
 const isValidDocumentId = (id: unknown) => (
     typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)
 );
@@ -696,8 +714,14 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
 
         const user = await User.findOne({ email });
         if (!user) {
-            // Return success even if user not found to prevent email enumeration
-            return res.json({ message: 'Reset link sent! Please check your email inbox.' });
+            return res.status(404).json({ error: 'No account found for this email address.' });
+        }
+
+        const emailUser = process.env.EMAIL_USER?.trim();
+        const emailPass = process.env.EMAIL_PASS?.trim();
+        const emailFrom = process.env.EMAIL_FROM?.trim() || emailUser;
+        if (!emailUser || !emailPass || !emailFrom) {
+            return res.status(500).json({ error: 'Email service is not configured.' });
         }
 
         // Generate token
@@ -714,7 +738,7 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
 
         const mailOptions = {
             to: user.email,
-            from: process.env.EMAIL_USER,
+            from: emailFrom,
             subject: 'Password Reset - Free CV Builder',
             text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
                 `Please click on the following link, or paste this into your browser to complete the process:\n\n` +
@@ -722,7 +746,15 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
                 `If you did not request this, please ignore this email and your password will remain unchanged.\n`
         };
 
-        await transporter.sendMail(mailOptions);
+        try {
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpires = undefined;
+            await user.save();
+            throw emailError;
+        }
+
         res.json({ message: 'Reset link sent! Please check your email inbox.' });
     } catch (error) {
         return sendError(res, 500, 'Could not send reset password email.', error);
@@ -869,7 +901,8 @@ app.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
             .sort({ updatedAt: -1 })
             .select('title template createdAt updatedAt');
         const quota = await getCvCreationQuota(req.user);
-        res.json({ documents: documents.map(documentSummary), quota });
+        const downloadQuota = await getDownloadQuota(req.user);
+        res.json({ documents: documents.map(documentSummary), quota, downloadQuota });
     } catch (error) {
         return sendError(res, 500, 'Could not load your documents.', error);
     }
@@ -1881,6 +1914,14 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
             return res.status(400).json({ error: 'Missing or invalid CV data' });
         }
 
+        const downloadQuota = await getDownloadQuota(req.user);
+        if (downloadQuota.reached) {
+            return res.status(403).json({
+                error: 'Daily download limit reached.',
+                quota: downloadQuota,
+            });
+        }
+
         const quota = await getCvCreationQuota(req.user);
         if (quota.reached) {
             return res.status(403).json({
@@ -1992,6 +2033,8 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
 
         await browser.close();
         browser = null;
+
+        await incrementDownloadQuota(req.user);
 
         res.set({
             'Content-Type': 'application/pdf',
