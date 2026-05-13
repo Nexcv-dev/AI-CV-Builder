@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import * as dotenv from 'dotenv';
 import User from './User';
+import { roleForEmail, syncUserRoleFromAllowlist } from './userRole';
 
 dotenv.config();
 
@@ -42,8 +43,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           if (user) {
             if (latestProfileImage && user.profileImage !== latestProfileImage) {
               user.profileImage = latestProfileImage;
-              await user.save();
             }
+            await syncUserRoleFromAllowlist(user);
             return done(null, user);
           }
 
@@ -52,7 +53,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             user.googleId = profile.id;
             user.authProvider = 'google';
             user.profileImage = latestProfileImage || user.profileImage;
-            await user.save();
+            await syncUserRoleFromAllowlist(user);
             return done(null, user);
           }
 
@@ -62,6 +63,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             displayName: profile.displayName,
             email,
             profileImage: latestProfileImage,
+            role: roleForEmail(email),
             authProvider: 'google',
           });
 

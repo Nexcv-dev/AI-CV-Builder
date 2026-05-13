@@ -1,9 +1,11 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { DEFAULT_USER_ROLE, UserRole } from './userRole';
 
 export interface IUser extends Document {
   googleId?: string;
   email: string;
   displayName: string;
+  role: UserRole;
   profileImage?: string;
   phone?: string;
   address?: string;
@@ -23,6 +25,7 @@ const UserSchema: Schema = new Schema(
     googleId: { type: String },
     email: { type: String, required: true, unique: true },
     displayName: { type: String, required: true },
+    role: { type: String, enum: ['user', 'super_admin'], default: DEFAULT_USER_ROLE, required: true },
     profileImage: { type: String },
     phone: { type: String },
     address: { type: String },

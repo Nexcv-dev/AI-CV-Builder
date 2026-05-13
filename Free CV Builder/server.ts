@@ -21,6 +21,7 @@ import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
+import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -397,6 +398,7 @@ const publicUser = (user: any) => ({
     id: user._id?.toString?.() || user.id,
     email: user.email,
     displayName: user.displayName,
+    role: user.role || 'user',
     profileImage: user.profileImage,
     phone: user.phone,
     address: user.address,
@@ -477,6 +479,7 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             email,
             displayName,
             passwordHash: hashPassword(password),
+            role: roleForEmail(email),
             authProvider: 'email',
         });
 
@@ -510,6 +513,8 @@ app.post('/api/auth/login', async (req: Request, res: Response, next: NextFuncti
         if (!user || !user.passwordHash || !verifyPassword(password, user.passwordHash)) {
             return res.status(401).json({ error: 'Email or password is incorrect.' });
         }
+
+        await syncUserRoleFromAllowlist(user);
 
         req.login(user, (err) => {
             if (err) return next(err);
@@ -703,11 +708,15 @@ app.get('/api/auth/google/callback', passport.authenticate('google', {
 });
 
 // Get Current User
-app.get('/api/auth/current-user', (req: Request, res: Response) => {
-    if (req.isAuthenticated()) {
-        res.json({ user: publicUser(req.user) });
-    } else {
-        res.status(401).json({ error: 'Not authenticated' });
+app.get('/api/auth/current-user', async (req: Request, res: Response) => {
+    try {
+        if (req.isAuthenticated() && req.user) {
+            await syncUserRoleFromAllowlist(req.user as any);
+            return res.json({ user: publicUser(req.user) });
+        }
+        return res.status(401).json({ error: 'Not authenticated' });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load current user.', error);
     }
 });
 

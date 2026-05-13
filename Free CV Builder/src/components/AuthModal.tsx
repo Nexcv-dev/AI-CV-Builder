@@ -28,8 +28,6 @@ const authCopy = {
   },
 };
 
-const passwordPolicyHint = '8+ chars with uppercase, lowercase, number, and symbol';
-
 function GoogleLogo() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">

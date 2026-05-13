@@ -1,7 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import { sanitizeTextForPrompt, sanitizeContextField, generateCVHTML, buildPasswordResetTransportOptions } from '../server';
+import { isSuperAdminEmail, roleForEmail } from '../server-models/userRole';
 
 describe('Server Utils', () => {
+  describe('super admin roles', () => {
+    it('should assign super_admin only to allowlisted emails', () => {
+      const original = process.env.SUPER_ADMIN_EMAILS;
+      process.env.SUPER_ADMIN_EMAILS = 'owner@example.com, Admin@Example.com ';
+
+      expect(isSuperAdminEmail('owner@example.com')).toBe(true);
+      expect(isSuperAdminEmail('admin@example.com')).toBe(true);
+      expect(roleForEmail('owner@example.com')).toBe('super_admin');
+      expect(roleForEmail('user@example.com')).toBe('user');
+
+      if (original === undefined) {
+        delete process.env.SUPER_ADMIN_EMAILS;
+      } else {
+        process.env.SUPER_ADMIN_EMAILS = original;
+      }
+    });
+  });
+
   describe('buildPasswordResetTransportOptions', () => {
     it('should default password reset SMTP to Gmail over IPv4', () => {
       const originalEnv = {
