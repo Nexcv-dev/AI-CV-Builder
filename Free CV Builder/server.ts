@@ -370,6 +370,43 @@ export const buildPasswordResetTransportOptions = () => {
     };
 };
 
+interface AppEmailOptions {
+    to: string;
+    from: string;
+    subject: string;
+    text: string;
+}
+
+async function sendAppEmail({ to, from, subject, text }: AppEmailOptions) {
+    const resendApiKey = process.env.RESEND_API_KEY?.trim();
+    if (resendApiKey) {
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+                'User-Agent': 'NexCV/1.0',
+            },
+            body: JSON.stringify({
+                from,
+                to,
+                subject,
+                text,
+            }),
+        });
+
+        if (!response.ok) {
+            const details = await response.text().catch(() => '');
+            throw new Error(`Resend email API failed with ${response.status}: ${details || response.statusText}`);
+        }
+
+        return;
+    }
+
+    const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
+    await transporter.sendMail({ to, from, subject, text });
+}
+
 const isMongoDuplicateKeyError = (error: any) => (
     error?.code === 11000 || error?.name === 'MongoServerError' && error?.code === 11000
 );
@@ -424,13 +461,17 @@ const generateEmailVerificationToken = () => {
 const isEmailVerified = (user: any) => user?.authProvider === 'google' || user?.emailVerified !== false;
 
 const sendEmailVerification = async (user: any, token: string) => {
-    const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+    const from = process.env.EMAIL_FROM?.trim() || process.env.EMAIL_USER?.trim();
 
-    await transporter.sendMail({
+    if (!from) {
+        throw new Error('Email sender is not configured.');
+    }
+
+    await sendAppEmail({
         to: user.email,
-        from: process.env.EMAIL_USER,
+        from,
         subject: 'Verify your NexCV email',
         text: `Welcome to NexCV.\n\nPlease verify your email address by opening this link:\n\n${verifyUrl}\n\nThis link expires in 24 hours.\n\nIf you did not create this account, you can ignore this email.\n`,
     });
@@ -717,10 +758,11 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
             return res.status(404).json({ error: 'No account found for this email address.' });
         }
 
+        const resendApiKey = process.env.RESEND_API_KEY?.trim();
         const emailUser = process.env.EMAIL_USER?.trim();
         const emailPass = process.env.EMAIL_PASS?.trim();
         const emailFrom = process.env.EMAIL_FROM?.trim() || emailUser;
-        if (!emailUser || !emailPass || !emailFrom) {
+        if (!emailFrom || (!resendApiKey && (!emailUser || !emailPass))) {
             return res.status(500).json({ error: 'Email service is not configured.' });
         }
 
@@ -729,9 +771,6 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
         user.resetPasswordToken = token;
         user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
         await user.save();
-
-        // Render can resolve Gmail SMTP to IPv6 first, so the transport defaults to IPv4.
-        const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
 
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
@@ -747,7 +786,7 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
         };
 
         try {
-            await transporter.sendMail(mailOptions);
+            await sendAppEmail(mailOptions);
         } catch (emailError) {
             user.resetPasswordToken = undefined;
             user.resetPasswordExpires = undefined;
