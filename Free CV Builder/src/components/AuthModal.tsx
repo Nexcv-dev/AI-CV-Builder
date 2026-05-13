@@ -225,13 +225,15 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               </span>
             </label>
 
-            <label className="block">
+            <div className="block">
               <span className="mb-1.5 flex items-center justify-between text-xs font-extrabold uppercase text-slate-400">
                 <span>Password</span>
                 {mode === 'login' && (
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
                       onClose();
                       navigate('/forgot-password');
                     }}
@@ -262,7 +264,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </span>
-            </label>
+            </div>
 
             {error && (
               <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-200">

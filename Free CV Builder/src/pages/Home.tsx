@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
 import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
-import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
+import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
 import { AccountMenu } from '../components/AccountMenu';
@@ -267,12 +267,13 @@ export default function Home() {
       setDocumentId(data.document.id);
       setDocumentTitle(data.document.title);
       setCloudSaveStatus('saved');
+      setDashboardNotification(true);
       toast.success('CV saved successfully.');
       setTimeout(() => setCloudSaveStatus('idle'), 2200);
     } catch (error) {
       console.warn('Failed to save document:', error);
       setCloudSaveStatus('error');
-      toast.error('Could not save your CV. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Could not save your CV. Please try again.');
       setTimeout(() => setCloudSaveStatus('idle'), 4000);
     }
   }, [cvData, documentId, documentTitle, template]);

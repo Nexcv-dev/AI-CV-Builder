@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { sanitizeTextForPrompt, sanitizeContextField, generateCVHTML, buildPasswordResetTransportOptions } from '../server';
 import { isSuperAdminEmail, roleForEmail } from '../server-models/userRole';
+import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
 
 describe('Server Utils', () => {
   describe('super admin roles', () => {
@@ -18,6 +19,60 @@ describe('Server Utils', () => {
       } else {
         process.env.SUPER_ADMIN_EMAILS = original;
       }
+    });
+  });
+
+  describe('CV creation quota', () => {
+    it('should default to 3 daily CV creations', () => {
+      const original = process.env.DAILY_CV_CREATION_LIMIT;
+      delete process.env.DAILY_CV_CREATION_LIMIT;
+
+      expect(getDailyCvCreationLimit()).toBe(3);
+
+      if (original === undefined) {
+        delete process.env.DAILY_CV_CREATION_LIMIT;
+      } else {
+        process.env.DAILY_CV_CREATION_LIMIT = original;
+      }
+    });
+
+    it('should mark regular users as limited after reaching daily quota', () => {
+      const original = process.env.DAILY_CV_CREATION_LIMIT;
+      process.env.DAILY_CV_CREATION_LIMIT = '2';
+
+      expect(buildCvCreationQuota({ role: 'user' } as any, 1)).toEqual({
+        limit: 2,
+        used: 1,
+        remaining: 1,
+        reached: false,
+      });
+      expect(buildCvCreationQuota({ role: 'user' } as any, 2)).toEqual({
+        limit: 2,
+        used: 2,
+        remaining: 0,
+        reached: true,
+      });
+
+      if (original === undefined) {
+        delete process.env.DAILY_CV_CREATION_LIMIT;
+      } else {
+        process.env.DAILY_CV_CREATION_LIMIT = original;
+      }
+    });
+
+    it('should not limit super admins', () => {
+      expect(buildCvCreationQuota({ role: 'super_admin' } as any, 999)).toEqual({
+        limit: null,
+        used: 999,
+        remaining: null,
+        reached: false,
+      });
+    });
+
+    it('should calculate UTC day bounds', () => {
+      const { start, end } = getUtcDayBounds(new Date('2026-05-13T18:30:00.000Z'));
+      expect(start.toISOString()).toBe('2026-05-13T00:00:00.000Z');
+      expect(end.toISOString()).toBe('2026-05-14T00:00:00.000Z');
     });
   });
 

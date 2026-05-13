@@ -79,15 +79,15 @@ export default function Settings() {
     <div className="account-page min-h-screen bg-slate-950 text-white">
       <AppShellHeader />
       <main className="mx-auto max-w-7xl px-4 pb-8 pt-10 sm:px-6 sm:pt-12 lg:px-8 lg:pt-14">
-        <div className="flex flex-col justify-between gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-start sm:gap-5 sm:pb-8">
+        <div className="flex flex-row items-start justify-between gap-3 border-b border-white/10 pb-6 sm:gap-5 sm:pb-8">
           <Link
             to="/builder"
-            className="inline-flex items-center gap-1.5 self-start rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400 transition hover:bg-white/10 hover:text-white active:scale-[0.98] sm:order-last sm:border-0 sm:bg-transparent sm:px-1 sm:py-2 sm:text-sm sm:normal-case sm:tracking-normal"
+            className="order-last inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-2 text-[10px] font-black uppercase tracking-wider text-slate-100 shadow-lg shadow-black/20 transition hover:bg-white/15 hover:text-white active:scale-[0.98] sm:px-3.5 sm:py-2.5 sm:text-sm sm:normal-case sm:tracking-normal"
           >
             <ArrowLeft size={14} />
             Back to builder
           </Link>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-black uppercase text-emerald-300">Settings</p>
             <h1 className="mt-2 break-words font-montserrat text-2xl font-black leading-tight min-[390px]:text-3xl sm:text-5xl">Security & account</h1>
             <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-400">

@@ -22,6 +22,7 @@ import CVDocument from './server-models/CVDocument';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
 import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
+import { buildCvCreationQuota, getUtcDayBounds } from './server-models/cvQuota';
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -417,6 +418,16 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 
 const currentUserId = (req: Request) => (req.user as any)._id || (req.user as any).id;
 
+const getCvCreationQuota = async (user: any) => {
+    const { start, end } = getUtcDayBounds();
+    const usedToday = await CVDocument.countDocuments({
+        userId: user._id || user.id,
+        createdAt: { $gte: start, $lt: end },
+    });
+
+    return buildCvCreationQuota(user, usedToday);
+};
+
 const isValidDocumentId = (id: unknown) => (
     typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)
 );
@@ -733,7 +744,8 @@ app.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
         const documents = await CVDocument.find({ userId: currentUserId(req) })
             .sort({ updatedAt: -1 })
             .select('title template createdAt updatedAt');
-        res.json({ documents: documents.map(documentSummary) });
+        const quota = await getCvCreationQuota(req.user);
+        res.json({ documents: documents.map(documentSummary), quota });
     } catch (error) {
         return sendError(res, 500, 'Could not load your documents.', error);
     }
@@ -763,6 +775,14 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
 
         if (!cvData || typeof cvData !== 'object') {
             return res.status(400).json({ error: 'Missing CV data.' });
+        }
+
+        const quota = await getCvCreationQuota(req.user);
+        if (quota.reached) {
+            return res.status(403).json({
+                error: 'Daily CV creation limit reached.',
+                quota,
+            });
         }
 
         const document = await CVDocument.create({

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Clock3, Edit3, FileText, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import { AppShellHeader } from '../components/AppShellHeader';
-import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
+import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 
 interface SavedDocument {
   id: string;
@@ -11,6 +11,13 @@ interface SavedDocument {
   template: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface CvCreationQuota {
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  reached: boolean;
 }
 
 function formatDate(value: string) {
@@ -29,20 +36,24 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<SavedDocument | null>(null);
+  const [quota, setQuota] = useState<CvCreationQuota | null>(null);
 
   useEffect(() => {
+    setDashboardNotification(false);
+
     let ignore = false;
 
     async function loadDashboard() {
       try {
         const [currentUser, documentsData] = await Promise.all([
           getCurrentUser(),
-          apiFetch<{ documents: SavedDocument[] }>('/api/documents'),
+          apiFetch<{ documents: SavedDocument[]; quota: CvCreationQuota }>('/api/documents'),
         ]);
 
         if (!ignore) {
           setUser(currentUser);
           setDocuments(documentsData.documents);
+          setQuota(documentsData.quota);
         }
       } catch (err) {
         if (!ignore) {
@@ -75,19 +86,68 @@ export default function Dashboard() {
     }
   };
 
+  const creationLimitReached = Boolean(quota?.reached);
+
+  const renderCreationActions = (variant: 'empty' | 'toolbar') => {
+    const wrapperClass = variant === 'empty'
+      ? 'mx-auto mt-6 grid w-full max-w-sm gap-2 sm:max-w-none sm:grid-cols-2 sm:gap-3'
+      : 'grid gap-2 sm:flex sm:items-center';
+    const createClass = variant === 'empty'
+      ? 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.98]'
+      : 'inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:-translate-y-0.5 hover:bg-violet-500 active:scale-[0.98] sm:w-auto';
+    const importClass = variant === 'empty'
+      ? 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-white/10 active:scale-[0.98]'
+      : 'inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-white/10 active:scale-[0.98] sm:w-auto';
+    const disabledClass = 'cursor-not-allowed opacity-45 hover:-translate-y-0 hover:bg-violet-600 active:scale-100';
+    const disabledImportClass = 'cursor-not-allowed opacity-45 hover:bg-white/6 active:scale-100';
+
+    if (creationLimitReached) {
+      return (
+        <div className="relative">
+          <div className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs font-black text-amber-200 shadow-lg shadow-black/20">
+            Limit reached
+          </div>
+          <div className={wrapperClass}>
+            <button type="button" disabled className={`${createClass} ${disabledClass}`} aria-label="Create New CV disabled: limit reached">
+              <Plus size={17} />
+              Create New CV
+            </button>
+            <button type="button" disabled className={`${importClass} ${disabledImportClass}`} aria-label="Import CV disabled: limit reached">
+              <Upload size={17} />
+              Import CV
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={wrapperClass}>
+        <Link to="/builder" className={createClass}>
+          <Plus size={17} />
+          Create New CV
+        </Link>
+        <Link to="/builder?import=1" className={importClass}>
+          <Upload size={17} />
+          Import CV
+        </Link>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <AppShellHeader />
       <main className="mx-auto max-w-7xl px-4 pb-8 pt-10 sm:px-6 sm:pt-12 lg:px-8 lg:pt-14">
-        <div className="flex flex-col justify-between gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-start sm:gap-5 sm:pb-8">
+        <div className="flex flex-row items-start justify-between gap-3 border-b border-white/10 pb-6 sm:gap-5 sm:pb-8">
           <Link
             to="/builder"
-            className="inline-flex items-center gap-1.5 self-start rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-400 transition hover:bg-white/10 hover:text-white active:scale-[0.98] sm:order-last sm:border-0 sm:bg-transparent sm:px-1 sm:py-2 sm:text-sm sm:normal-case sm:tracking-normal"
+            className="order-last inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-2 text-[10px] font-black uppercase tracking-wider text-slate-100 shadow-lg shadow-black/20 transition hover:bg-white/15 hover:text-white active:scale-[0.98] sm:px-3.5 sm:py-2.5 sm:text-sm sm:normal-case sm:tracking-normal"
           >
             <ArrowLeft size={14} />
             Back to builder
           </Link>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-black uppercase text-emerald-300">Dashboard</p>
             <h1 className="mt-2 break-words font-montserrat text-2xl font-black leading-tight min-[390px]:text-3xl sm:text-5xl">
               Hi, {user?.displayName || 'there'}
@@ -126,43 +186,13 @@ export default function Dashboard() {
             <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-slate-400">
               Create a CV in the builder, then save it to see it here.
             </p>
-            <div className="mx-auto mt-6 grid w-full max-w-sm gap-2 sm:max-w-none sm:grid-cols-2 sm:gap-3">
-              <Link
-                to="/builder"
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.98]"
-              >
-                <Plus size={17} />
-                Create New CV
-              </Link>
-              <Link
-                to="/builder?import=1"
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-white/10 active:scale-[0.98]"
-              >
-                <Upload size={17} />
-                Import CV
-              </Link>
-            </div>
+            {renderCreationActions('empty')}
           </section>
         ) : (
           <section className="mt-8">
             <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <h2 className="font-montserrat text-xl font-black sm:text-2xl">Documents</h2>
-              <div className="grid gap-2 sm:flex sm:items-center">
-                <Link
-                  to="/builder?import=1"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-white/10 active:scale-[0.98] sm:w-auto"
-                >
-                  <Upload size={17} />
-                  Import CV
-                </Link>
-                <Link
-                  to="/builder"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:-translate-y-0.5 hover:bg-violet-500 active:scale-[0.98] sm:w-auto"
-                >
-                  <Plus size={17} />
-                  Create New CV
-                </Link>
-              </div>
+              {renderCreationActions('toolbar')}
             </div>
             <div className="grid gap-3">
               {documents.map((document) => (
