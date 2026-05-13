@@ -124,7 +124,7 @@ describe('Server Utils', () => {
   });
 
   describe('buildPasswordResetTransportOptions', () => {
-    it('should default password reset SMTP to Gmail over IPv4', () => {
+    it('should default password reset SMTP to Gmail STARTTLS over IPv4', () => {
       const originalEnv = {
         SMTP_HOST: process.env.SMTP_HOST,
         SMTP_PORT: process.env.SMTP_PORT,
@@ -143,8 +143,8 @@ describe('Server Utils', () => {
 
       expect(buildPasswordResetTransportOptions()).toEqual(expect.objectContaining({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
+        port: 587,
+        secure: false,
         family: 4,
         auth: {
           user: 'sender@example.com',
@@ -176,8 +176,8 @@ describe('Server Utils', () => {
 
       expect(buildPasswordResetTransportOptions()).toEqual(expect.objectContaining({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
+        port: 587,
+        secure: false,
         family: 4,
         tls: {
           servername: 'smtp.gmail.com',

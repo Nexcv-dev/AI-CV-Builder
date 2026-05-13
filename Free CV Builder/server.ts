@@ -347,7 +347,7 @@ const smtpFamilyFromEnv = (value: string | undefined) => {
 };
 
 export const buildPasswordResetTransportOptions = () => {
-    const port = numberFromEnv(process.env.SMTP_PORT, 465);
+    const port = numberFromEnv(process.env.SMTP_PORT, 587);
     const host = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
 
     return {
