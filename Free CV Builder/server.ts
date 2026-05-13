@@ -696,8 +696,14 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
 
         const user = await User.findOne({ email });
         if (!user) {
-            // Return success even if user not found to prevent email enumeration
-            return res.json({ message: 'Reset link sent! Please check your email inbox.' });
+            return res.status(404).json({ error: 'No account found for this email address.' });
+        }
+
+        const emailUser = process.env.EMAIL_USER?.trim();
+        const emailPass = process.env.EMAIL_PASS?.trim();
+        const emailFrom = process.env.EMAIL_FROM?.trim() || emailUser;
+        if (!emailUser || !emailPass || !emailFrom) {
+            return res.status(500).json({ error: 'Email service is not configured.' });
         }
 
         // Generate token
@@ -714,7 +720,7 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
 
         const mailOptions = {
             to: user.email,
-            from: process.env.EMAIL_USER,
+            from: emailFrom,
             subject: 'Password Reset - Free CV Builder',
             text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
                 `Please click on the following link, or paste this into your browser to complete the process:\n\n` +
@@ -722,7 +728,15 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
                 `If you did not request this, please ignore this email and your password will remain unchanged.\n`
         };
 
-        await transporter.sendMail(mailOptions);
+        try {
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpires = undefined;
+            await user.save();
+            throw emailError;
+        }
+
         res.json({ message: 'Reset link sent! Please check your email inbox.' });
     } catch (error) {
         return sendError(res, 500, 'Could not send reset password email.', error);
