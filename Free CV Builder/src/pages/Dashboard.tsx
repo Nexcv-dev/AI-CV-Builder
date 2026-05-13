@@ -118,21 +118,30 @@ export default function Dashboard() {
             Loading your documents...
           </div>
         ) : documents.length === 0 ? (
-          <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
+          <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-7 text-center sm:p-8">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300 ring-1 ring-violet-400/20">
               <FileText size={26} />
             </div>
-            <h2 className="mt-5 font-montserrat text-2xl font-black">No saved CVs yet</h2>
+            <h2 className="mt-5 font-montserrat text-2xl font-black leading-tight">No saved CVs yet</h2>
             <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-slate-400">
               Create a CV in the builder, then save it to see it here.
             </p>
-            <Link
-              to="/builder?import=1"
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-violet-500 sm:w-auto"
-            >
-              <Upload size={17} />
-              Import CV
-            </Link>
+            <div className="mx-auto mt-6 grid w-full max-w-sm gap-2 sm:max-w-none sm:grid-cols-2 sm:gap-3">
+              <Link
+                to="/builder"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.98]"
+              >
+                <Plus size={17} />
+                Create New CV
+              </Link>
+              <Link
+                to="/builder?import=1"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-white/10 active:scale-[0.98]"
+              >
+                <Upload size={17} />
+                Import CV
+              </Link>
+            </div>
           </section>
         ) : (
           <section className="mt-8">
@@ -197,7 +206,7 @@ export default function Dashboard() {
       </main>
 
       {documentToDelete && (
-        <div className="fixed inset-0 z-80 flex items-end justify-center bg-slate-950/75 px-4 py-5 backdrop-blur-sm sm:items-center" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-80 flex items-center justify-center bg-slate-950/75 px-4 py-5 backdrop-blur-sm" role="dialog" aria-modal="true">
           <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-slate-900 text-white shadow-2xl shadow-black/40">
             <div className="h-1 bg-linear-to-r from-red-500 via-orange-400 to-violet-500" />
             <div className="p-5 sm:p-6">
