@@ -3,53 +3,56 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #108 from bimanthaperera-lab/test/overview (60514e4) - Bimantha Perera, 18 seconds ago
-* fix scrolling issues in mobile (c0d1571) - Bimantha Perera, 43 minutes ago
-* chore: bump version to 0.1.8 (b7c67b5) - bimanthaperera-lab, 73 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (a291f1b) - bimanthaperera-lab, 2 hours ago
-* Merge pull request #107 from bimanthaperera-lab/test/overview (6afd939) - Bimantha Perera, 2 hours ago
-* Change SMTP to HTTP  for email sending (b0c9181) - Bimantha Perera, 2 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (a2c9149) - bimanthaperera-lab, 2 hours ago
-* Merge pull request #106 from bimanthaperera-lab/test/overview (a5e572c) - Bimantha Perera, 2 hours ago
-* fix reset email not sending issue (da840b7) - Bimantha Perera, 2 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (cf98403) - bimanthaperera-lab, 3 hours ago
-* Merge pull request #105 from bimanthaperera-lab/test/overview (5eaa9d6) - Bimantha Perera, 3 hours ago
-* add verify banner close option from builder and limit download from unverified users (6358669) - Bimantha Perera, 3 hours ago
-* fix password reset email issue and add download limit for unverified users (bf699a4) - Bimantha Perera, 3 hours ago
-* fix password reset issue (e523f5a) - Bimantha Perera, 4 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (7cbd385) - bimanthaperera-lab, 4 hours ago
-* Merge pull request #103 from bimanthaperera-lab/test/overview (77e2a1c) - Bimantha Perera, 4 hours ago
-* fix layout issues (d563d82) - Bimantha Perera, 5 hours ago
-* Add download limit and improve layout (4180760) - Bimantha Perera, 5 hours ago
-* Fix email not send issue and bug fixing (7adec93) - Bimantha Perera, 5 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (bb9bed8) - bimanthaperera-lab, 6 hours ago
-* Merge pull request #102 from bimanthaperera-lab/test/overview (a37a15b) - Bimantha Perera, 6 hours ago
-* Add CV Creation limit and improve UI/UX (7ee85d4) - Bimantha Perera, 7 hours ago
-* improve layout issues (d613b27) - Bimantha Perera, 7 hours ago
-* create Superuser (bcce7c7) - Bimantha Perera, 8 hours ago
-* fix template section selected icon overlap issue (4fae2a8) - Bimantha Perera, 8 hours ago
-* Improve password reset modal (a62979c) - Bimantha Perera, 8 hours ago
-* Fix mail not sending issue in render (b81eb1c) - Bimantha Perera, 9 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2771e1b) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #101 from bimanthaperera-lab/test/overview (5a4a254) - Bimantha Perera, 20 hours ago
-* Update README.md (c070926) - Bimantha Perera, 20 hours ago
-* Add Password Reset with email link (18586b2) - Bimantha Perera, 20 hours ago
-* chore: bump version to 0.1.7 (728bea8) - bimanthaperera-lab, 25 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (74198b8) - bimanthaperera-lab, 25 hours ago
-* Merge pull request #97 from bimanthaperera-lab/test/overview (2011582) - Bimantha Perera, 25 hours ago
-* add  strong password check (21ba805) - Bimantha Perera, 25 hours ago
-* update login issue (e898d20) - Bimantha Perera, 26 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (dcff1d8) - bimanthaperera-lab, 26 hours ago
-* Merge pull request #96 from bimanthaperera-lab/test/overview (07d9859) - Bimantha Perera, 26 hours ago
-* replace download button position in desktop mode (915c97b) - Bimantha Perera, 26 hours ago
-* add download button for gest users and fix zoom issue (d8fec4d) - Bimantha Perera, 26 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (126ea0f) - bimanthaperera-lab, 27 hours ago
-* Merge pull request #95 from bimanthaperera-lab/test/overview (1cc5124) - Bimantha Perera, 27 hours ago
-* Update README.md (0a6a861) - Bimantha Perera, 27 hours ago
-* Fix security issues (71cf799) - Bimantha Perera, 27 hours ago
-* fix security issues (32c0076) - Bimantha Perera, 27 hours ago
-* Improve UI/UX with user logins and create profile, dashboard,settings pages (61d7944) - Bimantha Perera, 27 hours ago
-* Create User Login (0ab92c2) - Bimantha Perera, 33 hours ago
+* Merge pull request #109 from bimanthaperera-lab/test/overview (77cb2b8) - Bimantha Perera, 9 seconds ago
+* Update server.ts (5849455) - Bimantha Perera, 15 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (29649c6) - bimanthaperera-lab, 5 hours ago
+* Merge pull request #108 from bimanthaperera-lab/test/overview (60514e4) - Bimantha Perera, 5 hours ago
+* fix scrolling issues in mobile (c0d1571) - Bimantha Perera, 5 hours ago
+* chore: bump version to 0.1.8 (b7c67b5) - bimanthaperera-lab, 6 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (a291f1b) - bimanthaperera-lab, 6 hours ago
+* Merge pull request #107 from bimanthaperera-lab/test/overview (6afd939) - Bimantha Perera, 6 hours ago
+* Change SMTP to HTTP  for email sending (b0c9181) - Bimantha Perera, 6 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (a2c9149) - bimanthaperera-lab, 7 hours ago
+* Merge pull request #106 from bimanthaperera-lab/test/overview (a5e572c) - Bimantha Perera, 7 hours ago
+* fix reset email not sending issue (da840b7) - Bimantha Perera, 7 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (cf98403) - bimanthaperera-lab, 8 hours ago
+* Merge pull request #105 from bimanthaperera-lab/test/overview (5eaa9d6) - Bimantha Perera, 8 hours ago
+* add verify banner close option from builder and limit download from unverified users (6358669) - Bimantha Perera, 8 hours ago
+* fix password reset email issue and add download limit for unverified users (bf699a4) - Bimantha Perera, 8 hours ago
+* fix password reset issue (e523f5a) - Bimantha Perera, 8 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (7cbd385) - bimanthaperera-lab, 9 hours ago
+* Merge pull request #103 from bimanthaperera-lab/test/overview (77e2a1c) - Bimantha Perera, 9 hours ago
+* fix layout issues (d563d82) - Bimantha Perera, 9 hours ago
+* Add download limit and improve layout (4180760) - Bimantha Perera, 10 hours ago
+* Fix email not send issue and bug fixing (7adec93) - Bimantha Perera, 10 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (bb9bed8) - bimanthaperera-lab, 11 hours ago
+* Merge pull request #102 from bimanthaperera-lab/test/overview (a37a15b) - Bimantha Perera, 11 hours ago
+* Add CV Creation limit and improve UI/UX (7ee85d4) - Bimantha Perera, 11 hours ago
+* improve layout issues (d613b27) - Bimantha Perera, 12 hours ago
+* create Superuser (bcce7c7) - Bimantha Perera, 12 hours ago
+* fix template section selected icon overlap issue (4fae2a8) - Bimantha Perera, 13 hours ago
+* Improve password reset modal (a62979c) - Bimantha Perera, 13 hours ago
+* Fix mail not sending issue in render (b81eb1c) - Bimantha Perera, 13 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2771e1b) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #101 from bimanthaperera-lab/test/overview (5a4a254) - Bimantha Perera, 24 hours ago
+* Update README.md (c070926) - Bimantha Perera, 25 hours ago
+* Add Password Reset with email link (18586b2) - Bimantha Perera, 25 hours ago
+* chore: bump version to 0.1.7 (728bea8) - bimanthaperera-lab, 30 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (74198b8) - bimanthaperera-lab, 30 hours ago
+* Merge pull request #97 from bimanthaperera-lab/test/overview (2011582) - Bimantha Perera, 30 hours ago
+* add  strong password check (21ba805) - Bimantha Perera, 30 hours ago
+* update login issue (e898d20) - Bimantha Perera, 30 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (dcff1d8) - bimanthaperera-lab, 31 hours ago
+* Merge pull request #96 from bimanthaperera-lab/test/overview (07d9859) - Bimantha Perera, 31 hours ago
+* replace download button position in desktop mode (915c97b) - Bimantha Perera, 31 hours ago
+* add download button for gest users and fix zoom issue (d8fec4d) - Bimantha Perera, 31 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (126ea0f) - bimanthaperera-lab, 31 hours ago
+* Merge pull request #95 from bimanthaperera-lab/test/overview (1cc5124) - Bimantha Perera, 31 hours ago
+* Update README.md (0a6a861) - Bimantha Perera, 32 hours ago
+* Fix security issues (71cf799) - Bimantha Perera, 32 hours ago
+* fix security issues (32c0076) - Bimantha Perera, 32 hours ago
+* Improve UI/UX with user logins and create profile, dashboard,settings pages (61d7944) - Bimantha Perera, 32 hours ago
+* Create User Login (0ab92c2) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (e1f7032) - bimanthaperera-lab, 2 days ago
 * Merge pull request #92 from bimanthaperera-lab/test/overview (f6ee3e1) - Bimantha Perera, 2 days ago
 * Implement MongoDB database and Google Auth for Future Developments (65dd7b5) - Bimantha Perera, 2 days ago
@@ -85,10 +88,10 @@ All notable changes to this project will be documented in this file.
 * add home button to hamburger menu (4f8dce3) - Bimantha Perera, 2 days ago
 * fix scroll animation issuein mobile (cb1520f) - Bimantha Perera, 2 days ago
 * Fix Bugs (6306582) - Bimantha Perera, 2 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (4819d61) - bimanthaperera-lab, 2 days ago
-* Merge pull request #82 from bimanthaperera-lab/test/overview (6dc2031) - Bimantha Perera, 2 days ago
-* Update README.md (15f3fcd) - Bimantha Perera, 2 days ago
-* Add FAQ section to the Landing Page (447d3e7) - Bimantha Perera, 2 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (4819d61) - bimanthaperera-lab, 3 days ago
+* Merge pull request #82 from bimanthaperera-lab/test/overview (6dc2031) - Bimantha Perera, 3 days ago
+* Update README.md (15f3fcd) - Bimantha Perera, 3 days ago
+* Add FAQ section to the Landing Page (447d3e7) - Bimantha Perera, 3 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (7fec5af) - bimanthaperera-lab, 3 days ago
 * Merge pull request #77 from bimanthaperera-lab/test/overview (7eb0802) - Bimantha Perera, 3 days ago
 * fix hamburger scrolling and template selection (a757e67) - Bimantha Perera, 3 days ago
@@ -135,13 +138,13 @@ All notable changes to this project will be documented in this file.
 * Change CV Import pop up cloud icon (fda6fd7) - Bimantha Perera, 4 days ago
 * Fix Footer White Space Issue (a545b13) - Bimantha Perera, 4 days ago
 * chore: bump version to 0.1.3 (a3265f5) - bimanthaperera-lab, 4 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (eca81c1) - bimanthaperera-lab, 4 days ago
-* Merge pull request #56 from bimanthaperera-lab/test/overview (b48f90a) - Bimantha Perera, 4 days ago
-* Update CVPreview.tsx (7e88f32) - Bimantha Perera, 4 days ago
-* Redesign Download/Reset/CV Import Pop Ups & Reduce name text size from professional template (f15f19f) - Bimantha Perera, 4 days ago
-* Fixed the console/accessibility issues (47f1c21) - Bimantha Perera, 4 days ago
-* When i refine the data using AI space is too much in the preview while compare with text box issue fix (e1654f3) - Bimantha Perera, 4 days ago
-* Fix Text Box Bullet Point Issue (c865d13) - Bimantha Perera, 4 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (eca81c1) - bimanthaperera-lab, 5 days ago
+* Merge pull request #56 from bimanthaperera-lab/test/overview (b48f90a) - Bimantha Perera, 5 days ago
+* Update CVPreview.tsx (7e88f32) - Bimantha Perera, 5 days ago
+* Redesign Download/Reset/CV Import Pop Ups & Reduce name text size from professional template (f15f19f) - Bimantha Perera, 5 days ago
+* Fixed the console/accessibility issues (47f1c21) - Bimantha Perera, 5 days ago
+* When i refine the data using AI space is too much in the preview while compare with text box issue fix (e1654f3) - Bimantha Perera, 5 days ago
+* Fix Text Box Bullet Point Issue (c865d13) - Bimantha Perera, 5 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (e2053b5) - bimanthaperera-lab, 5 days ago
 * Fix issues (60eaf5e) - Bimantha Perera, 5 days ago
 * Update ContactUs.tsx (83fca65) - Bimantha Perera, 5 days ago
@@ -152,11 +155,11 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (fa605d6) - bimanthaperera-lab, 5 days ago
 * Merge pull request #36 from bimanthaperera-lab/test/overview (e349ec2) - Bimantha Perera, 5 days ago
 * Update Footer (ca6d77c) - Bimantha Perera, 5 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (bfba959) - bimanthaperera-lab, 5 days ago
-* Merge pull request #35 from bimanthaperera-lab/test/overview (2d28618) - Bimantha Perera, 5 days ago
-* Update README.md (e1b0841) - Bimantha Perera, 5 days ago
-* Update main.yml (2922038) - Bimantha Perera, 5 days ago
-* Dockerization the App (359fe20) - Bimantha Perera, 5 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (bfba959) - bimanthaperera-lab, 6 days ago
+* Merge pull request #35 from bimanthaperera-lab/test/overview (2d28618) - Bimantha Perera, 6 days ago
+* Update README.md (e1b0841) - Bimantha Perera, 6 days ago
+* Update main.yml (2922038) - Bimantha Perera, 6 days ago
+* Dockerization the App (359fe20) - Bimantha Perera, 6 days ago
 * chore: bump version to 0.1.2 (2d4e777) - bimanthaperera-lab, 6 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (b80c98c) - bimanthaperera-lab, 6 days ago
 * Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 6 days ago
@@ -182,9 +185,9 @@ All notable changes to this project will be documented in this file.
 * add automated labeler for PR (cd3f27f) - Bimantha Perera, 6 days ago
 * Add None option to gender and marital status to unselect status (ca2a3e4) - Bimantha Perera, 6 days ago
 * Update DesignPanel.tsx (264ac51) - Bimantha Perera, 6 days ago
-* Merge pull request #25 from bimanthaperera-lab/test/overview (61043ee) - Bimantha Perera, 6 days ago
-* Stop parsing document when user close the popup (1ce34f1) - Bimantha Perera, 6 days ago
-* Fixing PDF Import pop up not showing issue (43a3808) - Bimantha Perera, 6 days ago
+* Merge pull request #25 from bimanthaperera-lab/test/overview (61043ee) - Bimantha Perera, 7 days ago
+* Stop parsing document when user close the popup (1ce34f1) - Bimantha Perera, 7 days ago
+* Fixing PDF Import pop up not showing issue (43a3808) - Bimantha Perera, 7 days ago
 * Merge pull request #24 from bimanthaperera-lab/test/overview (924968c) - Bimantha Perera, 7 days ago
 * improve AI Pdf Parsing (5baae74) - Bimantha Perera, 7 days ago
 * improve error handling and implement toaster massage (40772d8) - Bimantha Perera, 7 days ago
@@ -209,15 +212,15 @@ All notable changes to this project will be documented in this file.
 * remove demo data and add pdf generation test case (a02aa43) - Bimantha Perera, 11 days ago
 * Merge pull request #17 from bimanthaperera-lab/test/overview (7986118) - Bimantha Perera, 11 days ago
 * Update index.css (8722575) - Bimantha Perera, 11 days ago
-* Fix bug in description box (d99e2b0) - Bimantha Perera, 11 days ago
-* Merge pull request #16 from bimanthaperera-lab/test/overview (068cb11) - Bimantha Perera, 12 days ago
+* Fix bug in description box (d99e2b0) - Bimantha Perera, 12 days ago
+* Merge pull request #16 from bimanthaperera-lab/test/overview (068cb11) - Bimantha Perera, 13 days ago
 * Fix tab layout (c8a05cd) - Bimantha Perera, 13 days ago
 * Merge pull request #15 from bimanthaperera-lab/test/overview (6e42d8e) - Bimantha Perera, 13 days ago
 * Update Template Preview (b412767) - Bimantha Perera, 13 days ago
 * Merge pull request #14 from bimanthaperera-lab/test/overview (7619e97) - Bimantha Perera, 13 days ago
 * Fix dark mode issues (4deda14) - Bimantha Perera, 13 days ago
-* Merge pull request #13 from bimanthaperera-lab/test/overview (0508852) - Bimantha Perera, 13 days ago
-* Add Dark mode (d91453b) - Bimantha Perera, 13 days ago
+* Merge pull request #13 from bimanthaperera-lab/test/overview (0508852) - Bimantha Perera, 2 weeks ago
+* Add Dark mode (d91453b) - Bimantha Perera, 2 weeks ago
 * Merge pull request #12 from bimanthaperera-lab/test/overview (a065710) - Bimantha Perera, 2 weeks ago
 * Improve UI/UX (09460ab) - Bimantha Perera, 2 weeks ago
 * add loading animation and cv upload pop up (1d8b904) - Bimantha Perera, 2 weeks ago
