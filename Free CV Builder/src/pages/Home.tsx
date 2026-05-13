@@ -401,6 +401,12 @@ export default function Home() {
   }, [mobileView, template]);
 
   const handlePrint = async () => {
+    if (currentUser && !currentUser.emailVerified) {
+      setShowDownloadConfirm(false);
+      toast.error('Verify your email to download PDFs.');
+      return;
+    }
+
     if (creationQuota?.reached) {
       setShowDownloadConfirm(false);
       toast.error('Daily CV creation limit reached.');
@@ -486,6 +492,10 @@ export default function Home() {
       setAuthModalOpen(true);
       return;
     }
+    if (!currentUser.emailVerified) {
+      toast.error('Verify your email to download PDFs.');
+      return;
+    }
     if (creationQuota?.reached) {
       toast.error('Daily CV creation limit reached.');
       return;
@@ -494,12 +504,15 @@ export default function Home() {
   }, [creationQuota, currentUser]);
 
   const downloadLimitReached = Boolean(creationQuota?.reached);
+  const downloadVerificationBlocked = Boolean(currentUser && !currentUser.emailVerified);
+  const downloadBlocked = downloadLimitReached || downloadVerificationBlocked;
+  const downloadBlockedLabel = downloadVerificationBlocked ? 'Verify email' : 'Limit reached';
 
   useEffect(() => {
-    if (downloadLimitReached) {
+    if (downloadBlocked) {
       setShowDownloadConfirm(false);
     }
-  }, [downloadLimitReached]);
+  }, [downloadBlocked]);
 
   return (
     <>
@@ -698,10 +711,10 @@ export default function Home() {
             <div className="pointer-events-none absolute bottom-8 right-8 z-40 hidden lg:flex print:hidden">
               <motion.button
                 onClick={requestDownload}
-                disabled={isGeneratingPDF || downloadLimitReached}
-                title={downloadLimitReached ? 'Limit reached' : undefined}
+                disabled={isGeneratingPDF || downloadBlocked}
+                title={downloadBlocked ? downloadBlockedLabel : undefined}
                 className="group pointer-events-auto relative flex h-14 items-center justify-center gap-2.5 overflow-hidden rounded-full bg-violet-600 px-5 pr-6 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/30 ring-1 ring-white/15 transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45"
-                aria-label={downloadLimitReached ? 'Download PDF disabled: limit reached' : 'Download PDF'}
+                aria-label={downloadBlocked ? `Download PDF disabled: ${downloadBlockedLabel}` : 'Download PDF'}
                 initial={{ opacity: 0, y: 18, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 whileHover={{ y: -3, scale: 1.02 }}
@@ -717,7 +730,7 @@ export default function Home() {
                     <Download size={18} />
                   )}
                 </span>
-                <span className="relative">{downloadLimitReached ? 'Limit reached' : isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
+                <span className="relative">{downloadBlocked ? downloadBlockedLabel : isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
               </motion.button>
             </div>
 
@@ -744,17 +757,17 @@ export default function Home() {
                   </button>
                   <button
                     onClick={requestDownload}
-                    disabled={isGeneratingPDF || downloadLimitReached}
-                    title={downloadLimitReached ? 'Limit reached' : undefined}
+                  disabled={isGeneratingPDF || downloadBlocked}
+                  title={downloadBlocked ? downloadBlockedLabel : undefined}
                     className="pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/35 ring-1 ring-white/15 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
-                    aria-label={downloadLimitReached ? 'Download PDF disabled: limit reached' : 'Download PDF'}
+                  aria-label={downloadBlocked ? `Download PDF disabled: ${downloadBlockedLabel}` : 'Download PDF'}
                   >
                     {isGeneratingPDF ? (
                       <Loader2 size={19} className="shrink-0 animate-spin" />
                     ) : (
                       <Download size={19} className="shrink-0" />
                     )}
-                    <span className="truncate">{downloadLimitReached ? 'Limit reached' : isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
+                    <span className="truncate">{downloadBlocked ? downloadBlockedLabel : isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
                   </button>
                 </div>
               </div>
@@ -793,10 +806,10 @@ export default function Home() {
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={handlePrint}
-                      disabled={downloadLimitReached}
+                      disabled={downloadBlocked}
                       className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
                     >
-                      <Download size={18} className="mr-2" /> {downloadLimitReached ? 'Limit reached' : 'Yes, Download PDF'}
+                      <Download size={18} className="mr-2" /> {downloadBlocked ? downloadBlockedLabel : 'Yes, Download PDF'}
                     </button>
                     <button
                       onClick={() => setShowDownloadConfirm(false)}
@@ -943,4 +956,3 @@ export default function Home() {
     </>
   );
 }
-

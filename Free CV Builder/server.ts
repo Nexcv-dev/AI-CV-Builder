@@ -1889,6 +1889,10 @@ function sanitizeCvData(obj: any, depth = 0): any {
 app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, res: Response) => {
     let browser: any = null;
     try {
+        if (!requireVerifiedEmail(req, res)) {
+            return;
+        }
+
         const { cvData, template } = req.body;
 
         if (!cvData || typeof cvData !== 'object') {
