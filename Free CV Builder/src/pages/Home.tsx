@@ -19,6 +19,13 @@ import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, Rotate
 const THEME_STORAGE_KEY = 'cv-builder-theme';
 const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
 
+interface CvCreationQuota {
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  reached: boolean;
+}
+
 const initialData: CVData = {
   personalInfo: {
     fullName: '',
@@ -68,6 +75,7 @@ export default function Home() {
   const [cloudSaveStatus, setCloudSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [creationQuota, setCreationQuota] = useState<CvCreationQuota | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(() => searchParams.get('document'));
   const [documentTitle, setDocumentTitle] = useState('Untitled CV');
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
@@ -117,6 +125,26 @@ export default function Home() {
     window.addEventListener('auth-user-changed', handleAuthUserChanged);
     return () => window.removeEventListener('auth-user-changed', handleAuthUserChanged);
   }, []);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setCreationQuota(null);
+      return;
+    }
+
+    let ignore = false;
+    apiFetch<{ documents: unknown[]; quota: CvCreationQuota }>('/api/documents')
+      .then((data) => {
+        if (!ignore) setCreationQuota(data.quota);
+      })
+      .catch((error) => {
+        console.warn('Failed to load CV quota:', error);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [currentUser]);
 
   // On mount: pick up ?template= from landing page and pre-select it
   useEffect(() => {
@@ -263,7 +291,7 @@ export default function Home() {
     setCloudSaveStatus('saving');
     try {
       const title = cvData.personalInfo.fullName?.trim() ? `${cvData.personalInfo.fullName.trim()} CV` : documentTitle;
-      const data = await apiFetch<{ document: { id: string; title: string } }>(
+      const data = await apiFetch<{ document: { id: string; title: string }; quota?: CvCreationQuota }>(
         documentId ? `/api/documents/${documentId}` : '/api/documents',
         {
           method: documentId ? 'PUT' : 'POST',
@@ -273,6 +301,7 @@ export default function Home() {
 
       setDocumentId(data.document.id);
       setDocumentTitle(data.document.title);
+      if (data.quota) setCreationQuota(data.quota);
       setCloudSaveStatus('saved');
       setDashboardNotification(true);
       toast.success('CV saved successfully.');
@@ -372,6 +401,12 @@ export default function Home() {
   }, [mobileView, template]);
 
   const handlePrint = async () => {
+    if (creationQuota?.reached) {
+      setShowDownloadConfirm(false);
+      toast.error('Daily CV creation limit reached.');
+      return;
+    }
+
     setShowDownloadConfirm(false);
     setIsGeneratingPDF(true);
 
@@ -451,8 +486,20 @@ export default function Home() {
       setAuthModalOpen(true);
       return;
     }
+    if (creationQuota?.reached) {
+      toast.error('Daily CV creation limit reached.');
+      return;
+    }
     setShowDownloadConfirm(true);
-  }, [currentUser]);
+  }, [creationQuota, currentUser]);
+
+  const downloadLimitReached = Boolean(creationQuota?.reached);
+
+  useEffect(() => {
+    if (downloadLimitReached) {
+      setShowDownloadConfirm(false);
+    }
+  }, [downloadLimitReached]);
 
   return (
     <>
@@ -651,9 +698,10 @@ export default function Home() {
             <div className="pointer-events-none absolute bottom-8 right-8 z-40 hidden lg:flex print:hidden">
               <motion.button
                 onClick={requestDownload}
-                disabled={isGeneratingPDF}
-                className="group pointer-events-auto relative flex h-14 items-center justify-center gap-2.5 overflow-hidden rounded-full bg-violet-600 px-5 pr-6 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/30 ring-1 ring-white/15 transition-colors hover:bg-violet-500 disabled:opacity-70"
-                aria-label="Download PDF"
+                disabled={isGeneratingPDF || downloadLimitReached}
+                title={downloadLimitReached ? 'Limit reached' : undefined}
+                className="group pointer-events-auto relative flex h-14 items-center justify-center gap-2.5 overflow-hidden rounded-full bg-violet-600 px-5 pr-6 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/30 ring-1 ring-white/15 transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45"
+                aria-label={downloadLimitReached ? 'Download PDF disabled: limit reached' : 'Download PDF'}
                 initial={{ opacity: 0, y: 18, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 whileHover={{ y: -3, scale: 1.02 }}
@@ -669,7 +717,7 @@ export default function Home() {
                     <Download size={18} />
                   )}
                 </span>
-                <span className="relative">{isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
+                <span className="relative">{downloadLimitReached ? 'Limit reached' : isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
               </motion.button>
             </div>
 
@@ -697,16 +745,17 @@ export default function Home() {
                   </button>
                 <button
                   onClick={requestDownload}
-                  disabled={isGeneratingPDF}
-                    className="pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/35 ring-1 ring-white/15 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
-                  aria-label="Download PDF"
+                  disabled={isGeneratingPDF || downloadLimitReached}
+                  title={downloadLimitReached ? 'Limit reached' : undefined}
+                    className="pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 text-sm font-extrabold text-white shadow-2xl shadow-violet-600/35 ring-1 ring-white/15 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
+                  aria-label={downloadLimitReached ? 'Download PDF disabled: limit reached' : 'Download PDF'}
                 >
                   {isGeneratingPDF ? (
                     <Loader2 size={19} className="shrink-0 animate-spin" />
                   ) : (
                     <Download size={19} className="shrink-0" />
                   )}
-                    <span className="truncate">{isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
+                    <span className="truncate">{downloadLimitReached ? 'Limit reached' : isGeneratingPDF ? 'Preparing...' : 'Download PDF'}</span>
                 </button>
                 </div>
               </div>
@@ -745,9 +794,10 @@ export default function Home() {
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={handlePrint}
-                    className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98]"
+                    disabled={downloadLimitReached}
+                    className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
                   >
-                    <Download size={18} className="mr-2" /> Yes, Download PDF
+                    <Download size={18} className="mr-2" /> {downloadLimitReached ? 'Limit reached' : 'Yes, Download PDF'}
                   </button>
                   <button
                     onClick={() => setShowDownloadConfirm(false)}

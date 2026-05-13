@@ -920,7 +920,8 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
             cvData,
         });
 
-        res.status(201).json({ document: documentDetails(document) });
+        const updatedQuota = await getCvCreationQuota(req.user);
+        res.status(201).json({ document: documentDetails(document), quota: updatedQuota });
     } catch (error) {
         return sendError(res, 500, 'Could not save your document.', error);
     }
@@ -1878,6 +1879,14 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
 
         if (!cvData || typeof cvData !== 'object') {
             return res.status(400).json({ error: 'Missing or invalid CV data' });
+        }
+
+        const quota = await getCvCreationQuota(req.user);
+        if (quota.reached) {
+            return res.status(403).json({
+                error: 'Daily CV creation limit reached.',
+                quota,
+            });
         }
 
         // Validate template against allow-list
