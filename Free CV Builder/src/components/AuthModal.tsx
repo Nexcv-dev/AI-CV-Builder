@@ -226,7 +226,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
-                  placeholder={mode === 'signup' ? passwordPolicyHint : 'Your password'}
+                  placeholder={mode === 'signup' ? 'Enter new password' : 'Your password'}
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   minLength={mode === 'signup' ? 8 : undefined}
                   required
@@ -241,12 +241,6 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                 </button>
               </span>
             </label>
-
-            {mode === 'signup' && (
-              <p className="text-xs font-semibold leading-5 text-slate-500">
-                Use {passwordPolicyHint}.
-              </p>
-            )}
 
             {error && (
               <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-200">

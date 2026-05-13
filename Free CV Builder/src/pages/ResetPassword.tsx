@@ -2,6 +2,7 @@ import React, { FormEvent, useState } from 'react';
 import { ArrowRight, Lock, Eye, EyeOff } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { PasswordResetFooter } from '../components/PasswordResetFooter';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -11,6 +12,7 @@ export default function ResetPassword() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -55,17 +57,18 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center py-12 px-4">
+      <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white mb-2">Invalid Link</h2>
           <p className="text-slate-400">The password reset link is invalid or missing the token.</p>
         </div>
+        <PasswordResetFooter />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/40 overflow-hidden">
         <div className="h-1 w-full bg-linear-to-r from-violet-600 to-emerald-500" />
         
@@ -87,7 +90,7 @@ export default function ResetPassword() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
-                  placeholder="8+ chars with uppercase, lowercase, number, symbol"
+                  placeholder="Enter new password"
                   minLength={8}
                   required
                 />
@@ -107,14 +110,22 @@ export default function ResetPassword() {
               <span className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950 px-3 py-3 focus-within:border-violet-400 transition-colors">
                 <Lock size={18} className="text-slate-500" />
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
-                  placeholder="Repeat your new password"
+                  placeholder="Confirm new password"
                   minLength={8}
                   required
                 />
+                <button
+                  type="button"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/8 hover:text-slate-200"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                >
+                  {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
               </span>
             </label>
 
@@ -129,6 +140,7 @@ export default function ResetPassword() {
           </form>
         </div>
       </div>
+      <PasswordResetFooter />
     </div>
   );
 }
