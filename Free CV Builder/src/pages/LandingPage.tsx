@@ -123,10 +123,12 @@ export default function LandingPage() {
     mode: 'signup',
   });
   const openAuthModal = (mode: 'login' | 'signup') => {
-    setMobileMenuOpen(false);
     setAuthModal({ isOpen: true, mode });
   };
-  const closeAuthModal = () => setAuthModal((current) => ({ ...current, isOpen: false }));
+  const closeAuthModal = () => {
+    setAuthModal((current) => ({ ...current, isOpen: false }));
+    setMobileMenuOpen(false);
+  };
 
   useEffect(() => {
     const revealItems = document.querySelectorAll<HTMLElement>('.landing-scroll-reveal');

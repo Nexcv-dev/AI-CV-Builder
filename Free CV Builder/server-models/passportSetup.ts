@@ -44,6 +44,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             if (latestProfileImage && user.profileImage !== latestProfileImage) {
               user.profileImage = latestProfileImage;
             }
+            if (!user.emailVerified) {
+              user.emailVerified = true;
+              user.emailVerificationToken = undefined;
+              user.emailVerificationExpires = undefined;
+            }
             await syncUserRoleFromAllowlist(user);
             return done(null, user);
           }
@@ -52,6 +57,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           if (user) {
             user.googleId = profile.id;
             user.authProvider = 'google';
+            user.emailVerified = true;
+            user.emailVerificationToken = undefined;
+            user.emailVerificationExpires = undefined;
             user.profileImage = latestProfileImage || user.profileImage;
             await syncUserRoleFromAllowlist(user);
             return done(null, user);
@@ -64,6 +72,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             email,
             profileImage: latestProfileImage,
             role: roleForEmail(email),
+            emailVerified: true,
             authProvider: 'google',
           });
 

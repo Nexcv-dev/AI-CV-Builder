@@ -59,6 +59,7 @@ export default function Home() {
   const showImportPromptOnLoad = useRef(searchParams.get('import') === '1');
   const showDownloadAfterAuthOnLoad = useRef(searchParams.get('download') === '1');
   const showTemplatesOnLoad = useRef(searchParams.get('templates') === '1');
+  const shouldScrollTopOnLoad = useRef(searchParams.has('template'));
   const [cvData, setCvData] = useState<CVData>(initialData);
   const [debouncedCvData, setDebouncedCvData] = useState<CVData>(initialData);
   const [template, setTemplate] = useState<TemplateName>(DEFAULT_TEMPLATE);
@@ -66,6 +67,7 @@ export default function Home() {
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const [cloudSaveStatus, setCloudSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
   const [documentId, setDocumentId] = useState<string | null>(() => searchParams.get('document'));
   const [documentTitle, setDocumentTitle] = useState('Untitled CV');
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
@@ -253,6 +255,11 @@ export default function Home() {
   }, [isDarkMode]);
 
   const handleCloudSave = useCallback(async () => {
+    if (currentUser && !currentUser.emailVerified) {
+      toast.error('Verify your email to save CVs.');
+      return;
+    }
+
     setCloudSaveStatus('saving');
     try {
       const title = cvData.personalInfo.fullName?.trim() ? `${cvData.personalInfo.fullName.trim()} CV` : documentTitle;
@@ -276,10 +283,50 @@ export default function Home() {
       toast.error(error instanceof Error ? error.message : 'Could not save your CV. Please try again.');
       setTimeout(() => setCloudSaveStatus('idle'), 4000);
     }
-  }, [cvData, documentId, documentTitle, template]);
+  }, [currentUser, cvData, documentId, documentTitle, template]);
+
+  const handleResendVerification = useCallback(async () => {
+    if (!currentUser || isResendingVerification) return;
+
+    setIsResendingVerification(true);
+    try {
+      const data = await apiFetch<{ user: AuthUser; message: string }>('/api/auth/resend-verification', {
+        method: 'POST',
+      });
+      setCurrentUser(data.user);
+      toast.success(data.message || 'Verification email sent.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send verification email.');
+    } finally {
+      setIsResendingVerification(false);
+    }
+  }, [currentUser, isResendingVerification]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const formScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!shouldScrollTopOnLoad.current) return;
+    shouldScrollTopOnLoad.current = false;
+
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      formScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      previewContainerRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    };
+
+    scrollToTop();
+    const frame = window.requestAnimationFrame(scrollToTop);
+    const timer = window.setTimeout(scrollToTop, 120);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   // Use ResizeObserver to track preview container width changes reliably
   // This fires AFTER CSS layout is complete, so clientWidth is always accurate
@@ -527,13 +574,34 @@ export default function Home() {
           </header>
         )}
 
+        {!isPopupVisible && currentUser && !currentUser.emailVerified && (
+          <div className={`shrink-0 border-b px-4 py-3 print:hidden ${isDarkMode ? 'border-amber-300/20 bg-amber-950/35' : 'border-amber-200 bg-amber-50'}`}>
+            <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-2">
+                <AlertCircle size={18} className={`mt-0.5 shrink-0 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
+                <p className={`text-sm font-bold leading-5 ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
+                  Verify your email to save CVs. Check your inbox for the verification link.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResendingVerification}
+                className={`inline-flex h-9 shrink-0 items-center justify-center rounded-full px-4 text-xs font-extrabold transition active:scale-95 disabled:opacity-70 ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
+              >
+                {isResendingVerification ? 'Sending...' : 'Resend email'}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-hidden relative flex flex-col lg:flex-row print:overflow-visible print:block">
           {/* Left Side: Form */}
           <div
             className={`${mobileView === 'edit' ? 'flex max-lg:w-full! max-lg:min-w-0!' : 'hidden'} lg:flex h-full min-h-0 border-r p-0 print:hidden flex-col relative shrink-0 z-10 shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)] transition-colors duration-500 cv-form-panel ${isDarkMode ? 'border-slate-700 bg-slate-900' : 'border-gray-200/80 bg-white'}`}
             style={{ width: `${formWidth}%`, minWidth: 'min(420px, 100%)' }}
           >
-            <div className="h-full min-h-0 w-full overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div ref={formScrollRef} className="h-full min-h-0 w-full overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <CVForm
                 cvData={cvData}
                 setCvData={setCvData}

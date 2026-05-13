@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import { Toaster } from 'react-hot-toast';
 import { Footer } from './components/Footer';
 import { getCurrentUser } from './utils/api';
@@ -94,6 +95,7 @@ function Layout() {
     '/settings',
     '/forgot-password',
     '/reset-password',
+    '/verify-email',
   ].includes(location.pathname);
 
   useLayoutEffect(() => {
@@ -224,6 +226,7 @@ function App() {
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

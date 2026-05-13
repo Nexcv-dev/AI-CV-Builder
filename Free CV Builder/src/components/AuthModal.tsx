@@ -151,10 +151,10 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   };
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto px-4 py-4 sm:py-6" role="dialog" aria-modal="true">
+    <div className="auth-modal-shell fixed inset-0 z-100 flex items-center justify-center overflow-y-auto px-4 py-4 sm:py-6" role="dialog" aria-modal="true">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/78 backdrop-blur-md"
+        className="auth-modal-backdrop absolute inset-0 bg-slate-950/78 backdrop-blur-md"
         aria-label="Close auth dialog"
         onClick={onClose}
       />
