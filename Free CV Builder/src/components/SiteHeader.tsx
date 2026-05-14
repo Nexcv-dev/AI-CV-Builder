@@ -73,7 +73,7 @@ export function SiteHeader() {
           </nav>
 
           <Link
-            to="/builder"
+            to="/builder?import=1"
             className="hidden items-center justify-center rounded-xl bg-violet-600 px-3.5 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/25 transition-all hover:bg-violet-500 active:scale-[0.98] sm:px-4 md:inline-flex"
           >
             Start
@@ -164,7 +164,7 @@ export function SiteHeader() {
             </div>
 
             <Link
-              to="/builder"
+              to="/builder?import=1"
               className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-500 active:scale-[0.98]"
               style={{
                 transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',

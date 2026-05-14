@@ -10,8 +10,8 @@ import ContactUs from './pages/ContactUs';
 import TemplatesPage from './pages/TemplatesPage';
 import PrintView from './pages/PrintView';
 import Dashboard from './pages/Dashboard';
+import MyCvs from './pages/MyCvs';
 import Profile from './pages/Profile';
-import Settings from './pages/Settings';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
@@ -25,6 +25,11 @@ function PageLoadingOverlay() {
   const previousPathname = useRef(location.pathname);
   const [isLoading, setIsLoading] = useState(false);
   const isBuilderRedirect = location.pathname === '/builder';
+  const skipsPageLoadingOverlay = [
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+  ].includes(location.pathname);
   const isHashOnlyLandingNavigation =
     location.pathname === '/' &&
     Boolean(location.hash) &&
@@ -32,7 +37,8 @@ function PageLoadingOverlay() {
   const shouldShowImmediately =
     !isFirstRender.current &&
     previousPathname.current !== location.pathname &&
-    !isHashOnlyLandingNavigation;
+    !isHashOnlyLandingNavigation &&
+    !skipsPageLoadingOverlay;
 
   useLayoutEffect(() => {
     if ('scrollRestoration' in window.history) {
@@ -46,7 +52,7 @@ function PageLoadingOverlay() {
     }
 
     const previous = previousPathname.current;
-    if (previous === location.pathname || (location.pathname === '/' && location.hash && previous !== '/builder')) {
+    if (previous === location.pathname || skipsPageLoadingOverlay || (location.pathname === '/' && location.hash && previous !== '/builder')) {
       previousPathname.current = location.pathname;
       return;
     }
@@ -56,7 +62,7 @@ function PageLoadingOverlay() {
     const timer = window.setTimeout(() => setIsLoading(false), 650);
 
     return () => window.clearTimeout(timer);
-  }, [location.pathname]);
+  }, [location.pathname, skipsPageLoadingOverlay]);
 
   return (
     <AnimatePresence>
@@ -91,8 +97,8 @@ function Layout() {
   const isBuilder = location.pathname === '/builder';
   const hidesFooter = isBuilder || [
     '/dashboard',
+    '/my-cvs',
     '/profile',
-    '/settings',
     '/forgot-password',
     '/reset-password',
     '/verify-email',
@@ -216,8 +222,9 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/my-cvs" element={<ProtectedRoute><MyCvs /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/builder" element={<Home />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

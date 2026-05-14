@@ -109,7 +109,17 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   }, [showImportPromptOnMount]);
 
   useEffect(() => {
-    onPopupVisibleChange?.(showInitialPrompt || showUploadModal);
+    const isPopupOpen = showInitialPrompt || showUploadModal;
+    if (isPopupOpen) {
+      onPopupVisibleChange?.(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      onPopupVisibleChange?.(false);
+    }, 240);
+
+    return () => window.clearTimeout(timer);
   }, [showInitialPrompt, showUploadModal, onPopupVisibleChange]);
 
   const sensors = useSensors(

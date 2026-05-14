@@ -422,20 +422,19 @@ export default function LandingPage() {
 
               <div className="landing-reveal mt-7 grid gap-3 sm:mt-8 sm:flex sm:flex-row">
                 <Link
-                  to="/builder?templates=1"
+                  to="/builder?import=1"
                   className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-violet-600/30 transition-all hover:bg-violet-500 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
                   Get Started
                   <ArrowRight size={20} className="ml-2" />
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => openAuthModal('login')}
+                <Link
+                  to="/builder?import=1"
                   className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/6 px-5 py-3.5 text-sm font-extrabold text-white backdrop-blur transition-all hover:bg-white/10 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
                   <Upload size={19} className="mr-2" />
                   Import CV
-                </button>
+                </Link>
               </div>
 
               <div className="landing-reveal mt-7 grid max-w-2xl gap-2.5 sm:mt-9 sm:grid-cols-3 sm:gap-3">
@@ -531,7 +530,7 @@ export default function LandingPage() {
             <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
               {featuredTemplates.map((template, index) => (
                 <Link
-                  to={`/builder?template=${template.key}`}
+                  to={`/builder?import=1&template=${template.key}`}
                   key={template.key}
                   className="landing-scroll-reveal landing-template-card group overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/20"
                   style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}

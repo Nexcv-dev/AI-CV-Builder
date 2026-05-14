@@ -89,7 +89,7 @@ export default function ResetPassword() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
+                  className="w-full bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
                   placeholder="Enter new password"
                   minLength={8}
                   required
@@ -113,7 +113,7 @@ export default function ResetPassword() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
+                  className="w-full bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
                   placeholder="Confirm new password"
                   minLength={8}
                   required

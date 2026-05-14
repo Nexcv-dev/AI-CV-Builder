@@ -591,9 +591,11 @@ export default function Home() {
       </AnimatePresence>
 
       <div className={`flex flex-col min-h-0 h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
-        {/* Top Navigation Bar - hidden when popup is visible */}
-        {!isPopupVisible && (
-          <header className={`border-b flex flex-col lg:flex-row items-center justify-between px-4 py-3 lg:px-8 lg:py-4 shrink-0 z-50 print:hidden gap-3 lg:gap-0 sticky top-0 shadow-sm transition-colors duration-500 ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}>
+        {/* Top Navigation Bar */}
+        <header
+          aria-hidden={isPopupVisible}
+          className={`border-b flex flex-col lg:flex-row items-center justify-between px-4 py-3 lg:px-8 lg:py-4 shrink-0 z-50 print:hidden gap-3 lg:gap-0 sticky top-0 shadow-sm transition-[opacity,background-color,border-color] duration-300 ${isPopupVisible ? 'pointer-events-none opacity-0' : 'opacity-100'} ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}
+        >
             <div className="flex items-center justify-between w-full lg:w-auto">
               <h1 className="text-lg lg:text-2xl font-extrabold flex items-center">
                 <div className={`p-1.5 rounded-xl mr-2.5 lg:mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-slate-800 shadow-black/20 ring-1 ring-slate-700' : 'bg-white shadow-violet-600/10 ring-1 ring-violet-100'}`}>
@@ -685,39 +687,49 @@ export default function Home() {
                 {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
               </button>
             </div>
-          </header>
-        )}
+        </header>
 
-        {!isPopupVisible && currentUser && !currentUser.emailVerified && !verificationBannerDismissed && (
-          <div className="shrink-0 px-3 py-2 print:hidden sm:px-4">
-            <div className={`relative mx-auto grid max-w-xl gap-2 rounded-2xl border py-2.5 pl-3 pr-12 shadow-lg sm:flex sm:max-w-2xl sm:items-center sm:justify-between sm:gap-3 sm:px-4 ${isDarkMode ? 'border-amber-300/20 bg-amber-950/80 shadow-black/20' : 'border-amber-200 bg-amber-50 shadow-amber-900/5'}`}>
-              <div className="flex min-w-0 items-start gap-2 sm:items-center">
-                <AlertCircle size={17} className={`mt-0.5 shrink-0 sm:mt-0 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
-                <p className={`text-xs font-extrabold leading-5 sm:text-sm ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
-                  Verify your email to save and download.
-                </p>
+        <AnimatePresence initial={false}>
+          {!isPopupVisible && currentUser && !currentUser.emailVerified && !verificationBannerDismissed && (
+            <motion.div
+              key="verify-email-banner"
+              className="shrink-0 overflow-hidden print:hidden"
+              initial={{ height: 0, opacity: 0, y: -8 }}
+              animate={{ height: 'auto', opacity: 1, y: 0 }}
+              exit={{ height: 0, opacity: 0, y: -8 }}
+              transition={{ duration: 0.24, ease: 'easeOut' }}
+            >
+              <div className="px-3 py-2 sm:px-4">
+                <div className={`relative mx-auto grid max-w-xl gap-2 rounded-2xl border py-2.5 pl-3 pr-12 shadow-lg sm:flex sm:max-w-2xl sm:items-center sm:justify-between sm:gap-3 sm:px-4 ${isDarkMode ? 'border-amber-300/20 bg-amber-950/80 shadow-black/20' : 'border-amber-200 bg-amber-50 shadow-amber-900/5'}`}>
+                  <div className="flex min-w-0 items-start gap-2 sm:items-center">
+                    <AlertCircle size={17} className={`mt-0.5 shrink-0 sm:mt-0 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
+                    <p className={`text-xs font-extrabold leading-5 sm:text-sm ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
+                      Verify your email to save and download.
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={isResendingVerification}
+                      className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3 text-[11px] font-extrabold transition active:scale-95 disabled:opacity-70 sm:h-9 sm:px-4 sm:text-xs ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
+                    >
+                      {isResendingVerification ? 'Sending...' : 'Resend email'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={dismissVerificationBanner}
+                      className={`absolute right-2 top-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition active:scale-95 sm:static sm:h-9 sm:w-9 ${isDarkMode ? 'border-amber-200/20 text-amber-100 hover:bg-amber-200/10' : 'border-amber-700/20 text-amber-900 hover:bg-amber-100'}`}
+                      aria-label="Dismiss verification banner"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleResendVerification}
-                  disabled={isResendingVerification}
-                  className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3 text-[11px] font-extrabold transition active:scale-95 disabled:opacity-70 sm:h-9 sm:px-4 sm:text-xs ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
-                >
-                  {isResendingVerification ? 'Sending...' : 'Resend email'}
-                </button>
-                <button
-                  type="button"
-                  onClick={dismissVerificationBanner}
-                  className={`absolute right-2 top-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition active:scale-95 sm:static sm:h-9 sm:w-9 ${isDarkMode ? 'border-amber-200/20 text-amber-100 hover:bg-amber-200/10' : 'border-amber-700/20 text-amber-900 hover:bg-amber-100'}`}
-                  aria-label="Dismiss verification banner"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="flex-1 overflow-hidden relative flex flex-col lg:flex-row print:overflow-visible print:block">
           {/* Left Side: Form */}
@@ -740,15 +752,14 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Resizer - hidden when popup is visible */}
-          {!isPopupVisible && (
-            <div
-              className={`hidden lg:block w-1.5 hover:w-2 bg-transparent cursor-col-resize transition-all z-20 shrink-0 relative group ${isDarkMode ? 'hover:bg-violet-400/30' : 'hover:bg-violet-400/50'}`}
-              onMouseDown={startDragging}
-            >
-              <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 h-full group-hover:bg-violet-400/0 transition-colors ${isDarkMode ? 'bg-slate-700/70' : 'bg-gray-200/50'}`}></div>
-            </div>
-          )}
+          {/* Resizer */}
+          <div
+            className={`hidden lg:block w-1.5 hover:w-2 bg-transparent cursor-col-resize transition-[opacity,width,background-color] z-20 shrink-0 relative group ${isPopupVisible ? 'pointer-events-none opacity-0' : 'opacity-100'} ${isDarkMode ? 'hover:bg-violet-400/30' : 'hover:bg-violet-400/50'}`}
+            onMouseDown={startDragging}
+            aria-hidden={isPopupVisible}
+          >
+            <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 h-full group-hover:bg-violet-400/0 transition-colors ${isDarkMode ? 'bg-slate-700/70' : 'bg-gray-200/50'}`}></div>
+          </div>
 
           {/* Right Side: Preview */}
           <div

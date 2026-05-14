@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Settings, User } from 'lucide-react';
+import { FileText, LayoutDashboard, LogOut, User } from 'lucide-react';
 import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification } from '../utils/api';
 
 interface AccountMenuProps {
@@ -13,8 +13,8 @@ interface AccountMenuProps {
 
 const menuItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/my-cvs', label: 'My CVs', icon: FileText },
   { to: '/profile', label: 'Profile', icon: User },
-  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profileImage, showName = false }: AccountMenuProps) {

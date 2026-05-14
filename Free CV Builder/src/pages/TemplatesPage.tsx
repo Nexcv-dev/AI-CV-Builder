@@ -32,7 +32,7 @@ export default function TemplatesPage() {
               {CV_TEMPLATES.map((template, index) => (
                 <Link
                   key={template.key}
-                  to={`/builder?template=${template.key}`}
+                  to={`/builder?import=1&template=${template.key}`}
                   className="group overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-xl shadow-black/10 transition-all hover:-translate-y-1 hover:border-violet-300/30 hover:bg-white/9 hover:shadow-2xl hover:shadow-black/20 active:scale-[0.99]"
                   style={{ animationDelay: `${index * 80}ms` }}
                 >
