@@ -530,7 +530,7 @@ export default function LandingPage() {
             <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
               {featuredTemplates.map((template, index) => (
                 <Link
-                  to={`/builder?template=${template.key}`}
+                  to={`/builder?import=1&template=${template.key}`}
                   key={template.key}
                   className="landing-scroll-reveal landing-template-card group overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/20"
                   style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}
