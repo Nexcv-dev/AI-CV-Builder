@@ -15,6 +15,7 @@ import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
+import TipsAndResources from './pages/TipsAndResources';
 import { Toaster } from 'react-hot-toast';
 import { Footer } from './components/Footer';
 import { getCurrentUser } from './utils/api';
@@ -227,6 +228,7 @@ function App() {
           <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/builder" element={<Home />} />
+          <Route path="/tips" element={<TipsAndResources />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/about" element={<AboutUs />} />
