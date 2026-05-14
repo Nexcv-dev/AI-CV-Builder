@@ -91,6 +91,8 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     const previousBodyPosition = document.body.style.position;
     const previousBodyTop = document.body.style.top;
     const previousBodyWidth = document.body.style.width;
+    const previousBodyPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -102,6 +104,9 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
 
     return () => {
       document.removeEventListener('keydown', onKeyDown);
@@ -110,6 +115,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
       document.body.style.position = previousBodyPosition;
       document.body.style.top = previousBodyTop;
       document.body.style.width = previousBodyWidth;
+      document.body.style.paddingRight = previousBodyPaddingRight;
       window.scrollTo(0, scrollY);
     };
   }, [isOpen, onClose]);
@@ -203,7 +209,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   <input
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
-                    className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-300 sm:text-sm"
+                    className="w-full bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
                     placeholder="Your name"
                     autoComplete="name"
                   />
@@ -219,7 +225,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-300 sm:text-sm"
+                  className="w-full bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
@@ -251,7 +257,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-300 sm:text-sm"
+                  className="w-full bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
                   placeholder={mode === 'signup' ? 'Enter new password' : 'Your password'}
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   minLength={mode === 'signup' ? 8 : undefined}

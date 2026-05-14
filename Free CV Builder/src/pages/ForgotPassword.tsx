@@ -59,7 +59,7 @@ export default function ForgotPassword() {
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-300 sm:text-sm"
+                  className="w-full bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
                   placeholder="you@example.com"
                   autoComplete="email"
                   required

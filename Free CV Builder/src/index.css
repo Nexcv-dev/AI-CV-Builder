@@ -397,6 +397,30 @@
   scrollbar-width: none !important;
 }
 
+.dark-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #0b1220;
+}
+
+.dark-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-track {
+  background: #0b1220;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569;
+  border: 2px solid #0b1220;
+  border-radius: 999px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 @layer base {
   html,
   body,
@@ -1604,6 +1628,16 @@ textarea:autofill {
 .password-reset-page input {
   caret-color: #f8fafc !important;
   color-scheme: dark;
+}
+
+.auth-modal input::placeholder,
+.auth-modal input::-webkit-input-placeholder,
+.password-reset-page input::placeholder,
+.password-reset-page input::-webkit-input-placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
 }
 
 .auth-modal input::first-line,

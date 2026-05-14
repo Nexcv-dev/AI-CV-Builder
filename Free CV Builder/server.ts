@@ -126,7 +126,7 @@ app.use(cors({
 // Rate limiting: protect AI API endpoints from abuse
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50, // limit each IP to 50 general API requests per window
+    max: 150, // limit each IP to 150 general API requests per window
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many requests. Please try again later.' },
