@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import fs from 'fs';
@@ -157,10 +157,23 @@ const passwordResetLimiter = rateLimit({
     message: { error: 'Too many password reset attempts. Please wait an hour before trying again.' },
 });
 
+const emailVerificationLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // limit verification emails to 3 per hour
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        const user = req.user as any;
+        return user?._id?.toString?.() || user?.id?.toString?.() || ipKeyGenerator(req.ip);
+    },
+    message: { error: 'Too many verification email requests. Please wait an hour before trying again.' },
+});
+
 app.use('/api/', apiLimiter);
 app.use('/api/generate-pdf', pdfLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/signup', authLimiter);
+app.use('/api/auth/signup', emailVerificationLimiter);
 
 const defaultJsonParser = express.json({ limit: '1mb' });
 const cvImportJsonParser = express.json({ limit: '16mb' });
@@ -575,6 +588,24 @@ const sendEmailVerification = async (user: any, token: string) => {
     });
 };
 
+const sendEmailVerificationWithRetry = async (user: any, token: string) => {
+    try {
+        await sendEmailVerification(user, token);
+        return true;
+    } catch (firstError) {
+        console.error('Could not send verification email on first attempt:', firstError);
+
+        try {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            await sendEmailVerification(user, token);
+            return true;
+        } catch (retryError) {
+            console.error('Could not send verification email on retry:', retryError);
+            return false;
+        }
+    }
+};
+
 const publicUser = (user: any) => ({
     id: user._id?.toString?.() || user.id,
     email: user.email,
@@ -704,13 +735,7 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             authProvider: 'email',
         });
 
-        let verificationEmailSent = true;
-        try {
-            await sendEmailVerification(user, verification.token);
-        } catch (emailError) {
-            verificationEmailSent = false;
-            console.error('Could not send verification email:', emailError);
-        }
+        const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.token);
 
         req.login(user, (err) => {
             if (err) return next(err);
@@ -977,7 +1002,7 @@ app.post('/api/auth/verify-email', authLimiter, async (req: Request, res: Respon
     }
 });
 
-app.post('/api/auth/resend-verification', authLimiter, requireAuth, async (req: Request, res: Response) => {
+app.post('/api/auth/resend-verification', requireAuth, emailVerificationLimiter, async (req: Request, res: Response) => {
     try {
         const user = await User.findById(currentUserId(req));
         if (!user) {
@@ -993,7 +1018,11 @@ app.post('/api/auth/resend-verification', authLimiter, requireAuth, async (req: 
         user.emailVerificationExpires = verification.expires;
         await user.save();
 
-        await sendEmailVerification(user, verification.token);
+        const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.token);
+        if (!verificationEmailSent) {
+            return res.status(502).json({ error: 'Could not send verification email. Please try again.' });
+        }
+
         return res.json({ user: publicUser(user), message: 'Verification email sent. Please check your inbox.' });
     } catch (error) {
         return sendError(res, 500, 'Could not send verification email.', error);

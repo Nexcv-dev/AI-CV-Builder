@@ -15,8 +15,8 @@ interface ImportModalsProps {
   onImportSkipped?: () => void;
 }
 
-const overlayTransition = { duration: 0.14, ease: 'easeOut' as const };
-const modalTransition = { duration: 0.14, ease: 'easeOut' as const };
+const overlayTransition = { duration: 0.22, ease: 'easeOut' as const };
+const modalTransition = { duration: 0.22, ease: 'easeOut' as const };
 const modalSurface = 'relative w-full overflow-hidden rounded-2xl border shadow-2xl';
 const iconShell = 'mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm';
 
@@ -49,9 +49,9 @@ export const ImportModals = React.memo(({
               <motion.div
                 key="cv-import-prompt"
                 className={`${MODAL_CONTAINER_BASE} ${modalSurface} max-w-sm p-7 ${isDarkMode ? 'bg-slate-900 border-slate-700/80 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.98 }}
                 transition={modalTransition}
               >
                 <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
@@ -87,9 +87,9 @@ export const ImportModals = React.memo(({
               <motion.div
                 key="cv-upload-modal"
                 className={`${MODAL_CONTAINER_BASE} ${modalSurface} max-w-lg p-6 sm:p-7 ${isDarkMode ? 'bg-slate-900 border-slate-700/80 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.98 }}
                 transition={modalTransition}
               >
                 <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />

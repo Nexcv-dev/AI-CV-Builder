@@ -1,6 +1,7 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, Lock, Mail, User, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { AuthUser } from '../utils/api';
 
 type AuthMode = 'login' | 'signup';
@@ -138,6 +139,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
         password,
       });
       if (data.user) onAuthenticated?.(data.user);
+      if (mode === 'signup' && data.message) toast.success(data.message);
       setIsRedirecting(true);
       navigate(redirectTo);
       if (redirectTo === '/builder') {
@@ -201,7 +203,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   <input
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
-                    className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
+                    className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-300 sm:text-sm"
                     placeholder="Your name"
                     autoComplete="name"
                   />
@@ -217,7 +219,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
+                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-300 sm:text-sm"
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
@@ -249,7 +251,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600 sm:text-sm"
+                  className="w-full bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-300 sm:text-sm"
                   placeholder={mode === 'signup' ? 'Enter new password' : 'Your password'}
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   minLength={mode === 'signup' ? 8 : undefined}
