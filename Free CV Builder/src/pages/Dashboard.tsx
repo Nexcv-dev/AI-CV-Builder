@@ -325,17 +325,17 @@ export default function Dashboard() {
           <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
             <div className="flex items-center justify-between">
               <h2 className="font-montserrat text-lg font-black">Tips & Resources</h2>
-              <Link to="/templates" className="text-xs font-black text-violet-300 transition hover:text-violet-200">View all</Link>
+              <Link to="/tips" className="text-xs font-black text-violet-300 transition hover:text-violet-200">View all</Link>
             </div>
             <div className="mt-4 grid gap-2">
               {[
-                ['How to write a professional CV', '5 min read'],
-                ['Top CV formats for 2026', '7 min read'],
-                ['CV mistakes to avoid', '6 min read'],
-              ].map(([title, meta]) => (
+                ['How to write a professional CV', '5 min read', '/tips'],
+                ['Top CV formats for 2026', '7 min read', '/tips'],
+                ['CV mistakes to avoid', '6 min read', '/tips'],
+              ].map(([title, meta, href]) => (
                 <Link
                   key={title}
-                  to="/templates"
+                  to={href}
                   className="group flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/35 p-3 transition hover:border-violet-300/30 hover:bg-white/[0.055]"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-300/20">

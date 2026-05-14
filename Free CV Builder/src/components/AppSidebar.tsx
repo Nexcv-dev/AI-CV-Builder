@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FileText, LayoutDashboard, LogOut, Plus, User } from 'lucide-react';
+import { BookOpen, FileText, LayoutDashboard, LogOut, Plus, User } from 'lucide-react';
 import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification } from '../utils/api';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/my-cvs', label: 'My CVs', icon: FileText },
+  { to: '/tips', label: 'Tips', icon: BookOpen },
   { to: '/profile', label: 'Profile', icon: User },
 ];
 

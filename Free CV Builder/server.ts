@@ -338,6 +338,8 @@ const sanitizeDisplayName = (name: unknown) => (
         : ''
 );
 
+const emailGreetingName = (name: unknown) => sanitizeDisplayName(name) || 'there';
+
 const sanitizeProfileField = (value: unknown, maxLength = 160) => (
     typeof value === 'string'
         ? value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim().slice(0, maxLength)
@@ -584,7 +586,12 @@ const sendEmailVerification = async (user: any, token: string) => {
         to: user.email,
         from,
         subject: 'Verify your NexCV email',
-        text: `Welcome to NexCV.\n\nPlease verify your email address by opening this link:\n\n${verifyUrl}\n\nThis link expires in 24 hours.\n\nIf you did not create this account, you can ignore this email.\n`,
+        text: `Hi ${emailGreetingName(user.displayName)},\n\n` +
+            `Welcome to NexCV. Please verify your email address so you can save your CVs, access them later, and download your documents.\n\n` +
+            `Verify your email:\n${verifyUrl}\n\n` +
+            `This verification link will expire in 24 hours.\n\n` +
+            `If you did not create a NexCV account, you can safely ignore this email.\n\n` +
+            `Thanks,\nThe NexCV Team\n`,
     });
 };
 
@@ -912,11 +919,13 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
         const mailOptions = {
             to: user.email,
             from: emailFrom,
-            subject: 'Password Reset - Free CV Builder',
-            text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
-                `Please click on the following link, or paste this into your browser to complete the process:\n\n` +
-                `${resetUrl}\n\n` +
-                `If you did not request this, please ignore this email and your password will remain unchanged.\n`
+            subject: 'Reset your NexCV password',
+            text: `Hi ${emailGreetingName(user.displayName)},\n\n` +
+                `We received a request to reset the password for your NexCV account.\n\n` +
+                `Reset your password:\n${resetUrl}\n\n` +
+                `This reset link will expire in 1 hour.\n\n` +
+                `If you did not request a password reset, you can safely ignore this email. Your password will stay unchanged.\n\n` +
+                `Thanks,\nThe NexCV Team\n`,
         };
 
         try {
