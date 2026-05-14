@@ -18,11 +18,13 @@ Currently in version: `1.0.0` (Beta)
 ### 🔐 Secure Authentication & Management
 - **Flexible Login:** Sign up using Email/Password or instantly with Google OAuth 2.0.
 - **Password Recovery:** Secure password reset flow utilizing Nodemailer with Gmail integration.
+- **Account Verification:** Secure accounts with email verification, featuring a non-intrusive, dismissible dashboard banner.
 - **Cloud Document Storage:** Safely store, edit, duplicate, and delete multiple CVs in your personal dashboard.
 - **Profile Settings:** Manage your personal details, profile picture (with auto-fallback avatars), and account security.
 
 ### 🚀 Performance & Export
 - **Pixel-Perfect PDFs:** Server-side rendering using Puppeteer ensures your downloaded CV looks exactly like the preview, with no browser inconsistencies.
+- **Download Limits:** Unverified users can download up to 3 PDFs for free. Verifying the account unlocks unlimited PDF downloads.
 - **Mobile Optimized:** A fully responsive design with pill-style navigation ensures you can edit your CV on the go.
 
 ## 💻 Tech Stack
