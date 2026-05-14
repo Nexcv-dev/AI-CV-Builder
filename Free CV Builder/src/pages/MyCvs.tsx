@@ -117,7 +117,7 @@ export default function MyCvs() {
       <AppShellHeader />
       <div className="lg:flex lg:h-dvh lg:overflow-hidden">
       <AppSidebar />
-      <main className="scrollbar-hide mx-auto min-w-0 max-w-7xl flex-1 px-4 pb-8 pt-5 sm:px-6 sm:pb-10 sm:pt-8 lg:h-dvh lg:overflow-y-auto lg:px-8">
+      <main className="scrollbar-hide mx-auto min-w-0 max-w-7xl flex-1 px-4 pb-28 pt-5 sm:px-6 sm:pb-32 sm:pt-8 lg:h-dvh lg:overflow-y-auto lg:px-8 lg:pb-10">
         <section className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <h1 className="font-montserrat text-2xl font-black leading-tight min-[380px]:text-3xl sm:text-4xl">My CVs</h1>
