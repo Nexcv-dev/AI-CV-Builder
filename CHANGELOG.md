@@ -3,43 +3,47 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #111 from bimanthaperera-lab/test/overview (4f4d8c9) - Bimantha Perera, 9 seconds ago
-* imrove mobile layout vith bottom bar (c22c361) - Bimantha Perera, 10 minutes ago
-* Redesign Dashboard, profile,and add new my cv page and improve UI/UX Experience (e3120e4) - Bimantha Perera, 14 minutes ago
-* improve ux (a036236) - Bimantha Perera, 4 hours ago
-* Update SiteHeader.tsx (b47cba5) - Bimantha Perera, 4 hours ago
-* improve UI/UX (bb6a03d) - Bimantha Perera, 4 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (23e6636) - bimanthaperera-lab, 16 hours ago
-* Merge pull request #109 from bimanthaperera-lab/test/overview (77cb2b8) - Bimantha Perera, 16 hours ago
-* Update server.ts (5849455) - Bimantha Perera, 16 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (29649c6) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #108 from bimanthaperera-lab/test/overview (60514e4) - Bimantha Perera, 20 hours ago
-* fix scrolling issues in mobile (c0d1571) - Bimantha Perera, 21 hours ago
-* chore: bump version to 0.1.8 (b7c67b5) - bimanthaperera-lab, 21 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (a291f1b) - bimanthaperera-lab, 22 hours ago
-* Merge pull request #107 from bimanthaperera-lab/test/overview (6afd939) - Bimantha Perera, 22 hours ago
-* Change SMTP to HTTP  for email sending (b0c9181) - Bimantha Perera, 22 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (a2c9149) - bimanthaperera-lab, 23 hours ago
-* Merge pull request #106 from bimanthaperera-lab/test/overview (a5e572c) - Bimantha Perera, 23 hours ago
-* fix reset email not sending issue (da840b7) - Bimantha Perera, 23 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (cf98403) - bimanthaperera-lab, 23 hours ago
-* Merge pull request #105 from bimanthaperera-lab/test/overview (5eaa9d6) - Bimantha Perera, 23 hours ago
-* add verify banner close option from builder and limit download from unverified users (6358669) - Bimantha Perera, 23 hours ago
-* fix password reset email issue and add download limit for unverified users (bf699a4) - Bimantha Perera, 24 hours ago
-* fix password reset issue (e523f5a) - Bimantha Perera, 24 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (7cbd385) - bimanthaperera-lab, 25 hours ago
-* Merge pull request #103 from bimanthaperera-lab/test/overview (77e2a1c) - Bimantha Perera, 25 hours ago
-* fix layout issues (d563d82) - Bimantha Perera, 25 hours ago
-* Add download limit and improve layout (4180760) - Bimantha Perera, 25 hours ago
-* Fix email not send issue and bug fixing (7adec93) - Bimantha Perera, 26 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (bb9bed8) - bimanthaperera-lab, 26 hours ago
-* Merge pull request #102 from bimanthaperera-lab/test/overview (a37a15b) - Bimantha Perera, 26 hours ago
-* Add CV Creation limit and improve UI/UX (7ee85d4) - Bimantha Perera, 27 hours ago
-* improve layout issues (d613b27) - Bimantha Perera, 28 hours ago
-* create Superuser (bcce7c7) - Bimantha Perera, 28 hours ago
-* fix template section selected icon overlap issue (4fae2a8) - Bimantha Perera, 28 hours ago
-* Improve password reset modal (a62979c) - Bimantha Perera, 29 hours ago
-* Fix mail not sending issue in render (b81eb1c) - Bimantha Perera, 29 hours ago
+* Merge pull request #112 from bimanthaperera-lab/test/overview (0ec9f58) - Bimantha Perera, 9 seconds ago
+* Create New Tips & Recourses page (46c13a8) - Bimantha Perera, 39 minutes ago
+* update email content (16c8ecd) - Bimantha Perera, 2 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (d3cc33a) - bimanthaperera-lab, 3 hours ago
+* Merge pull request #111 from bimanthaperera-lab/test/overview (4f4d8c9) - Bimantha Perera, 3 hours ago
+* imrove mobile layout vith bottom bar (c22c361) - Bimantha Perera, 3 hours ago
+* Redesign Dashboard, profile,and add new my cv page and improve UI/UX Experience (e3120e4) - Bimantha Perera, 3 hours ago
+* improve ux (a036236) - Bimantha Perera, 7 hours ago
+* Update SiteHeader.tsx (b47cba5) - Bimantha Perera, 7 hours ago
+* improve UI/UX (bb6a03d) - Bimantha Perera, 7 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (23e6636) - bimanthaperera-lab, 19 hours ago
+* Merge pull request #109 from bimanthaperera-lab/test/overview (77cb2b8) - Bimantha Perera, 19 hours ago
+* Update server.ts (5849455) - Bimantha Perera, 19 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (29649c6) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #108 from bimanthaperera-lab/test/overview (60514e4) - Bimantha Perera, 23 hours ago
+* fix scrolling issues in mobile (c0d1571) - Bimantha Perera, 24 hours ago
+* chore: bump version to 0.1.8 (b7c67b5) - bimanthaperera-lab, 24 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (a291f1b) - bimanthaperera-lab, 25 hours ago
+* Merge pull request #107 from bimanthaperera-lab/test/overview (6afd939) - Bimantha Perera, 25 hours ago
+* Change SMTP to HTTP  for email sending (b0c9181) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (a2c9149) - bimanthaperera-lab, 26 hours ago
+* Merge pull request #106 from bimanthaperera-lab/test/overview (a5e572c) - Bimantha Perera, 26 hours ago
+* fix reset email not sending issue (da840b7) - Bimantha Perera, 26 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (cf98403) - bimanthaperera-lab, 26 hours ago
+* Merge pull request #105 from bimanthaperera-lab/test/overview (5eaa9d6) - Bimantha Perera, 26 hours ago
+* add verify banner close option from builder and limit download from unverified users (6358669) - Bimantha Perera, 26 hours ago
+* fix password reset email issue and add download limit for unverified users (bf699a4) - Bimantha Perera, 27 hours ago
+* fix password reset issue (e523f5a) - Bimantha Perera, 27 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (7cbd385) - bimanthaperera-lab, 27 hours ago
+* Merge pull request #103 from bimanthaperera-lab/test/overview (77e2a1c) - Bimantha Perera, 27 hours ago
+* fix layout issues (d563d82) - Bimantha Perera, 28 hours ago
+* Add download limit and improve layout (4180760) - Bimantha Perera, 28 hours ago
+* Fix email not send issue and bug fixing (7adec93) - Bimantha Perera, 29 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (bb9bed8) - bimanthaperera-lab, 29 hours ago
+* Merge pull request #102 from bimanthaperera-lab/test/overview (a37a15b) - Bimantha Perera, 29 hours ago
+* Add CV Creation limit and improve UI/UX (7ee85d4) - Bimantha Perera, 30 hours ago
+* improve layout issues (d613b27) - Bimantha Perera, 31 hours ago
+* create Superuser (bcce7c7) - Bimantha Perera, 31 hours ago
+* fix template section selected icon overlap issue (4fae2a8) - Bimantha Perera, 31 hours ago
+* Improve password reset modal (a62979c) - Bimantha Perera, 32 hours ago
+* Fix mail not sending issue in render (b81eb1c) - Bimantha Perera, 32 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (2771e1b) - bimanthaperera-lab, 2 days ago
 * Merge pull request #101 from bimanthaperera-lab/test/overview (5a4a254) - Bimantha Perera, 2 days ago
 * Update README.md (c070926) - Bimantha Perera, 2 days ago
