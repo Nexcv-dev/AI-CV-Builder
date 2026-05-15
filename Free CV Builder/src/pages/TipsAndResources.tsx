@@ -14,8 +14,8 @@ const TipsAndResources = () => {
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-28">
         <div className="absolute top-0 left-1/2 -ml-[39rem] w-[78rem] max-w-none opacity-40">
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950 to-transparent" />
-          <div className="h-[40rem] w-full bg-gradient-to-r from-violet-600 to-emerald-500 blur-3xl opacity-20 rounded-full mix-blend-screen" />
+          <div className="absolute inset-0 bg-linear-to-b from-slate-950 to-transparent" />
+          <div className="h-160 w-full bg-linear-to-r from-violet-600 to-emerald-500 blur-3xl opacity-20 rounded-full mix-blend-screen" />
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -34,7 +34,7 @@ const TipsAndResources = () => {
               transition={{ delay: 0.1 }}
               className="text-5xl font-black tracking-tight text-white sm:text-7xl mb-6 font-montserrat"
             >
-              Master Your Resume: <span className="bg-gradient-to-r from-violet-400 to-emerald-400 bg-clip-text text-transparent">Tips & Resources</span>
+              Master Your Resume: <span className="bg-linear-to-r from-violet-400 to-emerald-400 bg-clip-text text-transparent">Tips & Resources</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -121,7 +121,7 @@ const TipsAndResources = () => {
 
           <div className="space-y-6">
             <div className="flex gap-4 p-6 sm:p-8 rounded-2xl bg-slate-900/40 border border-red-500/20">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center font-bold text-xl">X</div>
+              <div className="shrink-0 w-10 h-10 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center font-bold text-xl">X</div>
               <div>
                 <h4 className="font-bold text-white mb-2 text-lg">Bad Example (The Outdated Objective)</h4>
                 <p className="text-slate-400 italic mb-4">"Hardworking, highly motivated professional looking for a challenging role in a reputable company to utilize my skills, learn new technologies, and grow my career."</p>
@@ -132,7 +132,7 @@ const TipsAndResources = () => {
             </div>
 
             <div className="flex gap-4 p-6 sm:p-8 rounded-2xl bg-slate-900/40 border border-emerald-500/30 shadow-lg shadow-emerald-900/10">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xl">✓</div>
+              <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xl">✓</div>
               <div>
                 <h4 className="font-bold text-white mb-2 text-lg">Good Example (The Value-Driven Summary)</h4>
                 <p className="text-slate-400 italic mb-4">"Data-driven Digital Marketing Manager with 5+ years of experience leading B2B campaigns in the SaaS sector. Proven track record of increasing inbound lead generation by 40% year-over-year and managing $500k+ quarterly ad budgets to drive a consistently high 3x ROI. Seeking to leverage expertise in growth hacking and team leadership to scale customer acquisition."</p>
@@ -149,7 +149,7 @@ const TipsAndResources = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          className="rounded-3xl border border-white/10 bg-gradient-to-b from-slate-900/80 to-slate-950 p-8 sm:p-12 relative overflow-hidden"
+          className="rounded-3xl border border-white/10 bg-linear-to-b from-slate-900/80 to-slate-950 p-8 sm:p-12 relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-8 opacity-5 transform translate-x-1/4 -translate-y-1/4">
             <Layers size={200} />
@@ -189,7 +189,7 @@ const TipsAndResources = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-8 sm:p-12 shadow-2xl relative overflow-hidden"
+          className="rounded-3xl border border-white/10 bg-linear-to-br from-slate-900 to-slate-950 p-8 sm:p-12 shadow-2xl relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <FileText size={120} />
@@ -252,28 +252,28 @@ const TipsAndResources = () => {
               </div>
               <ul className="text-slate-300 space-y-4">
                 <li className="flex gap-4">
-                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
+                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
                   <div>
                     <strong className="text-white block mb-1">Typos and Grammar Errors</strong>
                     <p className="text-sm text-slate-400">A single spelling mistake can send your CV straight to the trash. It signals poor attention to detail. Always proofread, use spell-check, and ideally have a friend review it before submitting.</p>
                   </div>
                 </li>
                 <li className="flex gap-4">
-                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
+                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
                   <div>
                     <strong className="text-white block mb-1">Unprofessional Email Addresses</strong>
                     <p className="text-sm text-slate-400">Drop the `skaterboy99@yahoo.com` or `party_girl_xo@hotmail.com`. Create a clean, professional email address using variations of your first and last name (e.g., `firstname.lastname@gmail.com`).</p>
                   </div>
                 </li>
                 <li className="flex gap-4">
-                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
+                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
                   <div>
                     <strong className="text-white block mb-1">Including a Photograph</strong>
                     <p className="text-sm text-slate-400">Unless you are applying for an acting/modeling role, or applying in specific regions where it is culturally expected (like some countries in Europe or Asia), do NOT include a photo. In North America and the UK, companies often reject CVs with photos immediately to avoid accusations of unconscious bias and discrimination.</p>
                   </div>
                 </li>
                 <li className="flex gap-4">
-                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
+                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
                   <div>
                     <strong className="text-white block mb-1">Lying or Exaggerating</strong>
                     <p className="text-sm text-slate-400">Background checks are rigorous. They will expose false degrees, inflated job titles, or fabricated dates of employment. Be honest, but learn how to phrase your real experience in the best, most professional light possible.</p>
@@ -292,7 +292,7 @@ const TipsAndResources = () => {
               </p>
               <Link
                 to="/builder"
-                className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-10 py-5 text-lg font-extrabold text-white shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all hover:scale-105 active:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-2xl bg-linear-to-r from-violet-600 to-indigo-600 px-10 py-5 text-lg font-extrabold text-white shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all hover:scale-105 active:scale-[0.98]"
               >
                 Create Your Winning CV Now
               </Link>

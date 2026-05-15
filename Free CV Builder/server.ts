@@ -680,6 +680,7 @@ const documentSummary = (document: any) => ({
     id: document._id.toString(),
     title: document.title,
     template: document.template,
+    status: document.status || 'completed',
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
 });
@@ -1085,7 +1086,7 @@ app.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
     try {
         const documents = await CVDocument.find({ userId: currentUserId(req) })
             .sort({ updatedAt: -1 })
-            .select('title template createdAt updatedAt');
+            .select('title template status createdAt updatedAt');
         const quota = await getCvCreationQuota(req.user);
         const downloadQuota = await getDownloadQuota(req.user);
         res.json({ documents: documents.map(documentSummary), quota, downloadQuota });
@@ -1116,7 +1117,7 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
             return;
         }
 
-        const { cvData } = req.body;
+        const { cvData, status } = req.body;
         const template = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
 
@@ -1137,6 +1138,7 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
             title,
             template,
             cvData,
+            status: status === 'completed' ? 'completed' : 'draft',
         });
 
         const updatedQuota = await getCvCreationQuota(req.user);
@@ -1156,7 +1158,7 @@ app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) =
             return res.status(400).json({ error: 'Invalid document id.' });
         }
 
-        const { cvData } = req.body;
+        const { cvData, status } = req.body;
         const template = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
 
@@ -1166,7 +1168,7 @@ app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) =
 
         const document = await CVDocument.findOneAndUpdate(
             { _id: req.params.id, userId: currentUserId(req) },
-            { title, template, cvData },
+            { title, template, cvData, ...(status ? { status } : {}) },
             { new: true, runValidators: true }
         );
 

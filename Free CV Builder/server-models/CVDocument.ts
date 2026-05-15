@@ -5,6 +5,7 @@ export interface ICVDocument extends Document {
   title: string;
   template: string;
   cvData: Record<string, any>;
+  status: 'draft' | 'completed';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +16,7 @@ const CVDocumentSchema = new Schema(
     title: { type: String, required: true, trim: true, maxlength: 120 },
     template: { type: String, required: true },
     cvData: { type: Schema.Types.Mixed, required: true },
+    status: { type: String, enum: ['draft', 'completed'], default: 'draft' },
   },
   {
     timestamps: true,

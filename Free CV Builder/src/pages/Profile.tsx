@@ -226,7 +226,7 @@ export default function Profile() {
       <main className="scrollbar-hide mx-auto min-w-0 max-w-7xl flex-1 px-3 pb-28 pt-6 sm:px-6 sm:pb-32 sm:pt-8 lg:h-dvh lg:overflow-y-auto lg:px-8 lg:pb-10">
         <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="break-words font-montserrat text-2xl font-black leading-tight min-[380px]:text-3xl sm:text-4xl">Personal details</h1>
+            <h1 className="wrap-break-word font-montserrat text-2xl font-black leading-tight min-[380px]:text-3xl sm:text-4xl">Personal details</h1>
             <p className="mt-2 text-sm font-semibold text-slate-400">
               Manage your profile information that will be used across your CVs.
             </p>
@@ -396,7 +396,7 @@ export default function Profile() {
                         Logout
                       </button>
                     </section>
-                    <section className="rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5">
+                    <section className="rounded-2xl border border-red-400/20 bg-red-500/6 p-5">
                       <h2 className="font-montserrat text-xl font-black">Danger zone</h2>
                       <p className="mt-1 text-sm font-semibold text-red-100/70">Delete your account and all saved CVs permanently.</p>
                       <button type="button" onClick={deleteAccount} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm font-extrabold text-red-100 transition hover:bg-red-500/20 active:scale-[0.98]">

@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Moon, Sun, X } from 'lucide-react';
 
 const THEME_STORAGE_KEY = 'cv-builder-theme';
+const LOCAL_STORAGE_DRAFT_KEY = 'nexcv-draft-data';
 const VERIFY_BANNER_DISMISSED_KEY = 'nexcv-verify-banner-dismissed';
 const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
 
@@ -76,12 +77,22 @@ export default function Home() {
   const showTemplatesOnLoad = useRef(searchParams.get('templates') === '1');
   const shouldScrollTopOnLoad = useRef(searchParams.has('template'));
   const initialDocumentId = useRef(searchParams.get('document'));
-  const [cvData, setCvData] = useState<CVData>(initialData);
-  const [debouncedCvData, setDebouncedCvData] = useState<CVData>(initialData);
+  const [cvData, setCvData] = useState<CVData>(() => {
+    if (!initialDocumentId.current) {
+      try {
+        const saved = localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return initialData;
+  });
+  const [debouncedCvData, setDebouncedCvData] = useState<CVData>(cvData);
   const [template, setTemplate] = useState<TemplateName>(DEFAULT_TEMPLATE);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const [cloudSaveStatus, setCloudSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const lastSavedDataRef = useRef<string>(JSON.stringify({ cvData: initialData, template: DEFAULT_TEMPLATE, title: 'Untitled CV' }));
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
   const [creationQuota, setCreationQuota] = useState<CvCreationQuota | null>(null);
@@ -304,6 +315,37 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [cvData]);
 
+  // Auto-save logic
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const title = debouncedCvData.personalInfo.fullName?.trim() ? `${debouncedCvData.personalInfo.fullName.trim()} CV` : documentTitle;
+      const currentDataStr = JSON.stringify({ cvData: debouncedCvData, template, title });
+      
+      // Don't auto save if it's the initial empty state
+      if (currentDataStr === JSON.stringify({ cvData: initialData, template: DEFAULT_TEMPLATE, title: 'Untitled CV' })) {
+        return;
+      }
+      
+      if (currentDataStr !== lastSavedDataRef.current) {
+        lastSavedDataRef.current = currentDataStr;
+        
+        if (currentUser && currentUser.emailVerified) {
+           handleCloudSave('draft', true);
+        } else if (!currentUser) {
+           try {
+             localStorage.setItem(LOCAL_STORAGE_DRAFT_KEY, JSON.stringify(debouncedCvData));
+             setIsAutoSaving(true);
+             setTimeout(() => setIsAutoSaving(false), 1500);
+           } catch (e) {
+             console.warn('Failed to auto-save to local storage', e);
+           }
+        }
+      }
+    }, 2500);
+    
+    return () => clearTimeout(timer);
+  }, [debouncedCvData, template, documentTitle, currentUser]);
+
   useEffect(() => {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light');
@@ -327,35 +369,49 @@ export default function Home() {
     setIsDarkMode(nextDark);
   }, [isDarkMode]);
 
-  const handleCloudSave = useCallback(async () => {
+  const handleCloudSave = useCallback(async (status: 'draft' | 'completed' = 'completed', isSilent = false) => {
     if (currentUser && !currentUser.emailVerified) {
-      toast.error('Verify your email to save CVs.');
+      if (!isSilent) toast.error('Verify your email to save CVs.');
       return;
     }
 
-    setCloudSaveStatus('saving');
+    if (!isSilent) setCloudSaveStatus('saving');
+    else setIsAutoSaving(true);
+
     try {
       const title = cvData.personalInfo.fullName?.trim() ? `${cvData.personalInfo.fullName.trim()} CV` : documentTitle;
       const data = await apiFetch<{ document: { id: string; title: string }; quota?: CvCreationQuota }>(
         documentId ? `/api/documents/${documentId}` : '/api/documents',
         {
           method: documentId ? 'PUT' : 'POST',
-          body: JSON.stringify({ title, template, cvData }),
+          body: JSON.stringify({ title, template, cvData, status }),
         }
       );
 
       setDocumentId(data.document.id);
       setDocumentTitle(data.document.title);
       if (data.quota) setCreationQuota(data.quota);
-      setCloudSaveStatus('saved');
-      setDashboardNotification(true);
-      toast.success('CV saved successfully.');
-      setTimeout(() => setCloudSaveStatus('idle'), 2200);
+      
+      if (!isSilent) {
+        setCloudSaveStatus('saved');
+        setDashboardNotification(true);
+        toast.success('CV saved successfully.');
+        setTimeout(() => setCloudSaveStatus('idle'), 2200);
+      }
+      
+      lastSavedDataRef.current = JSON.stringify({ cvData, template, title });
+      try {
+        localStorage.removeItem(LOCAL_STORAGE_DRAFT_KEY);
+      } catch {}
     } catch (error) {
       console.warn('Failed to save document:', error);
-      setCloudSaveStatus('error');
-      toast.error(error instanceof Error ? error.message : 'Could not save your CV. Please try again.');
-      setTimeout(() => setCloudSaveStatus('idle'), 4000);
+      if (!isSilent) {
+        setCloudSaveStatus('error');
+        toast.error(error instanceof Error ? error.message : 'Could not save your CV. Please try again.');
+        setTimeout(() => setCloudSaveStatus('idle'), 4000);
+      }
+    } finally {
+      if (isSilent) setIsAutoSaving(false);
     }
   }, [currentUser, cvData, documentId, documentTitle, template]);
 
@@ -659,7 +715,7 @@ export default function Home() {
             <div className="hidden lg:flex items-center gap-2">
               {currentUser && (
                 <button
-                  onClick={handleCloudSave}
+                  onClick={() => handleCloudSave('completed')}
                   disabled={cloudSaveStatus === 'saving'}
                   className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-500 active:scale-95 disabled:opacity-70"
                   aria-label="Save CV"
@@ -820,7 +876,7 @@ export default function Home() {
               <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:hidden print:hidden">
                 <div className="grid w-full max-w-md grid-cols-[0.9fr_1.1fr] gap-2">
                   <button
-                    onClick={currentUser ? handleCloudSave : openBuilderLogin}
+                    onClick={currentUser ? () => handleCloudSave('completed') : openBuilderLogin}
                     disabled={cloudSaveStatus === 'saving'}
                     className={`pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-extrabold shadow-2xl ring-1 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 ${isDarkMode
                         ? 'border-slate-700 bg-slate-900/95 text-slate-100 shadow-black/35 ring-white/10'
