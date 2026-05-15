@@ -3,27 +3,30 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #124 from bimanthaperera-lab/test/overview (dd08175) - Bimantha Perera, 11 seconds ago
-* Update MyCvs.tsx (c380933) - Bimantha Perera, 35 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (c6099bc) - bimanthaperera-lab, 2 hours ago
-* Merge pull request #122 from bimanthaperera-lab/test/overview (53ac36c) - Bimantha Perera, 2 hours ago
-* fix browser console issues (1db7a57) - Bimantha Perera, 2 hours ago
-* fix css warnings (2c6747c) - Bimantha Perera, 2 hours ago
-* add draft option (db215a6) - Bimantha Perera, 2 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (45502fe) - bimanthaperera-lab, 4 hours ago
-* Merge pull request #121 from bimanthaperera-lab/test/overview (98ccc00) - Bimantha Perera, 4 hours ago
-* Clean the layout and bug fixing (d348fdb) - Bimantha Perera, 4 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (b6a3d11) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #112 from bimanthaperera-lab/test/overview (0ec9f58) - Bimantha Perera, 20 hours ago
-* Create New Tips & Recourses page (46c13a8) - Bimantha Perera, 21 hours ago
+* Merge pull request #127 from bimanthaperera-lab/test/overview (eaff00a) - Bimantha Perera, 9 seconds ago
+* Update MyCvs.tsx (80fa999) - Bimantha Perera, 5 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (c0f2af6) - bimanthaperera-lab, 53 minutes ago
+* Merge pull request #124 from bimanthaperera-lab/test/overview (dd08175) - Bimantha Perera, 53 minutes ago
+* Update MyCvs.tsx (c380933) - Bimantha Perera, 88 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (c6099bc) - bimanthaperera-lab, 3 hours ago
+* Merge pull request #122 from bimanthaperera-lab/test/overview (53ac36c) - Bimantha Perera, 3 hours ago
+* fix browser console issues (1db7a57) - Bimantha Perera, 3 hours ago
+* fix css warnings (2c6747c) - Bimantha Perera, 3 hours ago
+* add draft option (db215a6) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (45502fe) - bimanthaperera-lab, 5 hours ago
+* Merge pull request #121 from bimanthaperera-lab/test/overview (98ccc00) - Bimantha Perera, 5 hours ago
+* Clean the layout and bug fixing (d348fdb) - Bimantha Perera, 5 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (b6a3d11) - bimanthaperera-lab, 21 hours ago
+* Merge pull request #112 from bimanthaperera-lab/test/overview (0ec9f58) - Bimantha Perera, 21 hours ago
+* Create New Tips & Recourses page (46c13a8) - Bimantha Perera, 22 hours ago
 * update email content (16c8ecd) - Bimantha Perera, 23 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (d3cc33a) - bimanthaperera-lab, 23 hours ago
-* Merge pull request #111 from bimanthaperera-lab/test/overview (4f4d8c9) - Bimantha Perera, 23 hours ago
-* imrove mobile layout vith bottom bar (c22c361) - Bimantha Perera, 23 hours ago
-* Redesign Dashboard, profile,and add new my cv page and improve UI/UX Experience (e3120e4) - Bimantha Perera, 23 hours ago
-* improve ux (a036236) - Bimantha Perera, 27 hours ago
-* Update SiteHeader.tsx (b47cba5) - Bimantha Perera, 27 hours ago
-* improve UI/UX (bb6a03d) - Bimantha Perera, 27 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (d3cc33a) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #111 from bimanthaperera-lab/test/overview (4f4d8c9) - Bimantha Perera, 24 hours ago
+* imrove mobile layout vith bottom bar (c22c361) - Bimantha Perera, 24 hours ago
+* Redesign Dashboard, profile,and add new my cv page and improve UI/UX Experience (e3120e4) - Bimantha Perera, 24 hours ago
+* improve ux (a036236) - Bimantha Perera, 28 hours ago
+* Update SiteHeader.tsx (b47cba5) - Bimantha Perera, 28 hours ago
+* improve UI/UX (bb6a03d) - Bimantha Perera, 28 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (23e6636) - bimanthaperera-lab, 2 days ago
 * Merge pull request #109 from bimanthaperera-lab/test/overview (77cb2b8) - Bimantha Perera, 2 days ago
 * Update server.ts (5849455) - Bimantha Perera, 2 days ago
