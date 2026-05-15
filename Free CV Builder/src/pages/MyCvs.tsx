@@ -200,7 +200,7 @@ export default function MyCvs() {
           </section>
 
           <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_300px]">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
+            <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
               <div className="scrollbar-hide flex gap-1 overflow-x-auto border-b border-white/10 px-2 pt-2 sm:px-3 sm:pt-3">
                 <FilterButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All CVs" count={documents.length} />
                 <FilterButton active={activeTab === 'recent'} onClick={() => setActiveTab('recent')} label="Recent" count={Math.min(documents.length, 3)} />
