@@ -442,6 +442,13 @@
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
+
+  /* Hide native browser reveal/clear icons in password fields (e.g. Edge) */
+  input::-ms-reveal,
+  input::-ms-clear,
+  input::-webkit-credentials-auto-fill-button {
+    display: none !important;
+  }
 }
 
 @layer utilities {

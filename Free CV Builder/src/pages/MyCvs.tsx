@@ -169,7 +169,7 @@ export default function MyCvs() {
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.035] pl-4 pr-10 text-sm font-semibold text-white outline-none transition placeholder:text-slate-500 focus:border-violet-400"
+                  className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.035] pl-4 pr-10 text-base sm:text-sm font-semibold text-white outline-none transition placeholder:text-slate-500 focus:border-violet-400"
                   placeholder="Search CVs..."
                 />
               </label>
@@ -200,7 +200,7 @@ export default function MyCvs() {
           </section>
 
           <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_300px]">
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
+            <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
               <div className="scrollbar-hide flex gap-1 overflow-x-auto border-b border-white/10 px-2 pt-2 sm:px-3 sm:pt-3">
                 <FilterButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All CVs" count={documents.length} />
                 <FilterButton active={activeTab === 'recent'} onClick={() => setActiveTab('recent')} label="Recent" count={Math.min(documents.length, 3)} />
@@ -225,7 +225,7 @@ export default function MyCvs() {
                 </div>
               ) : (
                 <>
-                  <div className="dark-scrollbar min-h-[320px] divide-y divide-white/10 overflow-hidden sm:max-h-[calc(100dvh-320px)] sm:min-h-[360px] sm:overflow-y-auto">
+                  <div className="dark-scrollbar min-h-[320px] divide-y divide-white/10 sm:max-h-[calc(100dvh-320px)] sm:min-h-[360px] sm:overflow-y-auto pb-4">
                     {searchedDocuments.map((document) => (
                       <CvListItem
                         key={document.id}
