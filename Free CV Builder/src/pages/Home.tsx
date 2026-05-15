@@ -315,14 +315,33 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [cvData]);
 
+  // Check whether the CV form has any meaningful user-entered content.
+  // Returns false when the form is essentially empty (no name, no email, no entries, etc.)
+  const hasMeaningfulContent = useCallback((data: CVData) => {
+    const p = data.personalInfo;
+    const hasPersonalInfo = !!(
+      p.fullName?.trim() || p.email?.trim() || p.phone?.trim() || p.summary?.trim()
+    );
+    const hasEntries =
+      (data.experience?.length || 0) > 0 ||
+      (data.education?.length || 0) > 0 ||
+      (data.skills?.length || 0) > 0 ||
+      (data.projects?.length || 0) > 0 ||
+      (data.courses?.length || 0) > 0 ||
+      (data.awards?.length || 0) > 0 ||
+      (data.languages?.length || 0) > 0 ||
+      (data.references?.length || 0) > 0;
+    return hasPersonalInfo || hasEntries;
+  }, []);
+
   // Auto-save logic
   useEffect(() => {
     const timer = setTimeout(() => {
       const title = debouncedCvData.personalInfo.fullName?.trim() ? `${debouncedCvData.personalInfo.fullName.trim()} CV` : documentTitle;
       const currentDataStr = JSON.stringify({ cvData: debouncedCvData, template, title });
       
-      // Don't auto save if it's the initial empty state
-      if (currentDataStr === JSON.stringify({ cvData: initialData, template: DEFAULT_TEMPLATE, title: 'Untitled CV' })) {
+      // Don't auto-save if the form has no meaningful content (unless updating an existing document)
+      if (!documentId && !hasMeaningfulContent(debouncedCvData)) {
         return;
       }
       
@@ -344,7 +363,7 @@ export default function Home() {
     }, 2500);
     
     return () => clearTimeout(timer);
-  }, [debouncedCvData, template, documentTitle, currentUser]);
+  }, [debouncedCvData, template, documentTitle, currentUser, documentId, hasMeaningfulContent]);
 
   useEffect(() => {
     try {
@@ -508,11 +527,7 @@ export default function Home() {
       return;
     }
 
-    if (creationQuota?.reached) {
-      setShowDownloadConfirm(false);
-      toast.error('Daily CV creation limit reached.');
-      return;
-    }
+
 
     setShowDownloadConfirm(false);
     setIsGeneratingPDF(true);
@@ -613,17 +628,12 @@ export default function Home() {
       toast.error('Daily download limit reached.');
       return;
     }
-    if (creationQuota?.reached) {
-      toast.error('Daily CV creation limit reached.');
-      return;
-    }
     setShowDownloadConfirm(true);
-  }, [creationQuota, currentUser, downloadQuota]);
+  }, [currentUser, downloadQuota]);
 
-  const downloadLimitReached = Boolean(creationQuota?.reached);
   const unverifiedDownloadLimitReached = Boolean(currentUser && !currentUser.emailVerified && downloadQuota?.reached);
-  const downloadBlocked = downloadLimitReached;
-  const downloadBlockedLabel = downloadLimitReached ? 'Limit reached' : 'Download PDF';
+  const downloadBlocked = unverifiedDownloadLimitReached;
+  const downloadBlockedLabel = downloadBlocked ? 'Limit reached' : 'Download PDF';
 
   useEffect(() => {
     if (downloadBlocked || unverifiedDownloadLimitReached) {

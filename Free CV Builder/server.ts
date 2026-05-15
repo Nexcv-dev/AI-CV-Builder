@@ -20,10 +20,11 @@ import connectDB from './server-models/db';
 import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import DownloadQuota from './server-models/DownloadQuotaModel';
+import CvCreationQuota from './server-models/CvCreationQuotaModel';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
 import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
-import { buildCvCreationQuota, getUtcDayBounds } from './server-models/cvQuota';
+import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildDownloadQuota, getUtcDayKey } from './server-models/downloadQuotaUtils';
 
 dns.setDefaultResultOrder('ipv4first');
@@ -647,13 +648,19 @@ const requireVerifiedEmail = (req: Request, res: Response) => {
 const currentUserId = (req: Request) => (req.user as any)._id || (req.user as any).id;
 
 const getCvCreationQuota = async (user: any) => {
-    const { start, end } = getUtcDayBounds();
-    const usedToday = await CVDocument.countDocuments({
-        userId: user._id || user.id,
-        createdAt: { $gte: start, $lt: end },
-    });
+    const day = getUtcDayKey();
+    const record = await CvCreationQuota.findOne({ userId: user._id || user.id, day });
+    return buildCvCreationQuota(user, record?.count || 0);
+};
 
-    return buildCvCreationQuota(user, usedToday);
+const incrementCvCreationQuota = async (user: any) => {
+    const day = getUtcDayKey();
+    const record = await CvCreationQuota.findOneAndUpdate(
+        { userId: user._id || user.id, day },
+        { $inc: { count: 1 } },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    return buildCvCreationQuota(user, record.count);
 };
 
 const getDownloadQuota = async (user: any) => {
@@ -910,7 +917,7 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
 
         // Generate token
         const token = randomBytes(20).toString('hex');
-        user.resetPasswordToken = token;
+        user.resetPasswordToken = hashToken(token);
         user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
         await user.save();
 
@@ -958,8 +965,8 @@ app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Resp
         }
 
         const user = await User.findOne({
-            resetPasswordToken: token,
-            resetPasswordExpires: { $gt: Date.now() }
+            resetPasswordToken: hashToken(token),
+            resetPasswordExpires: { $gt: new Date() }
         });
 
         if (!user) {
@@ -1052,13 +1059,27 @@ app.get('/api/auth/google', (req: Request, _res: Response, next: NextFunction) =
 }));
 
 // Google Auth Callback
-app.get('/api/auth/google/callback', passport.authenticate('google', {
-    failureRedirect: '/?auth=failed',
-}), (req: Request, res: Response) => {
-    // Successful authentication
-    const redirectTo = (req.session as any).authRedirect || '/builder?import=1';
-    delete (req.session as any).authRedirect;
-    res.redirect(redirectTo);
+app.get('/api/auth/google/callback', (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate('google', (err: any, user: any, info: any) => {
+        if (err) {
+            console.error('Google Auth callback error:', err?.message || err);
+            return res.redirect('/?auth=failed&reason=server_error');
+        }
+        if (!user) {
+            console.warn('Google Auth failed:', info?.message || 'No user returned');
+            return res.redirect('/?auth=failed&reason=denied');
+        }
+        req.login(user, (loginErr) => {
+            if (loginErr) {
+                console.error('Google Auth session error:', loginErr?.message || loginErr);
+                return res.redirect('/?auth=failed&reason=session_error');
+            }
+            // Successful authentication
+            const redirectTo = (req.session as any).authRedirect || '/builder?import=1';
+            delete (req.session as any).authRedirect;
+            res.redirect(redirectTo);
+        });
+    })(req, res, next);
 });
 
 // Get Current User
@@ -1141,7 +1162,7 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
             status: status === 'completed' ? 'completed' : 'draft',
         });
 
-        const updatedQuota = await getCvCreationQuota(req.user);
+        const updatedQuota = await incrementCvCreationQuota(req.user);
         res.status(201).json({ document: documentDetails(document), quota: updatedQuota });
     } catch (error) {
         return sendError(res, 500, 'Could not save your document.', error);
@@ -2110,13 +2131,7 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
             });
         }
 
-        const quota = await getCvCreationQuota(req.user);
-        if (quota.reached) {
-            return res.status(403).json({
-                error: 'Daily CV creation limit reached.',
-                quota,
-            });
-        }
+
 
         // Validate template against allow-list
         const validatedTemplate = isTemplateName(template)
