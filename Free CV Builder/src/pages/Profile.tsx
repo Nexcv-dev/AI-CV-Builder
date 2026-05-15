@@ -219,7 +219,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="account-page min-h-screen overflow-x-hidden bg-slate-950 text-white">
+    <div className="account-page min-h-screen scheme-dark bg-slate-950 text-white">
       <AppShellHeader />
       <div className="lg:flex lg:h-dvh lg:overflow-hidden">
       <AppSidebar />
@@ -497,7 +497,7 @@ function ProfileSelect({ label, icon, value, onChange, options }: { label: strin
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full bg-slate-950 text-base font-semibold text-white outline-none [color-scheme:dark] sm:text-sm"
+          className="w-full bg-slate-950 text-base font-semibold text-white outline-none scheme-dark sm:text-sm"
         >
           <option value="" className="bg-slate-950 text-slate-400">Select {label}</option>
           {options.map((option) => (

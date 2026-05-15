@@ -263,7 +263,7 @@ export default function MyCvs() {
                     ['Quantify your achievements', 'Use numbers and metrics to show impact.'],
                     ['Keep it concise', 'Ideal CV length is 1-2 pages for most roles.'],
                   ].map(([title, copy]) => (
-                    <Link key={title} to="/templates" className="group flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/35 p-3 transition hover:border-violet-300/30 hover:bg-white/[0.055]">
+                    <Link key={title} to="/templates" className="group flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/35 p-3 transition hover:border-violet-300/30 hover:bg-white/5.5">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-300 ring-1 ring-sky-300/20">
                         <BookOpen size={15} />
                       </span>

@@ -715,7 +715,7 @@ export default function Home() {
             <div className="hidden lg:flex items-center gap-2">
               {currentUser && (
                 <button
-                  onClick={() => handleCloudSave('completed')}
+                  onClick={() => { handleCloudSave('completed'); }}
                   disabled={cloudSaveStatus === 'saving'}
                   className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-500 active:scale-95 disabled:opacity-70"
                   aria-label="Save CV"
@@ -876,7 +876,7 @@ export default function Home() {
               <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:hidden print:hidden">
                 <div className="grid w-full max-w-md grid-cols-[0.9fr_1.1fr] gap-2">
                   <button
-                    onClick={currentUser ? () => handleCloudSave('completed') : openBuilderLogin}
+                    onClick={currentUser ? () => { handleCloudSave('completed'); } : openBuilderLogin}
                     disabled={cloudSaveStatus === 'saving'}
                     className={`pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-extrabold shadow-2xl ring-1 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 ${isDarkMode
                         ? 'border-slate-700 bg-slate-900/95 text-slate-100 shadow-black/35 ring-white/10'
