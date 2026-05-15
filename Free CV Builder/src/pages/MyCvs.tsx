@@ -41,7 +41,7 @@ interface CvCreationQuota {
   reached: boolean;
 }
 
-type FilterTab = 'all' | 'recent' | 'drafts';
+type FilterTab = 'all' | 'recent' | 'drafts' | 'archived';
 
 const templateMeta = new Map(CV_TEMPLATES.map((template) => [template.key, template]));
 
@@ -151,11 +151,11 @@ export default function MyCvs() {
   }, [openActionsDocumentId]);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-slate-950 text-white">
+    <div className="min-h-screen overflow-x-hidden bg-slate-950 text-white">
       <AppShellHeader />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="lg:flex lg:h-dvh lg:overflow-hidden">
         <AppSidebar />
-        <main className="scrollbar-hide mx-auto min-w-0 max-w-7xl flex-1 overflow-y-auto px-4 pb-28 pt-5 sm:px-6 sm:pb-32 sm:pt-8 lg:px-8 lg:pb-10">
+        <main className="scrollbar-hide mx-auto min-w-0 max-w-7xl flex-1 px-4 pb-28 pt-5 sm:px-6 sm:pb-32 sm:pt-8 lg:h-dvh lg:overflow-y-auto lg:px-8 lg:pb-10">
           <section className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <h1 className="font-montserrat text-2xl font-black leading-tight min-[380px]:text-3xl sm:text-4xl">My CVs</h1>
@@ -205,6 +205,7 @@ export default function MyCvs() {
                 <FilterButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All CVs" count={documents.length} />
                 <FilterButton active={activeTab === 'recent'} onClick={() => setActiveTab('recent')} label="Recent" count={Math.min(documents.length, 3)} />
                 <FilterButton active={activeTab === 'drafts'} onClick={() => setActiveTab('drafts')} label="Drafts" count={stats.drafts} />
+                <FilterButton active={activeTab === 'archived'} onClick={() => setActiveTab('archived')} label="Archived" count={0} />
               </div>
 
               {isLoading ? (
@@ -224,7 +225,7 @@ export default function MyCvs() {
                 </div>
               ) : (
                 <>
-                  <div className="dark-scrollbar divide-y divide-white/10 overflow-y-auto max-h-[calc(100dvh-320px)] min-h-[320px] sm:min-h-[360px]">
+                  <div className="dark-scrollbar min-h-[320px] divide-y divide-white/10 overflow-hidden sm:max-h-[calc(100dvh-320px)] sm:min-h-[360px] sm:overflow-y-auto">
                     {searchedDocuments.map((document) => (
                       <CvListItem
                         key={document.id}
@@ -255,6 +256,7 @@ export default function MyCvs() {
                   <OverviewRow icon={<FileText size={16} />} label="Total CVs" value={documents.length} tone="violet" />
                   <OverviewRow icon={<CheckCircle2 size={16} />} label="Completed" value={stats.completed} tone="emerald" />
                   <OverviewRow icon={<FileText size={16} />} label="Drafts" value={stats.drafts} tone="slate" />
+                  <OverviewRow icon={<FolderArchive size={16} />} label="Archived" value={0} tone="slate" />
                 </div>
               </section>
 
