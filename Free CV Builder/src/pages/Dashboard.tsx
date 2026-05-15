@@ -3,12 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowRight,
-  BookOpen,
   CheckCircle2,
   Clock3,
   Download,
   Edit3,
-  Eye,
   FileText,
   LayoutTemplate,
   Loader2,
@@ -70,6 +68,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<SavedDocument | null>(null);
+  const [openActionsDocumentId, setOpenActionsDocumentId] = useState<string | null>(null);
   const [quota, setQuota] = useState<CvCreationQuota | null>(null);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
   const [verificationBannerDismissed, setVerificationBannerDismissed] = useState(false);
@@ -111,6 +110,25 @@ export default function Dashboard() {
   const recentDocuments = useMemo(() => documents.slice(0, 3), [documents]);
   const templatesUsed = useMemo(() => new Set(documents.map((document) => document.template)).size, [documents]);
   const creationLimitReached = Boolean(quota?.reached);
+
+  useEffect(() => {
+    if (!openActionsDocumentId) return;
+
+    const closeOpenMenu = (event: PointerEvent) => {
+      if ((event.target as HTMLElement | null)?.closest('[data-cv-actions-menu]')) return;
+      setOpenActionsDocumentId(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenActionsDocumentId(null);
+    };
+
+    window.addEventListener('pointerdown', closeOpenMenu);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      window.removeEventListener('pointerdown', closeOpenMenu);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [openActionsDocumentId]);
 
   const deleteDocument = async (id: string) => {
     setDeletingId(id);
@@ -263,7 +281,7 @@ export default function Dashboard() {
             </div>
           </section>
         ) : (
-          <section className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
+          <section className="mt-6 overflow-visible rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
             <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <div>
                 <h2 className="font-montserrat text-xl font-black">Recent CVs</h2>
@@ -284,8 +302,14 @@ export default function Dashboard() {
                   key={document.id}
                   document={document}
                   deleting={deletingId === document.id}
+                  menuOpen={openActionsDocumentId === document.id}
+                  onToggleMenu={() => setOpenActionsDocumentId((current) => current === document.id ? null : document.id)}
                   onEdit={() => navigate(`/builder?document=${document.id}`)}
-                  onDelete={() => setDocumentToDelete(document)}
+                  onDownload={() => navigate(`/builder?document=${document.id}&download=1`)}
+                  onDelete={() => {
+                    setOpenActionsDocumentId(null);
+                    setDocumentToDelete(document);
+                  }}
                 />
               ))}
             </div>
@@ -301,56 +325,6 @@ export default function Dashboard() {
           </section>
         )}
 
-        <section className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-            <h2 className="font-montserrat text-lg font-black">Get Started</h2>
-            <p className="mt-1 text-sm font-semibold text-slate-400">Simple steps to create your perfect CV.</p>
-            <div className="mt-6 grid gap-5 sm:mt-7 sm:grid-cols-3">
-              {[
-                ['1', 'Choose Template', 'Pick a professional template'],
-                ['2', 'Add Information', 'Fill in your details'],
-                ['3', 'Download & Share', 'Download your CV and apply'],
-              ].map(([step, title, copy]) => (
-                <div key={step} className="relative text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-lg font-black text-white shadow-lg shadow-violet-600/25">
-                    {step}
-                  </div>
-                  <h3 className="mt-4 text-sm font-black text-slate-100">{title}</h3>
-                  <p className="mx-auto mt-2 max-w-40 text-xs font-semibold leading-5 text-slate-400">{copy}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="font-montserrat text-lg font-black">Tips & Resources</h2>
-              <Link to="/tips" className="text-xs font-black text-violet-300 transition hover:text-violet-200">View all</Link>
-            </div>
-            <div className="mt-4 grid gap-2">
-              {[
-                ['How to write a professional CV', '5 min read', '/tips'],
-                ['Top CV formats for 2026', '7 min read', '/tips'],
-                ['CV mistakes to avoid', '6 min read', '/tips'],
-              ].map(([title, meta, href]) => (
-                <Link
-                  key={title}
-                  to={href}
-                  className="group flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/35 p-3 transition hover:border-violet-300/30 hover:bg-white/[0.055]"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-300/20">
-                    <BookOpen size={16} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-extrabold text-slate-200">{title}</span>
-                    <span className="text-xs font-semibold text-slate-500">{meta}</span>
-                  </span>
-                  <ArrowRight size={15} className="text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-violet-300" />
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
       </main>
       </div>
 
@@ -480,12 +454,18 @@ function DashboardActionLink({
 function RecentCvRow({
   document,
   deleting,
+  menuOpen,
+  onToggleMenu,
   onEdit,
+  onDownload,
   onDelete,
 }: {
   document: SavedDocument;
   deleting: boolean;
+  menuOpen: boolean;
+  onToggleMenu: () => void;
   onEdit: () => void;
+  onDownload: () => void;
   onDelete: () => void;
 }) {
   const meta = templateMeta.get(document.template as any);
@@ -493,7 +473,7 @@ function RecentCvRow({
   const image = meta?.image || '/templates/professional.png';
 
   return (
-    <article className="grid gap-3 px-3 py-4 transition hover:bg-white/[0.035] sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4 sm:px-5">
+    <article className="relative grid gap-3 px-3 py-4 pr-14 transition hover:bg-white/[0.035] sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4 sm:px-5">
       <div className="flex min-w-0 gap-3 sm:gap-4">
         <div className="h-20 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900 shadow-lg shadow-black/15 sm:h-24 sm:w-20">
           <img src={image} alt="" className="h-full w-full object-cover object-top" />
@@ -510,11 +490,42 @@ function RecentCvRow({
           <p className="mt-2 text-xs font-bold text-slate-500">Updated {formatRelativeTime(document.updatedAt)}</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 min-[520px]:grid-cols-4 sm:flex sm:justify-end">
-        <button type="button" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-slate-200 transition hover:bg-white/10 active:scale-[0.98]">
-          <Eye size={14} />
-          Preview
+      <div className="absolute right-3 top-4 sm:hidden" data-cv-actions-menu>
+        <button
+          type="button"
+          onClick={onToggleMenu}
+          className="flex h-9 w-9 items-center justify-center text-slate-300 transition hover:text-white active:scale-95"
+          aria-label={`Open actions for ${document.title}`}
+          aria-expanded={menuOpen}
+        >
+          <MoreHorizontal size={17} />
         </button>
+        <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.14, ease: 'easeOut' }}
+            className="absolute right-0 z-20 mt-2 w-36 -translate-x-2 overflow-hidden rounded-xl border border-white/10 bg-slate-900 py-1 text-sm font-extrabold text-slate-100 shadow-2xl shadow-black/40"
+          >
+            <button type="button" onClick={onEdit} className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition hover:bg-white/8">
+              <Edit3 size={14} />
+              Edit
+            </button>
+            <button type="button" onClick={onDownload} className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition hover:bg-white/8">
+              <Download size={14} />
+              Download
+            </button>
+            <button type="button" onClick={onDelete} disabled={deleting} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-red-200 transition hover:bg-red-500/10 disabled:opacity-60">
+              {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+              Delete
+            </button>
+          </motion.div>
+        )}
+        </AnimatePresence>
+      </div>
+      <div className="hidden gap-2 sm:flex sm:justify-end">
         <button
           type="button"
           onClick={onEdit}
@@ -523,7 +534,11 @@ function RecentCvRow({
           <Edit3 size={14} />
           Edit
         </button>
-        <button type="button" className="hidden items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-slate-200 transition hover:bg-white/10 active:scale-[0.98] min-[460px]:inline-flex">
+        <button
+          type="button"
+          onClick={onDownload}
+          className="hidden items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-slate-200 transition hover:bg-white/10 active:scale-[0.98] min-[460px]:inline-flex"
+        >
           <Download size={14} />
           Download
         </button>
@@ -534,7 +549,7 @@ function RecentCvRow({
           className="inline-flex items-center justify-center rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs font-extrabold text-red-200 transition hover:bg-red-500/20 active:scale-[0.98] disabled:opacity-60"
           aria-label={`Delete ${document.title}`}
         >
-          {deleting ? <Loader2 className="animate-spin" size={15} /> : <MoreHorizontal size={15} />}
+          {deleting ? <Loader2 className="animate-spin" size={15} /> : <Trash2 size={15} />}
         </button>
       </div>
     </article>
