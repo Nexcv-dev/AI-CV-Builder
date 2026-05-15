@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowRight,
   BookOpen,
@@ -62,6 +63,7 @@ export default function MyCvs() {
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [documentToDelete, setDocumentToDelete] = useState<SavedDocument | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [openActionsDocumentId, setOpenActionsDocumentId] = useState<string | null>(null);
 
   useEffect(() => {
     clearPageScrollLock();
@@ -111,6 +113,25 @@ export default function MyCvs() {
   };
 
   const creationLimitReached = Boolean(quota?.reached);
+
+  useEffect(() => {
+    if (!openActionsDocumentId) return;
+
+    const closeOpenMenu = (event: PointerEvent) => {
+      if ((event.target as HTMLElement | null)?.closest('[data-cv-actions-menu]')) return;
+      setOpenActionsDocumentId(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenActionsDocumentId(null);
+    };
+
+    window.addEventListener('pointerdown', closeOpenMenu);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      window.removeEventListener('pointerdown', closeOpenMenu);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [openActionsDocumentId]);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-950 text-white">
@@ -162,7 +183,7 @@ export default function MyCvs() {
         </section>
 
         <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_300px]">
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
+          <div className="overflow-visible rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
             <div className="scrollbar-hide flex gap-1 overflow-x-auto border-b border-white/10 px-2 pt-2 sm:px-3 sm:pt-3">
               <FilterButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All CVs" count={documents.length} />
               <FilterButton active={activeTab === 'recent'} onClick={() => setActiveTab('recent')} label="Recent" count={Math.min(documents.length, 3)} />
@@ -187,14 +208,20 @@ export default function MyCvs() {
               </div>
             ) : (
               <>
-                <div className="dark-scrollbar max-h-[58dvh] min-h-[320px] divide-y divide-white/10 overflow-y-auto sm:max-h-[calc(100dvh-320px)] sm:min-h-[360px]">
+                <div className="dark-scrollbar min-h-[320px] divide-y divide-white/10 overflow-visible sm:max-h-[calc(100dvh-320px)] sm:min-h-[360px] sm:overflow-y-auto">
                   {searchedDocuments.map((document) => (
                     <CvListItem
                       key={document.id}
                       document={document}
                       deleting={deletingId === document.id}
+                      menuOpen={openActionsDocumentId === document.id}
+                      onToggleMenu={() => setOpenActionsDocumentId((current) => current === document.id ? null : document.id)}
                       onEdit={() => navigate(`/builder?document=${document.id}`)}
-                      onDelete={() => setDocumentToDelete(document)}
+                      onDownload={() => navigate(`/builder?document=${document.id}&download=1`)}
+                      onDelete={() => {
+                        setOpenActionsDocumentId(null);
+                        setDocumentToDelete(document);
+                      }}
                     />
                   ))}
                 </div>
@@ -315,13 +342,13 @@ function FilterButton({ active, onClick, label, count }: { active: boolean; onCl
   );
 }
 
-function CvListItem({ document, deleting, onEdit, onDelete }: { document: SavedDocument; deleting: boolean; onEdit: () => void; onDelete: () => void }) {
+function CvListItem({ document, deleting, menuOpen, onToggleMenu, onEdit, onDownload, onDelete }: { document: SavedDocument; deleting: boolean; menuOpen: boolean; onToggleMenu: () => void; onEdit: () => void; onDownload: () => void; onDelete: () => void }) {
   const meta = templateMeta.get(document.template as any);
   const image = meta?.image || '/templates/professional.png';
   const templateLabel = meta?.label || document.template;
 
   return (
-    <article className="grid gap-3 px-3 py-3 transition hover:bg-white/[0.035] min-[380px]:px-4 min-[380px]:py-4 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4">
+    <article className="relative grid gap-3 px-3 py-3 pr-14 transition hover:bg-white/[0.035] min-[380px]:px-4 min-[380px]:py-4 min-[380px]:pr-14 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4 sm:pr-4">
       <div className="flex min-w-0 gap-3 min-[380px]:gap-4">
         <div className="h-20 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900 shadow-lg shadow-black/15 min-[380px]:h-24 min-[380px]:w-20">
           <img src={image} alt="" className="h-full w-full object-cover object-top" />
@@ -338,7 +365,42 @@ function CvListItem({ document, deleting, onEdit, onDelete }: { document: SavedD
           <p className="mt-2 text-xs font-bold text-slate-500">Updated {formatRelativeTime(document.updatedAt)}</p>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-end">
+      <div className="absolute right-3 top-3 min-[380px]:right-4 min-[380px]:top-4 sm:hidden" data-cv-actions-menu>
+        <button
+          type="button"
+          onClick={onToggleMenu}
+          className="flex h-9 w-9 items-center justify-center text-slate-300 transition hover:text-white active:scale-95"
+          aria-label={`Open actions for ${document.title}`}
+          aria-expanded={menuOpen}
+        >
+          <MoreHorizontal size={17} />
+        </button>
+        <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.14, ease: 'easeOut' }}
+            className="absolute right-0 z-20 mt-2 w-36 -translate-x-2 overflow-hidden rounded-xl border border-white/10 bg-slate-900 py-1 text-sm font-extrabold text-slate-100 shadow-2xl shadow-black/40"
+          >
+            <button type="button" onClick={onEdit} className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition hover:bg-white/8">
+              <Edit3 size={14} />
+              Edit
+            </button>
+            <button type="button" onClick={onDownload} className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition hover:bg-white/8">
+              <Download size={14} />
+              Download
+            </button>
+            <button type="button" onClick={onDelete} disabled={deleting} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-red-200 transition hover:bg-red-500/10 disabled:opacity-60">
+              {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+              Delete
+            </button>
+          </motion.div>
+        )}
+        </AnimatePresence>
+      </div>
+      <div className="hidden gap-2 sm:flex sm:justify-end">
         <button
           type="button"
           onClick={onEdit}
@@ -347,7 +409,7 @@ function CvListItem({ document, deleting, onEdit, onDelete }: { document: SavedD
           <Edit3 size={14} />
           Edit
         </button>
-        <button type="button" onClick={onEdit} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-xs font-extrabold text-slate-200 transition hover:bg-white/10 active:scale-[0.98] min-[380px]:gap-2 min-[380px]:px-3">
+        <button type="button" onClick={onDownload} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-xs font-extrabold text-slate-200 transition hover:bg-white/10 active:scale-[0.98] min-[380px]:gap-2 min-[380px]:px-3">
           <Download size={14} />
           <span className="hidden min-[380px]:inline">Download</span>
           <span className="min-[380px]:hidden">PDF</span>
@@ -359,7 +421,7 @@ function CvListItem({ document, deleting, onEdit, onDelete }: { document: SavedD
           className="inline-flex min-h-10 items-center justify-center rounded-xl border border-red-400/20 bg-red-500/10 px-2 py-2 text-xs font-extrabold text-red-200 transition hover:bg-red-500/20 active:scale-[0.98] disabled:opacity-60 min-[380px]:px-3"
           aria-label={`Delete ${document.title}`}
         >
-          {deleting ? <Loader2 className="animate-spin" size={15} /> : <MoreHorizontal size={15} />}
+          {deleting ? <Loader2 className="animate-spin" size={15} /> : <Trash2 size={15} />}
         </button>
       </div>
     </article>

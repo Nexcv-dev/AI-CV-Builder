@@ -8,8 +8,6 @@ import {
   Camera,
   CheckCircle2,
   Crown,
-  Download,
-  Eye,
   FileText,
   Home,
   KeyRound,
@@ -261,26 +259,16 @@ export default function Profile() {
         ) : (
           <>
             <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex items-start gap-3 sm:items-center sm:gap-4">
-                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-xs font-black text-violet-100 ring-4 ring-violet-500/40 sm:h-16 sm:w-16 sm:text-sm">
-                    {completion}%
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="font-montserrat text-base font-black sm:text-lg">Profile {completion}% Complete</h2>
-                    <p className="mt-1 text-sm font-semibold text-slate-400">
-                      Add phone number, address, and nationality to complete your profile.
-                    </p>
-                  </div>
+              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-xs font-black text-violet-100 ring-4 ring-violet-500/40 sm:h-16 sm:w-16 sm:text-sm">
+                  {completion}%
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('personal')}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950/30 px-4 py-3 text-sm font-extrabold text-slate-100 transition hover:bg-white/8 lg:w-auto"
-                >
-                  View Missing Fields
-                  <ArrowLeft size={15} className="rotate-180" />
-                </button>
+                <div className="min-w-0">
+                  <h2 className="font-montserrat text-base font-black sm:text-lg">Profile {completion}% Complete</h2>
+                  <p className="mt-1 text-sm font-semibold text-slate-400">
+                    Add phone number, address, and nationality to complete your profile.
+                  </p>
+                </div>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
                 <div className="h-full rounded-full bg-linear-to-r from-violet-500 via-fuchsia-500 to-emerald-400" style={{ width: `${completion}%` }} />
@@ -307,6 +295,15 @@ export default function Profile() {
                       <Camera size={15} />
                     </button>
                   </div>
+                  {form.profileImage && (
+                    <button
+                      type="button"
+                      onClick={() => updateField('profileImage', '')}
+                      className="mt-3 inline-flex items-center justify-center rounded-full bg-violet-500/15 px-3 py-1.5 text-xs font-black text-violet-200 ring-1 ring-violet-300/20 transition hover:bg-violet-500/25 active:scale-95"
+                    >
+                      Remove
+                    </button>
+                  )}
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={uploadProfileImage} />
                   <h2 className="mt-5 max-w-full truncate font-montserrat text-xl font-black sm:text-2xl">{form.displayName || user?.displayName}</h2>
                   <p className="mt-1 max-w-full truncate text-sm font-semibold text-slate-400">{user?.email}</p>
@@ -322,25 +319,6 @@ export default function Profile() {
                   <ProfileMiniStat icon={<FileText size={14} />} value={documents.length} label="CVs Created" />
                   <ProfileMiniStat icon={<BriefcaseBusiness size={14} />} value={templatesUsed} label="Templates Used" />
                   <ProfileMiniStat icon={<ClockIcon />} value={latestDocument ? formatRelativeTime(latestDocument.updatedAt) : 'Never'} label="Last Updated" />
-                </div>
-
-                <div className="mt-6 grid gap-2">
-                  <button
-                    type="button"
-                    onClick={() => latestDocument ? navigate(`/builder?document=${latestDocument.id}`) : navigate('/builder?import=1')}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.98]"
-                  >
-                    <Eye size={16} />
-                    Preview My CV
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => latestDocument ? navigate(`/builder?document=${latestDocument.id}`) : navigate('/builder?import=1')}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm font-extrabold text-slate-100 transition hover:bg-white/8 active:scale-[0.98]"
-                  >
-                    <Download size={16} />
-                    Download Latest CV
-                  </button>
                 </div>
 
                 <div className="mt-6 border-t border-white/10 pt-5">
@@ -376,20 +354,16 @@ export default function Profile() {
                           value={form.address}
                           onChange={(event) => updateField('address', event.target.value)}
                           rows={3}
-                          className="w-full resize-none bg-transparent text-sm font-semibold text-white outline-none"
+                          className="w-full resize-none bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
                           placeholder="City, country"
                         />
                       </span>
                     </label>
-                    <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="border-t border-white/10 pt-4 sm:col-span-2">
                       <div className="flex items-start gap-2 text-xs font-semibold text-slate-400">
                         <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-300" />
                         <span>Last saved details are used across your account.</span>
                       </div>
-                      <button type="submit" disabled={isSaving} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60 sm:w-auto">
-                        {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                        Save Changes
-                      </button>
                     </div>
                   </form>
                 )}
@@ -506,7 +480,7 @@ function ProfileInput({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
-          className="w-full bg-transparent text-sm font-semibold text-white outline-none disabled:cursor-not-allowed"
+          className="w-full bg-transparent text-base font-semibold text-white outline-none disabled:cursor-not-allowed sm:text-sm"
           placeholder={placeholder}
         />
       </span>
@@ -523,11 +497,11 @@ function ProfileSelect({ label, icon, value, onChange, options }: { label: strin
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full bg-transparent text-sm font-semibold text-white outline-none"
+          className="w-full bg-slate-950 text-base font-semibold text-white outline-none [color-scheme:dark] sm:text-sm"
         >
-          <option value="">Select {label}</option>
+          <option value="" className="bg-slate-950 text-slate-400">Select {label}</option>
           {options.map((option) => (
-            <option key={option} value={option}>{option}</option>
+            <option key={option} value={option} className="bg-slate-950 text-white">{option}</option>
           ))}
         </select>
       </span>

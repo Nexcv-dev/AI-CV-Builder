@@ -75,6 +75,7 @@ export default function Home() {
   const showDownloadAfterAuthOnLoad = useRef(searchParams.get('download') === '1');
   const showTemplatesOnLoad = useRef(searchParams.get('templates') === '1');
   const shouldScrollTopOnLoad = useRef(searchParams.has('template'));
+  const initialDocumentId = useRef(searchParams.get('document'));
   const [cvData, setCvData] = useState<CVData>(initialData);
   const [debouncedCvData, setDebouncedCvData] = useState<CVData>(initialData);
   const [template, setTemplate] = useState<TemplateName>(DEFAULT_TEMPLATE);
@@ -87,6 +88,7 @@ export default function Home() {
   const [downloadQuota, setDownloadQuota] = useState<DownloadQuota | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(() => searchParams.get('document'));
   const [documentTitle, setDocumentTitle] = useState('Untitled CV');
+  const [isLoadingSavedDocument, setIsLoadingSavedDocument] = useState(Boolean(initialDocumentId.current));
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [scale, setScale] = useState(1);
   const [previewHeight, setPreviewHeight] = useState(1122); // Default A4 height in px
@@ -203,14 +205,17 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!showDownloadAfterAuthOnLoad.current || !currentUser) return;
+    if (!showDownloadAfterAuthOnLoad.current || !currentUser || isLoadingSavedDocument) return;
     showDownloadAfterAuthOnLoad.current = false;
     setShowDownloadConfirm(true);
-  }, [currentUser]);
+  }, [currentUser, isLoadingSavedDocument]);
 
   useEffect(() => {
-    const id = searchParams.get('document');
-    if (!id) return;
+    const id = initialDocumentId.current;
+    if (!id) {
+      setIsLoadingSavedDocument(false);
+      return;
+    }
 
     let ignore = false;
 
@@ -229,6 +234,8 @@ export default function Home() {
       } catch (error) {
         console.warn('Failed to load saved document:', error);
         setCloudSaveStatus('error');
+      } finally {
+        if (!ignore) setIsLoadingSavedDocument(false);
       }
     }
 
