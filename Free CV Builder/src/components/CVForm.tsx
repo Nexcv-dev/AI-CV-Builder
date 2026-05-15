@@ -815,7 +815,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                           <Check size={14} />
                         </span>
                       )}
-                      <div className="aspect-[3/4] overflow-hidden bg-slate-900">
+                      <div className="aspect-3/4 overflow-hidden bg-slate-900">
                         <img
                           src={item.image}
                           alt={`${item.label} template preview`}

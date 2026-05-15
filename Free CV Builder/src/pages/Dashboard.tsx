@@ -28,6 +28,7 @@ interface SavedDocument {
   id: string;
   title: string;
   template: string;
+  status?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -171,7 +172,7 @@ export default function Dashboard() {
       <main className="scrollbar-hide mx-auto min-w-0 max-w-7xl flex-1 px-3 pb-28 pt-6 sm:px-6 sm:pb-32 sm:pt-10 lg:h-dvh lg:overflow-y-auto lg:px-8 lg:pb-10">
         <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <h1 className="break-words font-montserrat text-2xl font-black leading-tight min-[380px]:text-3xl sm:text-4xl">
+            <h1 className="wrap-break-word font-montserrat text-2xl font-black leading-tight min-[380px]:text-3xl sm:text-4xl">
               Welcome back, {user?.displayName || 'there'}!
             </h1>
             <p className="mt-2 text-sm font-semibold text-slate-400">
@@ -400,7 +401,7 @@ function DashboardStat({
   };
 
   return (
-    <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 transition hover:border-white/15 hover:bg-white/[0.05] sm:p-5">
+    <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 transition hover:border-white/15 hover:bg-white/5 sm:p-5">
       <div className="flex items-center gap-4">
         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 sm:h-12 sm:w-12 ${tones[tone]}`}>
           {icon}
@@ -481,10 +482,17 @@ function RecentCvRow({
         <div className="min-w-0 py-0.5 sm:py-1">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h3 className="max-w-full truncate font-montserrat text-sm font-black text-white min-[380px]:text-base sm:text-lg">{document.title}</h3>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-1 text-[10px] font-black text-emerald-300 ring-1 ring-emerald-300/15">
-              <CheckCircle2 size={12} />
-              Saved
-            </span>
+            {document.status === 'draft' ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/12 px-2.5 py-1 text-[10px] font-black text-amber-300 ring-1 ring-amber-300/15">
+                <Clock3 size={12} />
+                Draft
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-1 text-[10px] font-black text-emerald-300 ring-1 ring-emerald-300/15">
+                <CheckCircle2 size={12} />
+                Saved
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm font-semibold text-slate-400">{templateLabel} template</p>
           <p className="mt-2 text-xs font-bold text-slate-500">Updated {formatRelativeTime(document.updatedAt)}</p>
