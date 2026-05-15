@@ -10,6 +10,8 @@ import {
   Crown,
   FileText,
   Home,
+  Eye,
+  EyeOff,
   KeyRound,
   Loader2,
   Lock,
@@ -510,20 +512,30 @@ function ProfileSelect({ label, icon, value, onChange, options }: { label: strin
 }
 
 function SecurityInput({ label, value, onChange, autoComplete }: { label: string; value: string; onChange: (value: string) => void; autoComplete: string }) {
+  const [showPassword, setShowPassword] = useState(false);
+  
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-extrabold text-slate-300">{label}</span>
       <span className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950 px-3 py-3 transition focus-within:border-violet-400">
         <KeyRound size={16} className="text-slate-400" />
         <input
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full bg-transparent text-sm font-semibold text-white outline-none"
+          className="w-full bg-transparent text-base sm:text-sm font-semibold text-white outline-none [&::-ms-reveal]:hidden [&::-webkit-credentials-auto-fill-button]:hidden"
           autoComplete={autoComplete}
           placeholder={label}
           minLength={label === 'Current password' ? undefined : 8}
         />
+        <button
+          type="button"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/8 hover:text-slate-200"
+          onClick={() => setShowPassword(!showPassword)}
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
+        >
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
       </span>
     </label>
   );
