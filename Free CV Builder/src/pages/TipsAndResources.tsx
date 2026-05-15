@@ -13,7 +13,7 @@ const TipsAndResources = () => {
     <main className="flex-1 overflow-x-hidden bg-slate-950 text-slate-200">
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-28">
-        <div className="absolute top-0 left-1/2 -ml-[39rem] w-[78rem] max-w-none opacity-40">
+        <div className="absolute top-0 left-1/2 -ml-156 w-312 max-w-none opacity-40">
           <div className="absolute inset-0 bg-linear-to-b from-slate-950 to-transparent" />
           <div className="h-160 w-full bg-linear-to-r from-violet-600 to-emerald-500 blur-3xl opacity-20 rounded-full mix-blend-screen" />
         </div>
@@ -34,7 +34,7 @@ const TipsAndResources = () => {
               transition={{ delay: 0.1 }}
               className="text-5xl font-black tracking-tight text-white sm:text-7xl mb-6 font-montserrat"
             >
-              Master Your Resume: <span className="bg-linear-to-r from-violet-400 to-emerald-400 bg-clip-text text-transparent">Tips & Resources</span>
+              Master Your Resume: <span className="bg-linear-to-r from-violet-400 to-emerald-400 bg-clip-text text-transparent">Tips {"&"} Resources</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
