@@ -19,6 +19,11 @@ export const CV_TEMPLATES = [
     label: 'Timeline',
     image: '/templates/timeline.svg',
   },
+  {
+    key: 'minimalist',
+    label: 'Minimalist',
+    image: '/templates/minimalist.svg',
+  },
 ] as const;
 
 export type TemplateName = (typeof CV_TEMPLATES)[number]['key'];

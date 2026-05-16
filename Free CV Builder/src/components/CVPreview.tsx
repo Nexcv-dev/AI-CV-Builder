@@ -246,14 +246,17 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     const isPro = template === 'professional';
     const isModern = template === 'modern';
     const isTimeline = template === 'timeline';
+    const isMin = template === 'minimalist';
 
     const SectionHeader = ({ title }: { title: string }) => (
-      isTimeline ? (
+      isTimeline || isMin ? (
         <div className="mb-4 flex items-center gap-3">
-          <h2 className="shrink-0 text-[11px] font-black uppercase tracking-[0.22em]" style={{ color: themeColor }}>
+          <h2 className={`${isMin ? 'text-[13px] tracking-[0.15em]' : 'text-[11px] tracking-[0.22em]'} shrink-0 font-black uppercase`} style={{ color: themeColor }}>
             {title}
           </h2>
-          <div className="h-px flex-1 bg-gray-200" />
+          {(!isMin || !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(sectionKey)) && (
+             <div className="h-px flex-1 bg-gray-200" />
+          )}
         </div>
       ) : (
         <h2 
@@ -280,8 +283,16 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     );
 
     const GridRow = ({ dateNode, contentNode }: { dateNode: React.ReactNode, contentNode: React.ReactNode }) => {
-      const colClass = isTimeline ? 'grid-cols-[104px_1fr]' : (isPro ? 'grid-cols-[114px_1fr]' : 'grid-cols-[130px_1fr]');
+      const colClass = isMin ? 'grid-cols-1' : (isTimeline ? 'grid-cols-[104px_1fr]' : (isPro ? 'grid-cols-[114px_1fr]' : 'grid-cols-[130px_1fr]'));
       const dateClass = isTimeline ? 'text-[11px] text-gray-500 font-black uppercase tracking-wider pt-0.5' : (isPro ? 'text-xs text-gray-500 font-bold uppercase pt-0.5' : 'text-sm text-gray-500 font-medium pt-0.5');
+
+      if (isMin) {
+        return (
+          <div className="flex flex-col mb-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+             {contentNode}
+          </div>
+        );
+      }
       return (
         <div className={`grid ${colClass} gap-4`} style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
           <div className={dateClass}>{dateNode}</div>
@@ -298,7 +309,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         if (!personalInfo.summary) return null;
         return (
           <SectionWrapper key="summary">
-            <SectionHeader title={isPro ? 'Professional Summary' : 'Profile'} />
+            <SectionHeader title={isPro ? 'Professional Summary' : (isMin ? 'Profile' : 'Profile')} />
             <ProseContent html={personalInfo.summary} className={isPro ? 'ml-[130px]' : ''} />
           </SectionWrapper>
         );
@@ -308,7 +319,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         return (
           <SectionWrapper key="personalDetails">
             <SectionHeader title={isPro ? 'Personal Information' : 'Personal Details'} />
-            <div className={`grid grid-cols-2 gap-x-12 gap-y-2 text-sm ${isPro ? 'ml-[130px]' : ''} ${isTimeline ? 'text-[13px]' : ''}`}>
+            <div className={`grid ${isMin ? 'grid-cols-1' : 'grid-cols-2'} gap-x-12 gap-y-2 text-sm ${isPro ? 'ml-[130px]' : ''} ${isTimeline ? 'text-[13px]' : ''}`}>
               {personalInfo.dob && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Date of Birth:</span><span className="text-gray-800">{personalInfo.dob}</span></div>}
               {personalInfo.nic && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">NIC{isPro ? '' : ' Number'}:</span><span className="text-gray-800">{personalInfo.nic}</span></div>}
               {personalInfo.gender && <div className="flex justify-between border-b border-gray-100 pb-1"><span className="font-semibold text-gray-600">Gender:</span><span className="text-gray-800">{personalInfo.gender}</span></div>}
@@ -326,7 +337,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             <SectionHeader title="Experience" />
             <div className="space-y-6">
               {experience.map((exp) => {
-                if (isModern) {
+                if (isModern || isMin) {
                   return (
                     <div key={exp.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <h3 className="text-base font-bold text-gray-900">{exp.position || 'Position'}</h3>
@@ -363,7 +374,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
             <SectionHeader title="Education" />
             <div className="space-y-6">
               {education.map((edu) => {
-                if (isModern) {
+                if (isModern || isMin) {
                   return (
                     <div key={edu.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <h3 className="text-base font-bold text-gray-900">{edu.degree || 'Degree'}</h3>
@@ -399,7 +410,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         const renderChips = (skillList: typeof skills) => (
           <div className="flex flex-wrap gap-2">
             {skillList.map((skill) => (
-              <span key={skill.id} className={`font-semibold bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-200 ${isPro || isTimeline ? 'text-xs px-2.5 py-1' : 'text-sm px-3 py-1.5'}`} style={{ pageBreakInside: 'avoid' }}>
+              <span key={skill.id} className={`font-semibold bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-200 ${isPro || isTimeline || isMin ? 'text-xs px-2.5 py-1' : 'text-sm px-3 py-1.5'}`} style={{ pageBreakInside: 'avoid' }}>
                 {skill.name}
               </span>
             ))}
@@ -431,23 +442,23 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           );
         }
 
-        if (isTimeline) {
+        if (isTimeline || isMin) {
           const skillsByCategory = hasCategories
             ? skills.reduce((acc, skill) => {
-                const category = skill.category?.trim() || 'Core Skills';
+                const category = skill.category?.trim() || (isMin ? 'Core Expertise' : 'Core Skills');
                 if (!acc[category]) acc[category] = [];
                 acc[category].push(skill);
                 return acc;
               }, {} as Record<string, typeof skills>)
-            : { 'Core Skills': skills };
+            : { [isMin ? 'Core Expertise' : 'Core Skills']: skills };
 
           return (
             <SectionWrapper key="skills">
               <SectionHeader title="Skills" />
               <div className="grid gap-3">
                 {Object.entries(skillsByCategory).map(([category, catSkills]) => (
-                  <div key={category} className="grid grid-cols-[104px_1fr] gap-4">
-                    <div className="pt-1 text-[11px] font-black uppercase tracking-wider text-gray-500">{category}</div>
+                  <div key={category} className={isMin ? "space-y-2" : "grid grid-cols-[104px_1fr] gap-4"}>
+                    <div className={isMin ? "text-[11px] font-black uppercase tracking-wider text-gray-700" : "pt-1 text-[11px] font-black uppercase tracking-wider text-gray-500"}>{category}</div>
                     {renderChips(catSkills)}
                   </div>
                 ))}
@@ -496,11 +507,11 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               {cvData.projects.map((proj) => {
                 const linkNode = proj.link ? (
                   <a href={getValidUrl(proj.link)} target="_blank" rel="noopener noreferrer" className={isPro ? "hover:underline" : "text-sm font-normal underline hover:text-gray-900"} style={{ color: themeColor }}>
-                    {isModern || isPro ? (isModern ? 'View Project' : 'Link') : 'View Project'}
+                    {isModern || isPro || isMin ? (isModern || isMin ? 'View Project' : 'Link') : 'View Project'}
                   </a>
                 ) : null;
 
-                if (isModern) {
+                if (isModern || isMin) {
                   return (
                     <div key={proj.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div className="flex justify-between items-center mb-1">
@@ -527,10 +538,10 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         if (!cvData.courses || cvData.courses.length === 0) return null;
         return (
           <SectionWrapper key="courses">
-            <SectionHeader title={isPro ? 'Certifications & Courses' : (isModern ? 'Courses & Certifications' : 'Courses')} />
-            <div className={isPro || isModern ? "space-y-4" : "space-y-6"}>
+            <SectionHeader title={isPro ? 'Certifications & Courses' : (isModern || isMin ? 'Courses & Certifications' : 'Courses')} />
+            <div className={isPro || isModern || isMin ? "space-y-4" : "space-y-6"}>
               {cvData.courses.map((course) => {
-                if (isModern) {
+                if (isModern || isMin) {
                   return (
                     <div key={course.id} style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <h3 className="text-base font-bold text-gray-900">{course.name || 'Course Name'}</h3>
@@ -562,10 +573,10 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         if (!cvData.awards || cvData.awards.length === 0) return null;
         return (
           <SectionWrapper key="awards">
-            <SectionHeader title={isModern ? 'Awards & Honors' : 'Awards'} />
-            <div className={isPro || isModern ? "space-y-4" : "space-y-6"}>
+            <SectionHeader title={isModern || isMin ? 'Awards & Honors' : 'Awards'} />
+            <div className={isPro || isModern || isMin ? "space-y-4" : "space-y-6"}>
               {cvData.awards.map((award) => {
-                if (isModern) {
+                if (isModern || isMin) {
                   return (
                     <div key={award.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <h3 className="text-base font-bold text-gray-900">{award.name || 'Award Name'}</h3>
@@ -613,6 +624,15 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   ))}
                 </div>
               </div>
+            ) : isMin ? (
+               <div className="flex flex-col gap-2 text-sm">
+                {cvData.languages.map((lang) => (
+                  <div key={lang.id} className="flex justify-between border-b border-gray-50 pb-1">
+                    <span className="font-semibold text-gray-700">{lang.name}</span>
+                    <span className="text-gray-500">{lang.proficiency}</span>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="grid grid-cols-3 gap-x-8 gap-y-3">
                 {cvData.languages.map((language) => (
@@ -652,7 +672,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 </div>
               </div>
             ) : (
-              <div className={`grid gap-x-10 gap-y-4 ${isModern ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              <div className={`grid gap-x-10 gap-y-4 ${isModern || isMin ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 {cvData.references.map((reference) => (
                   <div key={reference.id} data-page-break="avoid" className="text-sm" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                     <h3 className="font-bold text-gray-900">{reference.name || 'Reference Name'}</h3>
@@ -812,6 +832,47 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               {(cvData.sectionOrder || []).map(renderSection)}
             </div>
           </div>
+        ) : template === 'minimalist' ? (
+          <div className="p-[15mm] pt-[15mm] min-h-[297mm] flex flex-col bg-white">
+            <header className="mb-10 text-center flex flex-col items-center border-b-2 border-gray-100 pb-8">
+              {profileImage && (
+                <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.1)] mb-5 flex items-center justify-center">
+                  <img
+                    src={profileImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    style={{ transform: `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)` }}
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              )}
+              <h1 className="text-4xl font-bold tracking-tight mb-3 text-gray-900" style={{ fontFamily: fontFamily === 'Inter' ? 'Lora, serif' : undefined }}>
+                {personalInfo.fullName || 'Your Name'}
+              </h1>
+                <div className="text-[13px] text-gray-600 font-medium flex flex-wrap justify-center gap-x-4 gap-y-1">
+                  {personalInfo.email && <span style={{ textDecoration: 'none' }}>{personalInfo.email}</span>}
+                  {personalInfo.phone && <span>{personalInfo.phone}</span>}
+                  {personalInfo.address && <span>{personalInfo.address}</span>}
+                </div>
+              </header>
+
+              <div className="grid grid-cols-[1fr_250px] gap-10 relative">
+                {/* Vertical Divider */}
+                <div className="absolute top-0 bottom-0 left-[calc(100%-250px-20px)] w-px bg-gray-400" />
+
+                <div className="flex flex-col gap-2">
+                  {(cvData.sectionOrder || [])
+                    .filter(key => !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
+                    .map(renderSection)}
+                </div>
+
+                <div className="flex flex-col gap-6">
+                  {(cvData.sectionOrder || [])
+                    .filter(key => ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
+                    .map(renderSection)}
+                </div>
+              </div>
+            </div>
         ) : (
           <div className="p-[20mm] min-h-[297mm] flex flex-col bg-white">
             <header className="mb-8 text-center flex flex-col items-center">

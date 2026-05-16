@@ -75,6 +75,35 @@ describe('PDF HTML Generation', () => {
     expect(html).toContain('#ff0000');
   });
 
+  it('renders minimalist PDF HTML with design settings', () => {
+    const html = generateCVHTML({
+      ...mockCVData,
+      themeColor: '#ff0000',
+      lineSpacing: 2.4,
+      sectionGap: 3.2,
+      languages: [{ id: '4', name: 'English', proficiency: 'Fluent' }],
+    }, 'minimalist');
+
+    expect(html).toContain('grid-template-columns:1fr 250px');
+    expect(html).toContain('color:#ff0000');
+    expect(html).toContain('line-height:2.4');
+    expect(html).toContain('margin-bottom:3.2rem');
+  });
+
+  it('clamps unsafe design values before generating PDF HTML', () => {
+    const html = generateCVHTML({
+      ...mockCVData,
+      themeColor: 'red',
+      lineSpacing: 10,
+      sectionGap: -5,
+    }, 'minimalist');
+
+    expect(html).not.toContain('color:red');
+    expect(html).toContain('color:#2563eb');
+    expect(html).toContain('line-height:2.5');
+    expect(html).toContain('margin-bottom:0.5rem');
+  });
+
   it('handles empty sections gracefully', () => {
     const emptyData = {
       ...mockCVData,
