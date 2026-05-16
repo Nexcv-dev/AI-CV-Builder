@@ -1597,11 +1597,18 @@ function findSystemBrowser(): string | null {
 // Generate self-contained HTML from CV data — no SPA navigation needed
 export function generateCVHTML(cvData: any, template: string): string {
     const { personalInfo = {}, experience = [], education = [], skills = [], projects = [], courses = [], awards = [], languages = [], references = [] } = cvData;
-    const themeColor = cvData.themeColor || '#2563eb';
-    const sidebarColor = cvData.sidebarColor || '#111827';
+    const safeHexColor = (value: unknown, fallback: string) =>
+        typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+    const safeNumber = (value: unknown, fallback: number, min: number, max: number) => {
+        const number = Number(value);
+        return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
+    };
+
+    const themeColor = safeHexColor(cvData.themeColor, '#2563eb');
+    const sidebarColor = safeHexColor(cvData.sidebarColor, '#111827');
     const fontFamily = cvData.fontFamily || 'Inter';
-    const lineSpacing = cvData.lineSpacing || 1.5;
-    const sectionGap = cvData.sectionGap || 2;
+    const lineSpacing = safeNumber(cvData.lineSpacing, 1.5, 1, 2.5);
+    const sectionGap = safeNumber(cvData.sectionGap, 2, 0.5, 4);
     const profileImage = sanitizePdfImageSource(cvData.profileImage);
     const imageZoom = Number.isFinite(Number(cvData.imageZoom)) ? Math.min(Math.max(Number(cvData.imageZoom), 0.5), 3) : 1;
     const imageX = Number.isFinite(Number(cvData.imageX)) ? Math.min(Math.max(Number(cvData.imageX), -120), 120) : 0;
@@ -1633,13 +1640,20 @@ export function generateCVHTML(cvData: any, template: string): string {
     const isPro = template === 'professional';
     const isModern = template === 'modern';
     const isTimeline = template === 'timeline';
-    const headingFontSize = isPro ? '0.875rem' : (isTimeline ? '0.6875rem' : '1.125rem');
+    const isMin = template === 'minimalist';
+    const headingFontSize = isPro ? '0.875rem' : (isTimeline ? '0.6875rem' : (isMin ? '0.8125rem' : '1.125rem'));
     const dateColWidth = isTimeline ? '104px' : (isPro ? '114px' : '130px');
 
-    const heading = (title: string) =>
-        isTimeline
-            ? `<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><h2 style="flex-shrink:0;font-size:${headingFontSize};font-weight:900;text-transform:uppercase;letter-spacing:0.22em;color:${themeColor}">${title}</h2><div style="height:1px;flex:1;background:#e5e7eb"></div></div>`
-            : `<h2 style="font-size:${headingFontSize};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${title}</h2>`;
+    const heading = (title: string, sectionKey?: string) => {
+        if (isTimeline || isMin) {
+            const hasLine = !isMin || !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(sectionKey || '');
+            return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <h2 style="flex-shrink:0;font-size:${headingFontSize};font-weight:900;text-transform:uppercase;letter-spacing:${isMin ? '0.15em' : '0.22em'};color:${themeColor}">${title}</h2>
+                ${hasLine ? '<div style="height:1px;flex:1;background:#e5e7eb"></div>' : ''}
+            </div>`;
+        }
+        return `<h2 style="font-size:${headingFontSize};font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid ${themeColor};color:${themeColor};padding-bottom:4px;margin-bottom:16px">${title}</h2>`;
+    };
 
     const section = (content: string) =>
         `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">${content}</section>`;
@@ -1699,7 +1713,7 @@ export function generateCVHTML(cvData: any, template: string): string {
             const summaryDesc = isPro
                 ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>`
                 : desc(personalInfo.summary);
-            return section(`${heading(summaryTitle)}${summaryDesc}`);
+            return section(`${heading(summaryTitle, key)}${summaryDesc}`);
         }
 
         if (key === 'personalDetails' && (personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus)) {
@@ -1712,14 +1726,18 @@ export function generateCVHTML(cvData: any, template: string): string {
                 personalInfo.nationality ? detailRow('Nationality', personalInfo.nationality) : '',
                 personalInfo.religion ? detailRow('Religion', personalInfo.religion) : '',
             ].filter(Boolean).join('');
-            return section(`${heading('Personal Details')}<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:8px;font-size:0.875rem${isPro ? ';margin-left:130px' : ''}">${details}</div>`);
+
+            if (isMin) {
+                return section(`${heading('Personal Details', key)}<div style="display:flex;flex-direction:column;gap:8px;font-size:0.875rem">${details}</div>`);
+            }
+            return section(`${heading('Personal Details', key)}<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:8px;font-size:0.875rem${isPro ? ';margin-left:130px' : ''}">${details}</div>`);
         }
 
         if (key === 'experience' && experience.length > 0) {
             const items = experience.map((exp: any) => {
                 const t = title3(exp.position || 'Position');
                 const d = desc(exp.description);
-                if (isModern) {
+                if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${t}
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                           <span style="font-size:0.875rem;font-weight:500;color:${themeColor}">${esc(exp.company || 'Company')}</span>
@@ -1730,99 +1748,107 @@ export function generateCVHTML(cvData: any, template: string): string {
                 const dateH = isPro ? dateStacked(exp.startDate, exp.endDate) : dateInline(exp.startDate, exp.endDate);
                 return timelineRow(dateH, `${t}${sub}${d}`);
             });
-            return section(`${heading('Experience')}${itemsList(items)}`);
+            return section(`${heading('Experience', key)}${itemsList(items)}`);
         }
 
         if (key === 'education' && education.length > 0) {
             const items = education.map((edu: any) => {
                 const t = title3(edu.degree || 'Degree');
                 const d = desc(edu.description);
-                if (isModern) {
+                if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${t}<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(edu.institution || 'Institution')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(edu.startDate, edu.endDate)}</span></div>${d}</div>`;
                 }
                 const sub = `<div style="font-size:0.875rem;font-weight:500;color:${isPro ? themeColor : '#374151'};margin-bottom:${isPro ? '6px' : '4px'}">${esc(edu.institution || 'Institution')}</div>`;
                 return timelineRow(isPro ? dateStacked(edu.startDate, edu.endDate) : dateInline(edu.startDate, edu.endDate), `${t}${sub}${d}`);
             });
-            return section(`${heading('Education')}${itemsList(items)}`);
+            return section(`${heading('Education', key)}${itemsList(items)}`);
         }
 
         if (key === 'skills' && skills.length > 0) {
             if (isModern) return '';
-            const chipsFor = (skillList: any[]) => skillList.map((s: any) => `<span style="font-size:${isTimeline ? '0.75rem' : '0.875rem'};font-weight:600;padding:${isTimeline ? '4px 10px' : '6px 12px'};background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`).join('');
-            const chips = chipsFor(skills);
+            const chipsFor = (skillList: any[]) => skillList.map((s: any) => `<span style="font-size:${isTimeline || isMin ? '0.75rem' : '0.875rem'};font-weight:600;padding:${isTimeline || isMin ? '4px 10px' : '6px 12px'};background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`).join('');
+
             if (isPro) {
-                return section(`${heading('Skills & Expertise')}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Core Setup</div><div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div></div>`);
+                const chips = chipsFor(skills);
+                return section(`${heading('Skills & Expertise', key)}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Core Setup</div><div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div></div>`);
             }
-            if (isTimeline) {
+
+            if (isTimeline || isMin) {
                 const hasCategories = skills.some((s: any) => s.category?.trim());
                 const skillsByCategory = hasCategories
                     ? skills.reduce((acc: any, skill: any) => {
-                        const category = skill.category?.trim() || 'Core Skills';
+                        const category = skill.category?.trim() || (isMin ? 'Core Expertise' : 'Core Skills');
                         if (!acc[category]) acc[category] = [];
                         acc[category].push(skill);
                         return acc;
                     }, {})
-                    : { 'Core Skills': skills };
+                    : { [isMin ? 'Core Expertise' : 'Core Skills']: skills };
+
                 const grouped = Object.entries(skillsByCategory).map(([category, catSkills]: [string, any]) => `
-                  <div style="display:grid;grid-template-columns:104px 1fr;gap:16px">
-                    <div style="font-size:0.6875rem;color:#6b7280;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;padding-top:4px">${esc(category)}</div>
+                  <div style="${isMin ? 'margin-bottom:8px' : 'display:grid;grid-template-columns:104px 1fr;gap:16px'}">
+                    <div style="font-size:0.6875rem;color:${isMin ? '#374151' : '#6b7280'};font-weight:900;text-transform:uppercase;letter-spacing:0.05em;padding-top:4px;margin-bottom:${isMin ? '6px' : '0'}">${esc(category)}</div>
                     <div style="display:flex;flex-wrap:wrap;gap:8px">${chipsFor(catSkills)}</div>
                   </div>
                 `).join('');
-                return section(`${heading('Skills')}<div style="display:flex;flex-direction:column;gap:12px">${grouped}</div>`);
+                return section(`${heading('Skills', key)}<div style="display:flex;flex-direction:column;gap:12px">${grouped}</div>`);
             }
-            return section(`${heading('Skills')}<div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div>`);
+
+            const chips = chipsFor(skills);
+            return section(`${heading('Skills', key)}<div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div>`);
         }
 
         if (key === 'projects' && projects.length > 0) {
             const items = projects.map((p: any) => {
                 const link = p.link ? `<a href="${esc(p.link)}" style="font-size:0.75rem;font-weight:500;color:${themeColor};text-decoration:none">View Project</a>` : '';
                 const d = p.description ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-top:4px;white-space:pre-wrap;word-break:break-word">${sanitize(p.description)}</div>` : '';
-                if (isModern) {
+                if (isModern || isMin) {
                     return `<div style="break-inside:avoid"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">${title3(p.name || 'Project Name')}${link}</div>${d}</div>`;
                 }
                 return timelineRow(link, `${title3(p.name || 'Project Name')}${d}`);
             });
-            return section(`${heading(isPro ? 'Key Projects' : 'Projects')}${itemsList(items)}`);
+            return section(`${heading(isPro ? 'Key Projects' : 'Projects', key)}${itemsList(items)}`);
         }
 
         if (key === 'courses' && courses.length > 0) {
             const items = courses.map((c: any) => {
-                if (isModern) {
+                if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${title3(c.name || 'Course Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(c.institution || 'Institution')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(c.startDate, c.endDate)}</span></div></div>`;
                 }
                 const fontSize = isPro ? '0.875rem' : '1rem';
                 const ss = isPro ? '0.75rem' : '0.875rem';
                 return timelineRow(dateInline(c.startDate, c.endDate), `<h3 style="font-size:${fontSize};font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(c.institution || 'Institution')}</div>`);
             });
-            return section(`${heading(isPro ? 'Certifications & Courses' : 'Courses & Certifications')}${itemsList(items, isPro ? '16px' : '24px')}`);
+            return section(`${heading(isPro ? 'Certifications & Courses' : 'Courses & Certifications', key)}${itemsList(items, isPro ? '16px' : '24px')}`);
         }
-
 
         if (key === 'awards' && awards.length > 0) {
             const items = awards.map((a: any) => {
-                if (isModern) {
+                if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${title3(a.name || 'Award Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(a.issuer || 'Issuer')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(a.date || '')}</span></div></div>`;
                 }
                 const fontSize = isPro ? '0.875rem' : '1rem';
                 const ss = isPro ? '0.75rem' : '0.875rem';
                 return timelineRow(esc(a.date || ''), `<h3 style="font-size:${fontSize};font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(a.issuer || 'Issuer')}</div>`);
             });
-            return section(`${heading('Awards')}${itemsList(items, isPro ? '16px' : '24px')}`);
+            return section(`${heading('Awards', key)}${itemsList(items, isPro ? '16px' : '24px')}`);
         }
 
         if (key === 'languages' && languages.length > 0) {
             if (isModern) return '';
             if (isTimeline) {
                 const li = languages.map((l: any) => `<div style="break-inside:avoid;min-width:0"><span style="font-size:0.875rem;font-weight:700;color:#1f2937">${esc(l.name || '')}</span><span style="margin-left:6px;font-size:0.75rem;color:#6b7280">${esc(l.proficiency || '')}</span></div>`).join('');
-                return section(`${heading('Languages')}<div style="display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:24px;row-gap:8px">${li}</div>`);
+                return section(`${heading('Languages', key)}<div style="display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:24px;row-gap:8px">${li}</div>`);
             }
             if (isPro) {
                 const li = languages.map((l: any) => `<span style="font-size:0.875rem;font-weight:500;color:#1f2937">${esc(l.name || '')} <span style="color:#9ca3af;font-weight:400">(${esc(l.proficiency || '')})</span></span>`).join('');
-                return section(`${heading('Languages')}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Spoken</div><div style="display:flex;flex-wrap:wrap;gap:16px">${li}</div></div>`);
+                return section(`${heading('Languages', key)}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Spoken</div><div style="display:flex;flex-wrap:wrap;gap:16px">${li}</div></div>`);
+            }
+            if (isMin) {
+                const li = languages.map((l: any) => `<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f9fafb;padding-bottom:4px"><span style="font-size:0.875rem;font-weight:600;color:#374151">${esc(l.name || '')}</span><span style="font-size:0.875rem;color:#6b7280">${esc(l.proficiency || '')}</span></div>`).join('');
+                return section(`${heading('Languages', key)}<div style="display:flex;flex-direction:column;gap:8px">${li}</div>`);
             }
             const li = languages.map((l: any) => `<div style="display:flex;align-items:center;justify-content:space-between;break-inside:avoid"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(l.name || '')}</span><span style="font-size:0.875rem;color:#6b7280">${esc(l.proficiency || '')}</span></div>`).join('');
-            return section(`${heading('Languages')}<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:16px">${li}</div>`);
+            return section(`${heading('Languages', key)}<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:16px">${li}</div>`);
         }
 
         if (key === 'references' && references.length > 0) {
@@ -1838,16 +1864,19 @@ export function generateCVHTML(cvData: any, template: string): string {
             });
 
             if (isPro) {
-                return section(`${heading('References')}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Contacts</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">${items.join('')}</div></div>`);
+                return section(`${heading('References', key)}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Contacts</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">${items.join('')}</div></div>`);
             }
-            const gridCols = isModern ? '1fr' : '1fr 1fr';
-            return section(`${heading('References')}<div style="display:grid;grid-template-columns:${gridCols};column-gap:40px;row-gap:16px">${items.join('')}</div>`);
+            const gridCols = isModern || isMin ? '1fr' : '1fr 1fr';
+            return section(`${heading('References', key)}<div style="display:grid;grid-template-columns:${gridCols};column-gap:40px;row-gap:16px">${items.join('')}</div>`);
+
         }
 
         return '';
     };
 
-    const sectionsHTML = sectionOrder.map(renderSection).join('');
+    const leftSectionsHTML = isMin ? sectionOrder.filter(k => !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
+    const rightSectionsHTML = isMin ? sectionOrder.filter(k => ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
+    const sectionsHTML = isMin ? '' : sectionOrder.map(renderSection).join('');
 
     // Build template-specific layout
     let bodyContent = '';
@@ -1994,6 +2023,40 @@ export function generateCVHTML(cvData: any, template: string): string {
               </div>
             </header>
             ${sectionsHTML}
+          </td></tr></tbody>
+        </table>
+      </div>
+    </div>`;
+    } else if (template === 'minimalist') {
+        bodyContent = `<div style="display:block;background:white">
+      <div style="padding:0 20mm;padding-top:15mm">
+        <table style="width:100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
+          <thead style="height: 0;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+          <tbody style="border: none;"><tr><td style="border: none; padding: 0; vertical-align: top;">
+            <header style="margin-bottom:40px;text-align:center;border-bottom:2px solid #f3f4f6;padding-bottom:30px">
+              ${profileImage ? `<div style="width:112px;height:112px;border-radius:9999px;overflow:hidden;border:3px solid #ffffff;box-shadow:0 0 0 1px #e5e7eb;margin:0 auto 20px auto;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImageSrc}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
+              <h1 style="font-size:2.25rem;font-weight:700;margin-bottom:10px;color:#111827">${esc(personalInfo.fullName || 'Your Name')}</h1>
+              <div style="font-size:0.8125rem;color:#4b5563;display:flex;justify-content:center;gap:15px;font-weight:500">
+                ${[
+                personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : '',
+                personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : '',
+                personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''
+            ].filter(Boolean).join(' | ')}
+              </div>
+            </header>
+
+            <div style="display:grid;grid-template-columns:1fr 250px;gap:40px;position:relative">
+               <!-- Vertical Divider -->
+               <div style="position:absolute;top:0;bottom:0;left:calc(100% - 250px - 20px);width:1px;background-color:#9ca3af"></div>
+
+               <div style="display:flex;flex-direction:column;gap:8px">
+                 ${leftSectionsHTML}
+               </div>
+
+               <div style="display:flex;flex-direction:column;gap:24px">
+                 ${rightSectionsHTML}
+               </div>
+            </div>
           </td></tr></tbody>
         </table>
       </div>
@@ -2207,7 +2270,7 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         console.time("SetContent");
         console.log("Setting page content directly (no navigation)...");
         await page.setContent(html, {
-            waitUntil: 'networkidle0',
+            waitUntil: 'domcontentloaded',
             timeout: 30000
         });
         console.timeEnd("SetContent");
@@ -2216,7 +2279,10 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         // Wait for all fonts and images to be fully painted to prevent cut off/half-rendered items
         console.time("RenderWait");
         await page.evaluate(async () => {
-            await document.fonts.ready;
+            await Promise.race([
+                document.fonts.ready,
+                new Promise(resolve => setTimeout(resolve, 3000)),
+            ]);
             const images = Array.from(document.querySelectorAll('img'));
             await Promise.all(images.map(img => img.decode().catch(() => { })));
         });
