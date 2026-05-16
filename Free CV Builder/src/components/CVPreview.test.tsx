@@ -94,6 +94,22 @@ describe('CVPreview Component', () => {
     expect(sidebar).toBeInTheDocument();
   });
 
+  it('applies the custom surface color to the Startup header', () => {
+    const { container } = render(
+      <CVPreview
+        cvData={{
+          ...mockCVData,
+          templateSurfaceColor: '#123456',
+          sectionOrder: ['personalDetails', 'summary', 'experience'],
+        }}
+        template="startup"
+      />
+    );
+
+    const header = container.querySelector('header');
+    expect(header).toHaveStyle({ background: '#123456' });
+  });
+
   it('renders the profile image in the Timeline template header', () => {
     const dataWithImage: CVData = {
       ...mockCVData,

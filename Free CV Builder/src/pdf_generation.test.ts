@@ -131,6 +131,31 @@ describe('PDF HTML Generation', () => {
     expect(html).toContain('transform:scale(1.2) translate(4px,-3px)');
   });
 
+  it('keeps Startup PDF layout aligned with preview-critical structure', () => {
+    const html = generateCVHTML({
+      ...mockCVData,
+      templateSurfaceColor: '#123456',
+      personalInfo: {
+        ...mockCVData.personalInfo,
+        dob: '1990-01-01',
+        nic: '123456789V',
+        gender: 'Female',
+        maritalStatus: 'Single',
+        nationality: 'Sri Lankan',
+        religion: 'Buddhism',
+      },
+      sectionOrder: ['personalDetails', 'summary', 'experience', 'education', 'skills'],
+    }, 'startup');
+
+    expect(html).toContain('background:#123456');
+    expect(html).toContain('width:60%;vertical-align:top;padding:0 20px 0 0');
+    expect(html).toContain('width:40%;vertical-align:top;padding:64px 0 0 20px');
+    expect(html).toContain('Personal Details');
+    expect(html).toContain('Date of Birth');
+    expect(html).toContain('NIC Number');
+    expect(html).toContain('<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"');
+  });
+
   it('strips unsafe profile image sources from PDF HTML', () => {
     const html = generateCVHTML({
       ...mockCVData,

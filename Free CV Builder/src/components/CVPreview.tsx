@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
-import { Mail, Phone, MapPin, Calendar, IdCard, User, Globe, Sparkles, Heart } from 'lucide-react';
+import { Mail, Phone, MapPin, Calendar, IdCard, User, Globe, Sparkles, Heart, type LucideIcon } from 'lucide-react';
 import { CVData } from '../types';
-import { TemplateName } from '../templates';
+import { getTemplateSurfaceColorFallback, TemplateName } from '../templates';
 import DOMPurify from 'dompurify';
 
 interface CVPreviewProps {
@@ -48,10 +48,12 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     imageX = 0,
     imageY = 0,
     sidebarColor,
+    templateSurfaceColor,
     lineSpacing = 1.5,
     sectionGap = 2,
     hiddenSections = [],
   } = cvData;
+  const resolvedTemplateSurfaceColor = templateSurfaceColor || getTemplateSurfaceColorFallback(template, { themeColor, sidebarColor });
 
   // Helper to determine text color based on background luminance
   const getContrastColor = (hexColor: string) => {
@@ -63,8 +65,13 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     return luminance > 0.5 ? '#1a1a1a' : '#ffffff';
   };
 
-  const sidebarTextColor = getContrastColor(sidebarColor);
+  const sidebarTextColor = getContrastColor(resolvedTemplateSurfaceColor);
   const sidebarMutedColor = sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)';
+  const startupHeaderTextColor = getContrastColor(resolvedTemplateSurfaceColor);
+  const startupHeaderMutedColor = startupHeaderTextColor === '#ffffff' ? 'rgba(236, 253, 245, 0.92)' : 'rgba(15, 23, 42, 0.72)';
+  const startupHeaderBackground = templateSurfaceColor
+    ? resolvedTemplateSurfaceColor
+    : `linear-gradient(135deg, ${themeColor} 0%, #047857 100%)`;
 
   // Helper to render bars
   const renderBars = (level: number, color: string) => {
@@ -93,7 +100,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
 
   const renderModernSidebar = () => {
     return (
-      <div className="w-full text-white p-[15mm] flex flex-col h-full modern-sidebar" style={{ backgroundColor: sidebarColor }}>
+      <div className="w-full p-[15mm] flex flex-col h-full modern-sidebar" style={{ backgroundColor: resolvedTemplateSurfaceColor, color: sidebarTextColor }}>
         {profileImage && (
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/20 mx-auto mb-6 flex items-center justify-center">
             <img
@@ -247,20 +254,25 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     const isModern = template === 'modern';
     const isTimeline = template === 'timeline';
     const isMin = template === 'minimalist';
+    const isStartup = template === 'startup';
 
     const SectionHeader = ({ title }: { title: string }) => (
-      isTimeline || isMin ? (
+      isStartup ? (
+        <h2 className="startup-section-title mb-4 inline-block text-xl font-black uppercase tracking-[0.05em]" style={{ color: themeColor }}>
+          {title}
+        </h2>
+      ) : isTimeline || isMin ? (
         <div className="mb-4 flex items-center gap-3">
           <h2 className={`${isMin ? 'text-[13px] tracking-[0.15em]' : 'text-[11px] tracking-[0.22em]'} shrink-0 font-black uppercase`} style={{ color: themeColor }}>
             {title}
           </h2>
           {(!isMin || !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(sectionKey)) && (
-             <div className="h-px flex-1 bg-gray-200" />
+            <div className="h-px flex-1 bg-gray-200" />
           )}
         </div>
       ) : (
-        <h2 
-          className={`${isPro ? 'text-sm' : 'text-lg'} font-bold uppercase tracking-widest border-b-2 mb-4 pb-1`} 
+        <h2
+          className={`${isPro ? 'text-sm' : 'text-lg'} font-bold uppercase tracking-widest border-b-2 mb-4 pb-1`}
           style={{ color: themeColor, borderColor: themeColor }}
         >
           {title}
@@ -283,13 +295,22 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     );
 
     const GridRow = ({ dateNode, contentNode }: { dateNode: React.ReactNode, contentNode: React.ReactNode }) => {
+      if (isStartup) {
+        return (
+          <div className="relative pl-5" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+            <div className="absolute bottom-0 left-0 top-2 w-0.5" style={{ backgroundColor: `${themeColor}22` }} />
+            <div className="absolute -left-[5px] top-1.5 h-3 w-3 rounded-full shadow-[0_0_0_4px_white]" style={{ backgroundColor: themeColor }} />
+            {contentNode}
+          </div>
+        );
+      }
       const colClass = isMin ? 'grid-cols-1' : (isTimeline ? 'grid-cols-[104px_1fr]' : (isPro ? 'grid-cols-[114px_1fr]' : 'grid-cols-[130px_1fr]'));
       const dateClass = isTimeline ? 'text-[11px] text-gray-500 font-black uppercase tracking-wider pt-0.5' : (isPro ? 'text-xs text-gray-500 font-bold uppercase pt-0.5' : 'text-sm text-gray-500 font-medium pt-0.5');
 
       if (isMin) {
         return (
           <div className="flex flex-col mb-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-             {contentNode}
+            {contentNode}
           </div>
         );
       }
@@ -309,13 +330,41 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         if (!personalInfo.summary) return null;
         return (
           <SectionWrapper key="summary">
-            <SectionHeader title={isPro ? 'Professional Summary' : (isMin ? 'Profile' : 'Profile')} />
+            <SectionHeader title={isStartup ? 'About Me' : (isPro ? 'Professional Summary' : (isMin ? 'Profile' : 'Profile'))} />
             <ProseContent html={personalInfo.summary} className={isPro ? 'ml-[130px]' : ''} />
           </SectionWrapper>
         );
 
       case 'personalDetails':
         if (isModern || !(personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus)) return null;
+        if (isStartup) {
+          const detailItems: [string, string, LucideIcon][] = [
+            ['Date of Birth', personalInfo.dob, Calendar],
+            ['NIC Number', personalInfo.nic, IdCard],
+            ['Gender', personalInfo.gender, User],
+            ['Marital Status', personalInfo.maritalStatus, Heart],
+            ['Nationality', personalInfo.nationality, Globe],
+            ['Religion', personalInfo.religion, Sparkles],
+          ];
+          const details = detailItems.filter(([, value]) => value);
+
+          return (
+            <SectionWrapper key="personalDetails">
+              <SectionHeader title="Personal Details" />
+              <div className="mt-2 grid grid-cols-2 gap-x-5 gap-y-2.5 text-sm">
+                {details.map(([label, value, Icon]) => (
+                  <div key={label} className="border-b border-gray-100 pb-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-gray-500">
+                      <Icon size={13} strokeWidth={2.1} />
+                      <span>{label}:</span>
+                    </div>
+                    <div className="mt-0.5 font-semibold text-gray-800 wrap-break-word">{value}</div>
+                  </div>
+                ))}
+              </div>
+            </SectionWrapper>
+          );
+        }
         return (
           <SectionWrapper key="personalDetails">
             <SectionHeader title={isPro ? 'Personal Information' : 'Personal Details'} />
@@ -356,8 +405,12 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 );
                 const contentNode = (
                   <>
-                    <h3 className="text-base font-bold text-gray-900">{exp.position || 'Position'}</h3>
-                    <div className={isPro ? "text-sm font-medium mb-1.5" : "text-sm font-medium text-gray-700 mb-2"} style={isPro ? { color: themeColor } : {}}>{exp.company || 'Company'}</div>
+                    <h3 className={`${isStartup ? 'text-lg leading-tight' : 'text-base'} font-bold text-gray-900`}>{exp.position || 'Position'}</h3>
+                    <div className={isStartup ? "mt-1 mb-2 flex items-center gap-2 text-sm font-bold" : (isPro ? "text-sm font-medium mb-1.5" : "text-sm font-medium text-gray-700 mb-2")} style={isStartup || isPro ? { color: themeColor } : {}}>
+                      <span>{exp.company || 'Company'}</span>
+                      {isStartup && (exp.startDate || exp.endDate) && <span className="h-1 w-1 rounded-full bg-gray-300" />}
+                      {isStartup && <span className="text-xs font-semibold text-gray-400">{exp.startDate} {exp.startDate && exp.endDate ? '—' : ''} {exp.endDate}</span>}
+                    </div>
                     {exp.description && <ProseContent html={exp.description} />}
                   </>
                 );
@@ -393,11 +446,23 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 );
                 const contentNode = (
                   <>
-                    <h3 className="text-base font-bold text-gray-900">{edu.degree || 'Degree'}</h3>
-                    <div className={isPro ? "text-sm font-medium mb-1.5" : "text-sm text-gray-700 mb-1"} style={isPro ? { color: themeColor } : {}}>{edu.institution || 'Institution'}</div>
+                    <h3 className={`${isStartup ? 'text-sm' : 'text-base'} font-bold text-gray-900`}>{edu.degree || 'Degree'}</h3>
+                    <div className={isStartup ? "mt-1 text-xs font-medium text-gray-500" : (isPro ? "text-sm font-medium mb-1.5" : "text-sm text-gray-700 mb-1")} style={isPro ? { color: themeColor } : {}}>{edu.institution || 'Institution'}</div>
                     {edu.description && <ProseContent html={edu.description} />}
                   </>
                 );
+                if (isStartup) {
+                  return (
+                    <div key={edu.id} className="rounded-xl border border-gray-100 bg-gray-50 p-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      {(edu.startDate || edu.endDate) && (
+                        <div className="mb-2 inline-block rounded-full border px-3 py-1 text-xs font-bold" style={{ backgroundColor: `${themeColor}12`, borderColor: `${themeColor}44`, color: themeColor }}>
+                          {edu.startDate} {edu.startDate && edu.endDate ? '—' : ''} {edu.endDate}
+                        </div>
+                      )}
+                      {contentNode}
+                    </div>
+                  );
+                }
                 return <GridRow key={edu.id} dateNode={dateNode} contentNode={contentNode} />;
               })}
             </div>
@@ -410,7 +475,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         const renderChips = (skillList: typeof skills) => (
           <div className="flex flex-wrap gap-2">
             {skillList.map((skill) => (
-              <span key={skill.id} className={`font-semibold bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-200 ${isPro || isTimeline || isMin ? 'text-xs px-2.5 py-1' : 'text-sm px-3 py-1.5'}`} style={{ pageBreakInside: 'avoid' }}>
+              <span key={skill.id} className={`font-semibold rounded-md ${isStartup ? 'border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 shadow-sm first:bg-gray-900 first:text-white first:border-gray-900' : `bg-gray-100 text-gray-700 shadow-sm border border-gray-200 ${isPro || isTimeline || isMin ? 'text-xs px-2.5 py-1' : 'text-sm px-3 py-1.5'}`}`} style={{ pageBreakInside: 'avoid' }}>
                 {skill.name}
               </span>
             ))}
@@ -418,13 +483,13 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         );
 
         if (isPro) {
-          const skillsByCategory = hasCategories 
+          const skillsByCategory = hasCategories
             ? skills.reduce((acc, skill) => {
-                const category = skill.category?.trim() || 'Core Setup';
-                if (!acc[category]) acc[category] = [];
-                acc[category].push(skill);
-                return acc;
-              }, {} as Record<string, typeof skills>)
+              const category = skill.category?.trim() || 'Core Setup';
+              if (!acc[category]) acc[category] = [];
+              acc[category].push(skill);
+              return acc;
+            }, {} as Record<string, typeof skills>)
             : { 'Core Setup': skills };
 
           return (
@@ -442,14 +507,23 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           );
         }
 
+        if (isStartup) {
+          return (
+            <SectionWrapper key="skills">
+              <SectionHeader title="Expertise" />
+              {renderChips(skills)}
+            </SectionWrapper>
+          );
+        }
+
         if (isTimeline || isMin) {
           const skillsByCategory = hasCategories
             ? skills.reduce((acc, skill) => {
-                const category = skill.category?.trim() || (isMin ? 'Core Expertise' : 'Core Skills');
-                if (!acc[category]) acc[category] = [];
-                acc[category].push(skill);
-                return acc;
-              }, {} as Record<string, typeof skills>)
+              const category = skill.category?.trim() || (isMin ? 'Core Expertise' : 'Core Skills');
+              if (!acc[category]) acc[category] = [];
+              acc[category].push(skill);
+              return acc;
+            }, {} as Record<string, typeof skills>)
             : { [isMin ? 'Core Expertise' : 'Core Skills']: skills };
 
           return (
@@ -604,7 +678,21 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         return (
           <SectionWrapper key="languages">
             <SectionHeader title="Languages" />
-            {isTimeline ? (
+            {isStartup ? (
+              <div className="space-y-3">
+                {cvData.languages.map((lang) => (
+                  <div key={lang.id} data-page-break="avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                    <div className="mb-1 flex justify-between text-sm font-bold text-gray-800">
+                      <span>{lang.name}</span>
+                      <span style={{ color: themeColor }}>{lang.proficiency}</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-gray-200">
+                      <div className="h-1.5 rounded-full" style={{ width: '78%', backgroundColor: themeColor }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : isTimeline ? (
               <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-sm">
                 {cvData.languages.map((lang) => (
                   <div key={lang.id} data-page-break="avoid" className="min-w-0" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
@@ -625,7 +713,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 </div>
               </div>
             ) : isMin ? (
-               <div className="flex flex-col gap-2 text-sm">
+              <div className="flex flex-col gap-2 text-sm">
                 {cvData.languages.map((lang) => (
                   <div key={lang.id} className="flex justify-between border-b border-gray-50 pb-1">
                     <span className="font-semibold text-gray-700">{lang.name}</span>
@@ -759,6 +847,62 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               </div>
             </div>
           </div>
+        ) : template === 'startup' ? (
+          <div className="min-h-[297mm] bg-white">
+            <style>{`
+              .startup-section-title { position: relative; }
+              .startup-section-title::after {
+                content: "";
+                position: absolute;
+                left: 0;
+                bottom: -5px;
+                width: 50%;
+                height: 3px;
+                border-radius: 9999px;
+                background: ${themeColor};
+                opacity: 0.65;
+              }
+            `}</style>
+            <header className="relative overflow-hidden px-[20mm] pb-[25mm] pt-[15mm]" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 75%, 0 100%)', background: startupHeaderBackground, color: startupHeaderTextColor }}>
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '24px 24px' }} />
+              <div className="relative z-10 pr-44">
+                <h1 className="text-5xl font-extrabold tracking-tight wrap-break-word">{personalInfo.fullName || 'Your Name'}</h1>
+                <div className="mt-2 text-lg font-semibold uppercase tracking-wide" style={{ color: startupHeaderMutedColor }}>
+                  {experience[0]?.position || 'Professional Title'}
+                </div>
+                <div className="mt-6 space-y-2 text-sm font-medium" style={{ color: startupHeaderMutedColor }}>
+                  {personalInfo.email && <div className="flex items-center gap-3"><Mail size={16} /><span style={{ textDecoration: 'none' }}>{personalInfo.email}</span></div>}
+                  {personalInfo.phone && <div className="flex items-center gap-3"><Phone size={16} /><span>{personalInfo.phone}</span></div>}
+                  {personalInfo.address && <div className="flex items-center gap-3"><MapPin size={16} /><span>{personalInfo.address}</span></div>}
+                </div>
+              </div>
+            </header>
+
+            {profileImage && (
+              <div className="absolute right-[20mm] top-[15mm] z-20 h-36 w-36 overflow-hidden rounded-full border-4 border-white shadow-xl">
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="h-full w-full object-cover"
+                  style={{ transform: `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)` }}
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            )}
+
+            <div className="relative z-10 -mt-4 flex gap-10 px-[20mm] pb-[15mm]">
+              <div className="w-[60%] space-y-8">
+                {(cvData.sectionOrder || [])
+                  .filter(key => ['personalDetails', 'summary', 'experience'].includes(key))
+                  .map(renderSection)}
+              </div>
+              <div className="mt-16 w-[40%] space-y-8">
+                {(cvData.sectionOrder || [])
+                  .filter(key => ['education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
+                  .map(renderSection)}
+              </div>
+            </div>
+          </div>
         ) : template === 'professional' ? (
           <div className="min-h-[297mm] flex flex-col bg-white">
             <div className="w-full h-2" style={{ backgroundColor: themeColor }}></div>
@@ -849,30 +993,30 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
               <h1 className="text-4xl font-bold tracking-tight mb-3 text-gray-900" style={{ fontFamily: fontFamily === 'Inter' ? 'Lora, serif' : undefined }}>
                 {personalInfo.fullName || 'Your Name'}
               </h1>
-                <div className="text-[13px] text-gray-600 font-medium flex flex-wrap justify-center gap-x-4 gap-y-1">
-                  {personalInfo.email && <span style={{ textDecoration: 'none' }}>{personalInfo.email}</span>}
-                  {personalInfo.phone && <span>{personalInfo.phone}</span>}
-                  {personalInfo.address && <span>{personalInfo.address}</span>}
-                </div>
-              </header>
+              <div className="text-[13px] text-gray-600 font-medium flex flex-wrap justify-center gap-x-4 gap-y-1">
+                {personalInfo.email && <span style={{ textDecoration: 'none' }}>{personalInfo.email}</span>}
+                {personalInfo.phone && <span>{personalInfo.phone}</span>}
+                {personalInfo.address && <span>{personalInfo.address}</span>}
+              </div>
+            </header>
 
-              <div className="grid grid-cols-[1fr_250px] gap-10 relative">
-                {/* Vertical Divider */}
-                <div className="absolute top-0 bottom-0 left-[calc(100%-250px-20px)] w-px bg-gray-400" />
+            <div className="grid grid-cols-[1fr_250px] gap-10 relative">
+              {/* Vertical Divider */}
+              <div className="absolute top-0 bottom-0 left-[calc(100%-250px-20px)] w-px bg-gray-400" />
 
-                <div className="flex flex-col gap-2">
-                  {(cvData.sectionOrder || [])
-                    .filter(key => !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
-                    .map(renderSection)}
-                </div>
+              <div className="flex flex-col gap-2">
+                {(cvData.sectionOrder || [])
+                  .filter(key => !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
+                  .map(renderSection)}
+              </div>
 
-                <div className="flex flex-col gap-6">
-                  {(cvData.sectionOrder || [])
-                    .filter(key => ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
-                    .map(renderSection)}
-                </div>
+              <div className="flex flex-col gap-6">
+                {(cvData.sectionOrder || [])
+                  .filter(key => ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
+                  .map(renderSection)}
               </div>
             </div>
+          </div>
         ) : (
           <div className="p-[20mm] min-h-[297mm] flex flex-col bg-white">
             <header className="mb-8 text-center flex flex-col items-center">

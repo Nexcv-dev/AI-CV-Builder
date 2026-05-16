@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elegant Template Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&display=swap');
+    
+    body {
+      background-color: #f3f4f6;
+      padding: 40px;
+    }
+    .cv-container {
+      width: 210mm;
+      min-height: 297mm;
+      background: white;
+      margin: 0 auto;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      position: relative;
+      font-family: 'Lato', sans-serif;
+      color: #333333;
+    }
+    .font-serif-heading {
+      font-family: 'Playfair Display', serif;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #1a202c;
+      border-bottom: 1px solid #cbd5e0;
+      padding-bottom: 0.25rem;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="cv-container p-[20mm]">
+  <!-- Header -->
+  <header class="text-center mb-10">
+    <div class="flex justify-center mb-6">
+      <div class="w-28 h-28 rounded-full overflow-hidden border-[3px] border-white shadow-[0_0_0_1px_rgba(203,213,224,1)]">
+        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="Profile" class="w-full h-full object-cover" />
+      </div>
+    </div>
+    
+    <h1 class="font-serif-heading text-4xl font-bold tracking-[0.15em] uppercase text-gray-900 mb-4" style="color: #2c3e50;">
+      John Doe
+    </h1>
+    
+    <div class="w-full h-px bg-gray-300 mb-4"></div>
+    
+    <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-600 tracking-wide">
+      <span>john.doe@example.com</span>
+      <span class="text-gray-300">|</span>
+      <span>+1 234 567 890</span>
+      <span class="text-gray-300">|</span>
+      <span>123 Elegant Avenue, New York, NY</span>
+    </div>
+    
+    <div class="w-full h-px bg-gray-300 mt-4 mb-3"></div>
+    <div class="font-serif-heading text-lg italic text-gray-500 tracking-wide" style="color: #2c3e50;">
+      Chief Operating Officer
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div class="space-y-8">
+    
+    <!-- Profile Summary -->
+    <section>
+      <h2 class="section-title" style="border-color: #2c3e50; color: #2c3e50;">Profile Summary</h2>
+      <p class="text-sm leading-relaxed text-gray-700 text-justify">
+        A visionary leader with over a decade of experience driving creative strategies and robust operational execution. I specialize in transforming ambitious ideas into measurable results by cultivating strong teams, optimizing processes, and fostering an environment of innovation. Committed to achieving excellence and organizational growth through meticulous planning and execution.
+      </p>
+    </section>
+
+    <!-- Experience -->
+    <section>
+      <h2 class="section-title" style="border-color: #2c3e50; color: #2c3e50;">Professional Experience</h2>
+      <div class="space-y-6">
+        
+        <div class="flex gap-6">
+          <div class="w-[20%] shrink-0 text-right mt-1">
+            <div class="font-serif-heading italic text-gray-500 text-sm">2018 — Present</div>
+          </div>
+          <div class="w-[80%] pl-4 border-l border-gray-200">
+            <h3 class="font-serif-heading text-lg font-bold text-gray-900 leading-tight">Chief Operating Officer</h3>
+            <div class="text-sm font-semibold text-gray-600 mb-2 tracking-wide uppercase" style="color: #2c3e50;">Acme Corporation</div>
+            <ul class="text-sm text-gray-700 list-disc pl-4 space-y-1.5">
+              <li>Spearheaded a company-wide restructuring initiative that reduced operational costs by 15% within the first year.</li>
+              <li>Led a team of 50+ employees across multiple departments, fostering a culture of collaboration and continuous improvement.</li>
+              <li>Negotiated strategic partnerships resulting in a 20% increase in market share.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flex gap-6">
+          <div class="w-[20%] shrink-0 text-right mt-1">
+            <div class="font-serif-heading italic text-gray-500 text-sm">2013 — 2018</div>
+          </div>
+          <div class="w-[80%] pl-4 border-l border-gray-200">
+            <h3 class="font-serif-heading text-lg font-bold text-gray-900 leading-tight">Director of Operations</h3>
+            <div class="text-sm font-semibold text-gray-600 mb-2 tracking-wide uppercase" style="color: #2c3e50;">Global Tech Solutions</div>
+            <ul class="text-sm text-gray-700 list-disc pl-4 space-y-1.5">
+              <li>Managed daily operations for a regional office generating $50M in annual revenue.</li>
+              <li>Implemented a new CRM system that improved customer retention rates by 12%.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Education -->
+    <section>
+      <h2 class="section-title" style="border-color: #2c3e50; color: #2c3e50;">Education</h2>
+      <div class="space-y-6">
+        
+        <div class="flex gap-6">
+          <div class="w-[20%] shrink-0 text-right mt-1">
+            <div class="font-serif-heading italic text-gray-500 text-sm">2011 — 2013</div>
+          </div>
+          <div class="w-[80%] pl-4 border-l border-gray-200">
+            <h3 class="font-serif-heading text-lg font-bold text-gray-900 leading-tight">Master of Business Administration</h3>
+            <div class="text-sm font-semibold text-gray-600 tracking-wide uppercase" style="color: #2c3e50;">Harvard Business School</div>
+          </div>
+        </div>
+
+        <div class="flex gap-6">
+          <div class="w-[20%] shrink-0 text-right mt-1">
+            <div class="font-serif-heading italic text-gray-500 text-sm">2007 — 2011</div>
+          </div>
+          <div class="w-[80%] pl-4 border-l border-gray-200">
+            <h3 class="font-serif-heading text-lg font-bold text-gray-900 leading-tight">B.S. in Computer Science</h3>
+            <div class="text-sm font-semibold text-gray-600 tracking-wide uppercase" style="color: #2c3e50;">Stanford University</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section>
+      <h2 class="section-title" style="border-color: #2c3e50; color: #2c3e50;">Core Expertise</h2>
+      <div class="flex flex-wrap gap-2 text-sm text-gray-700">
+        <span class="px-4 py-1.5 border border-gray-300 rounded-sm hover:border-gray-500 transition-colors">Strategic Planning</span>
+        <span class="px-4 py-1.5 border border-gray-300 rounded-sm hover:border-gray-500 transition-colors">Team Leadership</span>
+        <span class="px-4 py-1.5 border border-gray-300 rounded-sm hover:border-gray-500 transition-colors">Financial Analysis</span>
+        <span class="px-4 py-1.5 border border-gray-300 rounded-sm hover:border-gray-500 transition-colors">Business Development</span>
+        <span class="px-4 py-1.5 border border-gray-300 rounded-sm hover:border-gray-500 transition-colors">Process Optimization</span>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+</body>
+</html>

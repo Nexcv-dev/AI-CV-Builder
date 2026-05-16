@@ -89,6 +89,7 @@ export interface CVData {
   imageX?: number;
   imageY?: number;
   sidebarColor: string;
+  templateSurfaceColor?: string;
   sectionOrder: string[];
   lineSpacing?: number;
   sectionGap?: number;
