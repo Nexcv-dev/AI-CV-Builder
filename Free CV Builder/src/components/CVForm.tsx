@@ -1,13 +1,13 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, Palette, Check, LayoutTemplate, Lock } from 'lucide-react';
+import { FileText, Palette, Check, LayoutTemplate, Crown } from 'lucide-react';
 import { DndContext, closestCorners, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import DOMPurify from 'dompurify';
 import toast from 'react-hot-toast';
 
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award, Reference } from '../types';
-import { CV_TEMPLATES, isTemplateAvailableForPlan, TemplateName } from '../templates';
+import { CV_TEMPLATES, templateRequiresPaidPlan, TemplateName } from '../templates';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
@@ -828,16 +828,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                 {CV_TEMPLATES.map((item) => {
                   const isSelected = template === item.key;
                   const isPending = pendingTemplate === item.key;
-                  const isLocked = !isTemplateAvailableForPlan(item.key, isFreePlan ? 'free' : 'paid');
+                  const isPremium = templateRequiresPaidPlan(item.key);
                   return (
                     <button
                       key={item.key}
                       type="button"
                       onClick={() => {
-                        if (isLocked) {
-                          onUpgradeRequired?.('save');
-                          return;
-                        }
                         setPendingTemplate(item.key);
                       }}
                       className={`group relative flex min-w-0 flex-col overflow-hidden rounded-xl border-2 text-left transition-all active:scale-[0.99] ${
@@ -853,21 +849,33 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                           <Check size={14} />
                         </span>
                       )}
-                      {isLocked && (
-                        <span className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-slate-950/75 text-white shadow-md">
-                          <Lock size={13} />
+                      {isPremium && !(isSelected || isPending) && (
+                        <span
+                          className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-slate-950 shadow-md ring-1 ring-white/60"
+                          title="Premium template"
+                          aria-label="Premium template"
+                        >
+                          <Crown size={13} />
                         </span>
                       )}
                       <div className="aspect-3/4 overflow-hidden bg-slate-900">
                         <img
                           src={item.image}
                           alt={`${item.label} template preview`}
-                          className={`h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03] ${isSelected ? '' : 'opacity-90'} ${isLocked ? 'grayscale' : ''}`}
+                          className={`h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03] ${isSelected ? '' : 'opacity-90'}`}
                         />
                       </div>
                       <div className="px-3 py-2.5">
-                        <div className={`truncate text-xs font-black ${isPending ? 'text-emerald-500' : isSelected ? 'text-violet-600' : (isDarkMode ? 'text-slate-200' : 'text-gray-700')}`}>
-                          {item.label}
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <span className={`truncate text-xs font-black ${isPending ? 'text-emerald-500' : isSelected ? 'text-violet-600' : (isDarkMode ? 'text-slate-200' : 'text-gray-700')}`}>
+                            {item.label}
+                          </span>
+                          {isPremium && (
+                            <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase leading-none ${isDarkMode ? 'bg-amber-300/15 text-amber-200' : 'bg-amber-50 text-amber-700'}`}>
+                              <Crown size={9} />
+                              Premium
+                            </span>
+                          )}
                         </div>
                       </div>
                     </button>

@@ -155,9 +155,9 @@ export default function Dashboard() {
         method: 'POST',
       });
       setUser(data.user);
-      toast.success(data.message || 'Verification email sent.');
+      toast.success(data.message || 'Verification OTP sent.');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not send verification email.';
+      const message = err instanceof Error ? err.message : 'Could not send verification OTP.';
       toast.error(message);
     } finally {
       setIsResendingVerification(false);
@@ -242,7 +242,7 @@ export default function Dashboard() {
                     disabled={isResendingVerification}
                     className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-amber-300 px-4 py-2.5 text-xs font-black text-slate-950 transition hover:bg-amber-200 active:scale-[0.98] disabled:opacity-70 sm:flex-none"
                   >
-                    {isResendingVerification ? 'Sending...' : 'Resend email'}
+                    {isResendingVerification ? 'Sending...' : 'Resend OTP'}
                   </button>
                   <button
                     type="button"

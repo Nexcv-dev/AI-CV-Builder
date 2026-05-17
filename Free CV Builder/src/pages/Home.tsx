@@ -7,7 +7,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
-import { CV_TEMPLATES, DEFAULT_TEMPLATE, isTemplateAvailableForPlan, isTemplateName, TemplateName } from '../templates';
+import { DEFAULT_TEMPLATE, isTemplateName, templateRequiresPaidPlan, TemplateName } from '../templates';
 import { ApiError, AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
@@ -232,12 +232,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!showDownloadAfterAuthOnLoad.current || !currentUser || isLoadingSavedDocument) return;
-    showDownloadAfterAuthOnLoad.current = false;
-    setShowDownloadConfirm(true);
-  }, [currentUser, isLoadingSavedDocument]);
-
-  useEffect(() => {
     const id = initialDocumentId.current;
     if (!id) {
       setIsLoadingSavedDocument(false);
@@ -404,18 +398,28 @@ export default function Home() {
     setIsDarkMode(nextDark);
   }, [isDarkMode]);
 
-  const openUpgradePrompt = useCallback((source: 'save' | 'download' | 'ai', message?: string) => {
-    const title = source === 'save'
+  const openUpgradePrompt = useCallback((source: 'save' | 'download' | 'ai', message?: string, titleOverride?: string) => {
+    const title = titleOverride || (source === 'save'
       ? 'Free save limit reached'
       : source === 'download'
         ? 'Free download limit reached'
-        : 'AI needs a paid plan';
+        : 'AI needs a paid plan');
     setUpgradePrompt({
       title,
       source,
       message: message || 'Free plan includes 1 saved CV and 1 watermarked PDF download. Upgrade to unlock more CVs, downloads, templates, and AI tools.',
     });
   }, []);
+
+  useEffect(() => {
+    if (!showDownloadAfterAuthOnLoad.current || !currentUser || isLoadingSavedDocument) return;
+    showDownloadAfterAuthOnLoad.current = false;
+    if ((creationQuota?.plan || currentUser.plan) === 'free' && templateRequiresPaidPlan(template)) {
+      openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
+      return;
+    }
+    setShowDownloadConfirm(true);
+  }, [creationQuota, currentUser, isLoadingSavedDocument, openUpgradePrompt, template]);
 
   useEffect(() => {
     setSelectedUpgradePlan(null);
@@ -484,9 +488,9 @@ export default function Home() {
         method: 'POST',
       });
       setCurrentUser(data.user);
-      toast.success(data.message || 'Verification email sent.');
+      toast.success(data.message || 'Verification OTP sent.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not send verification email.');
+      toast.error(error instanceof Error ? error.message : 'Could not send verification OTP.');
     } finally {
       setIsResendingVerification(false);
     }
@@ -561,7 +565,15 @@ export default function Home() {
     };
   }, [mobileView, template]);
 
+  const isFreePlan = currentUser ? (creationQuota?.plan || currentUser.plan) === 'free' : true;
+
   const handlePrint = async () => {
+    if (isFreePlan && templateRequiresPaidPlan(template)) {
+      setShowDownloadConfirm(false);
+      openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
+      return;
+    }
+
     if (currentUser && downloadQuota?.reached) {
       setShowDownloadConfirm(false);
       openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
@@ -585,10 +597,16 @@ export default function Home() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        if (errorData.quota && errorData.upgradeRequired) {
-          setDownloadQuota(errorData.quota);
+        if (errorData.upgradeRequired) {
+          if (errorData.quota) setDownloadQuota(errorData.quota);
           setShowDownloadConfirm(false);
-          openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
+          openUpgradePrompt(
+            'download',
+            errorData.reason === 'premium_template'
+              ? 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.'
+              : 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.',
+            errorData.reason === 'premium_template' ? 'Premium template download' : undefined
+          );
           return;
         }
         const err = new Error(`Failed to generate PDF: ${response.statusText}`);
@@ -641,7 +659,13 @@ export default function Home() {
           const parsed = JSON.parse(error.responseBody);
           if (parsed.upgradeRequired) {
             if (parsed.quota) setDownloadQuota(parsed.quota);
-            openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
+            openUpgradePrompt(
+              'download',
+              parsed.reason === 'premium_template'
+                ? 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.'
+                : 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.',
+              parsed.reason === 'premium_template' ? 'Premium template download' : undefined
+            );
             setShowDownloadConfirm(false);
             return;
           }
@@ -669,23 +693,20 @@ export default function Home() {
       setAuthModalOpen(true);
       return;
     }
+    if (isFreePlan && templateRequiresPaidPlan(template)) {
+      openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
+      return;
+    }
     if (downloadQuota?.reached) {
       openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
       return;
     }
     setShowDownloadConfirm(true);
-  }, [currentUser, downloadQuota, openUpgradePrompt]);
+  }, [currentUser, downloadQuota, isFreePlan, openUpgradePrompt, template]);
 
   const freeDownloadLimitReached = Boolean(currentUser && downloadQuota?.reached);
   const downloadBlocked = false;
   const downloadBlockedLabel = freeDownloadLimitReached ? 'Upgrade to download' : 'Download PDF';
-  const isFreePlan = currentUser ? (creationQuota?.plan || currentUser.plan) === 'free' : true;
-
-  useEffect(() => {
-    if (!isTemplateAvailableForPlan(template, isFreePlan ? 'free' : 'paid')) {
-      setTemplate(CV_TEMPLATES.find((item) => isTemplateAvailableForPlan(item.key, 'free'))?.key || 'classic');
-    }
-  }, [isFreePlan, template]);
 
   useEffect(() => {
     if (freeDownloadLimitReached) {
@@ -839,7 +860,7 @@ export default function Home() {
                       disabled={isResendingVerification}
                       className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3 text-[11px] font-extrabold transition active:scale-95 disabled:opacity-70 sm:h-9 sm:px-4 sm:text-xs ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
                     >
-                      {isResendingVerification ? 'Sending...' : 'Resend email'}
+                      {isResendingVerification ? 'Sending...' : 'Resend OTP'}
                     </button>
                     <button
                       type="button"
@@ -1257,8 +1278,12 @@ export default function Home() {
         redirectTo={authRedirectTo}
         onAuthenticated={(user) => {
           setCurrentUser(user);
-          if (authRedirectTo.includes('download=1')) {
-            setShowDownloadConfirm(true);
+          if (authRedirectTo.includes('download=1') && user.emailVerified) {
+            if (user.plan === 'free' && templateRequiresPaidPlan(template)) {
+              openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
+            } else {
+              setShowDownloadConfirm(true);
+            }
           }
         }}
       />
