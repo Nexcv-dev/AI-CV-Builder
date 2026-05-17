@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { DEFAULT_USER_ROLE, UserRole } from './userRole';
+import type { BillingPlan } from './userPlan';
 
 export interface IUser extends Document {
   googleId?: string;
@@ -19,6 +20,9 @@ export interface IUser extends Document {
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   authProvider: 'google' | 'email';
+  plan: BillingPlan;
+  planStartedAt?: Date;
+  planExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +46,9 @@ const UserSchema: Schema = new Schema(
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
     authProvider: { type: String, enum: ['google', 'email'], default: 'email', required: true },
+    plan: { type: String, enum: ['free', 'payg', 'monthly'], default: 'free', required: true },
+    planStartedAt: { type: Date },
+    planExpiresAt: { type: Date },
   },
   {
     timestamps: true,

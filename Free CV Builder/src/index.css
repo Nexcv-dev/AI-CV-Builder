@@ -1670,3 +1670,25 @@ textarea:autofill {
   transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
 }
 
+.password-reset-page input::first-line {
+  color: #f8fafc !important;
+}
+
+.account-page input:-webkit-autofill,
+.account-page input:-webkit-autofill:hover,
+.account-page input:-webkit-autofill:focus,
+.account-page input:-webkit-autofill:active,
+.account-page textarea:-webkit-autofill,
+.account-page textarea:-webkit-autofill:hover,
+.account-page textarea:-webkit-autofill:focus,
+.account-page textarea:-webkit-autofill:active,
+.account-page input:autofill,
+.account-page textarea:autofill {
+  caret-color: #f8fafc !important;
+  background-color: #020617 !important;
+  -webkit-box-shadow: 0 0 0 1000px #020617 inset !important;
+  box-shadow: 0 0 0 1000px #020617 inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
+}
+

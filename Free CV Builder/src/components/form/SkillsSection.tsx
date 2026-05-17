@@ -2,7 +2,7 @@ import React from 'react';
 import { Wrench, Plus, Trash2 } from 'lucide-react';
 import { Skill } from '../../types';
 import { SortableAccordionSection } from './SortableAccordionSection';
-import { INPUT_CLASS_SM, ADD_BUTTON_CLASS } from './constants';
+import { INPUT_CLASS_SM, ADD_BUTTON_CLASS, TEXT_FIELD_LIMITS } from './constants';
 
 interface SkillsSectionProps {
   skills: Skill[];
@@ -22,7 +22,7 @@ export const SkillsSection = React.memo(({
       {skills.map((skill) => (
         <div key={skill.id} className={`flex items-center space-x-4 p-3 border rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50/50 border-gray-100'}`}>
           <div className="flex-1">
-            <input id={`skill-name-${skill.id}`} name={`skill-name-${skill.id}`} type="text" aria-label="Skill name" placeholder="Skill name (e.g. React)" value={skill.name} onChange={(e) => onChange(skill.id, 'name', e.target.value)} className={INPUT_CLASS_SM} />
+            <input id={`skill-name-${skill.id}`} name={`skill-name-${skill.id}`} type="text" aria-label="Skill name" placeholder="Skill name (e.g. React)" value={skill.name} onChange={(e) => onChange(skill.id, 'name', e.target.value)} maxLength={TEXT_FIELD_LIMITS.shortText} className={INPUT_CLASS_SM} />
           </div>
           <div className="flex items-center space-x-1">
             {[1, 2, 3, 4, 5].map((level) => (

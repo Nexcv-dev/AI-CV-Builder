@@ -2,19 +2,26 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Palette, Upload, ChevronDown, Check, Image as ImageIcon, MoveHorizontal, MoveVertical, Layout, Type } from 'lucide-react';
 import { CVData } from '../../types';
+import { getTemplateSurfaceColorFallback, getTemplateSurfaceColorLabel, TemplateName } from '../../templates';
 import { fonts, DESIGN_CARD_CLASS, DESIGN_CARD_LIGHT, DESIGN_CARD_DARK, DESIGN_SECTION_TITLE_CLASS, DESIGN_ICON_CLASS } from './constants';
 
 interface DesignPanelProps {
   cvData: CVData;
   setCvData: React.Dispatch<React.SetStateAction<CVData>>;
+  template: TemplateName;
   isDarkMode?: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const DesignPanel = React.memo(({ cvData, setCvData, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
+export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
+  const templateSurfaceColorLabel = getTemplateSurfaceColorLabel(template);
+  const templateSurfaceColor = cvData.templateSurfaceColor || getTemplateSurfaceColorFallback(template, {
+    themeColor: cvData.themeColor,
+    sidebarColor: cvData.sidebarColor,
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -31,8 +38,16 @@ export const DesignPanel = React.memo(({ cvData, setCvData, isDarkMode, fileInpu
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleThemeChange = (field: 'themeColor' | 'fontFamily' | 'sidebarColor', value: string) => {
+  const handleThemeChange = (field: 'themeColor' | 'fontFamily' | 'sidebarColor' | 'templateSurfaceColor', value: string) => {
     setCvData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleTemplateSurfaceColorChange = (value: string) => {
+    setCvData((prev) => ({
+      ...prev,
+      templateSurfaceColor: value,
+      sidebarColor: template === 'modern' ? value : prev.sidebarColor,
+    }));
   };
 
   return (
@@ -95,13 +110,15 @@ export const DesignPanel = React.memo(({ cvData, setCvData, isDarkMode, fileInpu
               <span className={`text-sm font-mono px-3 py-1.5 border rounded-md uppercase ${isDarkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>{cvData.themeColor}</span>
             </div>
           </div>
-          <div>
-            <label htmlFor="sidebarColor" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Sidebar Background (Modern Template)</label>
-            <div className="flex items-center space-x-4">
-              <div className="relative"><input id="sidebarColor" name="sidebarColor" type="color" value={cvData.sidebarColor} onChange={(e) => handleThemeChange('sidebarColor', e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
-              <span className={`text-sm font-mono px-3 py-1.5 border rounded-md uppercase ${isDarkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>{cvData.sidebarColor}</span>
+          {templateSurfaceColorLabel && (
+            <div>
+              <label htmlFor="templateSurfaceColor" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>{templateSurfaceColorLabel}</label>
+              <div className="flex items-center space-x-4">
+                <div className="relative"><input id="templateSurfaceColor" name="templateSurfaceColor" type="color" value={templateSurfaceColor} onChange={(e) => handleTemplateSurfaceColorChange(e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
+                <span className={`text-sm font-mono px-3 py-1.5 border rounded-md uppercase ${isDarkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>{templateSurfaceColor}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Font Dropdown */}
           <div className="relative" ref={fontDropdownRef}>

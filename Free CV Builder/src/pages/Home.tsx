@@ -5,16 +5,16 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
-import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
-import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
+import { CV_TEMPLATES, DEFAULT_TEMPLATE, isTemplateAvailableForPlan, isTemplateName, TemplateName } from '../templates';
+import { ApiError, AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
 import { AccountMenu } from '../components/AccountMenu';
 import { AuthModal } from '../components/AuthModal';
 import toast from 'react-hot-toast';
-import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Moon, Sun, X } from 'lucide-react';
+import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Moon, Sun, X, Crown, Zap } from 'lucide-react';
 
 const THEME_STORAGE_KEY = 'cv-builder-theme';
 const LOCAL_STORAGE_DRAFT_KEY = 'nexcv-draft-data';
@@ -26,6 +26,7 @@ interface CvCreationQuota {
   used: number;
   remaining: number | null;
   reached: boolean;
+  plan?: 'free' | 'payg' | 'monthly' | 'unlimited';
 }
 
 interface DownloadQuota {
@@ -33,6 +34,7 @@ interface DownloadQuota {
   used: number;
   remaining: number | null;
   reached: boolean;
+  plan?: 'free' | 'payg' | 'monthly' | 'unlimited';
 }
 
 const initialData: CVData = {
@@ -115,6 +117,7 @@ export default function Home() {
     }
   });
   const [downloadError, setDownloadError] = useState<{ title: string; message: string } | null>(null);
+  const [upgradePrompt, setUpgradePrompt] = useState<{ title: string; message: string; source: 'save' | 'download' | 'ai' } | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authRedirectTo, setAuthRedirectTo] = useState('/builder');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -388,6 +391,19 @@ export default function Home() {
     setIsDarkMode(nextDark);
   }, [isDarkMode]);
 
+  const openUpgradePrompt = useCallback((source: 'save' | 'download' | 'ai', message?: string) => {
+    const title = source === 'save'
+      ? 'Free save limit reached'
+      : source === 'download'
+        ? 'Free download limit reached'
+        : 'AI needs a paid plan';
+    setUpgradePrompt({
+      title,
+      source,
+      message: message || 'Free plan includes 1 saved CV and 1 watermarked PDF download. Upgrade to unlock more CVs, downloads, templates, and AI tools.',
+    });
+  }, []);
+
   const handleCloudSave = useCallback(async (status: 'draft' | 'completed' = 'completed', isSilent = false) => {
     if (currentUser && !currentUser.emailVerified) {
       if (!isSilent) toast.error('Verify your email to save CVs.');
@@ -424,6 +440,14 @@ export default function Home() {
       } catch {}
     } catch (error) {
       console.warn('Failed to save document:', error);
+      if (error instanceof ApiError && error.data?.upgradeRequired) {
+        if (error.data.quota) setCreationQuota(error.data.quota);
+        if (!isSilent) {
+          openUpgradePrompt('save', 'You have already saved 1 CV on the Free plan. Upgrade to create and save more CVs.');
+        }
+        if (!isSilent) setCloudSaveStatus('idle');
+        return;
+      }
       if (!isSilent) {
         setCloudSaveStatus('error');
         toast.error(error instanceof Error ? error.message : 'Could not save your CV. Please try again.');
@@ -432,7 +456,7 @@ export default function Home() {
     } finally {
       if (isSilent) setIsAutoSaving(false);
     }
-  }, [currentUser, cvData, documentId, documentTitle, template]);
+  }, [currentUser, cvData, documentId, documentTitle, openUpgradePrompt, template]);
 
   const handleResendVerification = useCallback(async () => {
     if (!currentUser || isResendingVerification) return;
@@ -521,9 +545,9 @@ export default function Home() {
   }, [mobileView, template]);
 
   const handlePrint = async () => {
-    if (currentUser && !currentUser.emailVerified && downloadQuota?.reached) {
+    if (currentUser && downloadQuota?.reached) {
       setShowDownloadConfirm(false);
-      toast.error('Daily download limit reached.');
+      openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
       return;
     }
 
@@ -544,8 +568,11 @@ export default function Home() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        if (errorData.quota && errorData.error === 'Daily download limit reached.') {
+        if (errorData.quota && errorData.upgradeRequired) {
           setDownloadQuota(errorData.quota);
+          setShowDownloadConfirm(false);
+          openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
+          return;
         }
         const err = new Error(`Failed to generate PDF: ${response.statusText}`);
         (err as any).responseBody = JSON.stringify(errorData);
@@ -577,7 +604,7 @@ export default function Home() {
 
       // Clean up after a delay to ensure mobile browser handled it
       setTimeout(() => window.URL.revokeObjectURL(url), 10000);
-      if (currentUser && !currentUser.emailVerified && downloadQuota?.limit !== null) {
+      if (currentUser && downloadQuota?.limit !== null) {
         setDownloadQuota((current) => {
           if (!current || current.limit === null) return current;
           const used = current.used + 1;
@@ -595,8 +622,9 @@ export default function Home() {
       } else if (error?.responseBody) {
         try {
           const parsed = JSON.parse(error.responseBody);
-          if (parsed.error === 'Daily download limit reached.') {
-            toast.error('Daily download limit reached.');
+          if (parsed.upgradeRequired) {
+            if (parsed.quota) setDownloadQuota(parsed.quota);
+            openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
             setShowDownloadConfirm(false);
             return;
           }
@@ -624,22 +652,29 @@ export default function Home() {
       setAuthModalOpen(true);
       return;
     }
-    if (!currentUser.emailVerified && downloadQuota?.reached) {
-      toast.error('Daily download limit reached.');
+    if (downloadQuota?.reached) {
+      openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
       return;
     }
     setShowDownloadConfirm(true);
-  }, [currentUser, downloadQuota]);
+  }, [currentUser, downloadQuota, openUpgradePrompt]);
 
-  const unverifiedDownloadLimitReached = Boolean(currentUser && !currentUser.emailVerified && downloadQuota?.reached);
-  const downloadBlocked = unverifiedDownloadLimitReached;
-  const downloadBlockedLabel = downloadBlocked ? 'Limit reached' : 'Download PDF';
+  const freeDownloadLimitReached = Boolean(currentUser && downloadQuota?.reached);
+  const downloadBlocked = false;
+  const downloadBlockedLabel = freeDownloadLimitReached ? 'Upgrade to download' : 'Download PDF';
+  const isFreePlan = currentUser ? (creationQuota?.plan || currentUser.plan) === 'free' : true;
 
   useEffect(() => {
-    if (downloadBlocked || unverifiedDownloadLimitReached) {
+    if (!isTemplateAvailableForPlan(template, isFreePlan ? 'free' : 'paid')) {
+      setTemplate(CV_TEMPLATES.find((item) => isTemplateAvailableForPlan(item.key, 'free'))?.key || 'classic');
+    }
+  }, [isFreePlan, template]);
+
+  useEffect(() => {
+    if (freeDownloadLimitReached) {
       setShowDownloadConfirm(false);
     }
-  }, [downloadBlocked, unverifiedDownloadLimitReached]);
+  }, [freeDownloadLimitReached]);
 
   return (
     <>
@@ -821,6 +856,13 @@ export default function Home() {
                 onFinish={requestDownload}
                 showImportPromptOnMount={showImportPromptOnLoad.current}
                 showTemplatesOnMount={showTemplatesOnLoad.current}
+                isFreePlan={isFreePlan}
+                onUpgradeRequired={(source) => openUpgradePrompt(
+                  source,
+                  source === 'ai'
+                    ? 'AI import, summary generation, and text refinement are available on Pay As You Go and Monthly plans.'
+                    : 'Free plan includes the Classic template. Upgrade to use any template with your CV.'
+                )}
               />
             </div>
           </div>
@@ -964,6 +1006,82 @@ export default function Home() {
                       className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
                     >
                       Cancel
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Upgrade Prompt Modal */}
+        <AnimatePresence>
+          {upgradePrompt && (
+            <motion.div
+              className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-950/55 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+            >
+              <motion.div
+                className={`relative w-full max-w-2xl overflow-hidden rounded-3xl border shadow-2xl ${isDarkMode ? 'bg-slate-900 border-violet-300/20 text-slate-100' : 'bg-white border-violet-100 text-slate-900'}`}
+                initial={{ opacity: 0, scale: 0.96, y: 14 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 14 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="absolute inset-x-0 top-0 h-1.5 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
+                <button
+                  type="button"
+                  onClick={() => setUpgradePrompt(null)}
+                  className={`absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                  aria-label="Close upgrade prompt"
+                >
+                  <X size={16} />
+                </button>
+
+                <div className="p-6 pt-8 sm:p-8">
+                  <div className={`mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl border ${isDarkMode ? 'border-violet-300/25 bg-violet-400/10' : 'border-violet-100 bg-violet-50'}`}>
+                    <Crown className="h-7 w-7 text-violet-600" strokeWidth={1.8} />
+                  </div>
+                  <h3 className="pr-10 text-2xl font-black tracking-tight">{upgradePrompt.title}</h3>
+                  <p className={`mt-2 max-w-xl text-sm font-semibold leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {upgradePrompt.message}
+                  </p>
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-slate-50'}`}>
+                      <div className="text-sm font-black">Free</div>
+                      <div className="mt-2 text-2xl font-black">LKR 0</div>
+                      <p className={`mt-2 text-xs font-semibold leading-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>1 saved CV, 1 watermarked download.</p>
+                    </div>
+                    <div className={`rounded-2xl border p-4 ring-2 ring-violet-500/40 ${isDarkMode ? 'border-violet-300/30 bg-violet-400/10' : 'border-violet-200 bg-violet-50'}`}>
+                      <div className="flex items-center gap-2 text-sm font-black"><Zap size={15} className="text-violet-600" /> Pay As You Go</div>
+                      <div className="mt-2 text-2xl font-black">LKR 499</div>
+                      <p className={`mt-2 text-xs font-semibold leading-5 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 CV, any template, unlimited edits and downloads for 7 days.</p>
+                    </div>
+                    <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-white'}`}>
+                      <div className="text-sm font-black">Monthly</div>
+                      <div className="mt-2 text-2xl font-black">LKR 2199</div>
+                      <p className={`mt-2 text-xs font-semibold leading-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, downloads, and AI features.</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                    <Link
+                      to="/pricing"
+                      onClick={() => setUpgradePrompt(null)}
+                      className="inline-flex h-12 flex-1 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-700 active:scale-[0.98]"
+                    >
+                      View upgrade options
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setUpgradePrompt(null)}
+                      className={`inline-flex h-12 flex-1 items-center justify-center rounded-xl border px-4 text-sm font-black transition active:scale-[0.98] ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                    >
+                      Continue editing
                     </button>
                   </div>
                 </div>

@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import CVPreview from './CVPreview';
 import { CVData } from '../types';
 import React from 'react';
+import { CV_TEMPLATES } from '../templates';
 
 // Mock lucide-react to avoid issues with icon rendering in tests
 vi.mock('lucide-react', () => ({
@@ -94,6 +95,22 @@ describe('CVPreview Component', () => {
     expect(sidebar).toBeInTheDocument();
   });
 
+  it('applies the custom surface color to the Startup header', () => {
+    const { container } = render(
+      <CVPreview
+        cvData={{
+          ...mockCVData,
+          templateSurfaceColor: '#123456',
+          sectionOrder: ['personalDetails', 'summary', 'experience'],
+        }}
+        template="startup"
+      />
+    );
+
+    const header = container.querySelector('header');
+    expect(header).toHaveStyle({ background: '#123456' });
+  });
+
   it('renders the profile image in the Timeline template header', () => {
     const dataWithImage: CVData = {
       ...mockCVData,
@@ -109,6 +126,24 @@ describe('CVPreview Component', () => {
     expect(image).toBeInTheDocument();
     expect(image).toHaveAttribute('src', dataWithImage.profileImage);
     expect(image).toHaveStyle({ transform: 'scale(1.2) translate(4px, -3px)' });
+  });
+
+  it('shows course and award dates in the Startup template', () => {
+    render(
+      <CVPreview
+        cvData={{
+          ...mockCVData,
+          courses: [{ id: 'course-1', name: 'Advanced React', institution: 'NexCV Academy', startDate: 'Jan 2024', endDate: 'Mar 2024' }],
+          awards: [{ id: 'award-1', name: 'Best Builder', issuer: 'NexCV', date: '2025' }],
+          sectionOrder: ['courses', 'awards'],
+        }}
+        template="startup"
+      />
+    );
+
+    expect(screen.getByText(/Jan 2024/)).toBeInTheDocument();
+    expect(screen.getByText(/Mar 2024/)).toBeInTheDocument();
+    expect(screen.getByText('2025')).toBeInTheDocument();
   });
 
   it('handles "Kitchen Sink" data without crashing (Full fields)', () => {
@@ -228,5 +263,62 @@ describe('CVPreview Component', () => {
     // Verify that the content still has two separate lines/blocks
     expect(screen.getByText('Line 1')).toBeInTheDocument();
     expect(screen.getByText('Line 2')).toBeInTheDocument();
+  });
+
+  it('keeps long field values wrapped for every registered template', () => {
+    const longWord = 'LongUnbrokenPreviewText'.repeat(40);
+    const longData: CVData = {
+      personalInfo: {
+        fullName: longWord,
+        email: `${longWord}@example.com`,
+        phone: longWord,
+        address: longWord,
+        summary: `<p>${longWord}</p>`,
+        dob: longWord,
+        nic: longWord,
+        gender: longWord,
+        nationality: longWord,
+        religion: longWord,
+        maritalStatus: longWord,
+      },
+      experience: [{
+        id: 'exp-long',
+        company: longWord,
+        position: longWord,
+        startDate: longWord,
+        endDate: longWord,
+        description: `<p>${longWord}</p>`,
+      }],
+      education: [{
+        id: 'edu-long',
+        institution: longWord,
+        degree: longWord,
+        startDate: longWord,
+        endDate: longWord,
+        description: `<p>${longWord}</p>`,
+      }],
+      skills: [{ id: 'skill-long', name: longWord, level: 5, category: longWord }],
+      projects: [{ id: 'project-long', name: longWord, description: `<p>${longWord}</p>`, link: `https://example.com/${longWord}` }],
+      courses: [{ id: 'course-long', name: longWord, institution: longWord, startDate: longWord, endDate: longWord }],
+      awards: [{ id: 'award-long', name: longWord, date: longWord, issuer: longWord }],
+      languages: [{ id: 'language-long', name: longWord, proficiency: longWord }],
+      references: [{ id: 'reference-long', name: longWord, position: longWord, company: longWord, email: `${longWord}@example.com`, phone: longWord }],
+      themeColor: '#2563eb',
+      sidebarColor: '#111827',
+      fontFamily: 'Inter',
+      profileImage: '',
+      lineSpacing: 1.5,
+      sectionGap: 2,
+      hiddenSections: [],
+      sectionOrder: ['personalDetails', 'summary', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'],
+    };
+
+    CV_TEMPLATES.forEach(({ key }) => {
+      const { container, unmount } = render(<CVPreview cvData={longData} template={key} />);
+      expect(container.querySelector('.cv-preview-surface')).toBeInTheDocument();
+      expect(container.querySelector('style')?.textContent).toContain('overflow-wrap: anywhere');
+      expect(container.querySelector('style')?.textContent).toContain('word-break: break-word');
+      unmount();
+    });
   });
 });

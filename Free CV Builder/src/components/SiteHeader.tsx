@@ -5,10 +5,11 @@ import { ArrowRight, BookOpen, FileText, Home, Info, LayoutTemplate, Mail, Menu,
 const mainLinks = [
   { label: 'Home', href: '/', icon: Home, delay: '0ms' },
   { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms' },
-  { label: 'Tips', href: '/tips', icon: BookOpen, delay: '100ms' },
-  { label: 'Features', href: '/#features', icon: Zap, delay: '150ms' },
-  { label: 'FAQ', href: '/#faq', icon: Info, delay: '200ms' },
-  { label: 'About', href: '/about', icon: Info, delay: '250ms' },
+  { label: 'Pricing', href: '/pricing', icon: Zap, delay: '100ms' },
+  { label: 'Tips', href: '/tips', icon: BookOpen, delay: '150ms' },
+  { label: 'Features', href: '/#features', icon: Zap, delay: '200ms' },
+  { label: 'FAQ', href: '/#faq', icon: Info, delay: '250ms' },
+  { label: 'About', href: '/about', icon: Info, delay: '300ms' },
 ];
 
 const secondaryLinks = [
@@ -68,6 +69,7 @@ export function SiteHeader() {
 
           <nav className="hidden items-center gap-7 text-sm font-bold text-slate-300 md:flex">
             <Link to="/templates" className="transition-colors hover:text-white">Templates</Link>
+            <Link to="/pricing" className="transition-colors hover:text-white">Pricing</Link>
             <Link to="/tips" className="transition-colors hover:text-white">Tips</Link>
             <Link to="/#features" className="transition-colors hover:text-white">Features</Link>
             <Link to="/#faq" className="transition-colors hover:text-white">FAQ</Link>

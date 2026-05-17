@@ -1,13 +1,13 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, Palette, Check, LayoutTemplate } from 'lucide-react';
+import { FileText, Palette, Check, LayoutTemplate, Lock } from 'lucide-react';
 import { DndContext, closestCorners, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import DOMPurify from 'dompurify';
 import toast from 'react-hot-toast';
 
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award, Reference } from '../types';
-import { CV_TEMPLATES, TemplateName } from '../templates';
+import { CV_TEMPLATES, isTemplateAvailableForPlan, TemplateName } from '../templates';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
@@ -33,7 +33,10 @@ import {
   TAB_CONTAINER_CLASS,
   TAB_BUTTON_BASE,
   TAB_BUTTON_ACTIVE,
-  TAB_BUTTON_INACTIVE
+  TAB_BUTTON_INACTIVE,
+  getPersonalInfoLimit,
+  getSectionFieldLimit,
+  truncateText
 } from './form';
 
 interface CVFormProps {
@@ -46,9 +49,11 @@ interface CVFormProps {
   onFinish?: () => void;
   showImportPromptOnMount?: boolean;
   showTemplatesOnMount?: boolean;
+  isFreePlan?: boolean;
+  onUpgradeRequired?: (source: 'save' | 'download' | 'ai') => void;
 }
 
-export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false }: CVFormProps) {
+export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, isFreePlan = false, onUpgradeRequired }: CVFormProps) {
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design' | 'templates'>(showTemplatesOnMount ? 'templates' : 'content');
   const [pendingTemplate, setPendingTemplate] = useState<TemplateName | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
@@ -164,6 +169,11 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const stripHtml = useCallback((html: string) => DOMPurify.sanitize(html, { ALLOWED_TAGS: [] }), []);
 
   const handleGenerateSummary = useCallback(async () => {
+    if (isFreePlan) {
+      onUpgradeRequired?.('ai');
+      return;
+    }
+
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
@@ -202,9 +212,14 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     } finally {
       setRefining('summary', false);
     }
-  }, [cvData.experience, cvData.education, cvData.skills, setCvData, setRefining]);
+  }, [cvData.experience, cvData.education, cvData.skills, isFreePlan, onUpgradeRequired, setCvData, setRefining]);
 
   const handleRefineText = async (id: string, text: string, sectionType: string, context: any, onUpdate: (refined: string) => void) => {
+    if (isFreePlan) {
+      onUpgradeRequired?.('ai');
+      return;
+    }
+
     const plainText = stripHtml(text || '');
     if (!plainText.trim()) return;
 
@@ -248,6 +263,12 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (isFreePlan) {
+      onUpgradeRequired?.('ai');
+      event.target.value = '';
+      return;
+    }
+
     setIsImporting(true);
     setImportMessage({ type: 'success', text: 'Starting import...' });
 
@@ -283,6 +304,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             let errorMessage = parseResponse.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Unknown server error";
             try {
               const errorJson = JSON.parse(errorText);
+              if (errorJson.upgradeRequired) {
+                onUpgradeRequired?.('ai');
+                return;
+              }
               errorMessage = errorJson.error || errorJson.message || errorText;
             } catch (e) {
               errorMessage = errorText;
@@ -432,62 +457,67 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
 
   const handlePersonalInfoChange = useCallback((e: any) => {
     const { name, value } = e.target;
-    setCvData((prev) => ({ ...prev, personalInfo: { ...prev.personalInfo, [name]: value } }));
+    const nextValue = name === 'summary' ? value : truncateText(value, getPersonalInfoLimit(name));
+    setCvData((prev) => ({ ...prev, personalInfo: { ...prev.personalInfo, [name]: nextValue } }));
   }, [setCvData]);
 
   const handleExperienceChange = useCallback((id: string, field: keyof Experience, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      experience: prev.experience.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp)),
+      experience: prev.experience.map((exp) => (exp.id === id ? { ...exp, [field]: truncateText(value, getSectionFieldLimit(field)) } : exp)),
     }));
   }, [setCvData]);
 
   const handleEducationChange = useCallback((id: string, field: keyof Education, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      education: prev.education.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu)),
+      education: prev.education.map((edu) => (edu.id === id ? { ...edu, [field]: truncateText(value, getSectionFieldLimit(field)) } : edu)),
     }));
   }, [setCvData]);
 
   const handleSkillChange = useCallback((id: string, field: keyof Skill, value: any) => {
     setCvData((prev) => ({
       ...prev,
-      skills: prev.skills.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
+      skills: prev.skills.map((s) => (
+        s.id === id
+          ? { ...s, [field]: typeof value === 'string' ? truncateText(value, getSectionFieldLimit(field)) : value }
+          : s
+      )),
     }));
   }, [setCvData]);
 
   const handleCourseChange = useCallback((id: string, field: keyof Course, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      courses: prev.courses.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
+      courses: prev.courses.map((c) => (c.id === id ? { ...c, [field]: truncateText(value, getSectionFieldLimit(field)) } : c)),
     }));
   }, [setCvData]);
 
   const handleLanguageChange = useCallback((id: string, field: keyof Language, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      languages: prev.languages.map((l) => (l.id === id ? { ...l, [field]: value } : l)),
+      languages: prev.languages.map((l) => (l.id === id ? { ...l, [field]: truncateText(value, getSectionFieldLimit(field)) } : l)),
     }));
   }, [setCvData]);
 
   const handleProjectChange = useCallback((id: string, field: keyof Project, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      projects: prev.projects.map((p) => (p.id === id ? { ...p, [field]: value } : p)),
+      projects: prev.projects.map((p) => (p.id === id ? { ...p, [field]: truncateText(value, getSectionFieldLimit(field)) } : p)),
     }));
   }, [setCvData]);
 
   const handleAwardChange = useCallback((id: string, field: keyof Award, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      awards: prev.awards.map((a) => (a.id === id ? { ...a, [field]: value } : a)),
+      awards: prev.awards.map((a) => (a.id === id ? { ...a, [field]: truncateText(value, getSectionFieldLimit(field)) } : a)),
     }));
   }, [setCvData]);
 
   const handleReferenceChange = useCallback((id: string, field: keyof Reference, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      references: prev.references.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+      references: prev.references.map((r) => (r.id === id ? { ...r, [field]: truncateText(value, getSectionFieldLimit(field)) } : r)),
     }));
   }, [setCvData]);
 
@@ -776,6 +806,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
           <DesignPanel
             cvData={cvData}
             setCvData={setCvData}
+            template={template}
             isDarkMode={isDarkMode}
             fileInputRef={fileInputRef}
             onImageUpload={handleImageUpload}
@@ -797,11 +828,18 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                 {CV_TEMPLATES.map((item) => {
                   const isSelected = template === item.key;
                   const isPending = pendingTemplate === item.key;
+                  const isLocked = !isTemplateAvailableForPlan(item.key, isFreePlan ? 'free' : 'paid');
                   return (
                     <button
                       key={item.key}
                       type="button"
-                      onClick={() => setPendingTemplate(item.key)}
+                      onClick={() => {
+                        if (isLocked) {
+                          onUpgradeRequired?.('save');
+                          return;
+                        }
+                        setPendingTemplate(item.key);
+                      }}
                       className={`group relative flex min-w-0 flex-col overflow-hidden rounded-xl border-2 text-left transition-all active:scale-[0.99] ${
                         isPending
                           ? (isDarkMode ? 'border-emerald-300 bg-emerald-500/10 shadow-lg shadow-emerald-950/30' : 'border-emerald-500 bg-emerald-50 shadow-md')
@@ -815,11 +853,16 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                           <Check size={14} />
                         </span>
                       )}
+                      {isLocked && (
+                        <span className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-slate-950/75 text-white shadow-md">
+                          <Lock size={13} />
+                        </span>
+                      )}
                       <div className="aspect-3/4 overflow-hidden bg-slate-900">
                         <img
                           src={item.image}
                           alt={`${item.label} template preview`}
-                          className={`h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03] ${isSelected ? '' : 'opacity-90'}`}
+                          className={`h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03] ${isSelected ? '' : 'opacity-90'} ${isLocked ? 'grayscale' : ''}`}
                         />
                       </div>
                       <div className="px-3 py-2.5">

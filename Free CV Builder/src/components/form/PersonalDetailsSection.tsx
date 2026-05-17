@@ -5,7 +5,7 @@ import { User, Calendar } from 'lucide-react';
 import { CVData } from '../../types';
 import { SortableAccordionSection } from './SortableAccordionSection';
 import { PremiumSelect } from './PremiumSelect';
-import { INPUT_CLASS, INPUT_CLASS_MIN_H, LABEL_CLASS_SM } from './constants';
+import { INPUT_CLASS, INPUT_CLASS_MIN_H, LABEL_CLASS_SM, TEXT_FIELD_LIMITS } from './constants';
 
 interface PersonalDetailsSectionProps {
   personalInfo: CVData['personalInfo'];
@@ -58,6 +58,7 @@ export const PersonalDetailsSection = React.memo(({
           placeholder="e.g. Jane Doe"
           value={personalInfo.fullName}
           onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.personName}
           className={INPUT_CLASS}
         />
       </div>
@@ -71,6 +72,7 @@ export const PersonalDetailsSection = React.memo(({
           placeholder="e.g. jane@example.com"
           value={personalInfo.email}
           onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.email}
           className={INPUT_CLASS}
         />
       </div>
@@ -84,6 +86,7 @@ export const PersonalDetailsSection = React.memo(({
           placeholder="e.g. +1 234 567 890"
           value={personalInfo.phone}
           onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.phone}
           className={INPUT_CLASS}
         />
       </div>
@@ -97,6 +100,7 @@ export const PersonalDetailsSection = React.memo(({
           placeholder="e.g. New York, NY"
           value={personalInfo.address}
           onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.address}
           className={INPUT_CLASS}
         />
       </div>
@@ -146,6 +150,7 @@ export const PersonalDetailsSection = React.memo(({
           placeholder="e.g. 199012345678"
           value={personalInfo.nic}
           onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.shortText}
           className={INPUT_CLASS}
         />
       </div>
@@ -179,6 +184,7 @@ export const PersonalDetailsSection = React.memo(({
           placeholder="e.g. American"
           value={personalInfo.nationality}
           onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.shortText}
           className={INPUT_CLASS}
         />
       </div>
@@ -191,6 +197,7 @@ export const PersonalDetailsSection = React.memo(({
           placeholder="e.g. Christianity"
           value={personalInfo.religion}
           onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.shortText}
           className={INPUT_CLASS_MIN_H}
         />
       </div>

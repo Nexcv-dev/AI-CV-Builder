@@ -101,18 +101,17 @@ export default function MyCvs() {
     let base: SavedDocument[] = [];
 
     if (activeTab === 'recent') {
-      base = documents.slice(0, 3);
+      base = documents;
     } else if (activeTab === 'drafts') {
       base = documents.filter((doc) => doc.status === 'draft');
     } else if (activeTab === 'all') {
       base = documents;
     }
 
-    if (!term) return base;
-    return base.filter((document) => {
+    return term ? base.filter((document) => {
       const templateLabel = templateMeta.get(document.template as any)?.label || document.template;
       return `${document.title} ${templateLabel}`.toLowerCase().includes(term);
-    });
+    }) : base;
   }, [activeTab, documents, search]);
 
   const deleteDocument = async (id: string) => {
@@ -199,11 +198,11 @@ export default function MyCvs() {
             </div>
           </section>
 
-          <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_300px]">
-            <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
+          <section className="mt-6 grid items-start gap-5 lg:grid-cols-[1fr_300px]">
+            <div className="min-w-0 self-start rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
               <div className="scrollbar-hide flex gap-1 overflow-x-auto border-b border-white/10 px-2 pt-2 sm:px-3 sm:pt-3">
                 <FilterButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All CVs" count={documents.length} />
-                <FilterButton active={activeTab === 'recent'} onClick={() => setActiveTab('recent')} label="Recent" count={Math.min(documents.length, 3)} />
+                <FilterButton active={activeTab === 'recent'} onClick={() => setActiveTab('recent')} label="Recent" count={documents.length} />
                 <FilterButton active={activeTab === 'drafts'} onClick={() => setActiveTab('drafts')} label="Drafts" count={stats.drafts} />
                 <FilterButton active={activeTab === 'archived'} onClick={() => setActiveTab('archived')} label="Archived" count={0} />
               </div>
@@ -225,7 +224,7 @@ export default function MyCvs() {
                 </div>
               ) : (
                 <>
-                  <div className="dark-scrollbar min-h-[320px] divide-y divide-white/10 sm:max-h-[calc(100dvh-320px)] sm:min-h-[360px] sm:overflow-y-auto pb-4">
+                  <div className="dark-scrollbar min-h-[420px] divide-y divide-white/10 overflow-y-auto sm:max-h-[calc(100dvh-320px)]">
                     {searchedDocuments.map((document) => (
                       <CvListItem
                         key={document.id}
@@ -242,7 +241,7 @@ export default function MyCvs() {
                       />
                     ))}
                   </div>
-                  <div className="px-4 py-3 text-center text-xs font-bold text-slate-500">
+                  <div className="px-4 py-4 text-center text-xs font-bold text-slate-500">
                     Showing 1 to {searchedDocuments.length} of {searchedDocuments.length} CVs
                   </div>
                 </>
@@ -364,9 +363,9 @@ function CvListItem({ document, deleting, menuOpen, onToggleMenu, onEdit, onDown
   const templateLabel = meta?.label || document.template;
 
   return (
-    <article className="relative grid gap-3 px-3 py-3 pr-14 transition hover:bg-white/[0.035] min-[380px]:px-4 min-[380px]:py-4 min-[380px]:pr-14 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4 sm:pr-4">
-      <div className="flex min-w-0 gap-3 min-[380px]:gap-4">
-        <div className="h-20 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900 shadow-lg shadow-black/15 min-[380px]:h-24 min-[380px]:w-20">
+    <article className="relative grid gap-3 px-3 py-4 pr-14 transition hover:bg-white/[0.035] min-[380px]:px-5 min-[380px]:py-5 min-[380px]:pr-14 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-5 sm:pr-5">
+      <div className="flex min-w-0 gap-3 min-[380px]:gap-5">
+        <div className="h-24 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900 shadow-lg shadow-black/15 min-[380px]:h-28 min-[380px]:w-[5.5rem]">
           <img src={image} alt="" className="h-full w-full object-cover object-top" />
         </div>
         <div className="min-w-0 py-0.5 min-[380px]:py-1">

@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CVForm from './CVForm';
 import React from 'react';
+import { TEXT_FIELD_LIMITS } from './form';
 
 // Mock components that are not the focus of logic testing
 vi.mock('./RichTextEditor', () => ({
@@ -164,6 +165,80 @@ describe('CVForm Logic', () => {
     const skillButtons = await screen.findAllByLabelText(/Set skill level to/i);
     expect(skillButtons.length).toBe(5); // 5 levels
     expect(skillButtons[0]).toHaveAttribute('aria-label', 'Set skill level to 1 out of 5');
+  });
+
+  it('limits long text before saving field values', async () => {
+    const longText = 'X'.repeat(TEXT_FIELD_LIMITS.mediumText + 50);
+    const dataWithExperience = {
+      ...initialData,
+      experience: [{ id: 'exp-1', company: '', position: '', startDate: '', endDate: '', description: '' }],
+    };
+
+    render(
+      <MemoryRouter>
+        <CVForm cvData={dataWithExperience} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} />
+      </MemoryRouter>
+    );
+
+    const expStep = screen.getByText('Experience');
+    fireEvent.click(expStep);
+
+    const companyInput = await screen.findByLabelText('Company');
+    expect(companyInput).toHaveAttribute('maxLength', String(TEXT_FIELD_LIMITS.mediumText));
+
+    fireEvent.change(companyInput, { target: { value: longText } });
+
+    const updater = mockSetCvData.mock.calls.at(-1)?.[0];
+    const nextState = updater(dataWithExperience);
+    expect(nextState.experience[0].company).toHaveLength(TEXT_FIELD_LIMITS.mediumText);
+  });
+
+  it('does not limit the professional summary field', async () => {
+    const longSummary = 'Summary text '.repeat(300);
+
+    render(
+      <MemoryRouter>
+        <CVForm cvData={initialData} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(await screen.findByText('Summary'));
+    fireEvent.change(await screen.findByTestId('mock-editor'), { target: { value: longSummary } });
+
+    const updater = mockSetCvData.mock.calls.at(-1)?.[0];
+    const nextState = updater(initialData);
+    expect(nextState.personalInfo.summary).toBe(longSummary);
+  });
+
+  it('adds length limits to every CV text input in each form section', async () => {
+    const dataWithAllSections = {
+      ...initialData,
+      experience: [{ id: 'exp-1', company: '', position: '', startDate: '', endDate: '', description: '' }],
+      education: [{ id: 'edu-1', institution: '', degree: '', startDate: '', endDate: '', description: '' }],
+      skills: [{ id: 'skill-1', name: '', level: 3 }],
+      courses: [{ id: 'course-1', name: '', institution: '', startDate: '', endDate: '' }],
+      languages: [{ id: 'language-1', name: '', proficiency: 'Native' }],
+      projects: [{ id: 'project-1', name: '', description: '', link: '' }],
+      awards: [{ id: 'award-1', name: '', date: '', issuer: '' }],
+      references: [{ id: 'reference-1', name: '', position: '', company: '', email: '', phone: '' }],
+    };
+
+    const { container } = render(
+      <MemoryRouter>
+        <CVForm cvData={dataWithAllSections} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} />
+      </MemoryRouter>
+    );
+
+    for (const stepName of ['Personal', 'Experience', 'Education', 'Skills', 'Finalize']) {
+      fireEvent.click(await screen.findByText(stepName));
+      const inputs = Array.from(container.querySelectorAll<HTMLInputElement>('input[type="text"], input[type="email"], input[type="tel"]'))
+        .filter((input) => !['dob', 'themeColor', 'templateSurfaceColor'].includes(input.id));
+
+      expect(inputs.length).toBeGreaterThan(0);
+      inputs.forEach((input) => {
+        expect(input, input.id || input.name).toHaveAttribute('maxLength');
+      });
+    }
   });
 
   it('clears import message and shows starting message on new CV import', async () => {

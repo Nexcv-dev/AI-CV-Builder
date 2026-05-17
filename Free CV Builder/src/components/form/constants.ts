@@ -28,6 +28,47 @@ export const LABEL_CLASS =
 export const LABEL_CLASS_SM =
   'block text-sm font-medium text-gray-700 mb-1';
 
+export const TEXT_FIELD_LIMITS = {
+  personName: 90,
+  email: 120,
+  phone: 32,
+  address: 180,
+  shortText: 120,
+  mediumText: 180,
+  dateText: 32,
+  url: 240,
+  richText: 1600,
+} as const;
+
+export const truncateText = (value: string, maxLength: number): string =>
+  value.length > maxLength ? value.slice(0, maxLength) : value;
+
+export const getPersonalInfoLimit = (field: string): number => {
+  switch (field) {
+    case 'fullName':
+      return TEXT_FIELD_LIMITS.personName;
+    case 'email':
+      return TEXT_FIELD_LIMITS.email;
+    case 'phone':
+      return TEXT_FIELD_LIMITS.phone;
+    case 'address':
+      return TEXT_FIELD_LIMITS.address;
+    case 'dob':
+      return TEXT_FIELD_LIMITS.dateText;
+    default:
+      return TEXT_FIELD_LIMITS.shortText;
+  }
+};
+
+export const getSectionFieldLimit = (field: string): number => {
+  if (field === 'description') return TEXT_FIELD_LIMITS.richText;
+  if (field === 'email') return TEXT_FIELD_LIMITS.email;
+  if (field === 'phone') return TEXT_FIELD_LIMITS.phone;
+  if (field === 'link') return TEXT_FIELD_LIMITS.url;
+  if (field.toLowerCase().includes('date')) return TEXT_FIELD_LIMITS.dateText;
+  return TEXT_FIELD_LIMITS.mediumText;
+};
+
 // Tab Switcher styles
 export const TAB_CONTAINER_CLASS = 'flex p-1 mt-4 sm:mt-6 mx-4 sm:mx-6 mb-4 bg-gray-100/50 rounded-xl shrink-0 overflow-x-auto scrollbar-hide gap-2';
 export const TAB_BUTTON_BASE = 'flex items-center justify-center px-4 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap';

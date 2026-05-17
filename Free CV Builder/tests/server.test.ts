@@ -3,6 +3,7 @@ import { sanitizeTextForPrompt, sanitizeContextField, generateCVHTML, buildPassw
 import { isSuperAdminEmail, roleForEmail } from '../server-models/userRole';
 import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
 import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getUtcDayKey } from '../server-models/downloadQuotaUtils';
+import { createPlanExpiry, getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
 
 describe('Server Utils', () => {
   describe('super admin roles', () => {
@@ -24,11 +25,11 @@ describe('Server Utils', () => {
   });
 
   describe('CV creation quota', () => {
-    it('should default to 3 daily CV creations', () => {
+    it('should default to 1 free CV creation', () => {
       const original = process.env.DAILY_CV_CREATION_LIMIT;
       delete process.env.DAILY_CV_CREATION_LIMIT;
 
-      expect(getDailyCvCreationLimit()).toBe(3);
+      expect(getDailyCvCreationLimit()).toBe(1);
 
       if (original === undefined) {
         delete process.env.DAILY_CV_CREATION_LIMIT;
@@ -37,7 +38,7 @@ describe('Server Utils', () => {
       }
     });
 
-    it('should mark regular users as limited after reaching daily quota', () => {
+    it('should mark regular users as limited after reaching free quota', () => {
       const original = process.env.DAILY_CV_CREATION_LIMIT;
       process.env.DAILY_CV_CREATION_LIMIT = '2';
 
@@ -46,12 +47,14 @@ describe('Server Utils', () => {
         used: 1,
         remaining: 1,
         reached: false,
+        plan: 'free',
       });
       expect(buildCvCreationQuota({ role: 'user' } as any, 2)).toEqual({
         limit: 2,
         used: 2,
         remaining: 0,
         reached: true,
+        plan: 'free',
       });
 
       if (original === undefined) {
@@ -67,6 +70,25 @@ describe('Server Utils', () => {
         used: 999,
         remaining: null,
         reached: false,
+        plan: 'unlimited',
+      });
+    });
+
+    it('should keep Pay As You Go to one saved CV and make Monthly unlimited', () => {
+      const future = new Date(Date.now() + 100000);
+      expect(buildCvCreationQuota({ role: 'user', plan: 'payg', planExpiresAt: future } as any, 1)).toEqual({
+        limit: 1,
+        used: 1,
+        remaining: 0,
+        reached: true,
+        plan: 'payg',
+      });
+      expect(buildCvCreationQuota({ role: 'user', plan: 'monthly', planExpiresAt: future } as any, 99)).toEqual({
+        limit: null,
+        used: 99,
+        remaining: null,
+        reached: false,
+        plan: 'monthly',
       });
     });
 
@@ -78,22 +100,24 @@ describe('Server Utils', () => {
   });
 
   describe('download quota', () => {
-    it('should default unverified users to 3 daily downloads', () => {
+    it('should default free users to 1 lifetime download', () => {
       const original = process.env.DAILY_UNVERIFIED_DOWNLOAD_LIMIT;
       delete process.env.DAILY_UNVERIFIED_DOWNLOAD_LIMIT;
 
-      expect(getDailyUnverifiedDownloadLimit()).toBe(3);
-      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: false } as any, 2)).toEqual({
-        limit: 3,
-        used: 2,
+      expect(getDailyUnverifiedDownloadLimit()).toBe(1);
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user' } as any, 0)).toEqual({
+        limit: 1,
+        used: 0,
         remaining: 1,
         reached: false,
+        plan: 'free',
       });
-      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: false } as any, 3)).toEqual({
-        limit: 3,
-        used: 3,
+      expect(buildDownloadQuota({ authProvider: 'google', emailVerified: true, role: 'user' } as any, 1)).toEqual({
+        limit: 1,
+        used: 1,
         remaining: 0,
         reached: true,
+        plan: 'free',
       });
 
       if (original === undefined) {
@@ -103,23 +127,43 @@ describe('Server Utils', () => {
       }
     });
 
-    it('should not limit verified or Google users', () => {
-      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true } as any, 99)).toEqual({
+    it('should not limit super admins', () => {
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'super_admin' } as any, 99)).toEqual({
         limit: null,
         used: 99,
         remaining: null,
         reached: false,
+        plan: 'unlimited',
       });
-      expect(buildDownloadQuota({ authProvider: 'google', emailVerified: false } as any, 99)).toEqual({
+    });
+
+    it('should not limit paid plan downloads while active', () => {
+      const future = new Date(Date.now() + 100000);
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user', plan: 'payg', planExpiresAt: future } as any, 42)).toEqual({
         limit: null,
-        used: 99,
+        used: 42,
         remaining: null,
         reached: false,
+        plan: 'payg',
       });
     });
 
     it('should build a UTC day key', () => {
       expect(getUtcDayKey(new Date('2026-05-13T18:30:00.000Z'))).toBe('2026-05-13');
+    });
+  });
+
+  describe('billing plans', () => {
+    it('should treat expired paid plans as free', () => {
+      const past = new Date(Date.now() - 1000);
+      expect(getEffectivePlan({ role: 'user', plan: 'payg', planExpiresAt: past } as any)).toBe('free');
+      expect(isPaidPlan({ role: 'user', plan: 'payg', planExpiresAt: past } as any)).toBe(false);
+    });
+
+    it('should create plan expiry dates from the selected duration', () => {
+      const start = new Date('2026-05-16T00:00:00.000Z');
+      expect(createPlanExpiry('payg', start).toISOString()).toBe('2026-05-23T00:00:00.000Z');
+      expect(createPlanExpiry('monthly', start).toISOString()).toBe('2026-06-15T00:00:00.000Z');
     });
   });
 

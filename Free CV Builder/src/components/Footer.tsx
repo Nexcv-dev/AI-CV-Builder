@@ -9,6 +9,7 @@ const linkGroups = [
       { label: 'Home', to: '/' },
       { label: 'Builder', to: '/builder' },
       { label: 'Templates', to: '/templates' },
+      { label: 'Pricing', to: '/pricing' },
       { label: 'Tips & Resources', to: '/tips' },
       { label: 'Features', to: '/#features' },
     ],

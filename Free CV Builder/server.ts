@@ -20,12 +20,13 @@ import connectDB from './server-models/db';
 import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import DownloadQuota from './server-models/DownloadQuotaModel';
-import CvCreationQuota from './server-models/CvCreationQuotaModel';
 import './server-models/passportSetup'; // Initialize passport strategy
-import { DEFAULT_TEMPLATE, isTemplateName } from './src/templates';
+import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateAvailableForPlan, isTemplateName } from './src/templates';
 import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { buildCvCreationQuota } from './server-models/cvQuota';
-import { buildDownloadQuota, getUtcDayKey } from './server-models/downloadQuotaUtils';
+import { buildDownloadQuota } from './server-models/downloadQuotaUtils';
+import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
+import type { BillingPlan } from './server-models/userPlan';
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -627,6 +628,8 @@ const publicUser = (user: any) => ({
     gender: user.gender,
     nationality: user.nationality,
     authProvider: user.authProvider,
+    plan: getEffectivePlan(user),
+    planExpiresAt: user.planExpiresAt,
 });
 
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
@@ -647,30 +650,35 @@ const requireVerifiedEmail = (req: Request, res: Response) => {
 
 const currentUserId = (req: Request) => (req.user as any)._id || (req.user as any).id;
 
+const requirePaidPlan = (req: Request, res: Response) => {
+    if (!isPaidPlan(req.user as any)) {
+        res.status(403).json({
+            error: 'AI features are available on paid plans.',
+            upgradeRequired: true,
+        });
+        return false;
+    }
+
+    return true;
+};
+
 const getCvCreationQuota = async (user: any) => {
-    const day = getUtcDayKey();
-    const record = await CvCreationQuota.findOne({ userId: user._id || user.id, day });
-    return buildCvCreationQuota(user, record?.count || 0);
+    const used = await CVDocument.countDocuments({ userId: user._id || user.id });
+    return buildCvCreationQuota(user, used);
 };
 
 const incrementCvCreationQuota = async (user: any) => {
-    const day = getUtcDayKey();
-    const record = await CvCreationQuota.findOneAndUpdate(
-        { userId: user._id || user.id, day },
-        { $inc: { count: 1 } },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
-    );
-    return buildCvCreationQuota(user, record.count);
+    return getCvCreationQuota(user);
 };
 
 const getDownloadQuota = async (user: any) => {
-    const day = getUtcDayKey();
+    const day = 'free-lifetime';
     const record = await DownloadQuota.findOne({ userId: user._id || user.id, day });
     return buildDownloadQuota(user, record?.count || 0);
 };
 
 const incrementDownloadQuota = async (user: any) => {
-    const day = getUtcDayKey();
+    const day = 'free-lifetime';
     const record = await DownloadQuota.findOneAndUpdate(
         { userId: user._id || user.id, day },
         { $inc: { count: 1 } },
@@ -884,6 +892,13 @@ app.delete('/api/auth/account', requireAuth, async (req: Request, res: Response,
 });
 
 // Initiate Google Login
+const PASSWORD_RESET_EXPIRES_MS = 60 * 60 * 1000;
+
+const findUserByValidPasswordResetToken = (token: string) => User.findOne({
+    resetPasswordToken: hashToken(token),
+    resetPasswordExpires: { $gt: new Date() }
+});
+
 app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request, res: Response) => {
     try {
         const email = normalizeEmail(req.body.email);
@@ -918,7 +933,7 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
         // Generate token
         const token = randomBytes(20).toString('hex');
         user.resetPasswordToken = hashToken(token);
-        user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+        user.resetPasswordExpires = new Date(Date.now() + PASSWORD_RESET_EXPIRES_MS);
         await user.save();
 
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -951,6 +966,25 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
     }
 });
 
+app.post('/api/auth/validate-reset-token', authLimiter, async (req: Request, res: Response) => {
+    try {
+        const token = typeof req.body.token === 'string' ? req.body.token : '';
+
+        if (!token) {
+            return res.status(400).json({ error: 'Password reset token is missing.' });
+        }
+
+        const user = await findUserByValidPasswordResetToken(token).select('_id');
+        if (!user) {
+            return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
+        }
+
+        res.json({ valid: true });
+    } catch (error) {
+        return sendError(res, 500, 'Could not validate password reset token.', error);
+    }
+});
+
 app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Response) => {
     try {
         const token = req.body.token;
@@ -964,10 +998,7 @@ app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Resp
             return res.status(400).json({ error: passwordPolicyMessage });
         }
 
-        const user = await User.findOne({
-            resetPasswordToken: hashToken(token),
-            resetPasswordExpires: { $gt: new Date() }
-        });
+        const user = await findUserByValidPasswordResetToken(token);
 
         if (!user) {
             return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
@@ -1103,6 +1134,35 @@ app.post('/api/auth/logout', (req: Request, res: Response, next: NextFunction) =
     });
 });
 
+app.post('/api/billing/activate', requireAuth, async (req: Request, res: Response) => {
+    try {
+        if (!requireVerifiedEmail(req, res)) {
+            return;
+        }
+
+        const plan = req.body.plan as BillingPlan;
+        if (plan !== 'payg' && plan !== 'monthly') {
+            return res.status(400).json({ error: 'Choose a valid paid plan.' });
+        }
+
+        const user = await User.findById(currentUserId(req));
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        user.plan = plan;
+        user.planStartedAt = new Date();
+        user.planExpiresAt = createPlanExpiry(plan);
+        await user.save();
+
+        const quota = await getCvCreationQuota(user);
+        const downloadQuota = await getDownloadQuota(user);
+        return res.json({ user: publicUser(user), quota, downloadQuota });
+    } catch (error) {
+        return sendError(res, 500, 'Could not activate this plan.', error);
+    }
+});
+
 app.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
     try {
         const documents = await CVDocument.find({ userId: currentUserId(req) })
@@ -1139,7 +1199,7 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
         }
 
         const { cvData, status } = req.body;
-        const template = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
+        const requestedTemplate = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
 
         if (!cvData || typeof cvData !== 'object') {
@@ -1149,10 +1209,12 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
         const quota = await getCvCreationQuota(req.user);
         if (quota.reached) {
             return res.status(403).json({
-                error: 'Daily CV creation limit reached.',
+                error: 'Free plan CV save limit reached.',
                 quota,
+                upgradeRequired: true,
             });
         }
+        const template = isTemplateAvailableForPlan(requestedTemplate, quota.plan) ? requestedTemplate : 'classic';
 
         const document = await CVDocument.create({
             userId: currentUserId(req),
@@ -1180,12 +1242,15 @@ app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) =
         }
 
         const { cvData, status } = req.body;
-        const template = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
+        const requestedTemplate = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
 
         if (!cvData || typeof cvData !== 'object') {
             return res.status(400).json({ error: 'Missing CV data.' });
         }
+
+        const quota = await getCvCreationQuota(req.user);
+        const template = isTemplateAvailableForPlan(requestedTemplate, quota.plan) ? requestedTemplate : 'classic';
 
         const document = await CVDocument.findOneAndUpdate(
             { _id: req.params.id, userId: currentUserId(req) },
@@ -1221,6 +1286,10 @@ app.delete('/api/documents/:id', requireAuth, async (req: Request, res: Response
 
 app.post('/api/parse-cv', requireAuth, cvImportJsonParser, async (req: Request, res: Response) => {
     try {
+        if (!requirePaidPlan(req, res)) {
+            return;
+        }
+
         const { base64Data, mimeType } = req.body;
 
         if (!base64Data || typeof base64Data !== 'string') {
@@ -1382,6 +1451,10 @@ app.post('/api/parse-cv', requireAuth, cvImportJsonParser, async (req: Request, 
 // AI Generate Professional Summary
 app.post('/api/generate-summary', requireAuth, async (req: Request, res: Response) => {
     try {
+        if (!requirePaidPlan(req, res)) {
+            return;
+        }
+
         if (!process.env.GEMINI_API_KEY) {
             return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
         }
@@ -1444,6 +1517,10 @@ Rules:
 // AI Refine Text (for experience, education, project descriptions)
 app.post('/api/refine-text', requireAuth, async (req: Request, res: Response) => {
     try {
+        if (!requirePaidPlan(req, res)) {
+            return;
+        }
+
         if (!process.env.GEMINI_API_KEY) {
             return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
         }
@@ -1595,7 +1672,7 @@ function findSystemBrowser(): string | null {
 }
 
 // Generate self-contained HTML from CV data — no SPA navigation needed
-export function generateCVHTML(cvData: any, template: string): string {
+export function generateCVHTML(cvData: any, template: string, options: { watermark?: boolean } = {}): string {
     const { personalInfo = {}, experience = [], education = [], skills = [], projects = [], courses = [], awards = [], languages = [], references = [] } = cvData;
     const safeHexColor = (value: unknown, fallback: string) =>
         typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
@@ -1604,8 +1681,13 @@ export function generateCVHTML(cvData: any, template: string): string {
         return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
     };
 
+    const safeTemplate = isTemplateName(template) ? template : DEFAULT_TEMPLATE;
     const themeColor = safeHexColor(cvData.themeColor, '#2563eb');
     const sidebarColor = safeHexColor(cvData.sidebarColor, '#111827');
+    const templateSurfaceColor = safeHexColor(
+        cvData.templateSurfaceColor,
+        getTemplateSurfaceColorFallback(safeTemplate, { themeColor, sidebarColor })
+    );
     const fontFamily = cvData.fontFamily || 'Inter';
     const lineSpacing = safeNumber(cvData.lineSpacing, 1.5, 1, 2.5);
     const sectionGap = safeNumber(cvData.sectionGap, 2, 0.5, 4);
@@ -1633,18 +1715,29 @@ export function generateCVHTML(cvData: any, template: string): string {
         return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#1a1a1a' : '#ffffff';
     };
 
-    const sidebarTextColor = getContrastColor(sidebarColor);
+    const sidebarTextColor = getContrastColor(templateSurfaceColor);
     const sidebarMutedColor = sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)';
+    const startupHeaderTextColor = getContrastColor(templateSurfaceColor);
+    const startupHeaderMutedColor = startupHeaderTextColor === '#ffffff' ? 'rgba(236,253,245,0.92)' : 'rgba(15,23,42,0.72)';
+    const startupHeaderBackground = cvData.templateSurfaceColor
+        ? templateSurfaceColor
+        : `linear-gradient(135deg,${themeColor} 0%,#047857 100%)`;
 
     // ─── Reusable micro-templates ────────────────────────────────────
     const isPro = template === 'professional';
     const isModern = template === 'modern';
     const isTimeline = template === 'timeline';
     const isMin = template === 'minimalist';
+    const isStartup = template === 'startup';
     const headingFontSize = isPro ? '0.875rem' : (isTimeline ? '0.6875rem' : (isMin ? '0.8125rem' : '1.125rem'));
     const dateColWidth = isTimeline ? '104px' : (isPro ? '114px' : '130px');
 
     const heading = (title: string, sectionKey?: string) => {
+        if (isStartup) {
+            return `<h2 style="display:inline-block;position:relative;font-size:1.25rem;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;color:${themeColor};margin-bottom:16px">
+                ${title}<span style="position:absolute;left:0;bottom:-5px;width:50%;height:3px;border-radius:9999px;background:${themeColor};opacity:0.65"></span>
+            </h2>`;
+        }
         if (isTimeline || isMin) {
             const hasLine = !isMin || !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(sectionKey || '');
             return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
@@ -1659,7 +1752,7 @@ export function generateCVHTML(cvData: any, template: string): string {
         `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">${content}</section>`;
 
     const desc = (html: string) => html
-        ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(html)}</div>` : '';
+        ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word">${sanitize(html)}</div>` : '';
 
     const dateInline = (s: string, e: string) =>
         `${esc(s || '')} ${s && e ? '—' : ''} ${esc(e || '')}`;
@@ -1671,6 +1764,13 @@ export function generateCVHTML(cvData: any, template: string): string {
         `<h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(t)}</h3>`;
 
     const timelineRow = (dateHtml: string, inner: string) => {
+        if (isStartup) {
+            return `<div style="position:relative;padding-left:20px;break-inside:avoid">
+                <div style="position:absolute;left:0;top:8px;bottom:0;width:2px;background:${themeColor}22"></div>
+                <div style="position:absolute;left:-5px;top:6px;width:12px;height:12px;border-radius:9999px;background:${themeColor};box-shadow:0 0 0 4px #ffffff"></div>
+                ${inner}
+            </div>`;
+        }
         const ds = isTimeline ? 'font-size:0.6875rem;color:#6b7280;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;padding-top:2px'
             : (isPro ? 'font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px'
                 : 'font-size:0.875rem;color:#6b7280;font-weight:500;padding-top:2px');
@@ -1709,15 +1809,41 @@ export function generateCVHTML(cvData: any, template: string): string {
         if (hiddenSections.includes(key)) return '';
 
         if (key === 'summary' && personalInfo.summary) {
-            const summaryTitle = isPro ? 'Professional Summary' : 'Profile';
+            const summaryTitle = isStartup ? 'About Me' : (isPro ? 'Professional Summary' : 'Profile');
             const summaryDesc = isPro
-                ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>`
+                ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word">${sanitize(personalInfo.summary)}</div>`
                 : desc(personalInfo.summary);
             return section(`${heading(summaryTitle, key)}${summaryDesc}`);
         }
 
         if (key === 'personalDetails' && (personalInfo.dob || personalInfo.nic || personalInfo.gender || personalInfo.nationality || personalInfo.religion || personalInfo.maritalStatus)) {
             if (isModern) return '';
+            if (isStartup) {
+                const detailItems = [
+                    personalInfo.dob ? ['Date of Birth', personalInfo.dob, PDF_ICONS.calendar] : null,
+                    personalInfo.nic ? ['NIC Number', personalInfo.nic, PDF_ICONS.idCard] : null,
+                    personalInfo.gender ? ['Gender', personalInfo.gender, PDF_ICONS.user] : null,
+                    personalInfo.maritalStatus ? ['Marital Status', personalInfo.maritalStatus, PDF_ICONS.heart] : null,
+                    personalInfo.nationality ? ['Nationality', personalInfo.nationality, PDF_ICONS.globe] : null,
+                    personalInfo.religion ? ['Religion', personalInfo.religion, PDF_ICONS.sparkles] : null,
+                ].filter(Boolean) as [string, string, string][];
+
+                const detailCell = (item?: [string, string, string]) => item ? `
+                    <td style="width:50%;vertical-align:top;padding:0 10px 10px 0">
+                        <div style="border-bottom:1px solid #f3f4f6;padding-bottom:6px;break-inside:avoid">
+                            <div style="display:flex;align-items:center;gap:6px;font-size:0.875rem;font-weight:700;color:#6b7280">${item[2]}<span>${esc(item[0])}:</span></div>
+                            <div style="margin-top:2px;font-size:0.875rem;font-weight:600;color:#1f2937;word-break:break-word;overflow-wrap:anywhere">${esc(item[1])}</div>
+                        </div>
+                    </td>
+                ` : '<td style="width:50%;padding:0"></td>';
+
+                const details = Array.from({ length: Math.ceil(detailItems.length / 2) }, (_, rowIndex) => {
+                    const index = rowIndex * 2;
+                    return `<tr>${detailCell(detailItems[index])}${detailCell(detailItems[index + 1])}</tr>`;
+                }).join('');
+
+                return section(`${heading('Personal Details', key)}<table style="width:100%;margin-top:8px;border-collapse:collapse;table-layout:fixed;font-size:0.875rem"><tbody>${details}</tbody></table>`);
+            }
             const details = [
                 personalInfo.dob ? detailRow('Date of Birth', personalInfo.dob) : '',
                 personalInfo.nic ? detailRow('NIC', personalInfo.nic) : '',
@@ -1744,7 +1870,9 @@ export function generateCVHTML(cvData: any, template: string): string {
                           <span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(exp.startDate, exp.endDate)}</span>
                         </div>${d}</div>`;
                 }
-                const sub = `<div style="font-size:0.875rem;font-weight:500;color:${isPro ? themeColor : '#374151'};margin-bottom:${isPro ? '6px' : '8px'}">${esc(exp.company || 'Company')}</div>`;
+                const sub = isStartup
+                    ? `<div style="display:flex;align-items:center;gap:8px;margin:4px 0 8px 0;font-size:0.875rem;font-weight:700;color:${themeColor}"><span>${esc(exp.company || 'Company')}</span>${(exp.startDate || exp.endDate) ? `<span style="width:4px;height:4px;border-radius:9999px;background:#d1d5db"></span><span style="font-size:0.75rem;font-weight:600;color:#9ca3af">${dateInline(exp.startDate, exp.endDate)}</span>` : ''}</div>`
+                    : `<div style="font-size:0.875rem;font-weight:500;color:${isPro ? themeColor : '#374151'};margin-bottom:${isPro ? '6px' : '8px'}">${esc(exp.company || 'Company')}</div>`;
                 const dateH = isPro ? dateStacked(exp.startDate, exp.endDate) : dateInline(exp.startDate, exp.endDate);
                 return timelineRow(dateH, `${t}${sub}${d}`);
             });
@@ -1758,6 +1886,14 @@ export function generateCVHTML(cvData: any, template: string): string {
                 if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${t}<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(edu.institution || 'Institution')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(edu.startDate, edu.endDate)}</span></div>${d}</div>`;
                 }
+                if (isStartup) {
+                    return `<div style="break-inside:avoid;border:1px solid #f3f4f6;background:#f9fafb;border-radius:12px;padding:16px">
+                        ${(edu.startDate || edu.endDate) ? `<div style="display:inline-block;border:1px solid ${themeColor}44;background:${themeColor}12;color:${themeColor};border-radius:9999px;padding:4px 12px;margin-bottom:8px;font-size:0.75rem;font-weight:700">${dateInline(edu.startDate, edu.endDate)}</div>` : ''}
+                        <h3 style="font-size:0.875rem;font-weight:700;color:#111827;margin:0">${esc(edu.degree || 'Degree')}</h3>
+                        <div style="font-size:0.75rem;font-weight:500;color:#6b7280;margin-top:4px">${esc(edu.institution || 'Institution')}</div>
+                        ${d}
+                    </div>`;
+                }
                 const sub = `<div style="font-size:0.875rem;font-weight:500;color:${isPro ? themeColor : '#374151'};margin-bottom:${isPro ? '6px' : '4px'}">${esc(edu.institution || 'Institution')}</div>`;
                 return timelineRow(isPro ? dateStacked(edu.startDate, edu.endDate) : dateInline(edu.startDate, edu.endDate), `${t}${sub}${d}`);
             });
@@ -1766,11 +1902,18 @@ export function generateCVHTML(cvData: any, template: string): string {
 
         if (key === 'skills' && skills.length > 0) {
             if (isModern) return '';
-            const chipsFor = (skillList: any[]) => skillList.map((s: any) => `<span style="font-size:${isTimeline || isMin ? '0.75rem' : '0.875rem'};font-weight:600;padding:${isTimeline || isMin ? '4px 10px' : '6px 12px'};background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`).join('');
+            const chipsFor = (skillList: any[]) => skillList.map((s: any, index: number) => isStartup
+                ? `<span style="font-size:0.75rem;font-weight:700;padding:6px 12px;border-radius:6px;border:1px solid ${index < 2 ? '#111827' : '#e5e7eb'};background:${index < 2 ? '#111827' : '#ffffff'};color:${index < 2 ? '#ffffff' : '#374151'}">${esc(s.name || '')}</span>`
+                : `<span style="font-size:${isTimeline || isMin ? '0.75rem' : '0.875rem'};font-weight:600;padding:${isTimeline || isMin ? '4px 10px' : '6px 12px'};background:#f3f4f6;color:#374151;border-radius:6px;border:1px solid #e5e7eb">${esc(s.name || '')}</span>`
+            ).join('');
 
             if (isPro) {
                 const chips = chipsFor(skills);
                 return section(`${heading('Skills & Expertise', key)}<div style="display:grid;grid-template-columns:114px 1fr;gap:16px"><div style="font-size:0.75rem;color:#6b7280;font-weight:700;text-transform:uppercase;padding-top:2px">Core Setup</div><div style="display:flex;flex-wrap:wrap;gap:8px">${chips}</div></div>`);
+            }
+
+            if (isStartup) {
+                return section(`${heading('Expertise', key)}<div style="display:flex;flex-wrap:wrap;gap:8px">${chipsFor(skills)}</div>`);
             }
 
             if (isTimeline || isMin) {
@@ -1814,6 +1957,13 @@ export function generateCVHTML(cvData: any, template: string): string {
                 if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${title3(c.name || 'Course Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(c.institution || 'Institution')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(c.startDate, c.endDate)}</span></div></div>`;
                 }
+                if (isStartup) {
+                    return `<div style="break-inside:avoid">
+                        <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3>
+                        ${(c.startDate || c.endDate) ? `<div style="display:inline-block;border:1px solid ${themeColor}44;background:${themeColor}12;color:${themeColor};border-radius:9999px;padding:4px 10px;margin-top:4px;font-size:0.6875rem;font-weight:700">${dateInline(c.startDate, c.endDate)}</div>` : ''}
+                        <div style="font-size:0.875rem;color:#374151;margin-top:4px">${esc(c.institution || 'Institution')}</div>
+                    </div>`;
+                }
                 const fontSize = isPro ? '0.875rem' : '1rem';
                 const ss = isPro ? '0.75rem' : '0.875rem';
                 return timelineRow(dateInline(c.startDate, c.endDate), `<h3 style="font-size:${fontSize};font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(c.institution || 'Institution')}</div>`);
@@ -1826,6 +1976,13 @@ export function generateCVHTML(cvData: any, template: string): string {
                 if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${title3(a.name || 'Award Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(a.issuer || 'Issuer')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(a.date || '')}</span></div></div>`;
                 }
+                if (isStartup) {
+                    return `<div style="break-inside:avoid">
+                        <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3>
+                        ${a.date ? `<div style="display:inline-block;border:1px solid ${themeColor}44;background:${themeColor}12;color:${themeColor};border-radius:9999px;padding:4px 10px;margin-top:4px;font-size:0.6875rem;font-weight:700">${esc(a.date)}</div>` : ''}
+                        <div style="font-size:0.875rem;color:#374151;margin-top:4px">${esc(a.issuer || 'Issuer')}</div>
+                    </div>`;
+                }
                 const fontSize = isPro ? '0.875rem' : '1rem';
                 const ss = isPro ? '0.75rem' : '0.875rem';
                 return timelineRow(esc(a.date || ''), `<h3 style="font-size:${fontSize};font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(a.issuer || 'Issuer')}</div>`);
@@ -1835,6 +1992,13 @@ export function generateCVHTML(cvData: any, template: string): string {
 
         if (key === 'languages' && languages.length > 0) {
             if (isModern) return '';
+            if (isStartup) {
+                const li = languages.map((l: any) => `<div style="break-inside:avoid">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:0.875rem;font-weight:700;color:#1f2937"><span>${esc(l.name || '')}</span><span style="color:${themeColor}">${esc(l.proficiency || '')}</span></div>
+                    <div style="width:100%;height:6px;background:#e5e7eb;border-radius:9999px"><div style="width:78%;height:6px;background:${themeColor};border-radius:9999px"></div></div>
+                </div>`).join('');
+                return section(`${heading('Languages', key)}<div style="display:flex;flex-direction:column;gap:12px">${li}</div>`);
+            }
             if (isTimeline) {
                 const li = languages.map((l: any) => `<div style="break-inside:avoid;min-width:0"><span style="font-size:0.875rem;font-weight:700;color:#1f2937">${esc(l.name || '')}</span><span style="margin-left:6px;font-size:0.75rem;color:#6b7280">${esc(l.proficiency || '')}</span></div>`).join('');
                 return section(`${heading('Languages', key)}<div style="display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:24px;row-gap:8px">${li}</div>`);
@@ -1876,6 +2040,8 @@ export function generateCVHTML(cvData: any, template: string): string {
 
     const leftSectionsHTML = isMin ? sectionOrder.filter(k => !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
     const rightSectionsHTML = isMin ? sectionOrder.filter(k => ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
+    const startupLeftSectionsHTML = isStartup ? sectionOrder.filter(k => ['personalDetails', 'summary', 'experience'].includes(k)).map(renderSection).join('') : '';
+    const startupRightSectionsHTML = isStartup ? sectionOrder.filter(k => ['education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
     const sectionsHTML = isMin ? '' : sectionOrder.map(renderSection).join('');
 
     // Build template-specific layout
@@ -1940,7 +2106,7 @@ export function generateCVHTML(cvData: any, template: string): string {
         bodyContent = `
     <table style="width:100%; border-collapse:collapse; border:none; table-layout:fixed; position:relative; z-index:2">
       <tr>
-        <td style="width:30%; vertical-align:top; padding:15mm; padding-top:15mm; color:${sidebarTextColor}; position:relative; z-index:2">
+        <td style="width:30%; vertical-align:top; padding:15mm; padding-top:15mm; color:${sidebarTextColor}; background:${templateSurfaceColor}; position:relative; z-index:2">
           ${profileImage ? `<div style="width:128px;height:128px;border-radius:9999px;overflow:hidden;border:4px solid rgba(255,255,255,0.2);margin:0 auto 24px auto;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImageSrc}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
           
           <div style="margin-bottom:32px">
@@ -1978,6 +2144,32 @@ export function generateCVHTML(cvData: any, template: string): string {
         </td>
       </tr>
     </table>`;
+    } else if (template === 'startup') {
+        const contactItems = [
+            personalInfo.email ? `<div style="display:flex;align-items:center;gap:12px">${PDF_ICONS.email}<span>${esc(personalInfo.email)}</span></div>` : '',
+            personalInfo.phone ? `<div style="display:flex;align-items:center;gap:12px">${PDF_ICONS.phone}<span>${esc(personalInfo.phone)}</span></div>` : '',
+            personalInfo.address ? `<div style="display:flex;align-items:center;gap:12px">${PDF_ICONS.location}<span>${esc(personalInfo.address)}</span></div>` : '',
+        ].filter(Boolean).join('');
+
+        bodyContent = `<div style="display:block;background:white;min-height:297mm;position:relative;overflow:hidden">
+          <header style="position:relative;overflow:hidden;padding:15mm 20mm 25mm 20mm;color:${startupHeaderTextColor};clip-path:polygon(0 0,100% 0,100% 75%,0 100%);background:${startupHeaderBackground}">
+            <div style="position:absolute;inset:0;opacity:0.1;background-image:radial-gradient(#ffffff 2px,transparent 2px);background-size:24px 24px"></div>
+            <div style="position:relative;z-index:2;padding-right:${profileImage ? '170px' : '0'}">
+              <h1 style="font-size:3rem;line-height:1.05;font-weight:800;letter-spacing:-0.025em;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+              <div style="margin-top:8px;font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${startupHeaderMutedColor}">${esc(experience[0]?.position || 'Professional Title')}</div>
+              <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px;font-size:0.875rem;font-weight:500;color:${startupHeaderMutedColor}">${contactItems}</div>
+            </div>
+          </header>
+          ${profileImage ? `<div style="position:absolute;right:20mm;top:15mm;z-index:5;width:144px;height:144px;border-radius:9999px;overflow:hidden;border:4px solid #ffffff;box-shadow:0 18px 30px rgba(15,23,42,0.22);display:flex;align-items:center;justify-content:center;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImageSrc}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
+          <table style="position:relative;z-index:2;margin-top:-16px;padding:0 20mm 15mm 20mm;width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed">
+            <tbody>
+              <tr>
+                <td style="width:60%;vertical-align:top;padding:0 20px 0 0">${startupLeftSectionsHTML}</td>
+                <td style="width:40%;vertical-align:top;padding:64px 0 0 20px">${startupRightSectionsHTML}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>`;
     } else if (template === 'professional') {
         bodyContent = `<div style="display:block;background:white">
       <div style="width:100%;height:8px;background:${themeColor}"></div>
@@ -2099,6 +2291,12 @@ export function generateCVHTML(cvData: any, template: string): string {
 
     const fontFamilyCSS = fontMap[fontFamily] || "'Inter', sans-serif";
     const googleFontName = (fontFamily || 'Inter').replace(/\s+/g, '+');
+    const watermarkHtml = options.watermark ? `
+      <div class="nexcv-watermark" aria-hidden="true">
+        <div>Created with NexCV Free</div>
+        <div>Upgrade to remove watermark</div>
+      </div>
+    ` : '';
 
     const cssInjections = template === 'modern' ? `
     @media print {
@@ -2112,7 +2310,7 @@ export function generateCVHTML(cvData: any, template: string): string {
         left: 0;
         bottom: 0;
         width: 30%;
-        background-color: ${sidebarColor} !important;
+        background-color: ${templateSurfaceColor} !important;
         z-index: 0;
       }
     }
@@ -2126,16 +2324,59 @@ export function generateCVHTML(cvData: any, template: string): string {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: ${fontFamilyCSS}; background: white; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
+    body, body * {
+      max-width: 100%;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    a {
+      overflow-wrap: anywhere;
+      word-break: break-all;
+    }
+    svg, img {
+      min-width: initial;
+      overflow-wrap: normal;
+      word-break: normal;
+    }
     ::-webkit-scrollbar { display: none; }
     a { color: inherit; text-decoration: none; }
     ul { padding-left: 20px; margin: 4px 0; }
     li { margin-bottom: 4px; }
+    .cv-preview-rich-text,
+    .cv-preview-rich-text * {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
     .cv-preview-rich-text ul, .cv-preview-rich-text ol { margin-top: 0; margin-bottom: 0; }
     .cv-preview-rich-text li { margin-top: 0; margin-bottom: 0.25rem; }
     .cv-preview-rich-text li:last-child { margin-bottom: 0; }
     .cv-preview-rich-text p { margin-top: 0; margin-bottom: 0.25rem; }
     .cv-preview-rich-text p:last-child { margin-bottom: 0; }
     h1, h2, h3 { margin: 0; }
+    .nexcv-watermark {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: rgba(15, 23, 42, 0.13);
+      font-family: Arial, sans-serif;
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      transform: rotate(-28deg);
+      text-align: center;
+    }
+    .nexcv-watermark div + div {
+      font-size: 22px;
+      letter-spacing: 0;
+    }
     table, tbody, tr, td, th, thead, tfoot {
       page-break-inside: auto !important;
       break-inside: auto !important;
@@ -2146,6 +2387,7 @@ export function generateCVHTML(cvData: any, template: string): string {
   </style>
 </head>
 <body>
+  ${watermarkHtml}
   ${template === 'classic'
             ? bodyContent
             : `<div style="width:210mm;background:transparent;margin:0 auto;position:relative">${bodyContent}</div>`
@@ -2189,24 +2431,26 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         const downloadQuota = await getDownloadQuota(req.user);
         if (downloadQuota.reached) {
             return res.status(403).json({
-                error: 'Daily download limit reached.',
+                error: 'Free plan download limit reached.',
                 quota: downloadQuota,
+                upgradeRequired: true,
             });
         }
 
 
 
         // Validate template against allow-list
-        const validatedTemplate = isTemplateName(template)
+        const requestedTemplate = isTemplateName(template)
             ? template
             : DEFAULT_TEMPLATE;
+        const validatedTemplate = isTemplateAvailableForPlan(requestedTemplate, downloadQuota.plan) ? requestedTemplate : 'classic';
 
         // Sanitize all string values in cvData to prevent injection
         const safeCvData = sanitizeCvData(cvData);
 
         // Generate self-contained HTML
         console.log("Generating HTML for PDF...");
-        const html = generateCVHTML(safeCvData, validatedTemplate);
+        const html = generateCVHTML(safeCvData, validatedTemplate, { watermark: downloadQuota.plan === 'free' });
         console.log(`HTML generated: ${html.length} bytes`);
 
         const isLocal = process.env.NODE_ENV !== 'production';

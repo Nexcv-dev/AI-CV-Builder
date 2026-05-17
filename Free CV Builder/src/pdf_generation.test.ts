@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateCVHTML } from '../server';
+import { CV_TEMPLATES } from './templates';
 
 describe('PDF HTML Generation', () => {
   const mockCVData = {
@@ -131,6 +132,44 @@ describe('PDF HTML Generation', () => {
     expect(html).toContain('transform:scale(1.2) translate(4px,-3px)');
   });
 
+  it('keeps Startup PDF layout aligned with preview-critical structure', () => {
+    const html = generateCVHTML({
+      ...mockCVData,
+      templateSurfaceColor: '#123456',
+      personalInfo: {
+        ...mockCVData.personalInfo,
+        dob: '1990-01-01',
+        nic: '123456789V',
+        gender: 'Female',
+        maritalStatus: 'Single',
+        nationality: 'Sri Lankan',
+        religion: 'Buddhism',
+      },
+      sectionOrder: ['personalDetails', 'summary', 'experience', 'education', 'skills'],
+    }, 'startup');
+
+    expect(html).toContain('background:#123456');
+    expect(html).toContain('width:60%;vertical-align:top;padding:0 20px 0 0');
+    expect(html).toContain('width:40%;vertical-align:top;padding:64px 0 0 20px');
+    expect(html).toContain('Personal Details');
+    expect(html).toContain('Date of Birth');
+    expect(html).toContain('NIC Number');
+    expect(html).toContain('<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"');
+  });
+
+  it('renders Startup PDF dates for courses and awards', () => {
+    const html = generateCVHTML({
+      ...mockCVData,
+      courses: [{ id: 'course-1', name: 'Advanced React', institution: 'NexCV Academy', startDate: 'Jan 2024', endDate: 'Mar 2024' }],
+      awards: [{ id: 'award-1', name: 'Best Builder', issuer: 'NexCV', date: '2025' }],
+      sectionOrder: ['courses', 'awards'],
+    }, 'startup');
+
+    expect(html).toContain('Jan 2024');
+    expect(html).toContain('Mar 2024');
+    expect(html).toContain('2025');
+  });
+
   it('strips unsafe profile image sources from PDF HTML', () => {
     const html = generateCVHTML({
       ...mockCVData,
@@ -139,5 +178,50 @@ describe('PDF HTML Generation', () => {
 
     expect(html).not.toContain('https://example.com/avatar.png');
     expect(html).not.toContain('onerror');
+  });
+
+  it('adds PDF-safe wrapping rules for long text in every template', () => {
+    const longWord = 'LongUnbrokenPdfText'.repeat(80);
+    const longData = {
+      ...mockCVData,
+      personalInfo: {
+        ...mockCVData.personalInfo,
+        fullName: longWord,
+        email: `${longWord}@example.com`,
+        phone: longWord,
+        address: longWord,
+        summary: `<p>${longWord}</p>`,
+      },
+      experience: [{
+        id: 'long-exp',
+        company: longWord,
+        position: longWord,
+        startDate: longWord,
+        endDate: longWord,
+        description: `<p>${longWord}</p>`,
+      }],
+      education: [{
+        id: 'long-edu',
+        institution: longWord,
+        degree: longWord,
+        startDate: longWord,
+        endDate: longWord,
+        description: `<p>${longWord}</p>`,
+      }],
+      skills: [{ id: 'long-skill', name: longWord, level: 5 }],
+      projects: [{ id: 'long-project', name: longWord, description: `<p>${longWord}</p>`, link: `https://example.com/${longWord}` }],
+      courses: [{ id: 'long-course', name: longWord, institution: longWord, startDate: longWord, endDate: longWord }],
+      awards: [{ id: 'long-award', name: longWord, date: longWord, issuer: longWord }],
+      languages: [{ id: 'long-language', name: longWord, proficiency: longWord }],
+      references: [{ id: 'long-reference', name: longWord, position: longWord, company: longWord, email: `${longWord}@example.com`, phone: longWord }],
+      sectionOrder: ['personalDetails', 'summary', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'],
+    };
+
+    CV_TEMPLATES.forEach(({ key }) => {
+      const html = generateCVHTML(longData, key);
+      expect(html).toContain('overflow-wrap: anywhere');
+      expect(html).toContain('word-break: break-word');
+      expect(html).toContain(longWord);
+    });
   });
 });

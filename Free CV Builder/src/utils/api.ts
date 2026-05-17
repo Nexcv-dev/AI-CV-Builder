@@ -3,6 +3,8 @@ export interface AuthUser {
   email: string;
   displayName: string;
   role: 'user' | 'super_admin';
+  plan: 'free' | 'payg' | 'monthly' | 'unlimited';
+  planExpiresAt?: string;
   emailVerified: boolean;
   profileImage?: string;
   phone?: string;
@@ -11,6 +13,18 @@ export interface AuthUser {
   gender?: string;
   nationality?: string;
   authProvider: 'google' | 'email';
+}
+
+export class ApiError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
 }
 
 export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
@@ -31,9 +45,9 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 429) {
-      throw new Error(data.error || 'Too many requests. Please wait a moment and try again.');
+      throw new ApiError(data.error || 'Too many requests. Please wait a moment and try again.', response.status, data);
     }
-    throw new Error(data.error || 'Something went wrong. Please try again.');
+    throw new ApiError(data.error || 'Something went wrong. Please try again.', response.status, data);
   }
   return data as T;
 }

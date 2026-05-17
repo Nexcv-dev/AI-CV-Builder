@@ -16,6 +16,9 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import TipsAndResources from './pages/TipsAndResources';
+import PricingPage from './pages/PricingPage';
+import CheckoutPage from './pages/CheckoutPage';
+import RefundPolicy from './pages/RefundPolicy';
 import { Toaster } from 'react-hot-toast';
 import { Footer } from './components/Footer';
 import { getCurrentUser } from './utils/api';
@@ -103,6 +106,7 @@ function Layout() {
     '/forgot-password',
     '/reset-password',
     '/verify-email',
+    '/checkout',
   ].includes(location.pathname);
 
   useLayoutEffect(() => {
@@ -227,9 +231,12 @@ function App() {
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/settings" element={<Navigate to="/profile" replace />} />
           <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/builder" element={<Home />} />
           <Route path="/tips" element={<TipsAndResources />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />

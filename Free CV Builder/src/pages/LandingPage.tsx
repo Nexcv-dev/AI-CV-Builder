@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowRight, BookOpen, ChevronDown, Download, FileText, Home, Info, LayoutTemplate, LogIn, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Upload, Wand2, X, Zap } from 'lucide-react';
+import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Crown, Download, FileText, Home, Info, LayoutTemplate, LogIn, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Upload, Wand2, X, Zap } from 'lucide-react';
 import { AuthModal } from '../components/AuthModal';
 import { CV_TEMPLATES } from '../templates';
 
@@ -55,6 +55,42 @@ function StatCard({ label, value, suffix, color }: typeof stats[0]) {
 }
 
 const featuredTemplates = CV_TEMPLATES;
+
+const pricingPlans = [
+  {
+    name: 'Free',
+    price: 'LKR 0',
+    duration: 'Starter',
+    description: 'Build your first CV and export once with a watermark.',
+    icon: FileText,
+    href: '/builder?import=1',
+    cta: 'Start free',
+    highlighted: false,
+    features: ['1 saved CV', 'Classic template', '1 watermarked PDF download', 'Manual editing tools'],
+  },
+  {
+    name: 'Pay As You Go',
+    price: 'LKR 499',
+    duration: '7 days',
+    description: 'One CV with any template, AI tools, unlimited edits and downloads.',
+    icon: Zap,
+    href: '/pricing',
+    cta: 'Choose PAYG',
+    highlighted: true,
+    features: ['1 saved CV', 'Any template', 'Unlimited edits for 7 days', 'Unlimited downloads for 7 days', 'AI import, summary, and refine tools'],
+  },
+  {
+    name: 'Monthly',
+    price: 'LKR 2199',
+    duration: '30 days',
+    description: 'Unlimited CV creation, saves, downloads, and AI features.',
+    icon: Crown,
+    href: '/pricing',
+    cta: 'Go monthly',
+    highlighted: false,
+    features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 30 days', 'AI import, summary, and refine tools'],
+  },
+];
 
 const featureTiles = [
   { icon: Wand2, title: 'AI polish', text: 'Improve rough content fast.', tone: 'emerald' },
@@ -122,6 +158,7 @@ export default function LandingPage() {
     isOpen: false,
     mode: 'signup',
   });
+  const templateCarouselRef = useRef<HTMLDivElement>(null);
   const openAuthModal = (mode: 'login' | 'signup') => {
     setAuthModal({ isOpen: true, mode });
   };
@@ -188,6 +225,12 @@ export default function LandingPage() {
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
   const shouldCloseBeforeNavigate = (href: string) => href.startsWith('#') || (href === '/' && location.pathname === '/');
+  const scrollTemplateCarousel = (direction: 'previous' | 'next') => {
+    const carousel = templateCarouselRef.current;
+    if (!carousel) return;
+    const amount = Math.min(carousel.clientWidth * 0.86, 420);
+    carousel.scrollBy({ left: direction === 'next' ? amount : -amount, behavior: 'smooth' });
+  };
 
   return (
     <div className="overflow-x-hidden bg-slate-950 text-white">
@@ -204,6 +247,7 @@ export default function LandingPage() {
           {/* Desktop Nav */}
           <nav className="hidden items-center gap-7 text-sm font-bold text-slate-300 md:flex">
             <Link to="/templates" className="transition-colors hover:text-white">Templates</Link>
+            <a href="#pricing" className="transition-colors hover:text-white">Pricing</a>
             <Link to="/tips" className="transition-colors hover:text-white">Tips</Link>
             <a href="#features" className="transition-colors hover:text-white">Features</a>
             <a href="#faq" className="transition-colors hover:text-white">FAQ</a>
@@ -281,10 +325,11 @@ export default function LandingPage() {
             {[
               { label: 'Home', href: '/', icon: Home, delay: '0ms', isLink: true },
               { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms', isLink: true },
-              { label: 'Tips', href: '/tips', icon: BookOpen, delay: '100ms', isLink: true },
-              { label: 'Features', href: '#features', icon: Zap, delay: '150ms', isLink: false },
-              { label: 'FAQ', href: '#faq', icon: Info, delay: '200ms', isLink: false },
-              { label: 'About', href: '/about', icon: Info, delay: '250ms', isLink: true },
+              { label: 'Pricing', href: '#pricing', icon: Crown, delay: '100ms', isLink: false },
+              { label: 'Tips', href: '/tips', icon: BookOpen, delay: '150ms', isLink: true },
+              { label: 'Features', href: '#features', icon: Zap, delay: '200ms', isLink: false },
+              { label: 'FAQ', href: '#faq', icon: Info, delay: '250ms', isLink: false },
+              { label: 'About', href: '/about', icon: Info, delay: '300ms', isLink: true },
             ].map(({ label, href, icon: Icon, delay, isLink }) => (
               isLink ? (
                 <Link
@@ -524,17 +569,39 @@ export default function LandingPage() {
                 <p className="text-sm font-black uppercase text-violet-700">Templates</p>
                 <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Pick a look and keep moving</h2>
               </div>
-              <Link to="/templates" className="inline-flex items-center text-sm font-black text-violet-700 hover:text-violet-600">
-                Templates <ArrowRight size={17} className="ml-1.5" />
-              </Link>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => scrollTemplateCarousel('previous')}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:bg-white/10 active:scale-95"
+                  aria-label="Previous template"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollTemplateCarousel('next')}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:bg-white/10 active:scale-95"
+                  aria-label="Next template"
+                >
+                  <ChevronRight size={18} />
+                </button>
+                <Link to="/templates" className="inline-flex items-center rounded-xl bg-white px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-slate-100">
+                  View all <ArrowRight size={17} className="ml-1.5" />
+                </Link>
+              </div>
             </div>
 
-            <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
+            <div
+              ref={templateCarouselRef}
+              className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 sm:mt-10 md:gap-5"
+              style={{ scrollbarWidth: 'none' }}
+            >
               {featuredTemplates.map((template, index) => (
                 <Link
                   to={`/builder?import=1&template=${template.key}`}
                   key={template.key}
-                  className="landing-scroll-reveal landing-template-card group overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/20"
+                  className="landing-scroll-reveal landing-template-card group min-w-[76%] snap-start overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/20 sm:min-w-[42%] lg:min-w-[28%] xl:min-w-[23%]"
                   style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}
                 >
                   <div className="aspect-4/5 overflow-hidden bg-slate-800">
@@ -550,6 +617,71 @@ export default function LandingPage() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="pricing" className="relative overflow-hidden bg-slate-950 py-12 text-white sm:py-20">
+          <div className="absolute left-0 top-8 h-72 w-72 rounded-full bg-emerald-400/12 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-violet-500/16 blur-3xl" />
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="landing-scroll-reveal flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+              <div>
+                <p className="text-sm font-black uppercase text-emerald-300">Pricing</p>
+                <h2 className="mt-3 max-w-3xl font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Start free. Upgrade only when you need more.</h2>
+              </div>
+              <Link to="/pricing" className="inline-flex w-fit items-center rounded-xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-600/25 transition hover:bg-violet-500 active:scale-[0.98]">
+                Compare plans <ArrowRight size={17} className="ml-1.5" />
+              </Link>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:mt-10 lg:grid-cols-3">
+              {pricingPlans.map((plan, index) => {
+                const Icon = plan.icon;
+                return (
+                  <article
+                    key={plan.name}
+                    className={`landing-scroll-reveal flex min-h-[420px] flex-col rounded-2xl border p-5 shadow-2xl sm:p-6 ${plan.highlighted
+                        ? 'border-violet-300/35 bg-violet-500/10 shadow-violet-950/30 ring-2 ring-violet-400/25'
+                        : 'border-white/10 bg-white/6 shadow-black/20'
+                      }`}
+                    style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <span className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${plan.highlighted ? 'border-violet-300/30 bg-violet-400/15 text-violet-200' : 'border-white/10 bg-white/6 text-emerald-300'}`}>
+                        <Icon size={22} />
+                      </span>
+                      {plan.highlighted && (
+                        <span className="rounded-full bg-violet-400 px-3 py-1 text-[11px] font-black uppercase text-slate-950">Popular</span>
+                      )}
+                    </div>
+                    <h3 className="mt-5 font-montserrat text-2xl font-black">{plan.name}</h3>
+                    <p className="mt-2 min-h-14 text-sm font-semibold leading-6 text-slate-400">{plan.description}</p>
+                    <div className="mt-5">
+                      <div className="text-4xl font-black">{plan.price}</div>
+                      <div className="mt-1 text-sm font-bold text-slate-400">{plan.duration}</div>
+                    </div>
+                    <div className="mt-7 mb-8 grid gap-3">
+                      {plan.features.map((feature) => (
+                        <div key={feature} className="flex items-start gap-3 text-sm font-bold text-slate-200">
+                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">
+                            <Check size={13} />
+                          </span>
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
+                    <Link
+                      to={plan.href}
+                      className={`mt-auto inline-flex h-12 items-center justify-center rounded-xl px-4 text-sm font-black transition active:scale-[0.98] ${plan.highlighted ? 'bg-violet-600 text-white hover:bg-violet-500' : 'border border-white/10 bg-white/6 text-white hover:bg-white/10'
+                        }`}
+                    >
+                      {plan.cta}
+                      <ArrowRight size={17} className="ml-2" />
+                    </Link>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
