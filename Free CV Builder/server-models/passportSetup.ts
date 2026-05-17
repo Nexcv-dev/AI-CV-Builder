@@ -77,6 +77,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             emailVerified: true,
             authProvider: 'google',
           });
+          (user as any).wasNewlyCreated = true;
 
           done(null, user);
         } catch (error) {

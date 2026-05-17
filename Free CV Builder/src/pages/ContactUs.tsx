@@ -1,13 +1,39 @@
 import React, { useState } from 'react';
-import { Send, CheckCircle2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
+import { apiFetch } from '../utils/api';
 
 export default function ContactUs() {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    message: '',
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const updateField = (field: keyof typeof form, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+
+    try {
+      const data = await apiFetch<{ message: string }>('/api/contact', {
+        method: 'POST',
+        body: JSON.stringify(form),
+      });
+      toast.success(data.message || 'Message sent.');
+      setIsSubmitted(true);
+      setForm({ fullName: '', email: '', message: '' });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send your message.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -29,7 +55,6 @@ export default function ContactUs() {
               <CheckCircle2 className="text-emerald-400 w-16 h-16 mb-4" />
               <h2 className="text-2xl font-montserrat font-bold text-white mb-2">Thank You!</h2>
               <p className="text-slate-300 mb-2">Your feedback is appreciated.</p>
-              <p className="text-xs text-slate-500 mb-6">Note: This is a demo form. For actual inquiries, please email us directly.</p>
               <button
                 onClick={() => setIsSubmitted(false)}
                 className="bg-white/10 text-white border border-white/20 px-6 py-2 rounded-xl font-medium hover:bg-white/20 transition-colors"
@@ -47,6 +72,8 @@ export default function ContactUs() {
                   type="text"
                   autoComplete="name"
                   required
+                  value={form.fullName}
+                  onChange={(event) => updateField('fullName', event.target.value)}
                   className="w-full bg-slate-900/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-sm placeholder:text-slate-500"
                   placeholder="John Doe"
                 />
@@ -59,6 +86,8 @@ export default function ContactUs() {
                   type="email"
                   autoComplete="email"
                   required
+                  value={form.email}
+                  onChange={(event) => updateField('email', event.target.value)}
                   className="w-full bg-slate-900/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-sm placeholder:text-slate-500"
                   placeholder="john@example.com"
                 />
@@ -70,16 +99,19 @@ export default function ContactUs() {
                   name="message"
                   required
                   rows={5}
+                  value={form.message}
+                  onChange={(event) => updateField('message', event.target.value)}
                   className="w-full bg-slate-900/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-sm resize-none placeholder:text-slate-500"
                   placeholder="How can we help you?"
                 ></textarea>
               </div>
               <button
                 type="submit"
-                className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-4 px-6 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-violet-600/25 active:scale-[0.98]"
+                disabled={isSubmitting}
+                className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-4 px-6 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-violet-600/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-65"
               >
-                <Send size={18} className="mr-2" />
-                Send Message
+                {isSubmitting ? <Loader2 size={18} className="mr-2 animate-spin" /> : <Send size={18} className="mr-2" />}
+                {isSubmitting ? 'Sending...' : 'Send Message'}
               </button>
             </form>
           )}

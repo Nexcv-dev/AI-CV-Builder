@@ -392,7 +392,10 @@ interface AppEmailOptions {
     from: string;
     subject: string;
     text: string;
+    replyTo?: string;
 }
+
+const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || 'www.bimanthaperera@gmail.com';
 
 const stripEnvAssignment = (value: string) => value.replace(/^[A-Z0-9_]+\s*=\s*/i, '').trim();
 
@@ -416,10 +419,11 @@ const encodeBase64Url = (value: string) => (
         .replace(/=+$/g, '')
 );
 
-const buildGmailRawMessage = ({ to, from, subject, text }: AppEmailOptions) => {
+const buildGmailRawMessage = ({ to, from, subject, text, replyTo }: AppEmailOptions) => {
     const headers = [
         `From: ${from}`,
         `To: ${to}`,
+        ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
         `Subject: ${subject}`,
         'MIME-Version: 1.0',
         'Content-Type: text/plain; charset="UTF-8"',
@@ -483,8 +487,8 @@ async function sendGmailApiEmail(options: AppEmailOptions) {
     }
 }
 
-async function sendAppEmail({ to, from, subject, text }: AppEmailOptions) {
-    const gmailSent = await sendGmailApiEmail({ to, from, subject, text });
+async function sendAppEmail({ to, from, subject, text, replyTo }: AppEmailOptions) {
+    const gmailSent = await sendGmailApiEmail({ to, from, subject, text, replyTo });
     if (gmailSent) return;
 
     const resendApiKey = process.env.RESEND_API_KEY?.trim();
@@ -501,6 +505,7 @@ async function sendAppEmail({ to, from, subject, text }: AppEmailOptions) {
                 to,
                 subject,
                 text,
+                ...(replyTo ? { reply_to: replyTo } : {}),
             }),
         });
 
@@ -513,8 +518,56 @@ async function sendAppEmail({ to, from, subject, text }: AppEmailOptions) {
     }
 
     const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
-    await transporter.sendMail({ to, from, subject, text });
+    await transporter.sendMail({ to, from, subject, text, replyTo });
 }
+
+const hasGmailApiConfig = () => Boolean(
+    (process.env.GMAIL_CLIENT_ID?.trim() || process.env.GOOGLE_CLIENT_ID?.trim()) &&
+    (process.env.GMAIL_CLIENT_SECRET?.trim() || process.env.GOOGLE_CLIENT_SECRET?.trim()) &&
+    process.env.GMAIL_REFRESH_TOKEN?.trim()
+);
+
+const getAppEmailFrom = () => {
+    const emailUser = process.env.EMAIL_USER?.trim();
+    const senderEmail = process.env.GMAIL_SENDER_EMAIL?.trim() || emailUser || 'onboarding@resend.dev';
+    const fallback = hasGmailApiConfig()
+        ? `NexCV <${senderEmail}>`
+        : process.env.RESEND_API_KEY?.trim()
+            ? 'NexCV <onboarding@resend.dev>'
+            : emailUser || '';
+    return normalizeEmailFrom(process.env.EMAIL_FROM, fallback);
+};
+
+const isEmailServiceConfigured = () => Boolean(
+    getAppEmailFrom() &&
+    (hasGmailApiConfig() ||
+        process.env.RESEND_API_KEY?.trim() ||
+        (process.env.EMAIL_USER?.trim() && process.env.EMAIL_PASS?.trim()))
+);
+
+const sendSystemEmail = async (options: Omit<AppEmailOptions, 'from'>) => {
+    const from = getAppEmailFrom();
+    if (!from) {
+        throw new Error('Email sender is not configured.');
+    }
+
+    await sendAppEmail({ ...options, from });
+};
+
+const sendNotificationEmail = async (options: Omit<AppEmailOptions, 'from'>) => {
+    if (!isEmailServiceConfigured()) {
+        console.warn('Email service is not configured; notification email skipped.');
+        return false;
+    }
+
+    try {
+        await sendSystemEmail(options);
+        return true;
+    } catch (error) {
+        console.error('Notification email failed:', error);
+        return false;
+    }
+};
 
 const isMongoDuplicateKeyError = (error: any) => (
     error?.code === 11000 || error?.name === 'MongoServerError' && error?.code === 11000
@@ -572,21 +625,9 @@ const isEmailVerified = (user: any) => user?.authProvider === 'google' || user?.
 const sendEmailVerification = async (user: any, token: string) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
-    const senderEmail = process.env.GMAIL_SENDER_EMAIL?.trim() || process.env.EMAIL_USER?.trim() || 'onboarding@resend.dev';
-    const fromFallback = process.env.GMAIL_REFRESH_TOKEN?.trim()
-        ? `NexCV <${senderEmail}>`
-        : process.env.RESEND_API_KEY?.trim()
-            ? 'NexCV <onboarding@resend.dev>'
-            : process.env.EMAIL_USER?.trim() || '';
-    const from = normalizeEmailFrom(process.env.EMAIL_FROM, fromFallback);
 
-    if (!from) {
-        throw new Error('Email sender is not configured.');
-    }
-
-    await sendAppEmail({
+    await sendSystemEmail({
         to: user.email,
-        from,
         subject: 'Verify your NexCV email',
         text: `Hi ${emailGreetingName(user.displayName)},\n\n` +
             `Welcome to NexCV. Please verify your email address so you can save your CVs, access them later, and download your documents.\n\n` +
@@ -691,6 +732,78 @@ const isValidDocumentId = (id: unknown) => (
     typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)
 );
 
+const sanitizeContactMessage = (value: unknown) => (
+    typeof value === 'string'
+        ? value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim().slice(0, 3000)
+        : ''
+);
+
+const generateTransactionId = () => {
+    const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    return `NX-${datePart}-${randomBytes(4).toString('hex').toUpperCase()}`;
+};
+
+const planDisplayName = (plan: BillingPlan) => (
+    plan === 'monthly' ? 'Monthly' :
+        plan === 'payg' ? 'Pay As You Go' :
+            'Free'
+);
+
+const sendNewAccountNotification = (user: any) => sendNotificationEmail({
+    to: ADMIN_NOTIFICATION_EMAIL,
+    subject: 'New NexCV account created',
+    text: `A new NexCV account was created.\n\n` +
+        `Name: ${sanitizeDisplayName(user.displayName) || 'Unknown'}\n` +
+        `Email: ${user.email || 'Unknown'}\n` +
+        `Provider: ${user.authProvider || 'email'}\n` +
+        `User ID: ${user._id?.toString?.() || user.id || 'Unknown'}\n` +
+        `Created at: ${new Date().toISOString()}\n`,
+});
+
+const sendContactNotification = (details: { fullName: string; email: string; message: string }) => sendSystemEmail({
+    to: ADMIN_NOTIFICATION_EMAIL,
+    replyTo: details.email,
+    subject: `New NexCV contact message from ${details.fullName}`,
+    text: `A contact form message was submitted on NexCV.\n\n` +
+        `Name: ${details.fullName}\n` +
+        `Email: ${details.email}\n\n` +
+        `Message:\n${details.message}\n`,
+});
+
+const sendBillingSuccessNotifications = async (details: {
+    user: any;
+    plan: BillingPlan;
+    transactionId: string;
+    planExpiresAt?: Date;
+}) => {
+    const planName = planDisplayName(details.plan);
+    const expiresAt = details.planExpiresAt?.toISOString?.() || 'Unknown';
+
+    await sendNotificationEmail({
+        to: ADMIN_NOTIFICATION_EMAIL,
+        subject: `NexCV payment success - ${details.transactionId}`,
+        text: `A NexCV transaction completed successfully.\n\n` +
+            `Transaction ID: ${details.transactionId}\n` +
+            `Plan: ${planName}\n` +
+            `Customer: ${sanitizeDisplayName(details.user.displayName) || 'Unknown'}\n` +
+            `Email: ${details.user.email || 'Unknown'}\n` +
+            `User ID: ${details.user._id?.toString?.() || details.user.id || 'Unknown'}\n` +
+            `Plan expires at: ${expiresAt}\n`,
+    });
+
+    await sendNotificationEmail({
+        to: details.user.email,
+        subject: `Your NexCV transaction is successful - ${details.transactionId}`,
+        text: `Hi ${emailGreetingName(details.user.displayName)},\n\n` +
+            `Your NexCV ${planName} upgrade is active.\n\n` +
+            `Transaction ID: ${details.transactionId}\n` +
+            `Plan: ${planName}\n` +
+            `Access expires at: ${expiresAt}\n\n` +
+            `Keep this transaction ID for support or refund requests.\n\n` +
+            `Thanks,\nThe NexCV Team\n`,
+    });
+};
+
 const documentSummary = (document: any) => ({
     id: document._id.toString(),
     title: document.title,
@@ -715,6 +828,35 @@ const titleFromCvData = (cvData: any) => {
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.post('/api/contact', async (req: Request, res: Response) => {
+    try {
+        const fullName = sanitizeDisplayName(req.body.fullName);
+        const email = normalizeEmail(req.body.email);
+        const message = sanitizeContactMessage(req.body.message);
+
+        if (!fullName) {
+            return res.status(400).json({ error: 'Enter your name.' });
+        }
+
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ error: 'Enter a valid email address.' });
+        }
+
+        if (!message || message.length < 10) {
+            return res.status(400).json({ error: 'Enter a message with at least 10 characters.' });
+        }
+
+        if (!isEmailServiceConfigured()) {
+            return res.status(500).json({ error: 'Email service is not configured.' });
+        }
+
+        await sendContactNotification({ fullName, email, message });
+        return res.json({ message: 'Message sent. We will get back to you soon.' });
+    } catch (error) {
+        return sendError(res, 500, 'Could not send your message.', error);
+    }
 });
 
 // ─── Auth Routes (Placeholders) ──────────────────────────────────────
@@ -759,6 +901,7 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
         });
 
         const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.token);
+        void sendNewAccountNotification(user);
 
         req.login(user, (err) => {
             if (err) return next(err);
@@ -1106,6 +1249,9 @@ app.get('/api/auth/google/callback', (req: Request, res: Response, next: NextFun
                 return res.redirect('/?auth=failed&reason=session_error');
             }
             // Successful authentication
+            if ((user as any).wasNewlyCreated) {
+                void sendNewAccountNotification(user);
+            }
             const redirectTo = (req.session as any).authRedirect || '/builder?import=1';
             delete (req.session as any).authRedirect;
             res.redirect(redirectTo);
@@ -1155,9 +1301,19 @@ app.post('/api/billing/activate', requireAuth, async (req: Request, res: Respons
         user.planExpiresAt = createPlanExpiry(plan);
         await user.save();
 
+        const transactionId = typeof req.body.transactionId === 'string' && req.body.transactionId.trim()
+            ? sanitizeProfileField(req.body.transactionId, 80)
+            : generateTransactionId();
+        await sendBillingSuccessNotifications({
+            user,
+            plan,
+            transactionId,
+            planExpiresAt: user.planExpiresAt,
+        });
+
         const quota = await getCvCreationQuota(user);
         const downloadQuota = await getDownloadQuota(user);
-        return res.json({ user: publicUser(user), quota, downloadQuota });
+        return res.json({ user: publicUser(user), quota, downloadQuota, transactionId });
     } catch (error) {
         return sendError(res, 500, 'Could not activate this plan.', error);
     }
