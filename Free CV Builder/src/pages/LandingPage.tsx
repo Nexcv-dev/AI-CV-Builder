@@ -71,7 +71,7 @@ const pricingPlans = [
   {
     name: 'Pay As You Go',
     price: 'LKR 499',
-    duration: '7 days',
+    duration: '7 days (One-time payment)',
     description: 'One CV with any template, AI tools, unlimited edits and downloads.',
     icon: Zap,
     href: '/pricing',
@@ -82,7 +82,7 @@ const pricingPlans = [
   {
     name: 'Monthly',
     price: 'LKR 2199',
-    duration: '30 days',
+    duration: '30 days (One-time payment)',
     description: 'Unlimited CV creation, saves, downloads, and AI features.',
     icon: Crown,
     href: '/pricing',
@@ -326,7 +326,6 @@ export default function LandingPage() {
               { label: 'Home', href: '/', icon: Home, delay: '0ms', isLink: true },
               { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms', isLink: true },
               { label: 'Pricing', href: '#pricing', icon: Crown, delay: '100ms', isLink: false },
-              { label: 'Tips', href: '/tips', icon: BookOpen, delay: '150ms', isLink: true },
               { label: 'Features', href: '#features', icon: Zap, delay: '200ms', isLink: false },
               { label: 'FAQ', href: '#faq', icon: Info, delay: '250ms', isLink: false },
               { label: 'About', href: '/about', icon: Info, delay: '300ms', isLink: true },

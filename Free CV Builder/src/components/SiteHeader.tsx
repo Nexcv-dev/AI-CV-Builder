@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowRight, BookOpen, FileText, Home, Info, LayoutTemplate, Mail, Menu, Shield, X, Zap } from 'lucide-react';
+import { ArrowRight, FileText, Home, Info, LayoutTemplate, Mail, Menu, Shield, X, Zap } from 'lucide-react';
 
 const mainLinks = [
   { label: 'Home', href: '/', icon: Home, delay: '0ms' },
   { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms' },
   { label: 'Pricing', href: '/pricing', icon: Zap, delay: '100ms' },
-  { label: 'Tips', href: '/tips', icon: BookOpen, delay: '150ms' },
   { label: 'Features', href: '/#features', icon: Zap, delay: '200ms' },
   { label: 'FAQ', href: '/#faq', icon: Info, delay: '250ms' },
   { label: 'About', href: '/about', icon: Info, delay: '300ms' },

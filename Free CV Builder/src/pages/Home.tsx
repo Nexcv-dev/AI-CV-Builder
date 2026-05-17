@@ -118,6 +118,7 @@ export default function Home() {
   });
   const [downloadError, setDownloadError] = useState<{ title: string; message: string } | null>(null);
   const [upgradePrompt, setUpgradePrompt] = useState<{ title: string; message: string; source: 'save' | 'download' | 'ai' } | null>(null);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<'free' | 'payg' | 'monthly' | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authRedirectTo, setAuthRedirectTo] = useState('/builder');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -132,6 +133,18 @@ export default function Home() {
   const [themeTransition, setThemeTransition] = useState<{ x: number; y: number; key: number; targetDark: boolean } | null>(null);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+
+  const renderMobileUpgradeActions = (plan: 'free' | 'payg' | 'monthly') => (
+    <div className="mt-3 grid gap-2 sm:hidden">
+      <Link
+        to={plan === 'free' ? '/builder?import=1' : `/checkout?plan=${plan}`}
+        onClick={() => setUpgradePrompt(null)}
+        className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-600/20 transition active:scale-[0.98]"
+      >
+        {plan === 'free' ? 'Get Started' : 'Choose this plan'}
+      </Link>
+    </div>
+  );
 
   useEffect(() => {
     let ignore = false;
@@ -403,6 +416,10 @@ export default function Home() {
       message: message || 'Free plan includes 1 saved CV and 1 watermarked PDF download. Upgrade to unlock more CVs, downloads, templates, and AI tools.',
     });
   }, []);
+
+  useEffect(() => {
+    setSelectedUpgradePlan(null);
+  }, [upgradePrompt]);
 
   const handleCloudSave = useCallback(async (status: 'draft' | 'completed' = 'completed', isSilent = false) => {
     if (currentUser && !currentUser.emailVerified) {
@@ -1018,14 +1035,16 @@ export default function Home() {
         <AnimatePresence>
           {upgradePrompt && (
             <motion.div
-              className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-950/55 backdrop-blur-sm"
+              className="fixed inset-0 z-110 flex items-end justify-center bg-slate-950/55 p-2 backdrop-blur-sm sm:items-center sm:p-4"
+              onClick={() => setUpgradePrompt(null)}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
             >
               <motion.div
-                className={`relative w-full max-w-2xl overflow-hidden rounded-3xl border shadow-2xl ${isDarkMode ? 'bg-slate-900 border-violet-300/20 text-slate-100' : 'bg-white border-violet-100 text-slate-900'}`}
+                className={`relative flex max-h-[calc(100svh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border shadow-2xl sm:max-h-[calc(100svh-2rem)] sm:rounded-3xl ${isDarkMode ? 'bg-slate-900 border-violet-300/20 text-slate-100' : 'bg-white border-violet-100 text-slate-900'}`}
+                onClick={(event) => event.stopPropagation()}
                 initial={{ opacity: 0, scale: 0.96, y: 14 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: 14 }}
@@ -1041,34 +1060,58 @@ export default function Home() {
                   <X size={16} />
                 </button>
 
-                <div className="p-6 pt-8 sm:p-8">
-                  <div className={`mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl border ${isDarkMode ? 'border-violet-300/25 bg-violet-400/10' : 'border-violet-100 bg-violet-50'}`}>
-                    <Crown className="h-7 w-7 text-violet-600" strokeWidth={1.8} />
+                <div className="overflow-y-auto px-4 pb-4 pt-6 sm:p-8">
+                  <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl border sm:mb-5 sm:h-14 sm:w-14 ${isDarkMode ? 'border-violet-300/25 bg-violet-400/10' : 'border-violet-100 bg-violet-50'}`}>
+                    <Crown className="h-6 w-6 text-violet-600 sm:h-7 sm:w-7" strokeWidth={1.8} />
                   </div>
-                  <h3 className="pr-10 text-2xl font-black tracking-tight">{upgradePrompt.title}</h3>
+                  <h3 className="pr-12 text-xl font-black tracking-tight sm:text-2xl">{upgradePrompt.title}</h3>
                   <p className={`mt-2 max-w-xl text-sm font-semibold leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {upgradePrompt.message}
                   </p>
 
-                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                    <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-slate-50'}`}>
-                      <div className="text-sm font-black">Free</div>
-                      <div className="mt-2 text-2xl font-black">LKR 0</div>
-                      <p className={`mt-2 text-xs font-semibold leading-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>1 saved CV, 1 watermarked download.</p>
+                  <div className="mt-4 grid gap-2.5 sm:mt-6 sm:grid-cols-3 sm:gap-3">
+                    <div className="flex flex-col h-full">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedUpgradePlan('free')}
+                        className={`w-full h-full flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${selectedUpgradePlan === 'free' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-slate-50'}`}
+                      >
+                        <div className="text-sm font-black">Free</div>
+                        <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 0</div>
+                        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Starter access • Free forever</div>
+                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>1 saved CV, 1 watermarked download.</p>
+                      </button>
+                      {selectedUpgradePlan === 'free' && renderMobileUpgradeActions('free')}
                     </div>
-                    <div className={`rounded-2xl border p-4 ring-2 ring-violet-500/40 ${isDarkMode ? 'border-violet-300/30 bg-violet-400/10' : 'border-violet-200 bg-violet-50'}`}>
-                      <div className="flex items-center gap-2 text-sm font-black"><Zap size={15} className="text-violet-600" /> Pay As You Go</div>
-                      <div className="mt-2 text-2xl font-black">LKR 499</div>
-                      <p className={`mt-2 text-xs font-semibold leading-5 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 CV, any template, unlimited edits and downloads for 7 days.</p>
+                    <div className="flex flex-col h-full">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedUpgradePlan('payg')}
+                        className={`w-full h-full flex flex-col text-left ring-2 ring-violet-500/40 transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${isDarkMode ? 'border-violet-300/30 bg-violet-400/10' : 'border-violet-200 bg-violet-50'}`}
+                      >
+                        <div className="flex items-center gap-2 text-sm font-black"><Zap size={15} className="text-violet-600" /> Pay As You Go</div>
+                        <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 499</div>
+                        <div className="text-[10px] font-bold text-violet-400/90 dark:text-violet-300/90 mt-0.5">7 days access • One-time payment</div>
+                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 CV, any template, unlimited edits and downloads for 7 days.</p>
+                      </button>
+                      {selectedUpgradePlan === 'payg' && renderMobileUpgradeActions('payg')}
                     </div>
-                    <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-white'}`}>
-                      <div className="text-sm font-black">Monthly</div>
-                      <div className="mt-2 text-2xl font-black">LKR 2199</div>
-                      <p className={`mt-2 text-xs font-semibold leading-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, downloads, and AI features.</p>
+                    <div className="flex flex-col h-full">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedUpgradePlan('monthly')}
+                        className={`w-full h-full flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${selectedUpgradePlan === 'monthly' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-white'}`}
+                      >
+                        <div className="text-sm font-black">Monthly</div>
+                        <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 2199</div>
+                        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">30 days access • One-time payment</div>
+                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, downloads, and AI features.</p>
+                      </button>
+                      {selectedUpgradePlan === 'monthly' && renderMobileUpgradeActions('monthly')}
                     </div>
                   </div>
 
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                  <div className="mt-6 hidden gap-3 sm:flex sm:flex-row">
                     <Link
                       to="/pricing"
                       onClick={() => setUpgradePrompt(null)}

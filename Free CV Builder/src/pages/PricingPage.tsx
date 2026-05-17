@@ -34,7 +34,7 @@ const plans: Array<{
     key: 'payg',
     name: 'Pay As You Go',
     price: 'LKR 499',
-    duration: '7 days',
+    duration: '7 days (One-time payment)',
     description: 'Perfect when you need one polished CV ready for applications this week.',
     icon: Zap,
     highlighted: true,
@@ -50,7 +50,7 @@ const plans: Array<{
     key: 'monthly',
     name: 'Monthly',
     price: 'LKR 2199',
-    duration: '30 days',
+    duration: '30 days (One-time payment)',
     description: 'For active job searches with multiple CV versions and unlimited exports.',
     icon: Crown,
     features: [

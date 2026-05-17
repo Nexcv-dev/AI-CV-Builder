@@ -19,8 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Autofill Dark Theme Support**: Added key CSS overrides in `index.css` to prevent default browser autofill behavior from turning form input backgrounds white in dark mode.
-- **Mobile Responsive Layouts**: Set checkout page input font sizes to `16px` to prevent default iOS/Android zoom-focus alignments.
+- **Mobile Responsive Layouts**: Set checkout page input font sizes to `16px` to prevent default iOS/Android zoom-focus alignments, and reordered checkout layout columns to display the selected plan details at the top on mobile viewports.
 - **Distraction-Free Layouts**: Dynamically hid the global application footer on key conversion page routes (Checkout, Reset Password, Dashboard).
+- **One-Time Payment Clarification**: Updated pricing plan displays across the Landing Page, Pricing Page, Home workspace modal, and Checkout Page to explicitly declare "One-Time Payment", avoiding subscription confusion.
 - **Monthly Plan Pricing Wording**: Synced "30 days" text to "LKR 2199" in builder upgrade prompts and synchronized pricing plans between Home and Landing views.
 
 ### Fixed
