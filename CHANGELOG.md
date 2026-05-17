@@ -2,38 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [1.1.0] - 2026-05-17
-
-### Added
-- **Startup Template**: Added a new modern CV template layout (`startup`) with unique structural styling.
-- **Minimalist Template**: Added a clean, spacious, typography-focused `minimalist` template option.
-- **Billing & Payments**: Integrated fully fledged pricing and plan management models (`userPlan`, `cvQuota`, `CvCreationQuotaModel`, `DownloadQuotaModel`).
-- **Pricing & Checkout Pages**: Created `PricingPage.tsx` and `CheckoutPage.tsx` with full support for PayHere payment gateways (including official high-visibility dark/long banner integration).
-- **Refund Policy Page**: Added `RefundPolicy.tsx` to handle standard refund compliance along with dynamic `/refund-policy` routing.
-- **Micro-animations**: Dynamic sliding gradient underline hover effect (`.nav-link-hover`) added to header navigation links.
-- **Quality Assurance**: Added Vitest test suites (`CVForm_logic.test.tsx`, `CVPreview.test.tsx`, and backend `pdf_generation.test.ts`) covering CV creation state, side-by-side builder live layouts, and Puppeteer server-side PDF exports.
-- **Stand-alone Mockup Templates**: Added 7 full HTML/Tailwind templates in the root folder (`bold`, `creative`, `elegant`, `executive`, `split`, `startup`, and `studio`) for layout preview testing and visual design iteration.
-
-### Changed
-- **Autofill Dark Theme Support**: Added key CSS overrides in `index.css` to prevent default browser autofill behavior from turning form input backgrounds white in dark mode.
-- **Mobile Responsive Layouts**: Set checkout page input font sizes to `16px` to prevent default iOS/Android zoom-focus alignments, and reordered checkout layout columns to display the selected plan details at the top on mobile viewports.
-- **Distraction-Free Layouts**: Dynamically hid the global application footer on key conversion page routes (Checkout, Reset Password, Dashboard).
-- **One-Time Payment Clarification**: Updated pricing plan displays across the Landing Page, Pricing Page, Home workspace modal, and Checkout Page to explicitly declare "One-Time Payment", avoiding subscription confusion.
-- **Monthly Plan Pricing Wording**: Synced "30 days" text to "LKR 2199" in builder upgrade prompts and synchronized pricing plans between Home and Landing views.
-
-### Fixed
-- **Text Wrapping**: Resolved critical rendering bugs across multiple fields (Experience, Education, Projects, and Skills descriptions) where long inputs did not break/wrap and overflowed template borders.
-- **Reset Password Robustness**: Fixed authentication email reset flows to include strict verification checks, loading indicators, and error-handling popups.
 ## Commit History
-* Merge pull request #138 from bimanthaperera-lab/test/overview (f3436cc) - Bimantha Perera, 10 seconds ago
-* text dont wrap bug and other bug fixing (b0a328a) - Bimantha Perera, 6 minutes ago
-* Add New Startup template and Add Payment models (a645564) - Bimantha Perera, 13 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (6f30bc8) - bimanthaperera-lab, 25 hours ago
-* Merge pull request #135 from bimanthaperera-lab/test/overview (f38ad94) - Bimantha Perera, 25 hours ago
-* Create new minimal template (2f34b84) - Bimantha Perera, 25 hours ago
+* Merge pull request #140 from bimanthaperera-lab/test/overview (b0514e1) - Bimantha Perera, 7 seconds ago
+* Merge branch 'main' into test/overview (6f7475d) - Bimantha Perera, 2 minutes ago
+* Setup Transaction Email and Support Tickets Emails (eaba468) - Bimantha Perera, 6 minutes ago
+* fix layout issues (e272552) - Bimantha Perera, 2 hours ago
+* update documentation (3d86090) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (7359672) - bimanthaperera-lab, 3 hours ago
+* Merge pull request #138 from bimanthaperera-lab/test/overview (f3436cc) - Bimantha Perera, 3 hours ago
+* text dont wrap bug and other bug fixing (b0a328a) - Bimantha Perera, 3 hours ago
+* Add New Startup template and Add Payment models (a645564) - Bimantha Perera, 16 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (6f30bc8) - bimanthaperera-lab, 28 hours ago
+* Merge pull request #135 from bimanthaperera-lab/test/overview (f38ad94) - Bimantha Perera, 28 hours ago
+* Create new minimal template (2f34b84) - Bimantha Perera, 28 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (f7b7041) - bimanthaperera-lab, 2 days ago
 * Merge pull request #133 from bimanthaperera-lab/test/overview (7e059d3) - Bimantha Perera, 2 days ago
 * Update MyCvs.tsx (afdf317) - Bimantha Perera, 2 days ago
@@ -116,8 +97,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * fix security issues (32c0076) - Bimantha Perera, 5 days ago
 * Improve UI/UX with user logins and create profile, dashboard,settings pages (61d7944) - Bimantha Perera, 5 days ago
 * Create User Login (0ab92c2) - Bimantha Perera, 5 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (e1f7032) - bimanthaperera-lab, 5 days ago
-* Merge pull request #92 from bimanthaperera-lab/test/overview (f6ee3e1) - Bimantha Perera, 5 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (e1f7032) - bimanthaperera-lab, 6 days ago
+* Merge pull request #92 from bimanthaperera-lab/test/overview (f6ee3e1) - Bimantha Perera, 6 days ago
 * Implement MongoDB database and Google Auth for Future Developments (65dd7b5) - Bimantha Perera, 6 days ago
 * Update App.tsx (e9775cd) - Bimantha Perera, 6 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (09d756a) - bimanthaperera-lab, 6 days ago
