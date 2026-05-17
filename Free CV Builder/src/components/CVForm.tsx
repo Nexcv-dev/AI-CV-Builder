@@ -33,7 +33,10 @@ import {
   TAB_CONTAINER_CLASS,
   TAB_BUTTON_BASE,
   TAB_BUTTON_ACTIVE,
-  TAB_BUTTON_INACTIVE
+  TAB_BUTTON_INACTIVE,
+  getPersonalInfoLimit,
+  getSectionFieldLimit,
+  truncateText
 } from './form';
 
 interface CVFormProps {
@@ -454,62 +457,67 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
 
   const handlePersonalInfoChange = useCallback((e: any) => {
     const { name, value } = e.target;
-    setCvData((prev) => ({ ...prev, personalInfo: { ...prev.personalInfo, [name]: value } }));
+    const nextValue = name === 'summary' ? value : truncateText(value, getPersonalInfoLimit(name));
+    setCvData((prev) => ({ ...prev, personalInfo: { ...prev.personalInfo, [name]: nextValue } }));
   }, [setCvData]);
 
   const handleExperienceChange = useCallback((id: string, field: keyof Experience, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      experience: prev.experience.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp)),
+      experience: prev.experience.map((exp) => (exp.id === id ? { ...exp, [field]: truncateText(value, getSectionFieldLimit(field)) } : exp)),
     }));
   }, [setCvData]);
 
   const handleEducationChange = useCallback((id: string, field: keyof Education, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      education: prev.education.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu)),
+      education: prev.education.map((edu) => (edu.id === id ? { ...edu, [field]: truncateText(value, getSectionFieldLimit(field)) } : edu)),
     }));
   }, [setCvData]);
 
   const handleSkillChange = useCallback((id: string, field: keyof Skill, value: any) => {
     setCvData((prev) => ({
       ...prev,
-      skills: prev.skills.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
+      skills: prev.skills.map((s) => (
+        s.id === id
+          ? { ...s, [field]: typeof value === 'string' ? truncateText(value, getSectionFieldLimit(field)) : value }
+          : s
+      )),
     }));
   }, [setCvData]);
 
   const handleCourseChange = useCallback((id: string, field: keyof Course, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      courses: prev.courses.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
+      courses: prev.courses.map((c) => (c.id === id ? { ...c, [field]: truncateText(value, getSectionFieldLimit(field)) } : c)),
     }));
   }, [setCvData]);
 
   const handleLanguageChange = useCallback((id: string, field: keyof Language, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      languages: prev.languages.map((l) => (l.id === id ? { ...l, [field]: value } : l)),
+      languages: prev.languages.map((l) => (l.id === id ? { ...l, [field]: truncateText(value, getSectionFieldLimit(field)) } : l)),
     }));
   }, [setCvData]);
 
   const handleProjectChange = useCallback((id: string, field: keyof Project, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      projects: prev.projects.map((p) => (p.id === id ? { ...p, [field]: value } : p)),
+      projects: prev.projects.map((p) => (p.id === id ? { ...p, [field]: truncateText(value, getSectionFieldLimit(field)) } : p)),
     }));
   }, [setCvData]);
 
   const handleAwardChange = useCallback((id: string, field: keyof Award, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      awards: prev.awards.map((a) => (a.id === id ? { ...a, [field]: value } : a)),
+      awards: prev.awards.map((a) => (a.id === id ? { ...a, [field]: truncateText(value, getSectionFieldLimit(field)) } : a)),
     }));
   }, [setCvData]);
 
   const handleReferenceChange = useCallback((id: string, field: keyof Reference, value: string) => {
     setCvData((prev) => ({
       ...prev,
-      references: prev.references.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+      references: prev.references.map((r) => (r.id === id ? { ...r, [field]: truncateText(value, getSectionFieldLimit(field)) } : r)),
     }));
   }, [setCvData]);
 

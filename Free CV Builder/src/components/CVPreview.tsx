@@ -634,6 +634,11 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 const contentNode = (
                   <>
                     <h3 className={isPro ? "text-sm font-bold text-gray-900" : "text-base font-bold text-gray-900"}>{course.name || 'Course Name'}</h3>
+                    {isStartup && (course.startDate || course.endDate) && (
+                      <div className="mt-1 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ borderColor: `${themeColor}44`, backgroundColor: `${themeColor}12`, color: themeColor }}>
+                        {course.startDate} {course.startDate && course.endDate ? '—' : ''} {course.endDate}
+                      </div>
+                    )}
                     <div className={isPro ? "text-xs font-medium text-gray-600 mt-0.5" : "text-sm text-gray-700 mb-1"}>{course.institution || 'Institution'}</div>
                   </>
                 );
@@ -664,6 +669,11 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 const contentNode = (
                   <>
                     <h3 className={isPro ? "text-sm font-bold text-gray-900" : "text-base font-bold text-gray-900"}>{award.name || (isPro ? 'Award Title' : 'Award Name')}</h3>
+                    {isStartup && award.date && (
+                      <div className="mt-1 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold" style={{ borderColor: `${themeColor}44`, backgroundColor: `${themeColor}12`, color: themeColor }}>
+                        {award.date}
+                      </div>
+                    )}
                     <div className={isPro ? "text-xs font-medium text-gray-600 mt-0.5" : "text-sm text-gray-700 mb-1"}>{award.issuer || 'Issuer'}</div>
                   </>
                 );
@@ -790,6 +800,20 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
     <div ref={ref} className={`${getFontClass()} print:p-0`}>
       <style>
         {`
+          .cv-preview-surface,
+          .cv-preview-surface * {
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+          }
+          .cv-preview-surface a {
+            word-break: break-all;
+          }
+          .cv-preview-rich-text,
+          .cv-preview-rich-text * {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+          }
           @media print {
             .page-break {
               page-break-after: always !important;
@@ -803,7 +827,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
         `}
       </style>
       <div
-        className={`bg-white w-[210mm] min-h-[297mm] shadow-2xl mb-8 mx-auto box-border overflow-hidden flex flex-col print:shadow-none print:mb-0 page-break relative`}
+        className={`cv-preview-surface bg-white w-[210mm] min-h-[297mm] shadow-2xl mb-8 mx-auto box-border overflow-hidden flex flex-col print:shadow-none print:mb-0 page-break relative`}
         style={{
           minWidth: '210mm',
           backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 296.5mm, #e5e7eb 296.5mm, #e5e7eb 297mm)',

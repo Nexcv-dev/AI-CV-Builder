@@ -3,7 +3,7 @@ import { FolderGit2, Plus, Trash2, Loader2, Sparkles } from 'lucide-react';
 import { Project } from '../../types';
 import { SortableAccordionSection } from './SortableAccordionSection';
 import { RichTextEditor } from '../RichTextEditor';
-import { INPUT_CLASS_MIN_H, LABEL_CLASS, AI_BUTTON_CLASS, ADD_BUTTON_CLASS, ITEM_CARD_CLASS, DELETE_BUTTON_CLASS } from './constants';
+import { INPUT_CLASS_MIN_H, LABEL_CLASS, AI_BUTTON_CLASS, ADD_BUTTON_CLASS, ITEM_CARD_CLASS, DELETE_BUTTON_CLASS, TEXT_FIELD_LIMITS } from './constants';
 
 interface ProjectsSectionProps {
   projects: Project[];
@@ -25,15 +25,15 @@ export const ProjectsSection = React.memo(({ projects, isOpen, onToggle, onChang
           <div className="grid grid-cols-1 gap-4 mt-2">
             <div>
               <label htmlFor={`proj-name-${proj.id}`} className={LABEL_CLASS}>Project Name</label>
-              <input id={`proj-name-${proj.id}`} name={`proj-name-${proj.id}`} type="text" placeholder="e.g., E-commerce Website" value={proj.name} onChange={(e) => onChange(proj.id, 'name', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`proj-name-${proj.id}`} name={`proj-name-${proj.id}`} type="text" placeholder="e.g., E-commerce Website" value={proj.name} onChange={(e) => onChange(proj.id, 'name', e.target.value)} maxLength={TEXT_FIELD_LIMITS.mediumText} className={INPUT_CLASS_MIN_H} />
             </div>
             <div>
               <label htmlFor={`proj-link-${proj.id}`} className={LABEL_CLASS}>Link (Optional)</label>
-              <input id={`proj-link-${proj.id}`} name={`proj-link-${proj.id}`} type="text" autoComplete="url" placeholder="e.g., https://github.com/..." value={proj.link} onChange={(e) => onChange(proj.id, 'link', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`proj-link-${proj.id}`} name={`proj-link-${proj.id}`} type="text" autoComplete="url" placeholder="e.g., https://github.com/..." value={proj.link} onChange={(e) => onChange(proj.id, 'link', e.target.value)} maxLength={TEXT_FIELD_LIMITS.url} className={INPUT_CLASS_MIN_H} />
             </div>
             <div className="space-y-2">
               <div id={`proj-desc-label-${proj.id}`} className={LABEL_CLASS}>Description</div>
-              <RichTextEditor id={`proj-desc-${proj.id}`} labelId={`proj-desc-label-${proj.id}`} value={proj.description} onChange={(val) => onChange(proj.id, 'description', val)} placeholder="Describe the project and your role..." />
+              <RichTextEditor id={`proj-desc-${proj.id}`} labelId={`proj-desc-label-${proj.id}`} value={proj.description} onChange={(val) => onChange(proj.id, 'description', val)} maxLength={TEXT_FIELD_LIMITS.richText} placeholder="Describe the project and your role..." />
               <button type="button" onClick={() => onRefineText(`proj-${proj.id}`, proj.description, 'project', { name: proj.name }, (refined) => onChange(proj.id, 'description', refined))} disabled={refiningIds[`proj-${proj.id}`] || !proj.description?.trim()} className={AI_BUTTON_CLASS}>
                 {refiningIds[`proj-${proj.id}`] ? (<><Loader2 size={13} className="mr-1.5 animate-spin" /> Refining...</>) : (<><Sparkles size={13} className="mr-1.5" /> Refine with AI</>)}
               </button>

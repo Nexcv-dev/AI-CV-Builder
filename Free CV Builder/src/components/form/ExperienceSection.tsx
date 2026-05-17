@@ -3,7 +3,7 @@ import { Briefcase, Plus, Trash2, Loader2, Sparkles } from 'lucide-react';
 import { Experience } from '../../types';
 import { SortableAccordionSection } from './SortableAccordionSection';
 import { RichTextEditor } from '../RichTextEditor';
-import { INPUT_CLASS, INPUT_CLASS_MIN_H, LABEL_CLASS, AI_BUTTON_CLASS, ADD_BUTTON_CLASS, ITEM_CARD_CLASS, DELETE_BUTTON_CLASS } from './constants';
+import { INPUT_CLASS, INPUT_CLASS_MIN_H, LABEL_CLASS, AI_BUTTON_CLASS, ADD_BUTTON_CLASS, ITEM_CARD_CLASS, DELETE_BUTTON_CLASS, TEXT_FIELD_LIMITS } from './constants';
 
 interface ExperienceSectionProps {
   experience: Experience[];
@@ -54,6 +54,7 @@ export const ExperienceSection = React.memo(({
                 placeholder="Company Name"
                 value={exp.company}
                 onChange={(e) => onChange(exp.id, 'company', e.target.value)}
+                maxLength={TEXT_FIELD_LIMITS.mediumText}
                 className={INPUT_CLASS_MIN_H}
               />
             </div>
@@ -67,6 +68,7 @@ export const ExperienceSection = React.memo(({
                 placeholder="Job Title"
                 value={exp.position}
                 onChange={(e) => onChange(exp.id, 'position', e.target.value)}
+                maxLength={TEXT_FIELD_LIMITS.mediumText}
                 className={INPUT_CLASS}
               />
             </div>
@@ -79,6 +81,7 @@ export const ExperienceSection = React.memo(({
                 placeholder="e.g., Jan 2020"
                 value={exp.startDate}
                 onChange={(e) => onChange(exp.id, 'startDate', e.target.value)}
+                maxLength={TEXT_FIELD_LIMITS.dateText}
                 className={INPUT_CLASS}
               />
             </div>
@@ -91,6 +94,7 @@ export const ExperienceSection = React.memo(({
                 placeholder="e.g., Present"
                 value={exp.endDate}
                 onChange={(e) => onChange(exp.id, 'endDate', e.target.value)}
+                maxLength={TEXT_FIELD_LIMITS.dateText}
                 className={INPUT_CLASS}
               />
             </div>
@@ -103,6 +107,7 @@ export const ExperienceSection = React.memo(({
                 labelId={`exp-desc-label-${exp.id}`}
                 value={exp.description}
                 onChange={(val) => onChange(exp.id, 'description', val)}
+                maxLength={TEXT_FIELD_LIMITS.richText}
                 placeholder="Describe your responsibilities and achievements..."
               />
               <button

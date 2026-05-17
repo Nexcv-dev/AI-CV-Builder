@@ -1,4 +1,4 @@
-import React, { FormEvent, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import { ArrowRight, Lock, Eye, EyeOff } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -14,6 +14,51 @@ export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isValidatingToken, setIsValidatingToken] = useState(Boolean(token));
+  const [tokenError, setTokenError] = useState('');
+
+  useEffect(() => {
+    if (!token) {
+      setIsValidatingToken(false);
+      setTokenError('The password reset link is invalid or missing the token.');
+      return;
+    }
+
+    let ignore = false;
+
+    const validateToken = async () => {
+      setIsValidatingToken(true);
+      setTokenError('');
+
+      try {
+        const response = await fetch('/api/auth/validate-reset-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-App-Source': 'cv-builder-app',
+          },
+          body: JSON.stringify({ token }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Password reset token is invalid or has expired.');
+        }
+      } catch (err) {
+        if (!ignore) {
+          setTokenError(err instanceof Error ? err.message : 'Password reset token is invalid or has expired.');
+        }
+      } finally {
+        if (!ignore) setIsValidatingToken(false);
+      }
+    };
+
+    validateToken();
+
+    return () => {
+      ignore = true;
+    };
+  }, [token]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -55,12 +100,24 @@ export default function ResetPassword() {
     }
   };
 
-  if (!token) {
+  if (isValidatingToken) {
+    return (
+      <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-2">Checking Link</h2>
+          <p className="text-slate-400">Please wait while we validate your password reset link.</p>
+        </div>
+        <PasswordResetFooter />
+      </div>
+    );
+  }
+
+  if (tokenError) {
     return (
       <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white mb-2">Invalid Link</h2>
-          <p className="text-slate-400">The password reset link is invalid or missing the token.</p>
+          <p className="text-slate-400">{tokenError}</p>
         </div>
         <PasswordResetFooter />
       </div>

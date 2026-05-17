@@ -892,6 +892,13 @@ app.delete('/api/auth/account', requireAuth, async (req: Request, res: Response,
 });
 
 // Initiate Google Login
+const PASSWORD_RESET_EXPIRES_MS = 60 * 60 * 1000;
+
+const findUserByValidPasswordResetToken = (token: string) => User.findOne({
+    resetPasswordToken: hashToken(token),
+    resetPasswordExpires: { $gt: new Date() }
+});
+
 app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request, res: Response) => {
     try {
         const email = normalizeEmail(req.body.email);
@@ -926,7 +933,7 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
         // Generate token
         const token = randomBytes(20).toString('hex');
         user.resetPasswordToken = hashToken(token);
-        user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+        user.resetPasswordExpires = new Date(Date.now() + PASSWORD_RESET_EXPIRES_MS);
         await user.save();
 
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -959,6 +966,25 @@ app.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request,
     }
 });
 
+app.post('/api/auth/validate-reset-token', authLimiter, async (req: Request, res: Response) => {
+    try {
+        const token = typeof req.body.token === 'string' ? req.body.token : '';
+
+        if (!token) {
+            return res.status(400).json({ error: 'Password reset token is missing.' });
+        }
+
+        const user = await findUserByValidPasswordResetToken(token).select('_id');
+        if (!user) {
+            return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
+        }
+
+        res.json({ valid: true });
+    } catch (error) {
+        return sendError(res, 500, 'Could not validate password reset token.', error);
+    }
+});
+
 app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Response) => {
     try {
         const token = req.body.token;
@@ -972,10 +998,7 @@ app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Resp
             return res.status(400).json({ error: passwordPolicyMessage });
         }
 
-        const user = await User.findOne({
-            resetPasswordToken: hashToken(token),
-            resetPasswordExpires: { $gt: new Date() }
-        });
+        const user = await findUserByValidPasswordResetToken(token);
 
         if (!user) {
             return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
@@ -1729,7 +1752,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
         `<section style="margin-bottom:${sectionGap}rem;break-inside:avoid">${content}</section>`;
 
     const desc = (html: string) => html
-        ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;word-break:break-word">${sanitize(html)}</div>` : '';
+        ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word">${sanitize(html)}</div>` : '';
 
     const dateInline = (s: string, e: string) =>
         `${esc(s || '')} ${s && e ? '—' : ''} ${esc(e || '')}`;
@@ -1788,7 +1811,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
         if (key === 'summary' && personalInfo.summary) {
             const summaryTitle = isStartup ? 'About Me' : (isPro ? 'Professional Summary' : 'Profile');
             const summaryDesc = isPro
-                ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;word-break:break-word">${sanitize(personalInfo.summary)}</div>`
+                ? `<div class="cv-preview-rich-text" style="font-size:0.875rem;color:#374151;line-height:${lineSpacing};margin-left:130px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word">${sanitize(personalInfo.summary)}</div>`
                 : desc(personalInfo.summary);
             return section(`${heading(summaryTitle, key)}${summaryDesc}`);
         }
@@ -1934,6 +1957,13 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
                 if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${title3(c.name || 'Course Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(c.institution || 'Institution')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${dateInline(c.startDate, c.endDate)}</span></div></div>`;
                 }
+                if (isStartup) {
+                    return `<div style="break-inside:avoid">
+                        <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3>
+                        ${(c.startDate || c.endDate) ? `<div style="display:inline-block;border:1px solid ${themeColor}44;background:${themeColor}12;color:${themeColor};border-radius:9999px;padding:4px 10px;margin-top:4px;font-size:0.6875rem;font-weight:700">${dateInline(c.startDate, c.endDate)}</div>` : ''}
+                        <div style="font-size:0.875rem;color:#374151;margin-top:4px">${esc(c.institution || 'Institution')}</div>
+                    </div>`;
+                }
                 const fontSize = isPro ? '0.875rem' : '1rem';
                 const ss = isPro ? '0.75rem' : '0.875rem';
                 return timelineRow(dateInline(c.startDate, c.endDate), `<h3 style="font-size:${fontSize};font-weight:700;color:#111827;margin:0">${esc(c.name || 'Course Name')}</h3><div style="font-size:${ss};color:#374151;margin-top:2px">${esc(c.institution || 'Institution')}</div>`);
@@ -1945,6 +1975,13 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
             const items = awards.map((a: any) => {
                 if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${title3(a.name || 'Award Name')}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.875rem;font-weight:500;color:#374151">${esc(a.issuer || 'Issuer')}</span><span style="font-size:0.75rem;color:#6b7280;font-weight:500">${esc(a.date || '')}</span></div></div>`;
+                }
+                if (isStartup) {
+                    return `<div style="break-inside:avoid">
+                        <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0">${esc(a.name || 'Award Name')}</h3>
+                        ${a.date ? `<div style="display:inline-block;border:1px solid ${themeColor}44;background:${themeColor}12;color:${themeColor};border-radius:9999px;padding:4px 10px;margin-top:4px;font-size:0.6875rem;font-weight:700">${esc(a.date)}</div>` : ''}
+                        <div style="font-size:0.875rem;color:#374151;margin-top:4px">${esc(a.issuer || 'Issuer')}</div>
+                    </div>`;
                 }
                 const fontSize = isPro ? '0.875rem' : '1rem';
                 const ss = isPro ? '0.75rem' : '0.875rem';
@@ -2287,10 +2324,30 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: ${fontFamilyCSS}; background: white; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
+    body, body * {
+      max-width: 100%;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    a {
+      overflow-wrap: anywhere;
+      word-break: break-all;
+    }
+    svg, img {
+      min-width: initial;
+      overflow-wrap: normal;
+      word-break: normal;
+    }
     ::-webkit-scrollbar { display: none; }
     a { color: inherit; text-decoration: none; }
     ul { padding-left: 20px; margin: 4px 0; }
     li { margin-bottom: 4px; }
+    .cv-preview-rich-text,
+    .cv-preview-rich-text * {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
     .cv-preview-rich-text ul, .cv-preview-rich-text ol { margin-top: 0; margin-bottom: 0; }
     .cv-preview-rich-text li { margin-top: 0; margin-bottom: 0.25rem; }
     .cv-preview-rich-text li:last-child { margin-bottom: 0; }

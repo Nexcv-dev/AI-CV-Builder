@@ -2,7 +2,7 @@ import React from 'react';
 import { Globe, Plus, Trash2 } from 'lucide-react';
 import { Language } from '../../types';
 import { SortableAccordionSection } from './SortableAccordionSection';
-import { INPUT_CLASS_SM, ADD_BUTTON_CLASS } from './constants';
+import { INPUT_CLASS_SM, ADD_BUTTON_CLASS, TEXT_FIELD_LIMITS } from './constants';
 import { PremiumSelect } from './PremiumSelect';
 
 interface LanguagesSectionProps {
@@ -29,7 +29,7 @@ export const LanguagesSection = React.memo(({ languages, isOpen, onToggle, onCha
       {languages.map((lang) => (
         <div key={lang.id} className={`flex items-center space-x-4 p-3 border rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50/50 border-gray-100'}`}>
           <div className="flex-1">
-            <input id={`lang-name-${lang.id}`} name={`lang-name-${lang.id}`} type="text" autoComplete="language" aria-label="Language name" placeholder="Language (e.g. English)" value={lang.name} onChange={(e) => onChange(lang.id, 'name', e.target.value)} className={INPUT_CLASS_SM} />
+            <input id={`lang-name-${lang.id}`} name={`lang-name-${lang.id}`} type="text" autoComplete="language" aria-label="Language name" placeholder="Language (e.g. English)" value={lang.name} onChange={(e) => onChange(lang.id, 'name', e.target.value)} maxLength={TEXT_FIELD_LIMITS.shortText} className={INPUT_CLASS_SM} />
           </div>
           <div className="flex-1">
             <PremiumSelect

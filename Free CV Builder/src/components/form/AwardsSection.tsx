@@ -2,7 +2,7 @@ import React from 'react';
 import { Trophy, Plus, Trash2 } from 'lucide-react';
 import { Award } from '../../types';
 import { SortableAccordionSection } from './SortableAccordionSection';
-import { INPUT_CLASS_MIN_H, LABEL_CLASS, ADD_BUTTON_CLASS, ITEM_CARD_CLASS, DELETE_BUTTON_CLASS } from './constants';
+import { INPUT_CLASS_MIN_H, LABEL_CLASS, ADD_BUTTON_CLASS, ITEM_CARD_CLASS, DELETE_BUTTON_CLASS, TEXT_FIELD_LIMITS } from './constants';
 
 interface AwardsSectionProps {
   awards: Award[];
@@ -22,15 +22,15 @@ export const AwardsSection = React.memo(({ awards, isOpen, onToggle, onChange, o
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
             <div className="md:col-span-2">
               <label htmlFor={`award-name-${award.id}`} className={LABEL_CLASS}>Award Name</label>
-              <input id={`award-name-${award.id}`} name={`award-name-${award.id}`} type="text" placeholder="e.g., Employee of the Year" value={award.name} onChange={(e) => onChange(award.id, 'name', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`award-name-${award.id}`} name={`award-name-${award.id}`} type="text" placeholder="e.g., Employee of the Year" value={award.name} onChange={(e) => onChange(award.id, 'name', e.target.value)} maxLength={TEXT_FIELD_LIMITS.mediumText} className={INPUT_CLASS_MIN_H} />
             </div>
             <div>
               <label htmlFor={`award-issuer-${award.id}`} className={LABEL_CLASS}>Issuer</label>
-              <input id={`award-issuer-${award.id}`} name={`award-issuer-${award.id}`} type="text" autoComplete="organization" placeholder="e.g., Tech Solutions Inc." value={award.issuer} onChange={(e) => onChange(award.id, 'issuer', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`award-issuer-${award.id}`} name={`award-issuer-${award.id}`} type="text" autoComplete="organization" placeholder="e.g., Tech Solutions Inc." value={award.issuer} onChange={(e) => onChange(award.id, 'issuer', e.target.value)} maxLength={TEXT_FIELD_LIMITS.mediumText} className={INPUT_CLASS_MIN_H} />
             </div>
             <div>
               <label htmlFor={`award-date-${award.id}`} className={LABEL_CLASS}>Date</label>
-              <input id={`award-date-${award.id}`} name={`award-date-${award.id}`} type="text" placeholder="e.g., Dec 2022" value={award.date} onChange={(e) => onChange(award.id, 'date', e.target.value)} className={INPUT_CLASS_MIN_H} />
+              <input id={`award-date-${award.id}`} name={`award-date-${award.id}`} type="text" placeholder="e.g., Dec 2022" value={award.date} onChange={(e) => onChange(award.id, 'date', e.target.value)} maxLength={TEXT_FIELD_LIMITS.dateText} className={INPUT_CLASS_MIN_H} />
             </div>
           </div>
         </div>

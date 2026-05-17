@@ -3,7 +3,7 @@ import { GraduationCap, Plus, Trash2, Loader2, Sparkles } from 'lucide-react';
 import { Education } from '../../types';
 import { SortableAccordionSection } from './SortableAccordionSection';
 import { RichTextEditor } from '../RichTextEditor';
-import { INPUT_CLASS, INPUT_CLASS_MIN_H, LABEL_CLASS, AI_BUTTON_CLASS, ADD_BUTTON_CLASS, ITEM_CARD_CLASS, DELETE_BUTTON_CLASS } from './constants';
+import { INPUT_CLASS, INPUT_CLASS_MIN_H, LABEL_CLASS, AI_BUTTON_CLASS, ADD_BUTTON_CLASS, ITEM_CARD_CLASS, DELETE_BUTTON_CLASS, TEXT_FIELD_LIMITS } from './constants';
 
 interface EducationSectionProps {
   education: Education[];
@@ -54,6 +54,7 @@ export const EducationSection = React.memo(({
                 placeholder="University or School"
                 value={edu.institution}
                 onChange={(e) => onChange(edu.id, 'institution', e.target.value)}
+                maxLength={TEXT_FIELD_LIMITS.mediumText}
                 className={INPUT_CLASS_MIN_H}
               />
             </div>
@@ -66,6 +67,7 @@ export const EducationSection = React.memo(({
                 placeholder="e.g., Bachelor of Science"
                 value={edu.degree}
                 onChange={(e) => onChange(edu.id, 'degree', e.target.value)}
+                maxLength={TEXT_FIELD_LIMITS.mediumText}
                 className={INPUT_CLASS}
               />
             </div>
@@ -78,6 +80,7 @@ export const EducationSection = React.memo(({
                 placeholder="e.g., Sep 2015"
                 value={edu.startDate}
                 onChange={(e) => onChange(edu.id, 'startDate', e.target.value)}
+                maxLength={TEXT_FIELD_LIMITS.dateText}
                 className={INPUT_CLASS}
               />
             </div>
@@ -90,6 +93,7 @@ export const EducationSection = React.memo(({
                 placeholder="e.g., May 2019"
                 value={edu.endDate}
                 onChange={(e) => onChange(edu.id, 'endDate', e.target.value)}
+                maxLength={TEXT_FIELD_LIMITS.dateText}
                 className={INPUT_CLASS}
               />
             </div>
@@ -100,6 +104,7 @@ export const EducationSection = React.memo(({
                 labelId={`edu-desc-label-${edu.id}`}
                 value={edu.description || ''}
                 onChange={(val) => onChange(edu.id, 'description', val)}
+                maxLength={TEXT_FIELD_LIMITS.richText}
                 placeholder="Honors, coursework, or achievements..."
               />
               <button
