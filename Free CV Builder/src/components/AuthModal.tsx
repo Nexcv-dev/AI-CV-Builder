@@ -1,8 +1,8 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Eye, EyeOff, Lock, Mail, User, X } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Lock, Mail, RotateCcw, ShieldCheck, User, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { AuthUser } from '../utils/api';
+import { AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
 
 type AuthMode = 'login' | 'signup';
 
@@ -74,12 +74,18 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showOtpStep, setShowOtpStep] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     setMode(initialMode);
     setError('');
     setIsRedirecting(false);
+    setShowOtpStep(false);
+    setVerificationCode('');
   }, [initialMode, isOpen]);
 
   useEffect(() => {
@@ -130,7 +136,21 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     setEmail('');
     setPassword('');
     setShowPassword(false);
+    setShowOtpStep(false);
+    setVerificationCode('');
     setError('');
+  };
+
+  const completeAuthRedirect = (user?: AuthUser) => {
+    if (user) {
+      onAuthenticated?.(user);
+      notifyAuthUserChanged(user);
+    }
+    setIsRedirecting(true);
+    navigate(redirectTo);
+    if (redirectTo === '/builder') {
+      onClose();
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -144,18 +164,99 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
         email,
         password,
       });
-      if (data.user) onAuthenticated?.(data.user);
-      if (mode === 'signup' && data.message) toast.success(data.message);
-      setIsRedirecting(true);
-      navigate(redirectTo);
-      if (redirectTo === '/builder') {
-        onClose();
+      if (mode === 'signup') {
+        if (data.user) {
+          onAuthenticated?.(data.user);
+          notifyAuthUserChanged(data.user);
+        }
+        if (data.message) toast.success(data.message);
+        setShowOtpStep(true);
+        setVerificationCode('');
+      } else {
+        completeAuthRedirect(data.user);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleVerifyOtp = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setIsVerifyingOtp(true);
+
+    try {
+      const data = await apiFetch<{ user: AuthUser; message: string }>('/api/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ code: verificationCode }),
+      });
+      toast.success(data.message || 'Email verified successfully.');
+      completeAuthRedirect(data.user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not verify email.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (isResendingOtp) return;
+
+    setError('');
+    setIsResendingOtp(true);
+    try {
+      const data = await apiFetch<{ user: AuthUser; message: string }>('/api/auth/resend-verification', {
+        method: 'POST',
+      });
+      if (data.user) {
+        onAuthenticated?.(data.user);
+        notifyAuthUserChanged(data.user);
+      }
+      toast.success(data.message || 'Verification OTP sent.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not resend verification OTP.');
+    } finally {
+      setIsResendingOtp(false);
+    }
+  };
+
+  const handleOtpChange = (index: number, val: string) => {
+    const newVal = val.replace(/\D/g, '').slice(0, 1);
+    const updatedCode = verificationCode.split('');
+    updatedCode[index] = newVal;
+    const finalCode = updatedCode.join('').slice(0, 6);
+    setVerificationCode(finalCode);
+
+    if (newVal && index < 5) {
+      document.getElementById(`auth-otp-${index + 1}`)?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      if (!verificationCode[index] && index > 0) {
+        const updatedCode = verificationCode.split('');
+        updatedCode[index - 1] = '';
+        setVerificationCode(updatedCode.join(''));
+        document.getElementById(`auth-otp-${index - 1}`)?.focus();
+      } else {
+        const updatedCode = verificationCode.split('');
+        updatedCode[index] = '';
+        setVerificationCode(updatedCode.join(''));
+      }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    setVerificationCode(pastedData);
+    const focusIndex = Math.min(pastedData.length, 5);
+    setTimeout(() => {
+      document.getElementById(`auth-otp-${focusIndex}`)?.focus();
+    }, 0);
   };
 
   return (
@@ -186,21 +287,85 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
             </button>
           </div>
 
-          <a
-            href={`/api/auth/google${googleNextParam(redirectTo)}`}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white px-4 py-3 text-sm font-extrabold text-slate-950 shadow-lg shadow-white/10 transition hover:bg-slate-100 active:scale-[0.99]"
-          >
-            <GoogleLogo />
-            Continue with Google
-          </a>
+          {showOtpStep ? (
+            <form className="auth-mode-fade mt-6 space-y-4" onSubmit={handleVerifyOtp}>
+              <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4">
+                <p className="flex items-center gap-2 text-xs font-extrabold uppercase text-emerald-200">
+                  <ShieldCheck size={15} />
+                  OTP Verification
+                </p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-emerald-50/80">
+                  We sent a 6-digit code to {email}. Enter it here to activate your account.
+                </p>
+              </div>
 
-          <div className="my-5 flex items-center gap-3">
-            <span className="h-px flex-1 bg-white/10" />
-            <span className="text-xs font-bold uppercase text-slate-500">or</span>
-            <span className="h-px flex-1 bg-white/10" />
-          </div>
+              <div className="block">
+                <span className="mb-2 block text-xs font-extrabold uppercase text-slate-400 text-center">Verification code</span>
+                <div className="flex justify-center gap-2 sm:gap-3 py-2" onPaste={handlePaste}>
+                  {Array.from({ length: 6 }).map((_, index) => {
+                    const val = verificationCode[index] || '';
+                    return (
+                      <input
+                        key={index}
+                        id={`auth-otp-${index}`}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]"
+                        maxLength={1}
+                        value={val}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(index, e)}
+                        className="w-12 h-12 text-center font-montserrat text-xl font-bold rounded-xl border border-white/10 bg-slate-950 text-white focus:border-violet-400 focus:ring-1 focus:ring-violet-400 outline-none transition-all duration-200"
+                        autoComplete="off"
+                        required
+                      />
+                    );
+                  })}
+                </div>
+              </div>
 
-          <form key={mode} className="auth-mode-fade space-y-3" onSubmit={handleSubmit}>
+              {error && (
+                <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-200">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isVerifyingOtp || verificationCode.length !== 6}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isVerifyingOtp ? 'Verifying...' : 'Verify account'}
+                {!isVerifyingOtp && <ArrowRight size={17} />}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={isResendingOtp}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-extrabold text-slate-200 transition hover:bg-white/10 active:scale-[0.99] disabled:opacity-70"
+              >
+                <RotateCcw size={16} />
+                {isResendingOtp ? 'Sending...' : 'Resend OTP'}
+              </button>
+            </form>
+          ) : (
+            <>
+              <a
+                href={`/api/auth/google${googleNextParam(redirectTo)}`}
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white px-4 py-3 text-sm font-extrabold text-slate-950 shadow-lg shadow-white/10 transition hover:bg-slate-100 active:scale-[0.99]"
+              >
+                <GoogleLogo />
+                Continue with Google
+              </a>
+
+              <div className="my-5 flex items-center gap-3">
+                <span className="h-px flex-1 bg-white/10" />
+                <span className="text-xs font-bold uppercase text-slate-500">or</span>
+                <span className="h-px flex-1 bg-white/10" />
+              </div>
+
+              <form key={mode} className="auth-mode-fade space-y-3" onSubmit={handleSubmit}>
             {mode === 'signup' && (
               <label className="block">
                 <span className="mb-1.5 block text-xs font-extrabold uppercase text-slate-400">Name</span>
@@ -288,20 +453,22 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               {isSubmitting ? 'Please wait...' : copy.action}
               {!isSubmitting && <ArrowRight size={17} />}
             </button>
-          </form>
+              </form>
 
-          <p className="mt-5 text-center text-sm font-semibold text-slate-400">
-            {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-            <button
-              type="button"
-              className="font-extrabold text-violet-300 transition hover:text-violet-200"
-              onClick={() => {
-                switchMode(mode === 'login' ? 'signup' : 'login');
-              }}
-            >
-              {mode === 'login' ? 'Sign up' : 'Login'}
-            </button>
-          </p>
+              <p className="mt-5 text-center text-sm font-semibold text-slate-400">
+                {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
+                <button
+                  type="button"
+                  className="font-extrabold text-violet-300 transition hover:text-violet-200"
+                  onClick={() => {
+                    switchMode(mode === 'login' ? 'signup' : 'login');
+                  }}
+                >
+                  {mode === 'login' ? 'Sign up' : 'Login'}
+                </button>
+              </p>
+            </>
+          )}
         </div>
 
         {isRedirecting && (

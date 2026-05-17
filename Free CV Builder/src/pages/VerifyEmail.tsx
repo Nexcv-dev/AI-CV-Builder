@@ -1,52 +1,77 @@
-import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Loader2, MailCheck, XCircle } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { FormEvent, useState } from 'react';
+import { ArrowRight, CheckCircle2, MailCheck, XCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { PasswordResetFooter } from '../components/PasswordResetFooter';
 import { AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
 
 export default function VerifyEmail() {
-  const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Verifying your email...');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [code, setCode] = useState('');
+  const [message, setMessage] = useState('Enter the 6-digit OTP sent to your email.');
 
-  useEffect(() => {
-    let ignore = false;
-    const token = searchParams.get('token') || '';
+  const verifyCode = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus('submitting');
+    setMessage('Checking your verification code...');
 
-    if (!token) {
-      setStatus('error');
-      setMessage('Verification token is missing.');
-      return;
-    }
-
-    apiFetch<{ user: AuthUser; message: string }>('/api/auth/verify-email', {
-      method: 'POST',
-      body: JSON.stringify({ token }),
-    })
-      .then((data) => {
-        if (ignore) return;
-        notifyAuthUserChanged(data.user);
-        setStatus('success');
-        setMessage(data.message || 'Email verified successfully.');
-      })
-      .catch((error) => {
-        if (ignore) return;
-        setStatus('error');
-        setMessage(error instanceof Error ? error.message : 'Could not verify email.');
+    try {
+      const data = await apiFetch<{ user: AuthUser; message: string }>('/api/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
       });
+      notifyAuthUserChanged(data.user);
+      setStatus('success');
+      setMessage(data.message || 'Email verified successfully.');
+    } catch (error) {
+      setStatus('error');
+      setMessage(error instanceof Error ? error.message : 'Could not verify email.');
+    }
+  };
 
-    return () => {
-      ignore = true;
-    };
-  }, [searchParams]);
+  const handleOtpChange = (index: number, val: string) => {
+    const newVal = val.replace(/\D/g, '').slice(0, 1);
+    const updatedCode = code.split('');
+    updatedCode[index] = newVal;
+    const finalCode = updatedCode.join('').slice(0, 6);
+    setCode(finalCode);
+
+    if (newVal && index < 5) {
+      document.getElementById(`verify-otp-${index + 1}`)?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      if (!code[index] && index > 0) {
+        const updatedCode = code.split('');
+        updatedCode[index - 1] = '';
+        setCode(updatedCode.join(''));
+        document.getElementById(`verify-otp-${index - 1}`)?.focus();
+      } else {
+        const updatedCode = code.split('');
+        updatedCode[index] = '';
+        setCode(updatedCode.join(''));
+      }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    setCode(pastedData);
+    const focusIndex = Math.min(pastedData.length, 5);
+    setTimeout(() => {
+      document.getElementById(`verify-otp-${focusIndex}`)?.focus();
+    }, 0);
+  };
 
   const icon =
-    status === 'loading' ? (
-      <Loader2 size={30} className="animate-spin text-violet-300" />
-    ) : status === 'success' ? (
+    status === 'success' ? (
       <CheckCircle2 size={30} className="text-emerald-300" />
-    ) : (
+    ) : status === 'error' ? (
       <XCircle size={30} className="text-rose-300" />
+    ) : (
+      <MailCheck size={30} className="text-violet-300" />
     );
 
   return (
@@ -65,14 +90,48 @@ export default function VerifyEmail() {
               Email Verification
             </p>
             <h2 className="font-montserrat text-2xl font-black text-white">
-              {status === 'success' ? 'Email verified' : status === 'error' ? 'Verification failed' : 'Checking link'}
+              {status === 'success' ? 'Email verified' : status === 'error' ? 'Verification failed' : 'Enter OTP'}
             </h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-slate-400">{message}</p>
           </div>
 
+          {status !== 'success' && (
+            <form className="mb-3 space-y-4" onSubmit={verifyCode}>
+              <div className="flex justify-center gap-2 sm:gap-3 py-2" onPaste={handlePaste}>
+                {Array.from({ length: 6 }).map((_, index) => {
+                  const val = code[index] || '';
+                  return (
+                    <input
+                      key={index}
+                      id={`verify-otp-${index}`}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]"
+                      maxLength={1}
+                      value={val}
+                      onChange={(e) => handleOtpChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      className="w-12 h-12 text-center font-montserrat text-xl font-bold rounded-xl border border-white/10 bg-slate-950 text-white focus:border-violet-400 focus:ring-1 focus:ring-violet-400 outline-none transition-all duration-200"
+                      autoComplete="off"
+                      required
+                    />
+                  );
+                })}
+              </div>
+              <button
+                type="submit"
+                disabled={status === 'submitting' || code.length !== 6}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {status === 'submitting' ? 'Verifying...' : 'Verify email'}
+                {status !== 'submitting' && <ArrowRight size={17} />}
+              </button>
+            </form>
+          )}
+
           <Link
             to="/builder"
-            className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.99]"
+            className="inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/6 px-4 py-3.5 text-sm font-extrabold text-white transition hover:bg-white/10 active:scale-[0.99]"
           >
             Back to Builder
           </Link>

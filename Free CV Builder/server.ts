@@ -10,7 +10,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import fs from 'fs';
-import { createHash, pbkdf2Sync, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, pbkdf2Sync, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import session from 'express-session';
@@ -21,7 +21,7 @@ import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import DownloadQuota from './server-models/DownloadQuotaModel';
 import './server-models/passportSetup'; // Initialize passport strategy
-import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateAvailableForPlan, isTemplateName } from './src/templates';
+import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan } from './src/templates';
 import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildDownloadQuota } from './server-models/downloadQuotaUtils';
@@ -161,14 +161,14 @@ const passwordResetLimiter = rateLimit({
 
 const emailVerificationLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // limit verification emails to 3 per hour
+    max: 3, // limit verification OTP emails to 3 per hour
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => {
         const user = req.user as any;
         return user?._id?.toString?.() || user?.id?.toString?.() || ipKeyGenerator(req.ip);
     },
-    message: { error: 'Too many verification email requests. Please wait an hour before trying again.' },
+    message: { error: 'Too many verification OTP requests. Please wait an hour before trying again.' },
 });
 
 app.use('/api/', apiLimiter);
@@ -576,7 +576,7 @@ const isMongoDuplicateKeyError = (error: any) => (
 const isMongoValidationError = (error: any) => error?.name === 'ValidationError';
 
 const passwordPolicyMessage = 'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.';
-const emailVerificationExpiresMs = 24 * 60 * 60 * 1000;
+const emailVerificationExpiresMs = 10 * 60 * 1000;
 
 const validatePasswordStrength = (password: string) => (
     password.length >= 8 &&
@@ -611,46 +611,43 @@ const verifyPassword = (password: string, storedHash: string) => {
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
-const generateEmailVerificationToken = () => {
-    const token = randomBytes(32).toString('hex');
+const generateEmailVerificationOtp = () => {
+    const code = randomInt(100000, 1000000).toString();
     return {
-        token,
-        tokenHash: hashToken(token),
+        code,
+        codeHash: hashToken(code),
         expires: new Date(Date.now() + emailVerificationExpiresMs),
     };
 };
 
 const isEmailVerified = (user: any) => user?.authProvider === 'google' || user?.emailVerified !== false;
 
-const sendEmailVerification = async (user: any, token: string) => {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
-
+const sendEmailVerification = async (user: any, code: string) => {
     await sendSystemEmail({
         to: user.email,
-        subject: 'Verify your NexCV email',
+        subject: 'Your NexCV verification code',
         text: `Hi ${emailGreetingName(user.displayName)},\n\n` +
-            `Welcome to NexCV. Please verify your email address so you can save your CVs, access them later, and download your documents.\n\n` +
-            `Verify your email:\n${verifyUrl}\n\n` +
-            `This verification link will expire in 24 hours.\n\n` +
+            `Welcome to NexCV. Use this one-time code to verify your email address:\n\n` +
+            `${code}\n\n` +
+            `This verification code will expire in 10 minutes.\n\n` +
             `If you did not create a NexCV account, you can safely ignore this email.\n\n` +
             `Thanks,\nThe NexCV Team\n`,
     });
 };
 
-const sendEmailVerificationWithRetry = async (user: any, token: string) => {
+const sendEmailVerificationWithRetry = async (user: any, code: string) => {
     try {
-        await sendEmailVerification(user, token);
+        await sendEmailVerification(user, code);
         return true;
     } catch (firstError) {
-        console.error('Could not send verification email on first attempt:', firstError);
+        console.error('Could not send verification OTP on first attempt:', firstError);
 
         try {
             await new Promise((resolve) => setTimeout(resolve, 500));
-            await sendEmailVerification(user, token);
+            await sendEmailVerification(user, code);
             return true;
         } catch (retryError) {
-            console.error('Could not send verification email on retry:', retryError);
+            console.error('Could not send verification OTP on retry:', retryError);
             return false;
         }
     }
@@ -888,19 +885,19 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             return res.status(409).json({ error: 'An account already exists for this email.' });
         }
 
-        const verification = generateEmailVerificationToken();
+        const verification = generateEmailVerificationOtp();
         const user = await User.create({
             email,
             displayName,
             passwordHash: hashPassword(password),
             role: roleForEmail(email),
             emailVerified: false,
-            emailVerificationToken: verification.tokenHash,
+            emailVerificationToken: verification.codeHash,
             emailVerificationExpires: verification.expires,
             authProvider: 'email',
         });
 
-        const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.token);
+        const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.code);
         void sendNewAccountNotification(user);
 
         req.login(user, (err) => {
@@ -908,8 +905,8 @@ app.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunct
             return res.status(201).json({
                 user: publicUser(user),
                 message: verificationEmailSent
-                    ? 'Account created. Please check your email to verify your account.'
-                    : 'Account created, but verification email could not be sent. Try resend verification.',
+                    ? 'Account created. Enter the OTP sent to your email to verify your account.'
+                    : 'Account created, but verification OTP could not be sent. Try resend verification.',
             });
         });
     } catch (error) {
@@ -1158,20 +1155,21 @@ app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Resp
     }
 });
 
-app.post('/api/auth/verify-email', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+app.post('/api/auth/verify-email', requireAuth, authLimiter, async (req: Request, res: Response) => {
     try {
-        const token = typeof req.body.token === 'string' ? req.body.token : '';
-        if (!token) {
-            return res.status(400).json({ error: 'Verification token is missing.' });
+        const code = typeof req.body.code === 'string' ? req.body.code.replace(/\D/g, '') : '';
+        if (!/^\d{6}$/.test(code)) {
+            return res.status(400).json({ error: 'Enter the 6-digit verification code.' });
         }
 
         const user = await User.findOne({
-            emailVerificationToken: hashToken(token),
+            _id: currentUserId(req),
+            emailVerificationToken: hashToken(code),
             emailVerificationExpires: { $gt: new Date() },
         });
 
         if (!user) {
-            return res.status(400).json({ error: 'Verification link is invalid or has expired.' });
+            return res.status(400).json({ error: 'Verification code is invalid or has expired.' });
         }
 
         user.emailVerified = true;
@@ -1179,15 +1177,7 @@ app.post('/api/auth/verify-email', authLimiter, async (req: Request, res: Respon
         user.emailVerificationExpires = undefined;
         await user.save();
 
-        const authenticatedUserId = req.isAuthenticated() ? currentUserId(req)?.toString?.() : '';
-        if (authenticatedUserId === user._id.toString()) {
-            return res.json({ user: publicUser(user), message: 'Email verified successfully.' });
-        }
-
-        req.login(user, (err) => {
-            if (err) return next(err);
-            return res.json({ user: publicUser(user), message: 'Email verified successfully.' });
-        });
+        return res.json({ user: publicUser(user), message: 'Email verified successfully.' });
     } catch (error) {
         return sendError(res, 500, 'Could not verify email.', error);
     }
@@ -1204,19 +1194,19 @@ app.post('/api/auth/resend-verification', requireAuth, emailVerificationLimiter,
             return res.json({ user: publicUser(user), message: 'Email is already verified.' });
         }
 
-        const verification = generateEmailVerificationToken();
-        user.emailVerificationToken = verification.tokenHash;
+        const verification = generateEmailVerificationOtp();
+        user.emailVerificationToken = verification.codeHash;
         user.emailVerificationExpires = verification.expires;
         await user.save();
 
-        const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.token);
+        const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.code);
         if (!verificationEmailSent) {
-            return res.status(502).json({ error: 'Could not send verification email. Please try again.' });
+            return res.status(502).json({ error: 'Could not send verification OTP. Please try again.' });
         }
 
-        return res.json({ user: publicUser(user), message: 'Verification email sent. Please check your inbox.' });
+        return res.json({ user: publicUser(user), message: 'Verification OTP sent. Please check your inbox.' });
     } catch (error) {
-        return sendError(res, 500, 'Could not send verification email.', error);
+        return sendError(res, 500, 'Could not send verification OTP.', error);
     }
 });
 
@@ -1370,12 +1360,10 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
                 upgradeRequired: true,
             });
         }
-        const template = isTemplateAvailableForPlan(requestedTemplate, quota.plan) ? requestedTemplate : 'classic';
-
         const document = await CVDocument.create({
             userId: currentUserId(req),
             title,
-            template,
+            template: requestedTemplate,
             cvData,
             status: status === 'completed' ? 'completed' : 'draft',
         });
@@ -1405,12 +1393,9 @@ app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) =
             return res.status(400).json({ error: 'Missing CV data.' });
         }
 
-        const quota = await getCvCreationQuota(req.user);
-        const template = isTemplateAvailableForPlan(requestedTemplate, quota.plan) ? requestedTemplate : 'classic';
-
         const document = await CVDocument.findOneAndUpdate(
             { _id: req.params.id, userId: currentUserId(req) },
-            { title, template, cvData, ...(status ? { status } : {}) },
+            { title, template: requestedTemplate, cvData, ...(status ? { status } : {}) },
             { new: true, runValidators: true }
         );
 
@@ -2599,14 +2584,22 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         const requestedTemplate = isTemplateName(template)
             ? template
             : DEFAULT_TEMPLATE;
-        const validatedTemplate = isTemplateAvailableForPlan(requestedTemplate, downloadQuota.plan) ? requestedTemplate : 'classic';
+
+        if (downloadQuota.plan === 'free' && templateRequiresPaidPlan(requestedTemplate)) {
+            return res.status(403).json({
+                error: 'Premium templates require an upgrade to download.',
+                quota: downloadQuota,
+                upgradeRequired: true,
+                reason: 'premium_template',
+            });
+        }
 
         // Sanitize all string values in cvData to prevent injection
         const safeCvData = sanitizeCvData(cvData);
 
         // Generate self-contained HTML
         console.log("Generating HTML for PDF...");
-        const html = generateCVHTML(safeCvData, validatedTemplate, { watermark: downloadQuota.plan === 'free' });
+        const html = generateCVHTML(safeCvData, requestedTemplate, { watermark: downloadQuota.plan === 'free' });
         console.log(`HTML generated: ${html.length} bytes`);
 
         const isLocal = process.env.NODE_ENV !== 'production';
