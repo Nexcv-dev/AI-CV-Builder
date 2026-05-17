@@ -34,7 +34,7 @@ const checkoutPlans: Record<CheckoutPlanKey, {
     key: 'payg',
     name: 'Pay As You Go',
     price: 'LKR 499',
-    duration: '7 days',
+    duration: '7 days (One-time payment)',
     summary: 'One polished CV with unlimited edits and downloads for a focused application window.',
     icon: Zap,
     features: [
@@ -48,7 +48,7 @@ const checkoutPlans: Record<CheckoutPlanKey, {
     key: 'monthly',
     name: 'Monthly',
     price: 'LKR 2199',
-    duration: '30 days',
+    duration: '30 days (One-time payment)',
     summary: 'Best for active job searches with multiple CV versions and repeated exports.',
     icon: Crown,
     features: [
@@ -206,7 +206,7 @@ export default function CheckoutPage() {
 
         <section className="bg-slate-900 py-8 sm:py-12">
           <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1fr_420px] lg:px-8">
-            <form onSubmit={completeCheckout} className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow-2xl shadow-black/20 sm:p-6">
+            <form onSubmit={completeCheckout} className="order-2 lg:order-1 rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow-2xl shadow-black/20 sm:p-6">
               <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5">
                 <div>
                   <h2 className="font-montserrat text-2xl font-black">Customer details</h2>
@@ -341,7 +341,7 @@ export default function CheckoutPage() {
               </div>
             </form>
 
-            <aside className="space-y-4">
+            <aside className="order-1 lg:order-2 space-y-4">
               <div className="rounded-2xl border border-violet-300/25 bg-violet-500/10 p-5 shadow-2xl shadow-violet-950/25 sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-300/30 bg-violet-400/15 text-violet-200">

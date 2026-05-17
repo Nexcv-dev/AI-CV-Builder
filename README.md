@@ -1,8 +1,10 @@
 # NexCV - Free AI-Powered CV Builder
 
-NexCV is a modern, full-stack web application designed to help users create professional, ATS-friendly resumes effortlessly. Leveraging the power of AI (Google Gemini), NexCV can intelligently parse existing resumes from PDFs or images, and assist in writing compelling summaries. The app offers a seamless "guest-first" experience, allowing users to build and preview their CVs instantly, with optional cloud saving and PDF exports available upon account creation.
+NexCV is a modern, full-stack web application designed to help users create professional, ATS-friendly resumes effortlessly. Leveraging the power of AI (Google Gemini), NexCV can intelligently parse existing resumes from PDFs or images, and assist in writing compelling summaries. The app offers a seamless "guest-first" experience, allowing users to build and preview their CVs instantly, with optional cloud saving, premium template options, and pixel-perfect PDF exports.
 
-Currently in version: `1.0.0` (Beta)
+Currently in version: `1.1.0` (Stable Production Release)
+
+---
 
 ## ✨ Key Features
 
@@ -10,45 +12,37 @@ Currently in version: `1.0.0` (Beta)
 - **Smart CV Parsing:** Upload an existing CV (PDF or Image), and NexCV's Gemini integration will instantly extract and populate your details into the builder.
 - **AI Summary Generation:** Overcome writer's block with AI-assisted profile summaries tailored to your experience.
 
-### 🛠️ Intuitive Builder Experience
+### 🛠️ Intuitive Builder Experience & Rich Templates
 - **Guest-First Flow:** Start building immediately without the friction of signing up.
 - **Live Preview:** See changes in real-time as you type, with a responsive side-by-side builder layout.
-- **Professional Templates:** Choose from a curated selection of modern, ATS-optimized CV templates.
+- **Premium Template Selection:** Choose from a curated, beautiful library of modern layouts:
+  - `Classic` (Free) — Clean and timeless layout.
+  - `Modern` (Paid) — Structured layout with a professional side panel.
+  - `Professional` (Paid) — Corporate standard design.
+  - `Timeline` (Paid) — Creative layout mapping achievements over time.
+  - `Minimalist` (Paid) — Clean, ultra-minimal typography and spacious layout.
+  - `Startup` (Paid) — Dynamic, tech-oriented, bold header style.
+- **Offline HTML Mockups:** Seven stunning, stand-alone HTML/Tailwind mockup files in the root folder for rapid visual iteration of different resume layouts (`bold`, `creative`, `elegant`, `executive`, `split`, `startup`, and `studio`).
 
-### 🔐 Secure Authentication & Management
-- **Flexible Login:** Sign up using Email/Password or instantly with Google OAuth 2.0.
-- **Password Recovery:** Secure password reset flow utilizing Nodemailer with Gmail integration.
-- **Account Verification:** Secure accounts with email verification, featuring a non-intrusive, dismissible dashboard banner.
-- **Cloud Document Storage:** Safely store, edit, duplicate, and delete multiple CVs in your personal dashboard.
-- **Profile Settings:** Manage your personal details, profile picture (with auto-fallback avatars), and account security.
+### 💳 Complete Monetization & Secure Payments
+- **Tiered Pricing Structure:** Clearly outlined plans (Free, Premium Monthly, Pro) designed directly in `PricingPage.tsx` with synced feature details.
+- **Seamless Checkout:** A dedicated, premium `CheckoutPage` fully integrated with the official **PayHere** gateway, displaying the high-visibility dark/long banner.
+- **SSL-Encrypted Connection:** Trust status badges prominently displayed to assure users of a secure payment transaction.
+- **Customer Support Integration:** Direct, clickable telephone (+94 70 123 4567) and email (`support@nexcv.com`) links inside the checkout footer to offer immediate help in case of payment issues.
+- **Fully Compliant Legal Flows:** Standardized paths for Privacy Policy, Terms & Conditions, and a newly created **Refund & Cancellation Policy** (`RefundPolicy.tsx`) with dynamic route resolution.
 
-### 🚀 Performance & Export
-- **Pixel-Perfect PDFs:** Server-side rendering using Puppeteer ensures your downloaded CV looks exactly like the preview, with no browser inconsistencies.
-- **Download Limits:** Unverified users can download up to 3 PDFs for free. Verifying the account unlocks unlimited PDF downloads.
-- **Mobile Optimized:** A fully responsive design with pill-style navigation ensures you can edit your CV on the go.
+### 🎨 State-of-the-Art UX/UI Optimizations
+- **Dynamic Link Micro-animations:** A premium gradient underline hover effect (`.nav-link-hover`) applied to header links that slides in smoothly when hovered.
+- **Autofill Theme Protection:** A CSS override in `index.css` that prevents native browser autofill from turning form input backgrounds white in dark mode, preserving the sleek, dark aesthetic.
+- **Zero Mobile Input Zooming:** Set input font sizes on the checkout page to a comfortable `16px` to prevent default iOS/Android browsers from zoom-focusing and breaking layout alignments.
+- **Distraction-Free Layouts:** Global layout footers are dynamically hidden on key focused pages (such as checkout, dashboard, password reset, and settings) to ensure high focus and seamless checkouts.
 
-## 💻 Tech Stack
+### 🚀 Performance, Security & Export
+- **Pixel-Perfect PDFs:** Server-side rendering using Puppeteer ensures downloaded CVs look identical to their online previews.
+- **Secure Document Limits:** Quota models (`CvCreationQuotaModel` and `DownloadQuotaModel`) enforce document limits on free accounts and unlock unlimited operations upon verified subscriptions.
+- **Security Engineering:** Restrictive CORS, custom rate limiters for PDF endpoints, XSS protection with `DOMPurify`, and cryptographically salted password hashing via Node's `pbkdf2Sync`.
 
-**Frontend:**
-- React 18 (with Vite 6)
-- TypeScript
-- Tailwind CSS v4
-- Framer Motion (Animations)
-- Lucide React (Icons)
-- React Hot Toast (Notifications)
-- Vitest & Testing Library
-
-**Backend:**
-- Node.js & Express
-- TypeScript
-- MongoDB with Mongoose
-- Passport.js (Google OAuth 2.0 & Local)
-- Express Session (Stateful Auth)
-- Nodemailer (Email Delivery for Password Resets)
-- `@google/genai` (Gemini API Integration)
-- Puppeteer Core & `@sparticuz/chromium` (PDF Generation)
-- DOMPurify & JSDOM (Sanitization)
-- Helmet, CORS, & Express Rate Limit (Security)
+---
 
 ## 📁 Project Structure
 
@@ -57,26 +51,96 @@ AI-CV-Builder/
 ├── docker-compose.yml
 ├── render.yaml
 ├── README.md
+├── CHANGELOG.md
+├── bold_preview.html          # HTML mockups/prototypes for design testing
+├── creative_preview.html
+├── elegant_preview.html
+├── executive_preview.html
+├── split_preview.html
+├── startup_preview.html
+├── studio_preview.html
 └── Free CV Builder/
     ├── Dockerfile
     ├── server.ts             # Express backend entry point
     ├── vite.config.ts        # Vite configuration
-    ├── server-models/        # MongoDB Schemas & Auth Logic
+    ├── server-models/        # MongoDB Schemas, Quotas & Auth
     │   ├── CVDocument.ts
+    │   ├── CvCreationQuotaModel.ts
+    │   ├── DownloadQuotaModel.ts
     │   ├── User.ts
+    │   ├── cvQuota.ts
     │   ├── db.ts
-    │   └── passportSetup.ts
+    │   ├── downloadQuotaUtils.ts
+    │   ├── passportSetup.ts
+    │   ├── userPlan.ts
+    │   └── userRole.ts
     ├── src/                  # React Frontend
-    │   ├── App.tsx           # Router & Layout
-    │   ├── components/       # Reusable UI Components
-    │   ├── pages/            # Main Page Views (Home, Dashboard, etc.)
-    │   ├── utils/            # Helpers & API bindings
-    │   ├── templates.ts      # CV Template definitions
-    │   ├── htmlBuilder.ts    # HTML string generation for PDFs
-    │   └── index.css         # Global styles & Tailwind
-    ├── public/               # Static Assets
-    └── tests/                # Backend & Integration Tests
+    │   ├── App.tsx           # Router, global state & layout
+    │   ├── main.tsx          # Client entry point
+    │   ├── index.css         # Styling system, Tailwind & utility layer
+    │   ├── templates.ts      # Template definitions & color utilities
+    │   ├── htmlBuilder.ts    # Server-side HTML builder for Puppeteer PDF
+    │   ├── types.ts          # Core TypeScript typings
+    │   ├── pdf_generation.test.ts # Puppeteer PDF generation unit tests
+    │   ├── components/       # Reusable UI components
+    │   │   ├── CVForm.tsx          # Multi-step resume builder form
+    │   │   ├── CVForm_logic.test.tsx # Unit tests for builder state & wizard logic
+    │   │   ├── CVPreview.tsx       # Live-updating preview grid layout
+    │   │   ├── CVPreview.test.tsx  # Unit tests for CV Preview layouts
+    │   │   ├── SiteHeader.tsx      # Main application nav header
+    │   │   ├── Footer.tsx          # Global footer (hidden on checkout/dashboard)
+    │   │   ├── form/               # Modular Form Builder Sections
+    │   │   │   ├── PersonalDetailsSection.tsx
+    │   │   │   ├── ExperienceSection.tsx
+    │   │   │   ├── EducationSection.tsx
+    │   │   │   ├── SkillsSection.tsx
+    │   │   │   └── ... (awards, courses, projects, references, design)
+    │   │   └── ... (ImageCropper, AuthModal, AccountMenu, BrandLogo)
+    │   ├── pages/            # Core App Pages
+    │   │   ├── LandingPage.tsx     # Marketing landing page
+    │   │   ├── Home.tsx            # Builder workspace & template selector
+    │   │   ├── Dashboard.tsx       # Cloud document management panel
+    │   │   ├── MyCvs.tsx           # CV index list (create/duplicate/delete)
+    │   │   ├── PricingPage.tsx     # Tiered pricing plans layout
+    │   │   ├── CheckoutPage.tsx    # Secure PayHere payment forms & trust widgets
+    │   │   ├── RefundPolicy.tsx    # Dedicated Refund & Cancellation Policy
+    │   │   ├── ResetPassword.tsx   # Verified password reset wizard
+    │   │   └── ... (AboutUs, ContactUs, PrivacyPolicy, TermsAndConditions)
+    │   └── utils/            # Shared helper functions & API handlers
+    │       └── api.ts              # Server fetch requests & token handling
+    ├── public/               # Static images & template graphics
+    └── tests/                # Server and Integration Tests
+        ├── server.test.ts          # Express API route verification tests
+        ├── server_advanced.test.ts # Deep route security and rate-limiting tests
+        └── accessibility.test.tsx  # React accessibility audits
 ```
+
+---
+
+## 💻 Tech Stack
+
+**Frontend:**
+- React 18 (with Vite 6)
+- TypeScript
+- Tailwind CSS v4
+- Framer Motion (Micro-animations & transitions)
+- Lucide React (Icons)
+- React Hot Toast (Notifications)
+- Vitest & Testing Library (Automated unit tests)
+
+**Backend:**
+- Node.js & Express
+- TypeScript & tsx (TypeScript execute runner)
+- MongoDB with Mongoose
+- Passport.js (Google OAuth 2.0 & Local stateful sessions)
+- Express Session (Stateful authentication storage)
+- Nodemailer (Email Delivery for Password Resets & Account Verification)
+- `@google/genai` (Google Gemini API integration)
+- Puppeteer Core & `@sparticuz/chromium` (Server-side pixel-perfect PDF rendering)
+- DOMPurify & JSDOM (Input sanitization)
+- Helmet, CORS, & Express Rate Limit (Strict production API security)
+
+---
 
 ## 🚀 Getting Started
 
@@ -89,7 +153,7 @@ AI-CV-Builder/
 
 ### 1. Installation
 
-Clone the repository and install dependencies:
+Clone the repository and install the dependencies:
 
 ```bash
 cd "Free CV Builder"
@@ -101,22 +165,22 @@ npm install
 Create a `.env` file in the `Free CV Builder` directory and configure the following variables:
 
 ```env
-# Server
+# Server Configuration
 PORT=3002
 ALLOWED_ORIGIN=http://localhost:3000
 
-# Database
+# Database Configuration
 MONGODB_URI=your_mongodb_connection_string
 
 # AI Integration
 GEMINI_API_KEY=your_gemini_api_key
 
-# Authentication
+# Authentication Configs
 SESSION_SECRET=your_super_secret_session_key
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
 GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
 
-# Email Configuration (for Password Resets)
+# Email Configuration (for Password Resets & Account Verifications)
 EMAIL_USER=your_gmail_address@gmail.com
 EMAIL_PASS=your_gmail_app_password
 ```
@@ -124,7 +188,7 @@ EMAIL_PASS=your_gmail_app_password
 
 ### 3. Run the Development Server
 
-Start both the React frontend and Express backend concurrently:
+Start both the React frontend (Vite) and Express backend concurrently:
 
 ```bash
 npm run dev:all
@@ -154,13 +218,13 @@ NexCV includes Docker support for a seamless, containerized development experien
 
 | Command | Description |
 |---|---|
-| `npm run dev:all` | Starts both frontend and backend concurrently |
-| `npm run dev` | Starts the Vite development server (Frontend) |
-| `npm run server` | Starts the Express development server (Backend) |
+| `npm run dev:all` | Starts both frontend and backend concurrently in dev mode |
+| `npm run dev` | Starts the Vite development server (Frontend only) |
+| `npm run server` | Starts the Express development server (Backend only) |
 | `npm run build` | Compiles the React app for production |
-| `npm run start` | Runs the production backend server |
-| `npm run test` | Runs Vitest test suites in watch mode |
-| `npm run lint` | Runs TypeScript type checking |
+| `npm run start` | Runs the compiled production backend server |
+| `npm run test` | Runs the automated Vitest suites in watch mode |
+| `npm run lint` | Runs TypeScript type checking and validation |
 
 ---
 
