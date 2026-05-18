@@ -996,6 +996,13 @@ const adminTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
     updatedAt: setting?.updatedAt,
 });
 
+const getTemplateSettingForKey = async (key: string) => {
+    const template = CV_TEMPLATES.find((item) => item.key === key);
+    if (!template) return null;
+    const setting = await TemplateSetting.findOne({ key });
+    return adminTemplateSummary(template, setting, 0);
+};
+
 // ─── API Routes ──────────────────────────────────────────────────────
 
 // Health check endpoint
@@ -1257,6 +1264,18 @@ app.get('/api/admin/templates', requireSuperAdmin, async (_req: Request, res: Re
         });
     } catch (error) {
         return sendError(res, 500, 'Could not load admin templates.', error);
+    }
+});
+
+app.get('/api/templates/config', async (_req: Request, res: Response) => {
+    try {
+        const settings = await TemplateSetting.find();
+        const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
+        return res.json({
+            templates: CV_TEMPLATES.map((template) => adminTemplateSummary(template, settingMap.get(template.key), 0)),
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load template configuration.', error);
     }
 });
 
@@ -3366,7 +3385,11 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
             ? template
             : DEFAULT_TEMPLATE;
 
-        if (downloadQuota.plan === 'free' && templateRequiresPaidPlan(requestedTemplate)) {
+        const templateSetting = await getTemplateSettingForKey(requestedTemplate);
+        const requestedTemplateIsPaid = templateSetting
+            ? templateSetting.access === 'paid'
+            : templateRequiresPaidPlan(requestedTemplate);
+        if (downloadQuota.plan === 'free' && requestedTemplateIsPaid) {
             return res.status(403).json({
                 error: 'Premium templates require an upgrade to download.',
                 quota: downloadQuota,

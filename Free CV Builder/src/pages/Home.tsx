@@ -7,7 +7,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
-import { DEFAULT_TEMPLATE, isTemplateName, templateRequiresPaidPlan, TemplateName } from '../templates';
+import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
+import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { ApiError, AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
@@ -74,6 +75,7 @@ const initialData: CVData = {
 };
 
 export default function Home() {
+  const { isTemplatePaid } = useTemplateConfig();
   const [searchParams, setSearchParams] = useSearchParams();
   const showImportPromptOnLoad = useRef(searchParams.get('import') === '1');
   const showDownloadAfterAuthOnLoad = useRef(searchParams.get('download') === '1');
@@ -420,7 +422,7 @@ export default function Home() {
   useEffect(() => {
     if (!showDownloadAfterAuthOnLoad.current || !currentUser || isLoadingSavedDocument) return;
     showDownloadAfterAuthOnLoad.current = false;
-    if ((creationQuota?.plan || currentUser.plan) === 'free' && templateRequiresPaidPlan(template)) {
+    if ((creationQuota?.plan || currentUser.plan) === 'free' && isTemplatePaid(template)) {
       openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
       return;
     }
@@ -557,7 +559,7 @@ export default function Home() {
   const isFreePlan = currentUser ? (creationQuota?.plan || currentUser.plan) === 'free' : true;
 
   const handlePrint = async () => {
-    if (isFreePlan && templateRequiresPaidPlan(template)) {
+    if (isFreePlan && isTemplatePaid(template)) {
       setShowDownloadConfirm(false);
       openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
       return;
@@ -682,7 +684,7 @@ export default function Home() {
       setAuthModalOpen(true);
       return;
     }
-    if (isFreePlan && templateRequiresPaidPlan(template)) {
+    if (isFreePlan && isTemplatePaid(template)) {
       openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
       return;
     }
@@ -1267,7 +1269,7 @@ export default function Home() {
         onAuthenticated={(user) => {
           setCurrentUser(user);
           if (authRedirectTo.includes('download=1') && user.emailVerified) {
-            if (user.plan === 'free' && templateRequiresPaidPlan(template)) {
+            if (user.plan === 'free' && isTemplatePaid(template)) {
               openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
             } else {
               setShowDownloadConfirm(true);

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Crown, Download, FileText, Home, Info, LayoutTemplate, LogIn, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Upload, Wand2, X, Zap } from 'lucide-react';
 import { AuthModal } from '../components/AuthModal';
 import { CV_TEMPLATES } from '../templates';
+import { useTemplateConfig } from '../hooks/useTemplateConfig';
 
 const stats = [
   { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
@@ -53,8 +54,6 @@ function StatCard({ label, value, suffix, color }: typeof stats[0]) {
     </div>
   );
 }
-
-const featuredTemplates = CV_TEMPLATES;
 
 const pricingPlans = [
   {
@@ -154,6 +153,8 @@ const faqs = [
 
 export default function LandingPage() {
   const location = useLocation();
+  const { templates } = useTemplateConfig();
+  const featuredTemplates = templates;
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({
     isOpen: false,
     mode: 'signup',
@@ -605,7 +606,7 @@ export default function LandingPage() {
                 >
                   <div className="aspect-4/5 overflow-hidden bg-slate-800">
                     <img
-                      src={template.image}
+                      src={template.thumbnail}
                       alt={`${template.label} CV template preview`}
                       className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.035]"
                     />
