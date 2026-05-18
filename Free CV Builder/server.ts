@@ -21,8 +21,9 @@ import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import DownloadQuota from './server-models/DownloadQuotaModel';
 import PaymentTransaction from './server-models/PaymentTransaction';
+import TemplateSetting from './server-models/TemplateSetting';
 import './server-models/passportSetup'; // Initialize passport strategy
-import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan } from './src/templates';
+import { CV_TEMPLATES, DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan } from './src/templates';
 import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildDownloadQuota } from './server-models/downloadQuotaUtils';
@@ -972,6 +973,29 @@ const adminUserSummary = (user: any, cvCount = 0) => ({
     updatedAt: user.updatedAt,
 });
 
+const TEMPLATE_CATEGORIES = ['Modern', 'ATS Friendly', 'Minimal', 'Executive', 'Creative', 'Tech', 'Corporate'] as const;
+
+const defaultTemplateCategory = (key: string) => {
+    if (key === 'classic') return 'ATS Friendly';
+    if (key === 'minimalist') return 'Minimal';
+    if (key === 'professional') return 'Corporate';
+    if (key === 'startup') return 'Creative';
+    if (key === 'timeline') return 'Executive';
+    return 'Modern';
+};
+
+const adminTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
+    key: template.key,
+    label: setting?.label || template.label,
+    category: setting?.category || defaultTemplateCategory(template.key),
+    access: setting?.access || template.access,
+    thumbnail: setting?.thumbnail || template.image,
+    builtInThumbnail: template.image,
+    surfaceColorRole: template.surfaceColorRole,
+    usageCount,
+    updatedAt: setting?.updatedAt,
+});
+
 // ─── API Routes ──────────────────────────────────────────────────────
 
 // Health check endpoint
@@ -1209,6 +1233,58 @@ app.patch('/api/admin/users/:id/plan', requireSuperAdmin, async (req: Request, r
         return res.json({ user: adminUserSummary(user, cvCount) });
     } catch (error) {
         return sendError(res, 500, 'Could not update user plan.', error);
+    }
+});
+
+app.get('/api/admin/templates', requireSuperAdmin, async (_req: Request, res: Response) => {
+    try {
+        const [settings, usage] = await Promise.all([
+            TemplateSetting.find(),
+            CVDocument.aggregate([
+                { $group: { _id: '$template', count: { $sum: 1 } } },
+            ]),
+        ]);
+        const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
+        const usageMap = new Map(usage.map((item: any) => [item._id, item.count]));
+
+        return res.json({
+            categories: TEMPLATE_CATEGORIES,
+            templates: CV_TEMPLATES.map((template) => adminTemplateSummary(
+                template,
+                settingMap.get(template.key),
+                usageMap.get(template.key) || 0
+            )),
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load admin templates.', error);
+    }
+});
+
+app.patch('/api/admin/templates/:key', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const key = req.params.key;
+        const template = CV_TEMPLATES.find((item) => item.key === key);
+        if (!template) {
+            return res.status(404).json({ error: 'Template not found.' });
+        }
+
+        const label = sanitizeProfileField(req.body.label, 80) || template.label;
+        const category = typeof req.body.category === 'string' && TEMPLATE_CATEGORIES.includes(req.body.category as any)
+            ? req.body.category
+            : defaultTemplateCategory(key);
+        const access = req.body.access === 'free' ? 'free' : 'paid';
+        const thumbnail = sanitizeProfileField(req.body.thumbnail, 500) || template.image;
+
+        const setting = await TemplateSetting.findOneAndUpdate(
+            { key },
+            { key, label, category, access, thumbnail },
+            { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+        );
+        const usageCount = await CVDocument.countDocuments({ template: key });
+
+        return res.json({ template: adminTemplateSummary(template, setting, usageCount) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update template.', error);
     }
 });
 

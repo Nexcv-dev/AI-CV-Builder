@@ -81,6 +81,18 @@ interface AdminUserDocument {
   updatedAt: string;
 }
 
+interface AdminTemplateItem {
+  key: string;
+  label: string;
+  category: string;
+  access: 'free' | 'paid';
+  thumbnail: string;
+  builtInThumbnail: string;
+  surfaceColorRole: string;
+  usageCount: number;
+  updatedAt?: string;
+}
+
 const adminNavItems = [
   { key: 'dashboard', label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
   { key: 'users', label: 'Users', to: '/admin/users', icon: Users },
@@ -122,6 +134,16 @@ export default function AdminDashboard() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
   const isUsersPage = location.pathname.startsWith('/admin/users');
+  const isTemplatesPage = location.pathname.startsWith('/admin/templates');
+  const [templates, setTemplates] = useState<AdminTemplateItem[]>([]);
+  const [templateCategories, setTemplateCategories] = useState<string[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [templateCategoryFilter, setTemplateCategoryFilter] = useState('all');
+  const [templateAccessFilter, setTemplateAccessFilter] = useState('all');
+  const [selectedTemplate, setSelectedTemplate] = useState<AdminTemplateItem | null>(null);
+  const [templateForm, setTemplateForm] = useState({ label: '', category: 'Modern', access: 'paid' as 'free' | 'paid', thumbnail: '' });
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   useEffect(() => {
     clearPageScrollLock();
@@ -177,6 +199,29 @@ export default function AdminDashboard() {
     };
   }, [isUsersPage, planFilter, roleFilter, userSearch]);
 
+  useEffect(() => {
+    if (!isTemplatesPage) return;
+    let ignore = false;
+    setTemplatesLoading(true);
+
+    apiFetch<{ templates: AdminTemplateItem[]; categories: string[] }>('/api/admin/templates')
+      .then((data) => {
+        if (ignore) return;
+        setTemplates(data.templates);
+        setTemplateCategories(data.categories);
+      })
+      .catch((error) => {
+        if (!ignore) toast.error(error instanceof Error ? error.message : 'Could not load templates.');
+      })
+      .finally(() => {
+        if (!ignore) setTemplatesLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [isTemplatesPage]);
+
   const signOut = async () => {
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
     navigate('/');
@@ -223,6 +268,48 @@ export default function AdminDashboard() {
       setSavingPlan(false);
     }
   };
+
+  const openTemplateDetail = (template: AdminTemplateItem) => {
+    setSelectedTemplate(template);
+    setTemplateForm({
+      label: template.label,
+      category: template.category,
+      access: template.access,
+      thumbnail: template.thumbnail,
+    });
+  };
+
+  const saveSelectedTemplate = async () => {
+    if (!selectedTemplate) return;
+    setSavingTemplate(true);
+    try {
+      const data = await apiFetch<{ template: AdminTemplateItem }>(`/api/admin/templates/${selectedTemplate.key}`, {
+        method: 'PATCH',
+        body: JSON.stringify(templateForm),
+      });
+      setTemplates((items) => items.map((item) => item.key === data.template.key ? data.template : item));
+      setSelectedTemplate(data.template);
+      setTemplateForm({
+        label: data.template.label,
+        category: data.template.category,
+        access: data.template.access,
+        thumbnail: data.template.thumbnail,
+      });
+      toast.success('Template metadata updated.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not update template.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const visibleTemplates = useMemo(() => templates.filter((template) => {
+    const query = templateSearch.trim().toLowerCase();
+    const matchesSearch = !query || template.label.toLowerCase().includes(query) || template.key.toLowerCase().includes(query);
+    const matchesCategory = templateCategoryFilter === 'all' || template.category === templateCategoryFilter;
+    const matchesAccess = templateAccessFilter === 'all' || template.access === templateAccessFilter;
+    return matchesSearch && matchesCategory && matchesAccess;
+  }), [templateAccessFilter, templateCategoryFilter, templateSearch, templates]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -295,17 +382,21 @@ export default function AdminDashboard() {
                 {ADMIN_ROLE_LABELS.super_admin}
               </div>
               <h1 className="mt-2 font-montserrat text-2xl font-black leading-tight sm:text-4xl">
-                {isUsersPage ? 'User Management' : 'Admin Dashboard'}
+                {isUsersPage ? 'User Management' : isTemplatesPage ? 'Template Management' : 'Admin Dashboard'}
               </h1>
               <p className="mt-2 text-sm font-semibold text-slate-400">
-                {isUsersPage ? 'Search users, inspect accounts, and update plan access.' : 'Operational overview and module foundation.'}
+                {isUsersPage
+                  ? 'Search users, inspect accounts, and update plan access.'
+                  : isTemplatesPage
+                    ? 'Manage template metadata, access, categories, and usage stats.'
+                    : 'Operational overview and module foundation.'}
               </p>
             </div>
             <div className="relative w-full sm:max-w-xs">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.035] pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
-                placeholder={isUsersPage ? 'Search users' : 'Search admin modules'}
+                placeholder={isUsersPage ? 'Search users' : isTemplatesPage ? 'Search templates' : 'Search admin modules'}
               />
             </div>
           </header>
@@ -328,6 +419,25 @@ export default function AdminDashboard() {
               onSelectedPlanChange={setSelectedPlan}
               onSavePlan={updateSelectedUserPlan}
               onCloseDetail={() => setSelectedUser(null)}
+            />
+          ) : isTemplatesPage ? (
+            <TemplateManagementSection
+              templates={visibleTemplates}
+              categories={templateCategories}
+              loading={templatesLoading}
+              search={templateSearch}
+              categoryFilter={templateCategoryFilter}
+              accessFilter={templateAccessFilter}
+              selectedTemplate={selectedTemplate}
+              templateForm={templateForm}
+              savingTemplate={savingTemplate}
+              onSearchChange={setTemplateSearch}
+              onCategoryFilterChange={setTemplateCategoryFilter}
+              onAccessFilterChange={setTemplateAccessFilter}
+              onOpenTemplate={openTemplateDetail}
+              onCloseDetail={() => setSelectedTemplate(null)}
+              onFormChange={setTemplateForm}
+              onSaveTemplate={saveSelectedTemplate}
             />
           ) : isLoading ? (
             <div className="mt-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-5 text-sm font-bold text-slate-400">
@@ -671,5 +781,213 @@ function DetailTile({ label, value }: { label: string; value: string }) {
       <p className="text-xs font-black uppercase text-slate-500">{label}</p>
       <p className="mt-2 break-words text-sm font-black text-slate-100">{value}</p>
     </div>
+  );
+}
+
+function TemplateManagementSection({
+  templates,
+  categories,
+  loading,
+  search,
+  categoryFilter,
+  accessFilter,
+  selectedTemplate,
+  templateForm,
+  savingTemplate,
+  onSearchChange,
+  onCategoryFilterChange,
+  onAccessFilterChange,
+  onOpenTemplate,
+  onCloseDetail,
+  onFormChange,
+  onSaveTemplate,
+}: {
+  templates: AdminTemplateItem[];
+  categories: string[];
+  loading: boolean;
+  search: string;
+  categoryFilter: string;
+  accessFilter: string;
+  selectedTemplate: AdminTemplateItem | null;
+  templateForm: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string };
+  savingTemplate: boolean;
+  onSearchChange: (value: string) => void;
+  onCategoryFilterChange: (value: string) => void;
+  onAccessFilterChange: (value: string) => void;
+  onOpenTemplate: (template: AdminTemplateItem) => void;
+  onCloseDetail: () => void;
+  onFormChange: (value: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string }) => void;
+  onSaveTemplate: () => void;
+}) {
+  return (
+    <section className="mt-6">
+      <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px]">
+        <label className="relative block">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            className="h-11 w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
+            placeholder="Search by template name"
+          />
+        </label>
+        <select
+          value={categoryFilter}
+          onChange={(event) => onCategoryFilterChange(event.target.value)}
+          className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+        >
+          <option value="all">All categories</option>
+          {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+        </select>
+        <select
+          value={accessFilter}
+          onChange={(event) => onAccessFilterChange(event.target.value)}
+          className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+        >
+          <option value="all">All access</option>
+          <option value="free">Free</option>
+          <option value="paid">Premium</option>
+        </select>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
+        <div className="grid grid-cols-[1.2fr_150px_120px_100px_90px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
+          <span>Template</span>
+          <span>Category</span>
+          <span>Access</span>
+          <span>Usage</span>
+          <span>Action</span>
+        </div>
+        {loading && (
+          <div className="flex items-center gap-3 px-5 py-5 text-sm font-bold text-slate-400">
+            <Loader2 className="animate-spin text-violet-300" size={17} />
+            Loading templates...
+          </div>
+        )}
+        {!loading && templates.length === 0 && (
+          <div className="px-5 py-8 text-center text-sm font-bold text-slate-500">No templates match these filters.</div>
+        )}
+        {!loading && templates.map((template) => (
+          <article key={template.key} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_150px_120px_100px_90px] lg:items-center lg:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="h-16 w-12 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900">
+                <img src={template.thumbnail} alt="" className="h-full w-full object-cover object-top" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-slate-100">{template.label}</p>
+                <p className="mt-1 truncate text-xs font-semibold text-slate-500">{template.key}</p>
+              </div>
+            </div>
+            <span className="w-fit rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-slate-300 ring-1 ring-white/10">{template.category}</span>
+            <TemplateAccessBadge access={template.access} />
+            <span className="text-sm font-black text-slate-200">{template.usageCount}</span>
+            <button
+              type="button"
+              onClick={() => onOpenTemplate(template)}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-3 text-xs font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98]"
+            >
+              <Eye size={14} />
+              Edit
+            </button>
+          </article>
+        ))}
+      </div>
+
+      {selectedTemplate && (
+        <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+          <aside className="h-full w-full max-w-xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase text-violet-300">Template Details</p>
+                <h2 className="mt-1 truncate font-montserrat text-2xl font-black">{selectedTemplate.label}</h2>
+                <p className="mt-1 truncate text-sm font-semibold text-slate-400">{selectedTemplate.key}</p>
+              </div>
+              <button
+                type="button"
+                onClick={onCloseDetail}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                aria-label="Close template details"
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
+              <img src={templateForm.thumbnail || selectedTemplate.builtInThumbnail} alt="" className="h-64 w-full object-cover object-top" />
+            </div>
+
+            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <h3 className="font-montserrat text-lg font-black">Metadata</h3>
+              <div className="mt-4 grid gap-4">
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Label
+                  <input
+                    value={templateForm.label}
+                    onChange={(event) => onFormChange({ ...templateForm, label: event.target.value })}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  />
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Category
+                  <select
+                    value={templateForm.category}
+                    onChange={(event) => onFormChange({ ...templateForm, category: event.target.value })}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  >
+                    {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Access
+                  <select
+                    value={templateForm.access}
+                    onChange={(event) => onFormChange({ ...templateForm, access: event.target.value as 'free' | 'paid' })}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  >
+                    <option value="free">Free</option>
+                    <option value="paid">Premium</option>
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Thumbnail path
+                  <input
+                    value={templateForm.thumbnail}
+                    onChange={(event) => onFormChange({ ...templateForm, thumbnail: event.target.value })}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={onSaveTemplate}
+                  disabled={savingTemplate}
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {savingTemplate ? <Loader2 className="animate-spin" size={16} /> : 'Save metadata'}
+                </button>
+              </div>
+            </section>
+
+            <section className="mt-6 grid gap-3 sm:grid-cols-2">
+              <DetailTile label="Usage Count" value={String(selectedTemplate.usageCount)} />
+              <DetailTile label="Surface Color" value={selectedTemplate.surfaceColorRole} />
+              <DetailTile label="Built-In Thumbnail" value={selectedTemplate.builtInThumbnail} />
+              <DetailTile label="Last Updated" value={selectedTemplate.updatedAt ? formatDate(selectedTemplate.updatedAt) : 'Not customized'} />
+            </section>
+          </aside>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TemplateAccessBadge({ access }: { access: 'free' | 'paid' }) {
+  return (
+    <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${
+      access === 'free'
+        ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20'
+        : 'bg-violet-400/10 text-violet-300 ring-violet-300/20'
+    }`}>
+      {access === 'free' ? 'Free' : 'Premium'}
+    </span>
   );
 }
