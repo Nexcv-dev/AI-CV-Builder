@@ -23,7 +23,7 @@ export function getUtcDayBounds(now = new Date()) {
   return { start, end };
 }
 
-export function buildCvCreationQuota(user: Pick<IUser, 'role' | 'plan' | 'planExpiresAt'>, usedToday: number): CvCreationQuota {
+export function buildCvCreationQuota(user: Pick<IUser, 'role' | 'plan' | 'planStartedAt' | 'planExpiresAt' | 'paygCvSaveCredits'>, usedToday: number): CvCreationQuota {
   const plan = getEffectivePlan(user);
   if (plan === 'monthly' || plan === 'unlimited') {
     return {
@@ -35,7 +35,9 @@ export function buildCvCreationQuota(user: Pick<IUser, 'role' | 'plan' | 'planEx
     };
   }
 
-  const limit = getDailyCvCreationLimit();
+  const storedPaygCredits = Math.max(0, Math.floor(user.paygCvSaveCredits || 0));
+  const paygCredits = plan === 'payg' ? Math.max(storedPaygCredits, user.planStartedAt ? 1 : 0) : 0;
+  const limit = getDailyCvCreationLimit() + paygCredits;
   const remaining = Math.max(limit - usedToday, 0);
 
   return {

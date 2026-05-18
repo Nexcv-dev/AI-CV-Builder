@@ -161,13 +161,27 @@ describe('Server Utils', () => {
       });
     });
 
-    it('should keep Pay As You Go to one saved CV and make Monthly unlimited', () => {
+    it('should add one extra CV save for each Pay As You Go purchase and make Monthly unlimited', () => {
       const future = new Date(Date.now() + 100000);
       expect(buildCvCreationQuota({ role: 'user', plan: 'payg', planExpiresAt: future } as any, 1)).toEqual({
         limit: 1,
         used: 1,
         remaining: 0,
         reached: true,
+        plan: 'payg',
+      });
+      expect(buildCvCreationQuota({ role: 'user', plan: 'payg', planStartedAt: new Date(), planExpiresAt: future } as any, 1)).toEqual({
+        limit: 2,
+        used: 1,
+        remaining: 1,
+        reached: false,
+        plan: 'payg',
+      });
+      expect(buildCvCreationQuota({ role: 'user', plan: 'payg', planExpiresAt: future, paygCvSaveCredits: 2 } as any, 2)).toEqual({
+        limit: 3,
+        used: 2,
+        remaining: 1,
+        reached: false,
         plan: 'payg',
       });
       expect(buildCvCreationQuota({ role: 'user', plan: 'monthly', planExpiresAt: future } as any, 99)).toEqual({

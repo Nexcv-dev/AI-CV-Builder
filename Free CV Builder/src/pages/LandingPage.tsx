@@ -77,7 +77,7 @@ const pricingPlans = [
     href: '/pricing',
     cta: 'Choose PAYG',
     highlighted: true,
-    features: ['1 saved CV', 'Any template', 'Unlimited edits for 7 days', 'Unlimited downloads for 7 days', 'AI import, summary, and refine tools'],
+    features: ['1 extra saved CV per purchase', 'Any template', 'Unlimited edits for 7 days', 'Unlimited downloads for 7 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
   },
   {
     name: 'Monthly',
@@ -88,7 +88,7 @@ const pricingPlans = [
     href: '/pricing',
     cta: 'Go monthly',
     highlighted: false,
-    features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 30 days', 'AI import, summary, and refine tools'],
+    features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 30 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
   },
 ];
 

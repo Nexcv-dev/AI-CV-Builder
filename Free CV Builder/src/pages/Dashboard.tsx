@@ -112,6 +112,21 @@ export default function Dashboard() {
   const recentDocuments = useMemo(() => documents.slice(0, 3), [documents]);
   const templatesUsed = useMemo(() => new Set(documents.map((document) => document.template)).size, [documents]);
   const creationLimitReached = Boolean(quota?.reached);
+  const planExpiryReminder = useMemo(() => {
+    if (!user?.planExpiresAt || user.plan === 'free' || user.plan === 'unlimited') return null;
+
+    const expiresAt = new Date(user.planExpiresAt);
+    const diffMs = expiresAt.getTime() - Date.now();
+    if (!Number.isFinite(diffMs) || diffMs <= 0 || diffMs > 3 * 24 * 60 * 60 * 1000) return null;
+
+    const daysLeft = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+    const planName = user.plan === 'payg' ? 'Pay As You Go' : 'Monthly';
+    return {
+      daysLeft,
+      planName,
+      expiresAt: new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(expiresAt),
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!openActionsDocumentId) return;
@@ -197,6 +212,37 @@ export default function Dashboard() {
         </section>
 
         <AnimatePresence initial={false}>
+          {planExpiryReminder && (
+            <motion.section
+              key="dashboard-plan-expiry-banner"
+              initial={{ opacity: 0, height: 0, y: -8 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -8 }}
+              transition={{ duration: 0.24, ease: 'easeOut' }}
+              className="mt-5 overflow-hidden"
+            >
+              <div className="relative rounded-2xl border border-violet-300/25 bg-violet-500/10 p-4 shadow-lg shadow-black/10 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-300/15 text-violet-100 ring-1 ring-violet-200/20">
+                    <Clock3 size={18} />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="font-montserrat text-base font-black text-violet-100">Plan expires soon</h2>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-violet-100/75">
+                      Your {planExpiryReminder.planName} plan expires in {planExpiryReminder.daysLeft} day{planExpiryReminder.daysLeft === 1 ? '' : 's'} on {planExpiryReminder.expiresAt}.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  to={`/checkout?plan=${user?.plan === 'monthly' ? 'monthly' : 'payg'}`}
+                  className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-violet-500 px-4 py-2.5 text-xs font-black text-white transition hover:bg-violet-400 active:scale-[0.98] sm:mt-0 sm:w-auto"
+                >
+                  Renew plan
+                </Link>
+              </div>
+            </motion.section>
+          )}
+
           {user && !user.emailVerified && !verificationBannerDismissed && (
             <motion.section
               key="dashboard-verify-banner"

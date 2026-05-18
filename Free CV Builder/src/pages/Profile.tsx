@@ -49,6 +49,18 @@ type ProfileTab = 'personal' | 'security' | 'account';
 
 const passwordPolicyHint = '8+ characters with uppercase, lowercase, number, and symbol.';
 
+function getPlanLabel(plan?: AuthUser['plan']) {
+  if (plan === 'payg') return 'Pay As You Go';
+  if (plan === 'monthly') return 'Monthly';
+  if (plan === 'unlimited') return 'Admin';
+  return 'Free';
+}
+
+function formatPlanExpiry(value?: string) {
+  if (!value) return null;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value));
+}
+
 function formatRelativeTime(value?: string) {
   if (!value) return 'No activity';
   const diffMs = Date.now() - new Date(value).getTime();
@@ -138,6 +150,13 @@ export default function Profile() {
     user?.email,
   ].filter(Boolean).length;
   const completion = Math.round((completedFields / 8) * 100);
+  const planLabel = getPlanLabel(user?.plan);
+  const planExpiry = user?.plan === 'free' || user?.plan === 'unlimited' ? null : formatPlanExpiry(user?.planExpiresAt);
+  const planBadgeClass = user?.plan === 'free'
+    ? 'text-slate-200 ring-white/10'
+    : user?.plan === 'payg'
+      ? 'text-emerald-100 ring-emerald-300/25'
+      : 'text-violet-100 ring-violet-300/25';
 
   const uploadProfileImage = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -309,10 +328,16 @@ export default function Profile() {
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={uploadProfileImage} />
                   <h2 className="mt-5 max-w-full truncate font-montserrat text-xl font-black sm:text-2xl">{form.displayName || user?.displayName}</h2>
                   <p className="mt-1 max-w-full truncate text-sm font-semibold text-slate-400">{user?.email}</p>
-                  <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-950/60 px-3 py-1.5 text-xs font-black text-violet-200 ring-1 ring-white/10">
+                  <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-950/60 px-3 py-1.5 text-xs font-black ring-1 ${planBadgeClass}`}>
                     <Crown size={13} />
-                    Free Plan
+                    {planLabel} Plan
                   </span>
+                  {planExpiry && (
+                    <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                      <Calendar size={13} />
+                      Expires {planExpiry}
+                    </span>
+                  )}
                 </div>
 
                 <div className="my-6 h-px bg-white/10" />

@@ -78,6 +78,7 @@ export default function Home() {
   const showImportPromptOnLoad = useRef(searchParams.get('import') === '1');
   const showDownloadAfterAuthOnLoad = useRef(searchParams.get('download') === '1');
   const showTemplatesOnLoad = useRef(searchParams.get('templates') === '1');
+  const showPaymentSuccessOnLoad = useRef(searchParams.get('payment') === 'success');
   const shouldScrollTopOnLoad = useRef(searchParams.has('template'));
   const initialDocumentId = useRef(searchParams.get('document'));
   const [cvData, setCvData] = useState<CVData>(() => {
@@ -220,13 +221,17 @@ export default function Home() {
     if (isTemplateName(paramTemplate)) {
       setTemplate(paramTemplate);
     }
+    if (showPaymentSuccessOnLoad.current) {
+      toast.success('Payment successful. Your premium tools are ready.');
+    }
     // Remove one-time query params so they do not persist on manual refresh.
-    if (searchParams.has('template') || searchParams.has('import') || searchParams.has('download') || searchParams.has('templates')) {
+    if (searchParams.has('template') || searchParams.has('import') || searchParams.has('download') || searchParams.has('templates') || searchParams.has('payment')) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete('template');
       nextParams.delete('import');
       nextParams.delete('download');
       nextParams.delete('templates');
+      nextParams.delete('payment');
       setSearchParams(nextParams, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1096,7 +1101,7 @@ export default function Home() {
                         <div className="flex items-center gap-2 text-sm font-black"><Zap size={15} className="text-violet-600" /> Pay As You Go</div>
                         <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 499</div>
                         <div className="text-[10px] font-bold text-violet-400/90 dark:text-violet-300/90 mt-0.5">7 days access • One-time payment</div>
-                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 CV, any template, unlimited edits and downloads for 7 days.</p>
+                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 extra CV, any template, unlimited edits, and faster PDF downloads for 7 days.</p>
                       </button>
                       {selectedUpgradePlan === 'payg' && renderMobileUpgradeActions('payg')}
                     </div>
@@ -1109,7 +1114,7 @@ export default function Home() {
                         <div className="text-sm font-black">Monthly</div>
                         <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 2199</div>
                         <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">30 days access • One-time payment</div>
-                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, downloads, and AI features.</p>
+                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, faster PDF downloads, and AI features.</p>
                       </button>
                       {selectedUpgradePlan === 'monthly' && renderMobileUpgradeActions('monthly')}
                     </div>

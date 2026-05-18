@@ -1,5 +1,5 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
 import { AuthModal } from '../components/AuthModal';
-import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
+import { AuthUser, apiFetch, getCurrentUser, notifyAuthUserChanged } from '../utils/api';
 
 type CheckoutPlanKey = 'payg' | 'monthly';
 
@@ -44,9 +44,11 @@ const checkoutPlans: Record<CheckoutPlanKey, {
     summary: 'One polished CV with unlimited edits and downloads for a focused application window.',
     icon: Zap,
     features: [
+      '1 extra saved CV per purchase',
       'Any CV template',
       'Unlimited edits for 7 days',
       'Unlimited PDF downloads for 7 days',
+      'Faster warm PDF downloads',
       'AI import, summary, and refine tools',
     ],
   },
@@ -62,6 +64,7 @@ const checkoutPlans: Record<CheckoutPlanKey, {
       'Unlimited saved CVs',
       'Any CV template',
       'Unlimited downloads for 30 days',
+      'Faster warm PDF downloads',
       'AI import, summary, and refine tools',
     ],
   },
@@ -90,6 +93,7 @@ function submitPayHereForm(actionUrl: string, fields: Record<string, string>) {
 }
 
 export default function CheckoutPage() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedPlanKey = getPlanFromQuery(searchParams.get('plan'));
   const selectedPlan = checkoutPlans[selectedPlanKey];
@@ -137,6 +141,54 @@ export default function CheckoutPage() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'cancel') {
+      toast.error('Payment cancelled. Your plan was not changed.');
+      setSearchParams({ plan: selectedPlan.key }, { replace: true });
+      return;
+    }
+
+    if (paymentStatus !== 'return') return;
+
+    let ignore = false;
+    const toastId = toast.loading('Confirming your payment...');
+
+    async function finishPaymentReturn() {
+      let refreshedUser: AuthUser | null = null;
+
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+          refreshedUser = await getCurrentUser();
+          if (refreshedUser.plan === selectedPlan.key || refreshedUser.plan === 'unlimited') {
+            break;
+          }
+        } catch {
+          // Keep retrying briefly; PayHere can redirect before the IPN has refreshed the plan.
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 900));
+      }
+
+      if (ignore) return;
+
+      if (refreshedUser) {
+        setUser(refreshedUser);
+        notifyAuthUserChanged(refreshedUser);
+      }
+
+      sessionStorage.removeItem('nexcv-pending-checkout');
+      toast.dismiss(toastId);
+      navigate('/builder?payment=success', { replace: true });
+    }
+
+    void finishPaymentReturn();
+
+    return () => {
+      ignore = true;
+    };
+  }, [navigate, searchParams, selectedPlan.key, setSearchParams]);
 
   const planOptions = useMemo(() => Object.values(checkoutPlans), []);
 
