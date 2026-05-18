@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { AppShellHeader } from '../components/AppShellHeader';
 import { AppSidebar } from '../components/AppSidebar';
+import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 import { CV_TEMPLATES } from '../templates';
@@ -71,7 +72,7 @@ export default function Dashboard() {
   const [documentToDelete, setDocumentToDelete] = useState<SavedDocument | null>(null);
   const [openActionsDocumentId, setOpenActionsDocumentId] = useState<string | null>(null);
   const [quota, setQuota] = useState<CvCreationQuota | null>(null);
-  const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [verificationBannerDismissed, setVerificationBannerDismissed] = useState(false);
 
   useEffect(() => {
@@ -143,24 +144,6 @@ export default function Dashboard() {
       toast.error(message);
     } finally {
       setDeletingId(null);
-    }
-  };
-
-  const resendVerification = async () => {
-    if (isResendingVerification) return;
-
-    setIsResendingVerification(true);
-    try {
-      const data = await apiFetch<{ user: AuthUser; message: string }>('/api/auth/resend-verification', {
-        method: 'POST',
-      });
-      setUser(data.user);
-      toast.success(data.message || 'Verification OTP sent.');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not send verification OTP.';
-      toast.error(message);
-    } finally {
-      setIsResendingVerification(false);
     }
   };
 
@@ -238,11 +221,10 @@ export default function Dashboard() {
                 <div className="mt-3 flex items-center gap-2 sm:mt-0">
                   <button
                     type="button"
-                    onClick={resendVerification}
-                    disabled={isResendingVerification}
+                    onClick={() => setVerificationModalOpen(true)}
                     className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-amber-300 px-4 py-2.5 text-xs font-black text-slate-950 transition hover:bg-amber-200 active:scale-[0.98] disabled:opacity-70 sm:flex-none"
                   >
-                    {isResendingVerification ? 'Sending...' : 'Resend OTP'}
+                    Verify
                   </button>
                   <button
                     type="button"
@@ -375,6 +357,17 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      <EmailVerificationModal
+        isOpen={verificationModalOpen}
+        user={user}
+        onClose={() => setVerificationModalOpen(false)}
+        onVerified={(verifiedUser) => {
+          setUser(verifiedUser);
+          if (verifiedUser.emailVerified) {
+            setVerificationBannerDismissed(false);
+          }
+        }}
+      />
     </div>
   );
 }

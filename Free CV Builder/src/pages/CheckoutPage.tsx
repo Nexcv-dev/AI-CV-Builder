@@ -17,9 +17,15 @@ import {
 } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
 import { AuthModal } from '../components/AuthModal';
-import { AuthUser, getCurrentUser } from '../utils/api';
+import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
 
 type CheckoutPlanKey = 'payg' | 'monthly';
+
+interface PayHereCheckoutResponse {
+  actionUrl: string;
+  orderId: string;
+  fields: Record<string, string>;
+}
 
 const checkoutPlans: Record<CheckoutPlanKey, {
   key: CheckoutPlanKey;
@@ -63,6 +69,24 @@ const checkoutPlans: Record<CheckoutPlanKey, {
 
 function getPlanFromQuery(value: string | null): CheckoutPlanKey {
   return value === 'monthly' ? 'monthly' : 'payg';
+}
+
+function submitPayHereForm(actionUrl: string, fields: Record<string, string>) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = actionUrl;
+  form.style.display = 'none';
+
+  Object.entries(fields).forEach(([name, value]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(form);
+  form.submit();
 }
 
 export default function CheckoutPage() {
@@ -150,7 +174,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    setSubmitting(true);
     const checkoutPayload = {
       plan: selectedPlan.key,
       customer: {
@@ -164,9 +187,21 @@ export default function CheckoutPage() {
       },
     };
 
-    sessionStorage.setItem('nexcv-pending-checkout', JSON.stringify(checkoutPayload));
-    toast.error('Payment gateway redirect is not connected yet.');
-    setSubmitting(false);
+    setSubmitting(true);
+    try {
+      const checkout = await apiFetch<PayHereCheckoutResponse>('/api/billing/payhere-checkout', {
+        method: 'POST',
+        body: JSON.stringify(checkoutPayload),
+      });
+      sessionStorage.setItem('nexcv-pending-checkout', JSON.stringify({
+        ...checkoutPayload,
+        orderId: checkout.orderId,
+      }));
+      submitPayHereForm(checkout.actionUrl, checkout.fields);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not open PayHere checkout.');
+      setSubmitting(false);
+    }
   };
 
   return (

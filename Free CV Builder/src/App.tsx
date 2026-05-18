@@ -14,7 +14,6 @@ import MyCvs from './pages/MyCvs';
 import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import VerifyEmail from './pages/VerifyEmail';
 import TipsAndResources from './pages/TipsAndResources';
 import PricingPage from './pages/PricingPage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -32,7 +31,6 @@ function PageLoadingOverlay() {
   const skipsPageLoadingOverlay = [
     '/forgot-password',
     '/reset-password',
-    '/verify-email',
   ].includes(location.pathname);
   const isHashOnlyLandingNavigation =
     location.pathname === '/' &&
@@ -105,7 +103,6 @@ function Layout() {
     '/profile',
     '/forgot-password',
     '/reset-password',
-    '/verify-email',
     '/checkout',
   ].includes(location.pathname);
 
@@ -242,7 +239,7 @@ function App() {
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/verify-email" element={<Navigate to="/builder" replace />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
