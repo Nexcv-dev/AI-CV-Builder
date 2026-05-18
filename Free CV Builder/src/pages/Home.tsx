@@ -13,6 +13,7 @@ import CVForm from '../components/CVForm';
 import CVPreview from '../components/CVPreview';
 import { AccountMenu } from '../components/AccountMenu';
 import { AuthModal } from '../components/AuthModal';
+import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import toast from 'react-hot-toast';
 import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Moon, Sun, X, Crown, Zap } from 'lucide-react';
 
@@ -96,7 +97,7 @@ export default function Home() {
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const lastSavedDataRef = useRef<string>(JSON.stringify({ cvData: initialData, template: DEFAULT_TEMPLATE, title: 'Untitled CV' }));
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [creationQuota, setCreationQuota] = useState<CvCreationQuota | null>(null);
   const [downloadQuota, setDownloadQuota] = useState<DownloadQuota | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(() => searchParams.get('document'));
@@ -479,23 +480,6 @@ export default function Home() {
     }
   }, [currentUser, cvData, documentId, documentTitle, openUpgradePrompt, template]);
 
-  const handleResendVerification = useCallback(async () => {
-    if (!currentUser || isResendingVerification) return;
-
-    setIsResendingVerification(true);
-    try {
-      const data = await apiFetch<{ user: AuthUser; message: string }>('/api/auth/resend-verification', {
-        method: 'POST',
-      });
-      setCurrentUser(data.user);
-      toast.success(data.message || 'Verification OTP sent.');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not send verification OTP.');
-    } finally {
-      setIsResendingVerification(false);
-    }
-  }, [currentUser, isResendingVerification]);
-
   const contentRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const formScrollRef = useRef<HTMLDivElement>(null);
@@ -856,11 +840,10 @@ export default function Home() {
                   <div className="flex shrink-0 items-center gap-2">
                     <button
                       type="button"
-                      onClick={handleResendVerification}
-                      disabled={isResendingVerification}
+                      onClick={() => setVerificationModalOpen(true)}
                       className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3 text-[11px] font-extrabold transition active:scale-95 disabled:opacity-70 sm:h-9 sm:px-4 sm:text-xs ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
                     >
-                      {isResendingVerification ? 'Sending...' : 'Resend OTP'}
+                      Verify
                     </button>
                     <button
                       type="button"
@@ -1283,6 +1266,22 @@ export default function Home() {
               openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
             } else {
               setShowDownloadConfirm(true);
+            }
+          }
+        }}
+      />
+      <EmailVerificationModal
+        isOpen={verificationModalOpen}
+        user={currentUser}
+        onClose={() => setVerificationModalOpen(false)}
+        onVerified={(user) => {
+          setCurrentUser(user);
+          if (user.emailVerified) {
+            setVerificationBannerDismissed(false);
+            try {
+              localStorage.removeItem(VERIFY_BANNER_DISMISSED_KEY);
+            } catch {
+              // Ignore storage failures; the verified user no longer needs the banner.
             }
           }
         }}

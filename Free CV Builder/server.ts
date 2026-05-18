@@ -20,6 +20,7 @@ import connectDB from './server-models/db';
 import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import DownloadQuota from './server-models/DownloadQuotaModel';
+import PaymentTransaction from './server-models/PaymentTransaction';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan } from './src/templates';
 import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
@@ -81,7 +82,7 @@ const productionCspDirectives = {
     connectSrc: ["'self'"],
     objectSrc: ["'none'"],
     baseUri: ["'self'"],
-    formAction: ["'self'"],
+    formAction: ["'self'", 'https://sandbox.payhere.lk', 'https://www.payhere.lk'],
     frameAncestors: ["'none'"],
 };
 
@@ -159,16 +160,33 @@ const passwordResetLimiter = rateLimit({
     message: { error: 'Too many password reset attempts. Please wait an hour before trying again.' },
 });
 
+export const EMAIL_VERIFICATION_RESEND_LIMIT = 3;
+export const EMAIL_VERIFICATION_RESEND_WINDOW_MS = 60 * 60 * 1000;
+export const EMAIL_VERIFICATION_ATTEMPT_LIMIT = 5;
+export const EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
+
+export const getAuthenticatedRateLimitKey = (req: Request) => {
+    const user = req.user as any;
+    return user?._id?.toString?.() || user?.id?.toString?.() || ipKeyGenerator(req.ip);
+};
+
 const emailVerificationLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // limit verification OTP emails to 3 per hour
+    windowMs: EMAIL_VERIFICATION_RESEND_WINDOW_MS, // 1 hour
+    max: EMAIL_VERIFICATION_RESEND_LIMIT, // limit verification OTP emails to 3 per hour
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => {
-        const user = req.user as any;
-        return user?._id?.toString?.() || user?.id?.toString?.() || ipKeyGenerator(req.ip);
-    },
+    keyGenerator: getAuthenticatedRateLimitKey,
     message: { error: 'Too many verification OTP requests. Please wait an hour before trying again.' },
+});
+
+const emailVerificationAttemptLimiter = rateLimit({
+    windowMs: EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS, // 10 minutes
+    max: EMAIL_VERIFICATION_ATTEMPT_LIMIT, // limit invalid OTP attempts to 5 per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    keyGenerator: getAuthenticatedRateLimitKey,
+    message: { error: 'Too many OTP verification attempts. Please wait 10 minutes before trying again.' },
 });
 
 app.use('/api/', apiLimiter);
@@ -226,6 +244,9 @@ const isTrustedRequestOrigin = (req: express.Request) => {
 // Middleware to reduce CSRF risk on state-changing API requests.
 export const integrityCheck = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (!req.path.startsWith('/api/') || !stateChangingMethods.has(req.method)) {
+        return next();
+    }
+    if (req.path === '/api/payhere/ipn') {
         return next();
     }
 
@@ -735,9 +756,102 @@ const sanitizeContactMessage = (value: unknown) => (
         : ''
 );
 
+const md5Upper = (value: string) => createHash('md5').update(value, 'utf8').digest('hex').toUpperCase();
+
+export const PAYHERE_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount: string; cents: number; currency: 'LKR' }> = {
+    payg: { amount: '499.00', cents: 49900, currency: 'LKR' },
+    monthly: { amount: '2199.00', cents: 219900, currency: 'LKR' },
+};
+
+export const getPayHereMerchantConfig = () => ({
+    merchantId: (process.env.PAYHERE_MERCHANT_ID || process.env.PAYHERE_SANDBOX_MERCHANT_ID || '').trim(),
+    merchantSecret: (process.env.PAYHERE_MERCHANT_SECRET || process.env.PAYHERE_SANDBOX_MERCHANT_SECRET || '').trim(),
+});
+
+export const getPayHereCheckoutUrl = () => (
+    process.env.PAYHERE_CHECKOUT_URL?.trim() ||
+    (process.env.PAYHERE_MERCHANT_ID ? 'https://www.payhere.lk/pay/checkout' : 'https://sandbox.payhere.lk/pay/checkout')
+);
+
+export const buildPayHereCheckoutHash = (payload: {
+    merchant_id: string;
+    order_id: string;
+    amount: string;
+    currency: string;
+}, merchantSecret: string) => md5Upper(
+    `${payload.merchant_id}${payload.order_id}${payload.amount}${payload.currency}${md5Upper(merchantSecret)}`
+);
+
+export const buildPayHereMd5Signature = (payload: {
+    merchant_id: string;
+    order_id: string;
+    payhere_amount: string;
+    payhere_currency: string;
+    status_code: string;
+}, merchantSecret: string) => md5Upper(
+    `${payload.merchant_id}${payload.order_id}${payload.payhere_amount}${payload.payhere_currency}${payload.status_code}${md5Upper(merchantSecret)}`
+);
+
+export const verifyPayHereMd5Signature = (payload: {
+    merchant_id: string;
+    order_id: string;
+    payhere_amount: string;
+    payhere_currency: string;
+    status_code: string;
+    md5sig: string;
+}, merchantSecret: string) => {
+    const received = String(payload.md5sig || '').trim().toUpperCase();
+    const expected = buildPayHereMd5Signature(payload, merchantSecret);
+    const receivedBuffer = Buffer.from(received, 'hex');
+    const expectedBuffer = Buffer.from(expected, 'hex');
+    return receivedBuffer.length === expectedBuffer.length && timingSafeEqual(receivedBuffer, expectedBuffer);
+};
+
+export const payHereAmountToCents = (value: unknown) => {
+    if (typeof value !== 'string' || !/^\d+(?:\.\d{1,2})?$/.test(value.trim())) return null;
+    return Math.round(Number(value.trim()) * 100);
+};
+
+const isPaidBillingPlan = (value: unknown): value is Exclude<BillingPlan, 'free'> => (
+    value === 'payg' || value === 'monthly'
+);
+
+export const resolvePayHerePaymentContext = (payload: Record<string, unknown>) => {
+    const customUserId = typeof payload.custom_1 === 'string' ? payload.custom_1.trim() : '';
+    const customPlan = typeof payload.custom_2 === 'string' ? payload.custom_2.trim().toLowerCase() : '';
+    const orderId = typeof payload.order_id === 'string' ? payload.order_id.trim() : '';
+    const orderMatch = orderId.match(/([a-f\d]{24})[^a-z\d]+(payg|monthly)|(payg|monthly)[^a-z\d]+([a-f\d]{24})/i);
+
+    const userId = isValidDocumentId(customUserId)
+        ? customUserId
+        : orderMatch?.[1] || orderMatch?.[4] || '';
+    const plan = isPaidBillingPlan(customPlan)
+        ? customPlan
+        : orderMatch?.[2]?.toLowerCase() || orderMatch?.[3]?.toLowerCase() || '';
+
+    return {
+        userId: isValidDocumentId(userId) ? userId : '',
+        plan: isPaidBillingPlan(plan) ? plan : null,
+    };
+};
+
 const generateTransactionId = () => {
     const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     return `NX-${datePart}-${randomBytes(4).toString('hex').toUpperCase()}`;
+};
+
+const getApiOrigin = (req: Request) => {
+    const configured = process.env.API_PUBLIC_URL || process.env.BACKEND_PUBLIC_URL;
+    if (configured?.trim()) return configured.trim().replace(/\/+$/, '');
+    return `${req.protocol}://${req.get('host')}`;
+};
+
+const getFrontendOrigin = (req: Request) => {
+    const requestOrigin = getRequestOrigin(req);
+    if (requestOrigin && isAllowedOrigin(requestOrigin)) return requestOrigin;
+    const configured = process.env.FRONTEND_URL || process.env.ALLOWED_ORIGIN;
+    if (configured?.trim()) return configured.trim().replace(/\/+$/, '');
+    return getApiOrigin(req);
 };
 
 const planDisplayName = (plan: BillingPlan) => (
@@ -1155,7 +1269,7 @@ app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Resp
     }
 });
 
-app.post('/api/auth/verify-email', requireAuth, authLimiter, async (req: Request, res: Response) => {
+app.post('/api/auth/verify-email', requireAuth, emailVerificationAttemptLimiter, async (req: Request, res: Response) => {
     try {
         const code = typeof req.body.code === 'string' ? req.body.code.replace(/\D/g, '') : '';
         if (!/^\d{6}$/.test(code)) {
@@ -1268,6 +1382,195 @@ app.post('/api/auth/logout', (req: Request, res: Response, next: NextFunction) =
         if (err) { return next(err); }
         res.json({ message: 'Logged out successfully' });
     });
+});
+
+app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req: Request, res: Response) => {
+    try {
+        const payload = req.body as Record<string, string>;
+        const requiredFields = ['merchant_id', 'order_id', 'payment_id', 'payhere_amount', 'payhere_currency', 'status_code', 'md5sig'];
+        const missingField = requiredFields.find((field) => typeof payload[field] !== 'string' || !payload[field].trim());
+        if (missingField) {
+            console.warn('PayHere IPN missing field:', missingField);
+            return res.status(400).send('Missing payment notification field.');
+        }
+
+        const { merchantId, merchantSecret } = getPayHereMerchantConfig();
+        if (!merchantId || !merchantSecret) {
+            console.error('PayHere IPN received but merchant configuration is missing.');
+            return res.status(500).send('Payment notification is not configured.');
+        }
+
+        if (payload.merchant_id !== merchantId) {
+            console.warn('PayHere IPN merchant mismatch:', payload.merchant_id);
+            return res.status(400).send('Invalid merchant.');
+        }
+
+        const signaturePayload = {
+            merchant_id: payload.merchant_id,
+            order_id: payload.order_id,
+            payhere_amount: payload.payhere_amount,
+            payhere_currency: payload.payhere_currency,
+            status_code: payload.status_code,
+            md5sig: payload.md5sig,
+        };
+
+        if (!verifyPayHereMd5Signature(signaturePayload, merchantSecret)) {
+            console.warn('PayHere IPN signature verification failed for order:', payload.order_id);
+            return res.status(400).send('Invalid payment signature.');
+        }
+
+        const context = resolvePayHerePaymentContext(payload);
+        const transactionFilter = { provider: 'payhere' as const, paymentId: payload.payment_id };
+        const existingTransaction = await PaymentTransaction.findOne(transactionFilter);
+        if (existingTransaction?.processed) {
+            return res.status(200).send('OK');
+        }
+
+        if (payload.status_code !== '2') {
+            await PaymentTransaction.findOneAndUpdate(
+                transactionFilter,
+                {
+                    provider: 'payhere',
+                    paymentId: payload.payment_id,
+                    orderId: payload.order_id,
+                    ...(context.userId ? { userId: context.userId } : {}),
+                    ...(context.plan ? { plan: context.plan } : {}),
+                    amount: payload.payhere_amount,
+                    currency: payload.payhere_currency,
+                    statusCode: payload.status_code,
+                    processed: false,
+                    rawPayload: payload,
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
+            return res.status(200).send('OK');
+        }
+
+        if (!context.userId || !context.plan) {
+            console.warn('PayHere IPN could not resolve user or plan for order:', payload.order_id);
+            return res.status(400).send('Invalid payment context.');
+        }
+
+        const expectedPrice = PAYHERE_PLAN_PRICES[context.plan];
+        const paidCents = payHereAmountToCents(payload.payhere_amount);
+        if (payload.payhere_currency.toUpperCase() !== expectedPrice.currency || paidCents !== expectedPrice.cents) {
+            console.warn('PayHere IPN amount mismatch:', {
+                orderId: payload.order_id,
+                plan: context.plan,
+                paidAmount: payload.payhere_amount,
+                paidCurrency: payload.payhere_currency,
+            });
+            return res.status(400).send('Invalid payment amount.');
+        }
+
+        const user = await User.findById(context.userId);
+        if (!user) {
+            console.warn('PayHere IPN user not found:', context.userId);
+            return res.status(404).send('User not found.');
+        }
+
+        user.plan = context.plan;
+        user.planStartedAt = new Date();
+        user.planExpiresAt = createPlanExpiry(context.plan);
+        await user.save();
+
+        await PaymentTransaction.findOneAndUpdate(
+            transactionFilter,
+            {
+                provider: 'payhere',
+                paymentId: payload.payment_id,
+                orderId: payload.order_id,
+                userId: user._id,
+                plan: context.plan,
+                amount: payload.payhere_amount,
+                currency: payload.payhere_currency,
+                statusCode: payload.status_code,
+                processed: true,
+                rawPayload: payload,
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        await sendBillingSuccessNotifications({
+            user,
+            plan: context.plan,
+            transactionId: payload.payment_id,
+            planExpiresAt: user.planExpiresAt,
+        });
+
+        return res.status(200).send('OK');
+    } catch (error) {
+        return sendError(res, 500, 'Could not process payment notification.', error);
+    }
+});
+
+app.post('/api/billing/payhere-checkout', requireAuth, async (req: Request, res: Response) => {
+    try {
+        if (!requireVerifiedEmail(req, res)) {
+            return;
+        }
+
+        const plan = req.body.plan as BillingPlan;
+        if (plan !== 'payg' && plan !== 'monthly') {
+            return res.status(400).json({ error: 'Choose a valid paid plan.' });
+        }
+
+        const customer = req.body.customer || {};
+        const firstName = sanitizeProfileField(customer.firstName, 80);
+        const lastName = sanitizeProfileField(customer.lastName, 80);
+        const email = normalizeEmail(customer.email);
+        const phone = sanitizeProfileField(customer.phone, 40);
+        const address = sanitizeProfileField(customer.address, 220);
+        const city = sanitizeProfileField(customer.city, 80);
+        const country = sanitizeProfileField(customer.country, 80) || 'Sri Lanka';
+        if (!firstName || !lastName || !email || !phone || !address || !city) {
+            return res.status(400).json({ error: 'Please complete your customer details.' });
+        }
+
+        const { merchantId, merchantSecret } = getPayHereMerchantConfig();
+        if (!merchantId || !merchantSecret) {
+            return res.status(500).json({ error: 'PayHere checkout is not configured.' });
+        }
+
+        const userId = currentUserId(req).toString();
+        const price = PAYHERE_PLAN_PRICES[plan];
+        const orderId = `${generateTransactionId()}-${userId}-${plan}`;
+        const frontendOrigin = getFrontendOrigin(req);
+        const notifyUrl = process.env.PAYHERE_NOTIFY_URL?.trim() || `${getApiOrigin(req)}/api/payhere/ipn`;
+        const checkoutPayload = {
+            merchant_id: merchantId,
+            order_id: orderId,
+            amount: price.amount,
+            currency: price.currency,
+        };
+
+        return res.json({
+            actionUrl: getPayHereCheckoutUrl(),
+            orderId,
+            fields: {
+                merchant_id: merchantId,
+                return_url: `${frontendOrigin}/checkout?plan=${plan}&payment=return&order=${encodeURIComponent(orderId)}`,
+                cancel_url: `${frontendOrigin}/checkout?plan=${plan}&payment=cancel&order=${encodeURIComponent(orderId)}`,
+                notify_url: notifyUrl,
+                first_name: firstName,
+                last_name: lastName,
+                email,
+                phone,
+                address,
+                city,
+                country,
+                order_id: orderId,
+                items: `NexCV ${planDisplayName(plan)} Plan`,
+                currency: price.currency,
+                amount: price.amount,
+                custom_1: userId,
+                custom_2: plan,
+                hash: buildPayHereCheckoutHash(checkoutPayload, merchantSecret),
+            },
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not start PayHere checkout.', error);
+    }
 });
 
 app.post('/api/billing/activate', requireAuth, async (req: Request, res: Response) => {
