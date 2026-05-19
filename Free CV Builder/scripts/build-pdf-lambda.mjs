@@ -365,6 +365,7 @@ const CV_TEMPLATES = [
 
 type TemplateName = (typeof CV_TEMPLATES)[number]['key'];
 const DEFAULT_TEMPLATE: TemplateName = 'professional';
+const PDF_LAMBDA_BUILD_MARKER = 's3-template-diagnostics-2026-05-19';
 const TEMPLATE_KEYS = CV_TEMPLATES.map((template) => template.key) as TemplateName[];
 function getTemplateDefinition(template: TemplateName) {
   return CV_TEMPLATES.find((item) => item.key === template) || CV_TEMPLATES[0];
@@ -643,6 +644,7 @@ export async function handler(event: any) {
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'attachment; filename="resume.pdf"',
         'X-PDF-Template-Source': templateSource,
+        'X-PDF-Lambda-Build': PDF_LAMBDA_BUILD_MARKER,
       },
       body: Buffer.from(pdf).toString('base64'),
     };
