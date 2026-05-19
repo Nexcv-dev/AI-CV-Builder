@@ -3,20 +3,23 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #147 from bimanthaperera-lab/test/overview (55ab151) - Bimantha Perera, 12 seconds ago
-* Update main.yml (609ae43) - Bimantha Perera, 11 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (2335721) - bimanthaperera-lab, 23 minutes ago
-* Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 24 minutes ago
-* Send template request to S3 bucket (77118d3) - Bimantha Perera, 33 minutes ago
-* Implement Support Ticket (1e7163a) - Bimantha Perera, 3 hours ago
-* move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 4 hours ago
-* Update CVForm.tsx (37f2feb) - Bimantha Perera, 6 hours ago
-* implement template management settings with backend (932c731) - Bimantha Perera, 25 hours ago
-* implement Admin Panel Template and dashboard settings (07345f4) - Bimantha Perera, 25 hours ago
-* Create Admin Panel Structre (aff3de4) - Bimantha Perera, 25 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (5aa8c13) - bimanthaperera-lab, 28 hours ago
-* Merge pull request #143 from bimanthaperera-lab/test/overview (ade11e7) - Bimantha Perera, 28 hours ago
-* payment gateway sand box test (ccc8d08) - Bimantha Perera, 29 hours ago
+* Merge pull request #148 from bimanthaperera-lab/test/overview (d489841) - Bimantha Perera, 11 seconds ago
+* automate AWS lambda file upload (3bc4ce9) - Bimantha Perera, 6 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (7c34a34) - bimanthaperera-lab, 44 minutes ago
+* Merge pull request #147 from bimanthaperera-lab/test/overview (55ab151) - Bimantha Perera, 44 minutes ago
+* Update main.yml (609ae43) - Bimantha Perera, 55 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (2335721) - bimanthaperera-lab, 67 minutes ago
+* Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 67 minutes ago
+* Send template request to S3 bucket (77118d3) - Bimantha Perera, 77 minutes ago
+* Implement Support Ticket (1e7163a) - Bimantha Perera, 4 hours ago
+* move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 5 hours ago
+* Update CVForm.tsx (37f2feb) - Bimantha Perera, 7 hours ago
+* implement template management settings with backend (932c731) - Bimantha Perera, 26 hours ago
+* implement Admin Panel Template and dashboard settings (07345f4) - Bimantha Perera, 26 hours ago
+* Create Admin Panel Structre (aff3de4) - Bimantha Perera, 26 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (5aa8c13) - bimanthaperera-lab, 29 hours ago
+* Merge pull request #143 from bimanthaperera-lab/test/overview (ade11e7) - Bimantha Perera, 29 hours ago
+* payment gateway sand box test (ccc8d08) - Bimantha Perera, 30 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (12b6b16) - bimanthaperera-lab, 2 days ago
 * Merge pull request #142 from bimanthaperera-lab/test/overview (2713caf) - Bimantha Perera, 2 days ago
 * Merge branch 'test/overview' of https://github.com/bimanthaperera-lab/AI-CV-Builder into test/overview (e021875) - Bimantha Perera, 2 days ago
