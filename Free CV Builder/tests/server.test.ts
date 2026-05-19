@@ -12,6 +12,7 @@ import {
   getAuthenticatedRateLimitKey,
   payHereAmountToCents,
   resolvePayHerePaymentContext,
+  renderCvTemplateString,
   sanitizeContextField,
   sanitizeTextForPrompt,
   verifyPayHereMd5Signature,
@@ -428,6 +429,43 @@ describe('generateCVHTML', () => {
     };
     const html = generateCVHTML(maliciousData, 'classic');
     expect(html).toContain('John &lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt; Doe');
+    expect(html).not.toContain('<script>');
+  });
+});
+
+describe('renderCvTemplateString', () => {
+  it('renders escaped placeholders and repeated sections for S3 templates', () => {
+    const html = renderCvTemplateString(`
+      <h1>{{personalInfo.fullName}}</h1>
+      <p>{{personalInfo.email}}</p>
+      <ul>{{#experience}}<li>{{position}} at {{company}}</li>{{/experience}}</ul>
+      {{^awards}}<span>No awards</span>{{/awards}}
+    `, {
+      personalInfo: {
+        fullName: 'Jane <Admin>',
+        email: 'jane@example.com',
+      },
+      experience: [
+        { position: 'Engineer', company: 'ACME' },
+        { position: 'Lead', company: 'NexCV' },
+      ],
+      awards: [],
+    });
+
+    expect(html).toContain('Jane &lt;Admin&gt;');
+    expect(html).toContain('<li>Engineer at ACME</li>');
+    expect(html).toContain('<li>Lead at NexCV</li>');
+    expect(html).toContain('<span>No awards</span>');
+  });
+
+  it('sanitizes triple-brace rich text placeholders', () => {
+    const html = renderCvTemplateString('<section>{{{personalInfo.summary}}}</section>', {
+      personalInfo: {
+        summary: 'Safe <strong>text</strong><script>alert(1)</script>',
+      },
+    });
+
+    expect(html).toContain('<strong>text</strong>');
     expect(html).not.toContain('<script>');
   });
 });

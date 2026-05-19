@@ -37,6 +37,24 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Configure AWS credentials
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Sync CV templates to S3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+        working-directory: '.'
+        run: |
+          if [ -d "templates" ]; then
+            aws s3 sync templates s3://cv-template-bucket/templates --delete
+          else
+            echo "No templates directory found; skipping S3 sync."
+          fi
+
       - name: Build Docker image
         run: |
           docker build -t ai-cv-builder:latest .
