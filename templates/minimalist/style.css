@@ -1,0 +1,13 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Helvetica Neue", Arial, sans-serif; color: #111827; background: #ffffff; }
+.page { width: 210mm; min-height: 297mm; padding: 16mm 20mm; }
+header { text-align: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #f3f4f6; }
+h1 { margin: 0 0 9px; font-size: 32px; font-weight: 500; }
+h2 { margin: 0 0 13px; font-size: 11px; letter-spacing: 2px; color: #2563eb; text-transform: uppercase; }
+h3 { margin: 0 0 5px; font-size: 14px; }
+p { margin: 0 0 8px; font-size: 12px; color: #4b5563; line-height: 1.5; }
+.layout { display: grid; grid-template-columns: 1fr 250px; gap: 40px; }
+section { margin-bottom: 22px; break-inside: avoid; }
+article { margin-bottom: 14px; break-inside: avoid; }
+aside { border-left: 1px solid #d1d5db; padding-left: 24px; }
+.rich, .rich * { font-size: 12.5px; line-height: 1.55; overflow-wrap: anywhere; }
