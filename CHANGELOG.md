@@ -3,8 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 11 seconds ago
-* Send template request to S3 bucket (77118d3) - Bimantha Perera, 10 minutes ago
+* Merge pull request #147 from bimanthaperera-lab/test/overview (55ab151) - Bimantha Perera, 12 seconds ago
+* Update main.yml (609ae43) - Bimantha Perera, 11 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (2335721) - bimanthaperera-lab, 23 minutes ago
+* Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 24 minutes ago
+* Send template request to S3 bucket (77118d3) - Bimantha Perera, 33 minutes ago
 * Implement Support Ticket (1e7163a) - Bimantha Perera, 3 hours ago
 * move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 4 hours ago
 * Update CVForm.tsx (37f2feb) - Bimantha Perera, 6 hours ago
@@ -13,7 +16,7 @@ All notable changes to this project will be documented in this file.
 * Create Admin Panel Structre (aff3de4) - Bimantha Perera, 25 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (5aa8c13) - bimanthaperera-lab, 28 hours ago
 * Merge pull request #143 from bimanthaperera-lab/test/overview (ade11e7) - Bimantha Perera, 28 hours ago
-* payment gateway sand box test (ccc8d08) - Bimantha Perera, 28 hours ago
+* payment gateway sand box test (ccc8d08) - Bimantha Perera, 29 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (12b6b16) - bimanthaperera-lab, 2 days ago
 * Merge pull request #142 from bimanthaperera-lab/test/overview (2713caf) - Bimantha Perera, 2 days ago
 * Merge branch 'test/overview' of https://github.com/bimanthaperera-lab/AI-CV-Builder into test/overview (e021875) - Bimantha Perera, 2 days ago
