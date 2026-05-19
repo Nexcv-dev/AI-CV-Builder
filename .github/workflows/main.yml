@@ -56,6 +56,25 @@ jobs:
             echo "No templates directory found; skipping S3 sync."
           fi
 
+      - name: Build PDF Lambda zip
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+        run: npm run build:pdf-lambda
+
+      - name: Upload PDF Lambda zip to S3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+        working-directory: '.'
+        run: |
+          aws s3 rm s3://cv-template-bucket/lambda/nexcv-pdf-lambda.zip || true
+          aws s3 cp "Free CV Builder/lambda-pdf/dist/nexcv-pdf-lambda.zip" s3://cv-template-bucket/lambda/nexcv-pdf-lambda.zip
+
+      - name: Update PDF Lambda function
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+        run: |
+          aws lambda update-function-code \
+            --function-name PDF-generation \
+            --s3-bucket cv-template-bucket \
+            --s3-key lambda/nexcv-pdf-lambda.zip
+
       - name: Build Docker image
         run: |
           docker build -t ai-cv-builder:latest .

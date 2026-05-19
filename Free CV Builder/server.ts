@@ -3805,16 +3805,7 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         const safeCvData = sanitizeCvData(cvData);
         const watermark = downloadQuota.plan === 'free';
 
-        console.log("Checking S3 template for PDF...");
-        let html: string | null = null;
-        try {
-            html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark });
-        } catch (error) {
-            console.warn('S3 template unavailable; falling back to built-in PDF template.', error);
-        }
-        const usedS3Template = Boolean(html);
-
-        const lambdaPdfBuffer = usedS3Template ? null : await generatePdfWithLambda(safeCvData, requestedTemplate, watermark);
+        const lambdaPdfBuffer = await generatePdfWithLambda(safeCvData, requestedTemplate, watermark);
         if (lambdaPdfBuffer) {
             console.log(`Lambda PDF generated. Buffer size: ${lambdaPdfBuffer.length}`);
 
@@ -3830,8 +3821,8 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         }
 
         // Generate self-contained HTML
-        console.log(usedS3Template ? "Generating PDF from S3 template..." : "Generating HTML for PDF...");
-        html = html || generateCVHTML(safeCvData, requestedTemplate, { watermark });
+        console.log("Generating built-in HTML for local PDF fallback...");
+        const html = generateCVHTML(safeCvData, requestedTemplate, { watermark });
         console.log(`HTML generated: ${html.length} bytes`);
 
         const useWarmBrowser = downloadQuota.plan !== 'free';
@@ -3904,7 +3895,8 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Length': pdfBuffer.length.toString(),
-            'X-PDF-Template-Source': usedS3Template ? 's3' : 'built-in',
+            'X-PDF-Renderer': 'local',
+            'X-PDF-Template-Source': 'built-in',
         });
 
         res.send(Buffer.from(pdfBuffer));

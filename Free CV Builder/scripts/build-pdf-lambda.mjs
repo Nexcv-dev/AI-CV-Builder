@@ -144,6 +144,7 @@ const sanitizeCvDataTs = extractFunction(serverSource, 'function sanitizeCvData'
 const handlerTs = `
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 const ALLOWED_RICH_TEXT_TAGS = new Set(['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span']);
 const DOMPurify = {
@@ -202,6 +203,135 @@ const sanitizePdfImageSource = (value: unknown) => {
   return source.replace(/\\s/g, '');
 };
 
+const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
+const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\\/+|\\/+$/g, '');
+const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 5 * 60 * 1000);
+let s3Client: S3Client | null = null;
+const s3TemplateCache = new Map<string, { html: string; expiresAt: number }>();
+
+const getS3Client = () => {
+  if (!S3_TEMPLATE_BUCKET) return null;
+  if (!s3Client) {
+    s3Client = new S3Client({
+      region: process.env.AWS_REGION || 'eu-north-1',
+    });
+  }
+  return s3Client;
+};
+
+const streamToString = async (stream: any): Promise<string> => {
+  if (!stream) return '';
+  if (typeof stream.transformToString === 'function') return stream.transformToString();
+
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString('utf8');
+};
+
+async function fetchS3Text(key: string): Promise<string | null> {
+  const client = getS3Client();
+  if (!client) return null;
+
+  try {
+    const response = await client.send(new GetObjectCommand({
+      Bucket: S3_TEMPLATE_BUCKET,
+      Key: key,
+    }));
+    return streamToString(response.Body);
+  } catch (error: any) {
+    const code = error?.name || error?.Code || error?.code;
+    if (code === 'NoSuchKey' || code === 'NotFound' || error?.$metadata?.httpStatusCode === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+const templateS3Key = (template: TemplateName, fileName: string) => (
+  S3_TEMPLATE_PREFIX ? S3_TEMPLATE_PREFIX + '/' + template + '/' + fileName : template + '/' + fileName
+);
+
+async function loadS3TemplateHtml(template: TemplateName): Promise<string | null> {
+  if (!S3_TEMPLATE_BUCKET) return null;
+
+  const cached = s3TemplateCache.get(template);
+  if (cached && cached.expiresAt > Date.now()) return cached.html;
+
+  const indexHtml = await fetchS3Text(templateS3Key(template, 'index.html'));
+  if (!indexHtml) return null;
+
+  const css = await fetchS3Text(templateS3Key(template, 'style.css'));
+  const html = css
+    ? indexHtml.replace('</head>', '<style>\\n' + css + '\\n</style>\\n</head>')
+    : indexHtml;
+
+  s3TemplateCache.set(template, {
+    html,
+    expiresAt: Date.now() + Math.max(S3_TEMPLATE_CACHE_TTL_MS, 0),
+  });
+  return html;
+}
+
+const getTemplateValue = (pathValue: string, context: any, root: any) => {
+  const pathParts = pathValue.trim().split('.').filter(Boolean);
+  const readPath = (source: any) => pathParts.reduce((value, part) => value?.[part], source);
+  const contextValue = readPath(context);
+  return contextValue === undefined ? readPath(root) : contextValue;
+};
+
+const renderTemplateValue = (value: unknown) => {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) return value.join(', ');
+  if (typeof value === 'object') return '';
+  return String(value);
+};
+
+const escTemplateValue = (str: string) => (
+  (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+);
+
+function renderCvTemplateString(templateHtml: string, cvData: any, options: { watermark?: boolean } = {}) {
+  const root = { ...cvData, watermark: Boolean(options.watermark) };
+
+  const renderBlock = (source: string, context: any): string => {
+    let html = source.replace(/{{#\\s*([\\w.]+)\\s*}}([\\s\\S]*?){{\\/\\s*\\1\\s*}}/g, (_match, pathValue, block) => {
+      const value = getTemplateValue(pathValue, context, root);
+      if (Array.isArray(value)) {
+        return value.map((item) => renderBlock(block, item)).join('');
+      }
+      if (value && typeof value === 'object') return renderBlock(block, value);
+      return value ? renderBlock(block, context) : '';
+    });
+
+    html = html.replace(/{{\\^\\s*([\\w.]+)\\s*}}([\\s\\S]*?){{\\/\\s*\\1\\s*}}/g, (_match, pathValue, block) => {
+      const value = getTemplateValue(pathValue, context, root);
+      const isEmptyArray = Array.isArray(value) && value.length === 0;
+      return (!value || isEmptyArray) ? renderBlock(block, context) : '';
+    });
+
+    html = html.replace(/{{{\\s*([\\w.]+)\\s*}}}/g, (_match, pathValue) => {
+      const value = renderTemplateValue(getTemplateValue(pathValue, context, root));
+      return DOMPurify.sanitize(value, {
+        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
+        ALLOWED_ATTR: ['href', 'target', 'rel'],
+      });
+    });
+
+    return html.replace(/{{\\s*([\\w.]+)\\s*}}/g, (_match, pathValue) => (
+      escTemplateValue(renderTemplateValue(getTemplateValue(pathValue, context, root)))
+    ));
+  };
+
+  return renderBlock(templateHtml, root);
+}
+
+async function generateS3CVHTML(cvData: any, template: TemplateName, options: { watermark?: boolean } = {}) {
+  const templateHtml = await loadS3TemplateHtml(template);
+  return templateHtml ? renderCvTemplateString(templateHtml, cvData, options) : null;
+}
+
 ${pdfIcons}
 
 ${generateCvHtmlTs}
@@ -222,7 +352,13 @@ async function launchBrowser() {
 async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
   const requestedTemplate = isTemplateName(template) ? template : DEFAULT_TEMPLATE;
   const safeCvData = sanitizeCvData(cvData);
-  const html = generateCVHTML(safeCvData, requestedTemplate, { watermark });
+  let html: string | null = null;
+  try {
+    html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark });
+  } catch (error) {
+    console.warn('S3 template unavailable; falling back to built-in PDF template.', error);
+  }
+  html = html || generateCVHTML(safeCvData, requestedTemplate, { watermark });
   const browser = await launchBrowser();
   let page: any = null;
   try {
@@ -267,8 +403,31 @@ function parsePayload(event: any) {
   return event || {};
 }
 
+function isWarmupEvent(event: any) {
+  if (!event || typeof event !== 'object') return false;
+  if (event.warmup === true || event.action === 'warmup') return true;
+  if (event.source === 'aws.events' || event['detail-type'] === 'Scheduled Event' || event.detailType === 'Scheduled Event') return true;
+  if (typeof event.body === 'string') {
+    try {
+      const body = JSON.parse(event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : event.body);
+      return body?.warmup === true || body?.action === 'warmup';
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 export async function handler(event: any) {
   try {
+    if (isWarmupEvent(event)) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'PDF Lambda warmup successful' }),
+      };
+    }
+
     const payload = parsePayload(event);
     if (!payload?.cvData || typeof payload.cvData !== 'object') {
       return {
@@ -314,6 +473,12 @@ Deploy \`dist/nexcv-pdf-lambda.zip\` to AWS Lambda with:
 - Memory: 1024 MB or higher
 - Timeout: 30 seconds or higher
 
+Environment variables:
+
+- \`AWS_REGION=eu-north-1\`
+- \`S3_TEMPLATE_BUCKET_NAME=cv-template-bucket\`
+- \`S3_TEMPLATE_PREFIX=templates\`
+
 Request body:
 
 \`\`\`json
@@ -325,6 +490,7 @@ Request body:
 \`\`\`
 
 The response is API Gateway compatible and returns the PDF as base64 with \`isBase64Encoded: true\`.
+Warmup events can send \`{ "warmup": true }\` or an EventBridge scheduled event and receive \`PDF Lambda warmup successful\`.
 Keep auth, plan checks, premium template checks, and download quota logic in the main app before calling this Lambda.
 `, 'utf8');
 
@@ -383,11 +549,18 @@ copyDir(path.join(projectRoot, 'node_modules', '@sparticuz'), path.join(buildDir
 });
 
 if (fs.existsSync(zipPath)) fs.rmSync(zipPath, { force: true });
-execFileSync('powershell.exe', [
-  '-NoProfile',
-  '-Command',
-  `Compress-Archive -Path '${buildDir.replaceAll("'", "''")}\\*' -DestinationPath '${zipPath.replaceAll("'", "''")}' -Force`,
-], { stdio: 'inherit' });
+if (process.platform === 'win32') {
+  execFileSync('powershell.exe', [
+    '-NoProfile',
+    '-Command',
+    `Compress-Archive -Path '${buildDir.replaceAll("'", "''")}\\*' -DestinationPath '${zipPath.replaceAll("'", "''")}' -Force`,
+  ], { stdio: 'inherit' });
+} else {
+  execFileSync('zip', ['-qr', zipPath, '.'], {
+    cwd: buildDir,
+    stdio: 'inherit',
+  });
+}
 
 const zipSizeMb = fs.statSync(zipPath).size / (1024 * 1024);
 fs.rmSync(buildDir, { recursive: true, force: true });
