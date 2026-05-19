@@ -3,7 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Bell,
+  Check,
   CreditCard,
+  Crown,
   FileText,
   LayoutDashboard,
   LayoutTemplate,
@@ -93,6 +95,46 @@ interface AdminTemplateItem {
   updatedAt?: string;
 }
 
+interface AdminPaymentItem {
+  id: string;
+  provider: string;
+  paymentId: string;
+  orderId: string;
+  user: { id: string; email: string; displayName: string } | null;
+  plan: 'payg' | 'monthly' | null;
+  amount: string;
+  amountCents: number;
+  currency: string;
+  statusCode: string;
+  processed: boolean;
+  rawPayload: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AdminPaymentSummary {
+  totalRevenueCents: number;
+  currency: string;
+  processedCount: number;
+  revenueByPlan: Record<string, number>;
+  dailyRevenue: Array<{ day: string; cents: number }>;
+}
+
+interface AdminSupportTicket {
+  id: string;
+  user: { id: string; email: string; displayName: string } | null;
+  fullName: string;
+  email: string;
+  type: 'complaint' | 'bug' | 'feature_request' | 'payment_issue' | 'general';
+  subject: string;
+  message: string;
+  status: 'open' | 'pending' | 'resolved' | 'closed';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const adminNavItems = [
   { key: 'dashboard', label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
   { key: 'users', label: 'Users', to: '/admin/users', icon: Users },
@@ -135,6 +177,8 @@ export default function AdminDashboard() {
   const [savingPlan, setSavingPlan] = useState(false);
   const isUsersPage = location.pathname.startsWith('/admin/users');
   const isTemplatesPage = location.pathname.startsWith('/admin/templates');
+  const isBillingPage = location.pathname.startsWith('/admin/billing');
+  const isSupportPage = location.pathname.startsWith('/admin/support');
   const [templates, setTemplates] = useState<AdminTemplateItem[]>([]);
   const [templateCategories, setTemplateCategories] = useState<string[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
@@ -144,6 +188,22 @@ export default function AdminDashboard() {
   const [selectedTemplate, setSelectedTemplate] = useState<AdminTemplateItem | null>(null);
   const [templateForm, setTemplateForm] = useState({ label: '', category: 'Modern', access: 'paid' as 'free' | 'paid', thumbnail: '' });
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [payments, setPayments] = useState<AdminPaymentItem[]>([]);
+  const [paymentSummary, setPaymentSummary] = useState<AdminPaymentSummary | null>(null);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentSearch, setPaymentSearch] = useState('');
+  const [paymentPlanFilter, setPaymentPlanFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+  const [selectedPayment, setSelectedPayment] = useState<AdminPaymentItem | null>(null);
+  const [supportTickets, setSupportTickets] = useState<AdminSupportTicket[]>([]);
+  const [supportSummary, setSupportSummary] = useState<Record<'open' | 'pending' | 'resolved' | 'closed', number> | null>(null);
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportSearch, setSupportSearch] = useState('');
+  const [supportStatusFilter, setSupportStatusFilter] = useState('all');
+  const [supportTypeFilter, setSupportTypeFilter] = useState('all');
+  const [selectedTicket, setSelectedTicket] = useState<AdminSupportTicket | null>(null);
+  const [ticketForm, setTicketForm] = useState({ status: 'open' as AdminSupportTicket['status'], priority: 'normal' as AdminSupportTicket['priority'], adminNotes: '' });
+  const [savingTicket, setSavingTicket] = useState(false);
 
   useEffect(() => {
     clearPageScrollLock();
@@ -221,6 +281,60 @@ export default function AdminDashboard() {
       ignore = true;
     };
   }, [isTemplatesPage]);
+
+  useEffect(() => {
+    if (!isBillingPage) return;
+    let ignore = false;
+    const timer = window.setTimeout(async () => {
+      setPaymentsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (paymentSearch.trim()) params.set('search', paymentSearch.trim());
+        if (paymentPlanFilter !== 'all') params.set('plan', paymentPlanFilter);
+        if (paymentStatusFilter !== 'all') params.set('status', paymentStatusFilter);
+        const data = await apiFetch<{ payments: AdminPaymentItem[]; summary: AdminPaymentSummary }>(`/api/admin/payments?${params.toString()}`);
+        if (ignore) return;
+        setPayments(data.payments);
+        setPaymentSummary(data.summary);
+      } catch (error) {
+        if (!ignore) toast.error(error instanceof Error ? error.message : 'Could not load payments.');
+      } finally {
+        if (!ignore) setPaymentsLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [isBillingPage, paymentPlanFilter, paymentSearch, paymentStatusFilter]);
+
+  useEffect(() => {
+    if (!isSupportPage) return;
+    let ignore = false;
+    const timer = window.setTimeout(async () => {
+      setSupportLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (supportSearch.trim()) params.set('search', supportSearch.trim());
+        if (supportStatusFilter !== 'all') params.set('status', supportStatusFilter);
+        if (supportTypeFilter !== 'all') params.set('type', supportTypeFilter);
+        const data = await apiFetch<{ tickets: AdminSupportTicket[]; summary: Record<'open' | 'pending' | 'resolved' | 'closed', number> }>(`/api/admin/support/tickets?${params.toString()}`);
+        if (ignore) return;
+        setSupportTickets(data.tickets);
+        setSupportSummary(data.summary);
+      } catch (error) {
+        if (!ignore) toast.error(error instanceof Error ? error.message : 'Could not load support tickets.');
+      } finally {
+        if (!ignore) setSupportLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [isSupportPage, supportSearch, supportStatusFilter, supportTypeFilter]);
 
   const signOut = async () => {
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
@@ -311,6 +425,30 @@ export default function AdminDashboard() {
     return matchesSearch && matchesCategory && matchesAccess;
   }), [templateAccessFilter, templateCategoryFilter, templateSearch, templates]);
 
+  const openTicketDetail = (ticket: AdminSupportTicket) => {
+    setSelectedTicket(ticket);
+    setTicketForm({ status: ticket.status, priority: ticket.priority, adminNotes: ticket.adminNotes || '' });
+  };
+
+  const saveSelectedTicket = async () => {
+    if (!selectedTicket) return;
+    setSavingTicket(true);
+    try {
+      const data = await apiFetch<{ ticket: AdminSupportTicket }>(`/api/admin/support/tickets/${selectedTicket.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(ticketForm),
+      });
+      setSupportTickets((items) => items.map((item) => item.id === data.ticket.id ? data.ticket : item));
+      setSelectedTicket(data.ticket);
+      setTicketForm({ status: data.ticket.status, priority: data.ticket.priority, adminNotes: data.ticket.adminNotes || '' });
+      toast.success('Support ticket updated.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not update support ticket.');
+    } finally {
+      setSavingTicket(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="lg:flex lg:h-dvh lg:overflow-hidden">
@@ -382,13 +520,17 @@ export default function AdminDashboard() {
                 {ADMIN_ROLE_LABELS.super_admin}
               </div>
               <h1 className="mt-2 font-montserrat text-2xl font-black leading-tight sm:text-4xl">
-                {isUsersPage ? 'User Management' : isTemplatesPage ? 'Template Management' : 'Admin Dashboard'}
+                {isUsersPage ? 'User Management' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isSupportPage ? 'Support Tickets' : 'Admin Dashboard'}
               </h1>
               <p className="mt-2 text-sm font-semibold text-slate-400">
                 {isUsersPage
                   ? 'Search users, inspect accounts, and update plan access.'
                   : isTemplatesPage
                     ? 'Manage template metadata, access, categories, and usage stats.'
+                    : isBillingPage
+                      ? 'Review payment history, revenue, and transaction status.'
+                      : isSupportPage
+                        ? 'Track complaints, bugs, feature requests, and payment issues.'
                     : 'Operational overview and module foundation.'}
               </p>
             </div>
@@ -396,7 +538,7 @@ export default function AdminDashboard() {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.035] pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
-                placeholder={isUsersPage ? 'Search users' : isTemplatesPage ? 'Search templates' : 'Search admin modules'}
+                placeholder={isUsersPage ? 'Search users' : isTemplatesPage ? 'Search templates' : isBillingPage ? 'Search payments' : isSupportPage ? 'Search tickets' : 'Search admin modules'}
               />
             </div>
           </header>
@@ -438,6 +580,40 @@ export default function AdminDashboard() {
               onCloseDetail={() => setSelectedTemplate(null)}
               onFormChange={setTemplateForm}
               onSaveTemplate={saveSelectedTemplate}
+            />
+          ) : isBillingPage ? (
+            <BillingManagementSection
+              payments={payments}
+              summary={paymentSummary}
+              loading={paymentsLoading}
+              search={paymentSearch}
+              planFilter={paymentPlanFilter}
+              statusFilter={paymentStatusFilter}
+              selectedPayment={selectedPayment}
+              onSearchChange={setPaymentSearch}
+              onPlanFilterChange={setPaymentPlanFilter}
+              onStatusFilterChange={setPaymentStatusFilter}
+              onOpenPayment={setSelectedPayment}
+              onCloseDetail={() => setSelectedPayment(null)}
+            />
+          ) : isSupportPage ? (
+            <SupportManagementSection
+              tickets={supportTickets}
+              summary={supportSummary}
+              loading={supportLoading}
+              search={supportSearch}
+              statusFilter={supportStatusFilter}
+              typeFilter={supportTypeFilter}
+              selectedTicket={selectedTicket}
+              ticketForm={ticketForm}
+              savingTicket={savingTicket}
+              onSearchChange={setSupportSearch}
+              onStatusFilterChange={setSupportStatusFilter}
+              onTypeFilterChange={setSupportTypeFilter}
+              onOpenTicket={openTicketDetail}
+              onCloseDetail={() => setSelectedTicket(null)}
+              onFormChange={setTicketForm}
+              onSaveTicket={saveSelectedTicket}
             />
           ) : isLoading ? (
             <div className="mt-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-5 text-sm font-bold text-slate-400">
@@ -988,6 +1164,340 @@ function TemplateAccessBadge({ access }: { access: 'free' | 'paid' }) {
         : 'bg-violet-400/10 text-violet-300 ring-violet-300/20'
     }`}>
       {access === 'free' ? 'Free' : 'Premium'}
+    </span>
+  );
+}
+
+function BillingManagementSection({
+  payments,
+  summary,
+  loading,
+  search,
+  planFilter,
+  statusFilter,
+  selectedPayment,
+  onSearchChange,
+  onPlanFilterChange,
+  onStatusFilterChange,
+  onOpenPayment,
+  onCloseDetail,
+}: {
+  payments: AdminPaymentItem[];
+  summary: AdminPaymentSummary | null;
+  loading: boolean;
+  search: string;
+  planFilter: string;
+  statusFilter: string;
+  selectedPayment: AdminPaymentItem | null;
+  onSearchChange: (value: string) => void;
+  onPlanFilterChange: (value: string) => void;
+  onStatusFilterChange: (value: string) => void;
+  onOpenPayment: (payment: AdminPaymentItem) => void;
+  onCloseDetail: () => void;
+}) {
+  return (
+    <section className="mt-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <AdminStat icon={<CreditCard size={19} />} label="Total Revenue" value={summary ? formatCurrency(summary.totalRevenueCents, summary.currency) : 'LKR 0'} />
+        <AdminStat icon={<Check size={19} />} label="Processed Payments" value={String(summary?.processedCount || 0)} />
+        <AdminStat icon={<Crown size={19} />} label="Monthly Revenue" value={formatCurrency(summary?.revenueByPlan.monthly || 0, summary?.currency || 'LKR')} />
+      </div>
+
+      <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px]">
+        <label className="relative block">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            className="h-11 w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
+            placeholder="Search payment, order, or user"
+          />
+        </label>
+        <select value={planFilter} onChange={(event) => onPlanFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
+          <option value="all">All plans</option>
+          <option value="payg">Pay As You Go</option>
+          <option value="monthly">Monthly</option>
+        </select>
+        <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
+          <option value="all">All statuses</option>
+          <option value="processed">Processed</option>
+          <option value="unprocessed">Unprocessed</option>
+        </select>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
+        <div className="grid grid-cols-[1.2fr_150px_110px_120px_100px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
+          <span>Transaction</span>
+          <span>User</span>
+          <span>Plan</span>
+          <span>Amount</span>
+          <span>Action</span>
+        </div>
+        {loading && (
+          <div className="flex items-center gap-3 px-5 py-5 text-sm font-bold text-slate-400">
+            <Loader2 className="animate-spin text-violet-300" size={17} />
+            Loading payments...
+          </div>
+        )}
+        {!loading && payments.length === 0 && (
+          <div className="px-5 py-8 text-center text-sm font-bold text-slate-500">No payments match these filters.</div>
+        )}
+        {!loading && payments.map((payment) => (
+          <article key={payment.id} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_150px_110px_120px_100px] lg:items-center lg:px-5">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-slate-100">{payment.paymentId}</p>
+              <p className="mt-1 truncate text-xs font-semibold text-slate-500">{payment.orderId}</p>
+              <p className="mt-1 text-xs font-bold text-slate-600">{formatDate(payment.createdAt)}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-slate-200">{payment.user?.displayName || 'Unknown'}</p>
+              <p className="mt-1 truncate text-xs font-semibold text-slate-500">{payment.user?.email || 'No linked user'}</p>
+            </div>
+            <span className="w-fit rounded-full bg-violet-400/10 px-3 py-1 text-xs font-black text-violet-300 ring-1 ring-violet-300/20">{payment.plan || 'Unknown'}</span>
+            <div>
+              <p className="text-sm font-black text-slate-100">{payment.currency} {payment.amount}</p>
+              <PaymentStatusBadge processed={payment.processed} statusCode={payment.statusCode} />
+            </div>
+            <button type="button" onClick={() => onOpenPayment(payment)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-3 text-xs font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98]">
+              <Eye size={14} />
+              View
+            </button>
+          </article>
+        ))}
+      </div>
+
+      {summary && (
+        <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
+          <h2 className="font-montserrat text-lg font-black">Daily Revenue</h2>
+          <div className="mt-4 grid gap-2 sm:grid-cols-7">
+            {summary.dailyRevenue.map((item) => (
+              <MiniRow key={item.day} label={item.day.slice(5)} value={formatCurrency(item.cents, summary.currency)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {selectedPayment && (
+        <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+          <aside className="h-full w-full max-w-xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase text-violet-300">Payment Details</p>
+                <h2 className="mt-1 truncate font-montserrat text-2xl font-black">{selectedPayment.paymentId}</h2>
+                <p className="mt-1 truncate text-sm font-semibold text-slate-400">{selectedPayment.orderId}</p>
+              </div>
+              <button type="button" onClick={onCloseDetail} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Close payment details">
+                <X size={17} />
+              </button>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <DetailTile label="Provider" value={selectedPayment.provider} />
+              <DetailTile label="Status" value={selectedPayment.processed ? 'Processed' : `Code ${selectedPayment.statusCode}`} />
+              <DetailTile label="Plan" value={selectedPayment.plan || 'Unknown'} />
+              <DetailTile label="Amount" value={`${selectedPayment.currency} ${selectedPayment.amount}`} />
+              <DetailTile label="User" value={selectedPayment.user?.email || 'No linked user'} />
+              <DetailTile label="Date" value={formatDate(selectedPayment.createdAt)} />
+            </div>
+            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <h3 className="font-montserrat text-lg font-black">Payload Summary</h3>
+              <pre className="mt-4 max-h-80 overflow-auto rounded-xl bg-slate-900 p-3 text-xs font-semibold text-slate-300">
+                {JSON.stringify(selectedPayment.rawPayload, null, 2)}
+              </pre>
+            </section>
+          </aside>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PaymentStatusBadge({ processed, statusCode }: { processed: boolean; statusCode: string }) {
+  return (
+    <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase ring-1 ${
+      processed
+        ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20'
+        : 'bg-amber-400/10 text-amber-300 ring-amber-300/20'
+    }`}>
+      {processed ? 'Processed' : `Code ${statusCode}`}
+    </span>
+  );
+}
+
+function SupportManagementSection({
+  tickets,
+  summary,
+  loading,
+  search,
+  statusFilter,
+  typeFilter,
+  selectedTicket,
+  ticketForm,
+  savingTicket,
+  onSearchChange,
+  onStatusFilterChange,
+  onTypeFilterChange,
+  onOpenTicket,
+  onCloseDetail,
+  onFormChange,
+  onSaveTicket,
+}: {
+  tickets: AdminSupportTicket[];
+  summary: Record<'open' | 'pending' | 'resolved' | 'closed', number> | null;
+  loading: boolean;
+  search: string;
+  statusFilter: string;
+  typeFilter: string;
+  selectedTicket: AdminSupportTicket | null;
+  ticketForm: { status: AdminSupportTicket['status']; priority: AdminSupportTicket['priority']; adminNotes: string };
+  savingTicket: boolean;
+  onSearchChange: (value: string) => void;
+  onStatusFilterChange: (value: string) => void;
+  onTypeFilterChange: (value: string) => void;
+  onOpenTicket: (ticket: AdminSupportTicket) => void;
+  onCloseDetail: () => void;
+  onFormChange: (value: { status: AdminSupportTicket['status']; priority: AdminSupportTicket['priority']; adminNotes: string }) => void;
+  onSaveTicket: () => void;
+}) {
+  return (
+    <section className="mt-6">
+      <div className="grid gap-3 sm:grid-cols-4">
+        {(['open', 'pending', 'resolved', 'closed'] as const).map((status) => (
+          <article key={status} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
+            <p className="text-xs font-black uppercase text-slate-500">{status}</p>
+            <p className="mt-2 text-3xl font-black">{summary?.[status] || 0}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_190px]">
+        <label className="relative block">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            className="h-11 w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
+            placeholder="Search tickets"
+          />
+        </label>
+        <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
+          <option value="all">All statuses</option>
+          <option value="open">Open</option>
+          <option value="pending">Pending</option>
+          <option value="resolved">Resolved</option>
+          <option value="closed">Closed</option>
+        </select>
+        <select value={typeFilter} onChange={(event) => onTypeFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
+          <option value="all">All types</option>
+          <option value="general">General</option>
+          <option value="complaint">Complaint</option>
+          <option value="bug">Bug Report</option>
+          <option value="feature_request">Feature Request</option>
+          <option value="payment_issue">Payment Issue</option>
+        </select>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
+        <div className="grid grid-cols-[1.2fr_140px_110px_110px_90px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
+          <span>Ticket</span>
+          <span>User</span>
+          <span>Type</span>
+          <span>Status</span>
+          <span>Action</span>
+        </div>
+        {loading && (
+          <div className="flex items-center gap-3 px-5 py-5 text-sm font-bold text-slate-400">
+            <Loader2 className="animate-spin text-violet-300" size={17} />
+            Loading tickets...
+          </div>
+        )}
+        {!loading && tickets.length === 0 && (
+          <div className="px-5 py-8 text-center text-sm font-bold text-slate-500">No support tickets match these filters.</div>
+        )}
+        {!loading && tickets.map((ticket) => (
+          <article key={ticket.id} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_140px_110px_110px_90px] lg:items-center lg:px-5">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-slate-100">{ticket.subject}</p>
+              <p className="mt-1 line-clamp-1 text-xs font-semibold text-slate-500">{ticket.message}</p>
+              <p className="mt-1 text-xs font-bold text-slate-600">{formatDate(ticket.createdAt)}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-slate-200">{ticket.fullName}</p>
+              <p className="mt-1 truncate text-xs font-semibold text-slate-500">{ticket.email}</p>
+            </div>
+            <span className="w-fit rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-slate-300 ring-1 ring-white/10">{ticket.type}</span>
+            <TicketStatusBadge status={ticket.status} priority={ticket.priority} />
+            <button type="button" onClick={() => onOpenTicket(ticket)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-3 text-xs font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98]">
+              <Eye size={14} />
+              View
+            </button>
+          </article>
+        ))}
+      </div>
+
+      {selectedTicket && (
+        <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+          <aside className="h-full w-full max-w-xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase text-violet-300">Support Ticket</p>
+                <h2 className="mt-1 truncate font-montserrat text-2xl font-black">{selectedTicket.subject}</h2>
+                <p className="mt-1 truncate text-sm font-semibold text-slate-400">{selectedTicket.email}</p>
+              </div>
+              <button type="button" onClick={onCloseDetail} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Close ticket details">
+                <X size={17} />
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <DetailTile label="Name" value={selectedTicket.fullName} />
+              <DetailTile label="Email" value={selectedTicket.email} />
+              <DetailTile label="Type" value={selectedTicket.type} />
+              <DetailTile label="Created" value={formatDate(selectedTicket.createdAt)} />
+            </div>
+
+            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <h3 className="font-montserrat text-lg font-black">Message</h3>
+              <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-300">{selectedTicket.message}</p>
+            </section>
+
+            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <h3 className="font-montserrat text-lg font-black">Admin Workflow</h3>
+              <div className="mt-4 grid gap-4">
+                <select value={ticketForm.status} onChange={(event) => onFormChange({ ...ticketForm, status: event.target.value as AdminSupportTicket['status'] })} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
+                  <option value="open">Open</option>
+                  <option value="pending">Pending</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <select value={ticketForm.priority} onChange={(event) => onFormChange({ ...ticketForm, priority: event.target.value as AdminSupportTicket['priority'] })} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
+                  <option value="low">Low</option>
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+                <textarea value={ticketForm.adminNotes} onChange={(event) => onFormChange({ ...ticketForm, adminNotes: event.target.value })} rows={5} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm font-bold text-white outline-none focus:border-violet-400" placeholder="Admin notes" />
+                <button type="button" onClick={onSaveTicket} disabled={savingTicket} className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60">
+                  {savingTicket ? <Loader2 className="animate-spin" size={16} /> : 'Save ticket'}
+                </button>
+              </div>
+            </section>
+          </aside>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TicketStatusBadge({ status, priority }: { status: string; priority: string }) {
+  return (
+    <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${
+      status === 'resolved' || status === 'closed'
+        ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20'
+        : priority === 'urgent' || priority === 'high'
+          ? 'bg-red-400/10 text-red-300 ring-red-300/20'
+          : 'bg-amber-400/10 text-amber-300 ring-amber-300/20'
+    }`}>
+      {status}
     </span>
   );
 }

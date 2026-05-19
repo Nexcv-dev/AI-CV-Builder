@@ -22,6 +22,7 @@ import CVDocument from './server-models/CVDocument';
 import DownloadQuota from './server-models/DownloadQuotaModel';
 import PaymentTransaction from './server-models/PaymentTransaction';
 import TemplateSetting from './server-models/TemplateSetting';
+import SupportTicket from './server-models/SupportTicket';
 import './server-models/passportSetup'; // Initialize passport strategy
 import { CV_TEMPLATES, DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan, type TemplateName } from './src/templates';
 import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
@@ -996,6 +997,53 @@ const adminTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
     updatedAt: setting?.updatedAt,
 });
 
+const adminPaymentSummary = (payment: any) => {
+    const user = payment.userId && typeof payment.userId === 'object' ? payment.userId : null;
+    return {
+        id: payment._id?.toString?.() || payment.id,
+        provider: payment.provider,
+        paymentId: payment.paymentId,
+        orderId: payment.orderId,
+        user: user ? {
+            id: user._id?.toString?.() || user.id,
+            email: user.email,
+            displayName: user.displayName,
+        } : null,
+        plan: payment.plan || null,
+        amount: payment.amount || '0.00',
+        amountCents: parsePaymentAmountCents(payment.amount),
+        currency: payment.currency || 'LKR',
+        statusCode: payment.statusCode,
+        processed: Boolean(payment.processed),
+        rawPayload: payment.rawPayload || {},
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
+    };
+};
+
+const SUPPORT_TICKET_TYPES = ['complaint', 'bug', 'feature_request', 'payment_issue', 'general'] as const;
+const SUPPORT_TICKET_STATUSES = ['open', 'pending', 'resolved', 'closed'] as const;
+const SUPPORT_TICKET_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const;
+
+const adminSupportTicketSummary = (ticket: any) => ({
+    id: ticket._id?.toString?.() || ticket.id,
+    user: ticket.userId && typeof ticket.userId === 'object' ? {
+        id: ticket.userId._id?.toString?.() || ticket.userId.id,
+        email: ticket.userId.email,
+        displayName: ticket.userId.displayName,
+    } : null,
+    fullName: ticket.fullName,
+    email: ticket.email,
+    type: ticket.type,
+    subject: ticket.subject,
+    message: ticket.message,
+    status: ticket.status,
+    priority: ticket.priority,
+    adminNotes: ticket.adminNotes || '',
+    createdAt: ticket.createdAt,
+    updatedAt: ticket.updatedAt,
+});
+
 const getTemplateSettingForKey = async (key: string) => {
     const template = CV_TEMPLATES.find((item) => item.key === key);
     if (!template) return null;
@@ -1027,6 +1075,7 @@ app.get('/api/admin/summary', requireSuperAdmin, async (_req: Request, res: Resp
             userGrowth,
             cvDownloads,
             payments,
+            supportStatusCounts,
         ] = await Promise.all([
             User.countDocuments(),
             User.countDocuments({ updatedAt: { $gte: todayStart } }),
@@ -1049,6 +1098,9 @@ app.get('/api/admin/summary', requireSuperAdmin, async (_req: Request, res: Resp
                 { $sort: { _id: 1 } },
             ]),
             PaymentTransaction.find({ processed: true }).sort({ createdAt: -1 }).limit(200).select('amount currency plan createdAt'),
+            SupportTicket.aggregate([
+                { $group: { _id: '$status', count: { $sum: 1 } } },
+            ]),
         ]);
 
         const revenueCents = payments.reduce((sum, payment) => sum + parsePaymentAmountCents(payment.amount), 0);
@@ -1061,6 +1113,7 @@ app.get('/api/admin/summary', requireSuperAdmin, async (_req: Request, res: Resp
 
         const growthByDay = new Map(userGrowth.map((item: any) => [item._id, item.count]));
         const downloadsByDay = new Map(cvDownloads.map((item: any) => [item._id, item.count]));
+        const supportCounts = new Map(supportStatusCounts.map((item: any) => [item._id, item.count]));
         const dailySeries = Array.from({ length: 7 }, (_, index) => {
             const date = new Date(sevenDaysAgo);
             date.setUTCDate(sevenDaysAgo.getUTCDate() + index);
@@ -1084,10 +1137,10 @@ app.get('/api/admin/summary', requireSuperAdmin, async (_req: Request, res: Resp
                     currency: 'LKR',
                 },
                 supportTickets: {
-                    open: 0,
-                    pending: 0,
-                    resolved: 0,
-                    closed: 0,
+                    open: supportCounts.get('open') || 0,
+                    pending: supportCounts.get('pending') || 0,
+                    resolved: supportCounts.get('resolved') || 0,
+                    closed: supportCounts.get('closed') || 0,
                 },
             },
             recentRegistrations: recentUsers.map((user: any) => ({
@@ -1304,6 +1357,178 @@ app.patch('/api/admin/templates/:key', requireSuperAdmin, async (req: Request, r
         return res.json({ template: adminTemplateSummary(template, setting, usageCount) });
     } catch (error) {
         return sendError(res, 500, 'Could not update template.', error);
+    }
+});
+
+app.get('/api/admin/payments', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+        const plan = typeof req.query.plan === 'string' ? req.query.plan.trim() : '';
+        const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+        const provider = typeof req.query.provider === 'string' ? req.query.provider.trim() : '';
+        const limit = Math.min(100, Math.max(10, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
+        const filter: any = {};
+
+        if (['payg', 'monthly'].includes(plan)) {
+            filter.plan = plan;
+        }
+        if (provider === 'payhere') {
+            filter.provider = provider;
+        }
+        if (status === 'processed') {
+            filter.processed = true;
+        } else if (status === 'unprocessed') {
+            filter.processed = false;
+        }
+
+        if (search) {
+            const pattern = new RegExp(escapeRegex(search), 'i');
+            const matchedUsers = await User.find({ $or: [{ email: pattern }, { displayName: pattern }] }).select('_id');
+            filter.$or = [
+                { paymentId: pattern },
+                { orderId: pattern },
+                ...(matchedUsers.length ? [{ userId: { $in: matchedUsers.map((user) => user._id) } }] : []),
+            ];
+        }
+
+        const payments = await PaymentTransaction.find(filter)
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .populate('userId', 'email displayName');
+        const allProcessedPayments = await PaymentTransaction.find({ processed: true }).select('amount currency plan createdAt');
+
+        const revenueCents = allProcessedPayments.reduce((sum, payment) => sum + parsePaymentAmountCents(payment.amount), 0);
+        const revenueByPlan = allProcessedPayments.reduce((acc: Record<string, number>, payment) => {
+            const key = payment.plan || 'unknown';
+            acc[key] = (acc[key] || 0) + parsePaymentAmountCents(payment.amount);
+            return acc;
+        }, {});
+        const sevenDaysAgo = startOfUtcDay();
+        sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6);
+        const revenueByDay = new Map<string, number>();
+        allProcessedPayments.forEach((payment) => {
+            if (!payment.createdAt || payment.createdAt < sevenDaysAgo) return;
+            const day = formatUtcDay(payment.createdAt);
+            revenueByDay.set(day, (revenueByDay.get(day) || 0) + parsePaymentAmountCents(payment.amount));
+        });
+        const dailyRevenue = Array.from({ length: 7 }, (_, index) => {
+            const date = new Date(sevenDaysAgo);
+            date.setUTCDate(sevenDaysAgo.getUTCDate() + index);
+            const day = formatUtcDay(date);
+            return { day, cents: revenueByDay.get(day) || 0 };
+        });
+
+        return res.json({
+            payments: payments.map(adminPaymentSummary),
+            summary: {
+                totalRevenueCents: revenueCents,
+                currency: 'LKR',
+                processedCount: allProcessedPayments.length,
+                revenueByPlan,
+                dailyRevenue,
+            },
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load admin payments.', error);
+    }
+});
+
+app.post('/api/support/tickets', async (req: Request, res: Response) => {
+    try {
+        const fullName = sanitizeDisplayName(req.body.fullName || (req.user as any)?.displayName || '');
+        const email = normalizeEmail(req.body.email || (req.user as any)?.email || '');
+        const type = SUPPORT_TICKET_TYPES.includes(req.body.type) ? req.body.type : 'general';
+        const subject = sanitizeProfileField(req.body.subject, 160) || 'Support request';
+        const message = sanitizeContactMessage(req.body.message);
+
+        if (!fullName) {
+            return res.status(400).json({ error: 'Enter your name.' });
+        }
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ error: 'Enter a valid email address.' });
+        }
+        if (!message || message.length < 10) {
+            return res.status(400).json({ error: 'Enter a message with at least 10 characters.' });
+        }
+
+        const ticket = await SupportTicket.create({
+            userId: req.user ? currentUserId(req) : undefined,
+            fullName,
+            email,
+            type,
+            subject,
+            message,
+            priority: type === 'payment_issue' ? 'high' : 'normal',
+        });
+
+        if (isEmailServiceConfigured()) {
+            void sendContactNotification({ fullName, email, message: `[${type}] ${subject}\n\n${message}` });
+        }
+
+        return res.status(201).json({
+            ticket: adminSupportTicketSummary(ticket),
+            message: 'Support ticket created. We will get back to you soon.',
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not create support ticket.', error);
+    }
+});
+
+app.get('/api/admin/support/tickets', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+        const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+        const type = typeof req.query.type === 'string' ? req.query.type.trim() : '';
+        const priority = typeof req.query.priority === 'string' ? req.query.priority.trim() : '';
+        const filter: any = {};
+
+        if (SUPPORT_TICKET_STATUSES.includes(status as any)) filter.status = status;
+        if (SUPPORT_TICKET_TYPES.includes(type as any)) filter.type = type;
+        if (SUPPORT_TICKET_PRIORITIES.includes(priority as any)) filter.priority = priority;
+        if (search) {
+            const pattern = new RegExp(escapeRegex(search), 'i');
+            filter.$or = [{ fullName: pattern }, { email: pattern }, { subject: pattern }, { message: pattern }];
+        }
+
+        const [tickets, statusCounts] = await Promise.all([
+            SupportTicket.find(filter).sort({ createdAt: -1 }).limit(100).populate('userId', 'email displayName'),
+            SupportTicket.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+        ]);
+        const statusCountMap = new Map(statusCounts.map((item: any) => [item._id, item.count]));
+
+        return res.json({
+            tickets: tickets.map(adminSupportTicketSummary),
+            summary: {
+                open: statusCountMap.get('open') || 0,
+                pending: statusCountMap.get('pending') || 0,
+                resolved: statusCountMap.get('resolved') || 0,
+                closed: statusCountMap.get('closed') || 0,
+            },
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load support tickets.', error);
+    }
+});
+
+app.patch('/api/admin/support/tickets/:id', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        if (!isValidDocumentId(req.params.id)) {
+            return res.status(400).json({ error: 'Invalid ticket id.' });
+        }
+
+        const update: any = {};
+        if (SUPPORT_TICKET_STATUSES.includes(req.body.status)) update.status = req.body.status;
+        if (SUPPORT_TICKET_PRIORITIES.includes(req.body.priority)) update.priority = req.body.priority;
+        if (typeof req.body.adminNotes === 'string') update.adminNotes = sanitizeProfileField(req.body.adminNotes, 2000);
+
+        const ticket = await SupportTicket.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).populate('userId', 'email displayName');
+        if (!ticket) {
+            return res.status(404).json({ error: 'Support ticket not found.' });
+        }
+
+        return res.json({ ticket: adminSupportTicketSummary(ticket) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update support ticket.', error);
     }
 });
 
