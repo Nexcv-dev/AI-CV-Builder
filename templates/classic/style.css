@@ -1,0 +1,16 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Georgia, "Times New Roman", serif; color: #111827; background: #ffffff; }
+.page { width: 210mm; min-height: 297mm; padding: 20mm; }
+.masthead { text-align: center; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 2px solid #111827; }
+h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: 1.5px; text-transform: uppercase; }
+h2 { margin: 0 0 12px; padding-bottom: 4px; border-bottom: 1px solid #9ca3af; font-size: 15px; letter-spacing: 1.8px; text-transform: uppercase; }
+h3 { margin: 0; font-size: 15px; }
+p { margin: 0 0 8px; line-height: 1.45; }
+section { margin-bottom: 20px; break-inside: avoid; }
+.item { margin-bottom: 14px; break-inside: avoid; }
+.item-head { display: flex; justify-content: space-between; gap: 16px; }
+.item-head span, .sub { color: #4b5563; font-size: 12px; }
+.rich, .rich * { font-size: 12.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips span { border: 1px solid #d1d5db; padding: 5px 9px; font-size: 12px; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }

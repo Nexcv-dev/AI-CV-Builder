@@ -1,0 +1,18 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111827; background: #ffffff; }
+.page { width: 210mm; min-height: 297mm; padding: 0 20mm 18mm; }
+.topbar { height: 8px; margin: 0 -20mm 16mm; background: #2563eb; }
+.masthead { margin-bottom: 34px; padding-bottom: 22px; border-bottom: 2px solid #f3f4f6; }
+h1 { margin: 0 0 14px; font-size: 38px; line-height: 1.05; font-weight: 800; }
+h2 { margin: 0 0 12px; font-size: 12px; color: #2563eb; letter-spacing: 1.4px; text-transform: uppercase; }
+h3 { margin: 0 0 4px; font-size: 15px; }
+p { margin: 0 0 8px; font-size: 12px; line-height: 1.45; color: #4b5563; }
+section { margin-bottom: 22px; break-inside: avoid; }
+.row { display: grid; grid-template-columns: 114px 1fr; gap: 16px; margin-bottom: 14px; break-inside: avoid; }
+aside { color: #6b7280; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.offset { margin-left: 130px; }
+.sub { color: #374151; font-weight: 600; }
+.rich, .rich * { font-size: 12.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips span { border: 1px solid #e5e7eb; background: #f3f4f6; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: 700; }
+.grid-two { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }

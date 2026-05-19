@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{personalInfo.fullName}} CV</title>
+  </head>
+  <body>
+    <main class="page professional">
+      <div class="topbar"></div>
+      <header class="masthead">
+        <div>
+          <h1>{{personalInfo.fullName}}</h1>
+          <p>{{personalInfo.email}}</p>
+          <p>{{personalInfo.phone}}</p>
+          <p>{{personalInfo.address}}</p>
+        </div>
+      </header>
+
+      <section>
+        <h2>Professional Summary</h2>
+        <div class="rich offset">{{{personalInfo.summary}}}</div>
+      </section>
+
+      <section>
+        <h2>Experience</h2>
+        {{#experience}}
+          <article class="row">
+            <aside>{{startDate}}<br>{{endDate}}</aside>
+            <div>
+              <h3>{{position}}</h3>
+              <p class="sub">{{company}}</p>
+              <div class="rich">{{{description}}}</div>
+            </div>
+          </article>
+        {{/experience}}
+      </section>
+
+      <section>
+        <h2>Education</h2>
+        {{#education}}
+          <article class="row">
+            <aside>{{startDate}}<br>{{endDate}}</aside>
+            <div>
+              <h3>{{degree}}</h3>
+              <p class="sub">{{institution}}</p>
+              <div class="rich">{{{description}}}</div>
+            </div>
+          </article>
+        {{/education}}
+      </section>
+
+      <section>
+        <h2>Core Skills</h2>
+        <div class="row">
+          <aside>Setup</aside>
+          <div class="chips">{{#skills}}<span>{{name}}</span>{{/skills}}</div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Projects</h2>
+        {{#projects}}
+          <article class="row">
+            <aside>Project</aside>
+            <div>
+              <h3>{{name}}</h3>
+              <p class="sub">{{link}}</p>
+              <div class="rich">{{{description}}}</div>
+            </div>
+          </article>
+        {{/projects}}
+      </section>
+
+      <section class="grid-two">
+        <div>
+          <h2>Courses</h2>
+          {{#courses}}<p><strong>{{name}}</strong><br>{{institution}} {{startDate}} - {{endDate}}</p>{{/courses}}
+        </div>
+        <div>
+          <h2>Awards</h2>
+          {{#awards}}<p><strong>{{name}}</strong><br>{{issuer}} {{date}}</p>{{/awards}}
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

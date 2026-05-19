@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{personalInfo.fullName}} CV</title>
+  </head>
+  <body>
+    <main class="page classic">
+      <header class="masthead">
+        <h1>{{personalInfo.fullName}}</h1>
+        <p>{{personalInfo.email}} | {{personalInfo.phone}} | {{personalInfo.address}}</p>
+      </header>
+
+      <section>
+        <h2>Profile</h2>
+        <div class="rich">{{{personalInfo.summary}}}</div>
+      </section>
+
+      <section>
+        <h2>Experience</h2>
+        {{#experience}}
+          <article class="item">
+            <div class="item-head">
+              <h3>{{position}}</h3>
+              <span>{{startDate}} - {{endDate}}</span>
+            </div>
+            <p class="sub">{{company}}</p>
+            <div class="rich">{{{description}}}</div>
+          </article>
+        {{/experience}}
+      </section>
+
+      <section>
+        <h2>Education</h2>
+        {{#education}}
+          <article class="item">
+            <div class="item-head">
+              <h3>{{degree}}</h3>
+              <span>{{startDate}} - {{endDate}}</span>
+            </div>
+            <p class="sub">{{institution}}</p>
+            <div class="rich">{{{description}}}</div>
+          </article>
+        {{/education}}
+      </section>
+
+      <section>
+        <h2>Skills</h2>
+        <div class="chips">{{#skills}}<span>{{name}}</span>{{/skills}}</div>
+      </section>
+
+      <section>
+        <h2>Projects</h2>
+        {{#projects}}
+          <article class="item">
+            <h3>{{name}}</h3>
+            <p class="sub">{{link}}</p>
+            <div class="rich">{{{description}}}</div>
+          </article>
+        {{/projects}}
+      </section>
+
+      <section>
+        <h2>Courses & Awards</h2>
+        <div class="columns">
+          <div>{{#courses}}<p><strong>{{name}}</strong><br>{{institution}} {{startDate}} - {{endDate}}</p>{{/courses}}</div>
+          <div>{{#awards}}<p><strong>{{name}}</strong><br>{{issuer}} {{date}}</p>{{/awards}}</div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Languages & References</h2>
+        <div class="columns">
+          <div>{{#languages}}<p><strong>{{name}}</strong> - {{proficiency}}</p>{{/languages}}</div>
+          <div>{{#references}}<p><strong>{{name}}</strong><br>{{position}}, {{company}}<br>{{email}} {{phone}}</p>{{/references}}</div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
