@@ -10,6 +10,8 @@ export default function ContactUs() {
   const [form, setForm] = useState({
     fullName: '',
     email: '',
+    type: 'general',
+    subject: '',
     message: '',
   });
 
@@ -22,13 +24,13 @@ export default function ContactUs() {
     setIsSubmitting(true);
 
     try {
-      const data = await apiFetch<{ message: string }>('/api/contact', {
+      const data = await apiFetch<{ message: string }>('/api/support/tickets', {
         method: 'POST',
         body: JSON.stringify(form),
       });
       toast.success(data.message || 'Message sent.');
       setIsSubmitted(true);
-      setForm({ fullName: '', email: '', message: '' });
+      setForm({ fullName: '', email: '', type: 'general', subject: '', message: '' });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not send your message.');
     } finally {
@@ -90,6 +92,34 @@ export default function ContactUs() {
                   onChange={(event) => updateField('email', event.target.value)}
                   className="w-full bg-slate-900/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-sm placeholder:text-slate-500"
                   placeholder="john@example.com"
+                />
+              </div>
+              <div>
+                <label htmlFor="type" className="block text-sm font-medium text-slate-300 mb-2">Request Type</label>
+                <select
+                  id="type"
+                  name="type"
+                  value={form.type}
+                  onChange={(event) => updateField('type', event.target.value)}
+                  className="w-full bg-slate-900/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-sm"
+                >
+                  <option value="general">General</option>
+                  <option value="complaint">Complaint</option>
+                  <option value="bug">Bug Report</option>
+                  <option value="feature_request">Feature Request</option>
+                  <option value="payment_issue">Payment Issue</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-slate-300 mb-2">Subject</label>
+                <input
+                  id="subject"
+                  name="subject"
+                  required
+                  value={form.subject}
+                  onChange={(event) => updateField('subject', event.target.value)}
+                  className="w-full bg-slate-900/50 text-white px-4 py-3 rounded-xl border border-white/10 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all shadow-sm placeholder:text-slate-500"
+                  placeholder="Briefly describe the issue"
                 />
               </div>
               <div>

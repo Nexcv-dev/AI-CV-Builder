@@ -23,6 +23,7 @@ export interface IUser extends Document {
   plan: BillingPlan;
   planStartedAt?: Date;
   planExpiresAt?: Date;
+  paygCvSaveCredits: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +50,7 @@ const UserSchema: Schema = new Schema(
     plan: { type: String, enum: ['free', 'payg', 'monthly'], default: 'free', required: true },
     planStartedAt: { type: Date },
     planExpiresAt: { type: Date },
+    paygCvSaveCredits: { type: Number, default: 0, min: 0, required: true },
   },
   {
     timestamps: true,

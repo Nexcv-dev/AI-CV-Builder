@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, FileText, LayoutDashboard, LogOut, Plus, User } from 'lucide-react';
+import { BookOpen, FileText, LayoutDashboard, LogOut, Plus, Shield, User } from 'lucide-react';
 import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification } from '../utils/api';
 
 const navItems = [
@@ -52,6 +52,9 @@ export function AppSidebar() {
 
   const visibleName = user?.displayName?.trim() || 'Account';
   const initial = visibleName.charAt(0).toUpperCase() || 'U';
+  const visibleNavItems = user?.role === 'super_admin'
+    ? [...navItems, { to: '/admin', label: 'Admin', icon: Shield }]
+    : navItems;
 
   return (
     <aside className="hidden h-dvh w-72 shrink-0 border-r border-white/10 bg-slate-950/95 px-4 py-5 text-white shadow-2xl shadow-black/20 lg:sticky lg:top-0 lg:flex lg:flex-col">
@@ -71,7 +74,7 @@ export function AppSidebar() {
       </Link>
 
       <nav className="mt-7 grid gap-1">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const active = location.pathname === item.to;
           const hasNotification = item.to === '/dashboard' && dashboardNotification && !active;

@@ -9,6 +9,7 @@ import nodemailer from 'nodemailer';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import fs from 'fs';
 import { createHash, pbkdf2Sync, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { JSDOM } from 'jsdom';
@@ -21,9 +22,11 @@ import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import DownloadQuota from './server-models/DownloadQuotaModel';
 import PaymentTransaction from './server-models/PaymentTransaction';
+import TemplateSetting from './server-models/TemplateSetting';
+import SupportTicket from './server-models/SupportTicket';
 import './server-models/passportSetup'; // Initialize passport strategy
-import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan } from './src/templates';
-import { roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
+import { CV_TEMPLATES, DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan, type TemplateName } from './src/templates';
+import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildDownloadQuota } from './server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
@@ -286,6 +289,136 @@ const ALLOWED_MIME_TYPES = [
 
 const ALLOWED_SECTION_TYPES = ['experience', 'education', 'project'];
 const GEMINI_MODEL = 'gemini-flash-latest';
+const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
+const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\/+|\/+$/g, '');
+const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 5 * 60 * 1000);
+let s3Client: S3Client | null = null;
+const s3TemplateCache = new Map<string, { html: string; expiresAt: number }>();
+
+const getS3Client = () => {
+    if (!S3_TEMPLATE_BUCKET) return null;
+    if (!s3Client) {
+        s3Client = new S3Client({
+            region: process.env.AWS_REGION || 'eu-north-1',
+        });
+    }
+    return s3Client;
+};
+
+const streamToString = async (stream: any): Promise<string> => {
+    if (!stream) return '';
+    if (typeof stream.transformToString === 'function') return stream.transformToString();
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks).toString('utf8');
+};
+
+async function fetchS3Text(key: string): Promise<string | null> {
+    const client = getS3Client();
+    if (!client) return null;
+
+    try {
+        const response = await client.send(new GetObjectCommand({
+            Bucket: S3_TEMPLATE_BUCKET,
+            Key: key,
+        }));
+        return streamToString(response.Body);
+    } catch (error: any) {
+        const code = error?.name || error?.Code || error?.code;
+        if (code === 'NoSuchKey' || code === 'NotFound' || error?.$metadata?.httpStatusCode === 404) {
+            return null;
+        }
+        throw error;
+    }
+}
+
+const templateS3Key = (template: TemplateName, fileName: string) => (
+    S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${template}/${fileName}` : `${template}/${fileName}`
+);
+
+async function loadS3TemplateHtml(template: TemplateName): Promise<string | null> {
+    if (!S3_TEMPLATE_BUCKET) return null;
+
+    const cacheKey = template;
+    const cached = s3TemplateCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.html;
+
+    const indexHtml = await fetchS3Text(templateS3Key(template, 'index.html'));
+    if (!indexHtml) return null;
+
+    const css = await fetchS3Text(templateS3Key(template, 'style.css'));
+    const html = css
+        ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
+        : indexHtml;
+
+    s3TemplateCache.set(cacheKey, {
+        html,
+        expiresAt: Date.now() + Math.max(S3_TEMPLATE_CACHE_TTL_MS, 0),
+    });
+    return html;
+}
+
+const getTemplateValue = (pathValue: string, context: any, root: any) => {
+    const pathParts = pathValue.trim().split('.').filter(Boolean);
+    const readPath = (source: any) => pathParts.reduce((value, part) => value?.[part], source);
+    const contextValue = readPath(context);
+    return contextValue === undefined ? readPath(root) : contextValue;
+};
+
+const renderTemplateValue = (value: unknown) => {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object') return '';
+    return String(value);
+};
+
+const esc = (str: string) => (
+    (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+);
+
+export function renderCvTemplateString(templateHtml: string, cvData: any, options: { watermark?: boolean } = {}) {
+    const root = { ...cvData, watermark: Boolean(options.watermark) };
+
+    const renderBlock = (source: string, context: any): string => {
+        let html = source.replace(/{{#\s*([\w.]+)\s*}}([\s\S]*?){{\/\s*\1\s*}}/g, (_match, pathValue, block) => {
+            const value = getTemplateValue(pathValue, context, root);
+            if (Array.isArray(value)) {
+                return value.map((item) => renderBlock(block, item)).join('');
+            }
+            if (value && typeof value === 'object') return renderBlock(block, value);
+            return value ? renderBlock(block, context) : '';
+        });
+
+        html = html.replace(/{{\^\s*([\w.]+)\s*}}([\s\S]*?){{\/\s*\1\s*}}/g, (_match, pathValue, block) => {
+            const value = getTemplateValue(pathValue, context, root);
+            const isEmptyArray = Array.isArray(value) && value.length === 0;
+            return (!value || isEmptyArray) ? renderBlock(block, context) : '';
+        });
+
+        html = html.replace(/{{{\s*([\w.]+)\s*}}}/g, (_match, pathValue) => {
+            const value = renderTemplateValue(getTemplateValue(pathValue, context, root));
+            return DOMPurify.sanitize(value, {
+                ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
+                ALLOWED_ATTR: ['href', 'target', 'rel'],
+            });
+        });
+
+        return html.replace(/{{\s*([\w.]+)\s*}}/g, (_match, pathValue) => (
+            esc(renderTemplateValue(getTemplateValue(pathValue, context, root)))
+        ));
+    };
+
+    return renderBlock(templateHtml, root);
+}
+
+async function generateS3CVHTML(cvData: any, template: TemplateName, options: { watermark?: boolean } = {}) {
+    const templateHtml = await loadS3TemplateHtml(template);
+    return templateHtml ? renderCvTemplateString(templateHtml, cvData, options) : null;
+}
+
 const Type = {
     OBJECT: 'OBJECT',
     ARRAY: 'ARRAY',
@@ -763,6 +896,18 @@ export const PAYHERE_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount:
     monthly: { amount: '2199.00', cents: 219900, currency: 'LKR' },
 };
 
+const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!isSuperAdmin(req.user as any)) {
+        return res.status(403).json({ error: 'Admin access required.' });
+    }
+
+    next();
+};
+
 export const getPayHereMerchantConfig = () => ({
     merchantId: (process.env.PAYHERE_MERCHANT_ID || process.env.PAYHERE_SANDBOX_MERCHANT_ID || '').trim(),
     merchantSecret: (process.env.PAYHERE_MERCHANT_SECRET || process.env.PAYHERE_SANDBOX_MERCHANT_SECRET || '').trim(),
@@ -934,11 +1079,588 @@ const titleFromCvData = (cvData: any) => {
     return fullName ? `${fullName} CV` : 'Untitled CV';
 };
 
+const startOfUtcDay = (date = new Date()) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+
+const formatUtcDay = (date: Date) => date.toISOString().slice(0, 10);
+
+const parsePaymentAmountCents = (amount: unknown) => {
+    if (typeof amount !== 'string') return 0;
+    return payHereAmountToCents(amount) || 0;
+};
+
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const adminUserSummary = (user: any, cvCount = 0) => ({
+    id: user._id?.toString?.() || user.id,
+    email: user.email,
+    displayName: user.displayName,
+    role: user.role || 'user',
+    plan: getEffectivePlan(user),
+    rawPlan: user.plan || 'free',
+    planExpiresAt: user.planExpiresAt,
+    emailVerified: isEmailVerified(user),
+    authProvider: user.authProvider,
+    cvCount,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+});
+
+const TEMPLATE_CATEGORIES = ['Modern', 'ATS Friendly', 'Minimal', 'Executive', 'Creative', 'Tech', 'Corporate'] as const;
+
+const defaultTemplateCategory = (key: string) => {
+    if (key === 'classic') return 'ATS Friendly';
+    if (key === 'minimalist') return 'Minimal';
+    if (key === 'professional') return 'Corporate';
+    if (key === 'startup') return 'Creative';
+    if (key === 'timeline') return 'Executive';
+    return 'Modern';
+};
+
+const adminTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
+    key: template.key,
+    label: setting?.label || template.label,
+    category: setting?.category || defaultTemplateCategory(template.key),
+    access: setting?.access || template.access,
+    thumbnail: setting?.thumbnail || template.image,
+    builtInThumbnail: template.image,
+    surfaceColorRole: template.surfaceColorRole,
+    usageCount,
+    updatedAt: setting?.updatedAt,
+});
+
+const adminPaymentSummary = (payment: any) => {
+    const user = payment.userId && typeof payment.userId === 'object' ? payment.userId : null;
+    return {
+        id: payment._id?.toString?.() || payment.id,
+        provider: payment.provider,
+        paymentId: payment.paymentId,
+        orderId: payment.orderId,
+        user: user ? {
+            id: user._id?.toString?.() || user.id,
+            email: user.email,
+            displayName: user.displayName,
+        } : null,
+        plan: payment.plan || null,
+        amount: payment.amount || '0.00',
+        amountCents: parsePaymentAmountCents(payment.amount),
+        currency: payment.currency || 'LKR',
+        statusCode: payment.statusCode,
+        processed: Boolean(payment.processed),
+        rawPayload: payment.rawPayload || {},
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
+    };
+};
+
+const SUPPORT_TICKET_TYPES = ['complaint', 'bug', 'feature_request', 'payment_issue', 'general'] as const;
+const SUPPORT_TICKET_STATUSES = ['open', 'pending', 'resolved', 'closed'] as const;
+const SUPPORT_TICKET_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const;
+
+const adminSupportTicketSummary = (ticket: any) => ({
+    id: ticket._id?.toString?.() || ticket.id,
+    user: ticket.userId && typeof ticket.userId === 'object' ? {
+        id: ticket.userId._id?.toString?.() || ticket.userId.id,
+        email: ticket.userId.email,
+        displayName: ticket.userId.displayName,
+    } : null,
+    fullName: ticket.fullName,
+    email: ticket.email,
+    type: ticket.type,
+    subject: ticket.subject,
+    message: ticket.message,
+    status: ticket.status,
+    priority: ticket.priority,
+    adminNotes: ticket.adminNotes || '',
+    createdAt: ticket.createdAt,
+    updatedAt: ticket.updatedAt,
+});
+
+const getTemplateSettingForKey = async (key: string) => {
+    const template = CV_TEMPLATES.find((item) => item.key === key);
+    if (!template) return null;
+    const setting = await TemplateSetting.findOne({ key });
+    return adminTemplateSummary(template, setting, 0);
+};
+
 // ─── API Routes ──────────────────────────────────────────────────────
 
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/admin/summary', requireSuperAdmin, async (_req: Request, res: Response) => {
+    try {
+        const now = new Date();
+        const todayStart = startOfUtcDay(now);
+        const sevenDaysAgo = new Date(todayStart);
+        sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6);
+
+        const [
+            totalUsers,
+            activeUsersToday,
+            premiumSubscribers,
+            totalCvsCreated,
+            recentUsers,
+            templateUsage,
+            userGrowth,
+            cvDownloads,
+            payments,
+            supportStatusCounts,
+        ] = await Promise.all([
+            User.countDocuments(),
+            User.countDocuments({ updatedAt: { $gte: todayStart } }),
+            User.countDocuments({ plan: { $in: ['payg', 'monthly'] }, planExpiresAt: { $gt: now } }),
+            CVDocument.countDocuments(),
+            User.find().sort({ createdAt: -1 }).limit(6).select('email displayName role plan createdAt'),
+            CVDocument.aggregate([
+                { $group: { _id: '$template', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 6 },
+            ]),
+            User.aggregate([
+                { $match: { createdAt: { $gte: sevenDaysAgo } } },
+                { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+                { $sort: { _id: 1 } },
+            ]),
+            DownloadQuota.aggregate([
+                { $match: { updatedAt: { $gte: sevenDaysAgo } } },
+                { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$updatedAt' } }, count: { $sum: '$count' } } },
+                { $sort: { _id: 1 } },
+            ]),
+            PaymentTransaction.find({ processed: true }).sort({ createdAt: -1 }).limit(200).select('amount currency plan createdAt'),
+            SupportTicket.aggregate([
+                { $group: { _id: '$status', count: { $sum: 1 } } },
+            ]),
+        ]);
+
+        const revenueCents = payments.reduce((sum, payment) => sum + parsePaymentAmountCents(payment.amount), 0);
+        const revenueByDay = new Map<string, number>();
+        payments.forEach((payment) => {
+            if (!payment.createdAt || payment.createdAt < sevenDaysAgo) return;
+            const day = formatUtcDay(payment.createdAt);
+            revenueByDay.set(day, (revenueByDay.get(day) || 0) + parsePaymentAmountCents(payment.amount));
+        });
+
+        const growthByDay = new Map(userGrowth.map((item: any) => [item._id, item.count]));
+        const downloadsByDay = new Map(cvDownloads.map((item: any) => [item._id, item.count]));
+        const supportCounts = new Map(supportStatusCounts.map((item: any) => [item._id, item.count]));
+        const dailySeries = Array.from({ length: 7 }, (_, index) => {
+            const date = new Date(sevenDaysAgo);
+            date.setUTCDate(sevenDaysAgo.getUTCDate() + index);
+            const day = formatUtcDay(date);
+            return {
+                day,
+                users: growthByDay.get(day) || 0,
+                revenue: revenueByDay.get(day) || 0,
+                downloads: downloadsByDay.get(day) || 0,
+            };
+        });
+
+        return res.json({
+            widgets: {
+                totalUsers,
+                activeUsersToday,
+                premiumSubscribers,
+                totalCvsCreated,
+                revenue: {
+                    cents: revenueCents,
+                    currency: 'LKR',
+                },
+                supportTickets: {
+                    open: supportCounts.get('open') || 0,
+                    pending: supportCounts.get('pending') || 0,
+                    resolved: supportCounts.get('resolved') || 0,
+                    closed: supportCounts.get('closed') || 0,
+                },
+            },
+            recentRegistrations: recentUsers.map((user: any) => ({
+                id: user._id.toString(),
+                email: user.email,
+                displayName: user.displayName,
+                role: user.role,
+                plan: getEffectivePlan(user),
+                createdAt: user.createdAt,
+            })),
+            templateUsage: templateUsage.map((item: any) => ({
+                template: item._id || 'unknown',
+                count: item.count,
+            })),
+            charts: {
+                userGrowth: dailySeries.map(({ day, users }) => ({ day, count: users })),
+                subscriptionRevenue: dailySeries.map(({ day, revenue }) => ({ day, cents: revenue })),
+                cvDownloadsPerDay: dailySeries.map(({ day, downloads }) => ({ day, count: downloads })),
+                templateUsage: templateUsage.map((item: any) => ({ template: item._id || 'unknown', count: item.count })),
+            },
+            modules: [
+                { key: 'users', label: 'User Management', status: 'planned' },
+                { key: 'templates', label: 'Template Management', status: 'planned' },
+                { key: 'billing', label: 'Subscription & Payments', status: 'planned' },
+                { key: 'cms', label: 'Content Management', status: 'planned' },
+                { key: 'notifications', label: 'Notifications', status: 'planned' },
+                { key: 'support', label: 'Support Tickets', status: 'planned' },
+                { key: 'settings', label: 'Settings & Roles', status: 'planned' },
+            ],
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load admin summary.', error);
+    }
+});
+
+app.get('/api/admin/users', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+        const plan = typeof req.query.plan === 'string' ? req.query.plan.trim() : '';
+        const role = typeof req.query.role === 'string' ? req.query.role.trim() : '';
+        const page = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
+        const limit = Math.min(50, Math.max(5, Number.parseInt(String(req.query.limit || '20'), 10) || 20));
+        const filter: any = {};
+
+        if (search) {
+            const pattern = new RegExp(escapeRegex(search), 'i');
+            filter.$or = [{ email: pattern }, { displayName: pattern }];
+        }
+        if (['free', 'payg', 'monthly'].includes(plan)) {
+            filter.plan = plan;
+        }
+        if (['user', 'super_admin'].includes(role)) {
+            filter.role = role;
+        }
+
+        const [users, total] = await Promise.all([
+            User.find(filter)
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .select('email displayName role plan planExpiresAt emailVerified authProvider createdAt updatedAt'),
+            User.countDocuments(filter),
+        ]);
+
+        const userIds = users.map((user) => user._id);
+        const cvCounts = await CVDocument.aggregate([
+            { $match: { userId: { $in: userIds } } },
+            { $group: { _id: '$userId', count: { $sum: 1 } } },
+        ]);
+        const cvCountMap = new Map(cvCounts.map((item: any) => [item._id.toString(), item.count]));
+
+        return res.json({
+            users: users.map((user) => adminUserSummary(user, cvCountMap.get(user._id.toString()) || 0)),
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.max(1, Math.ceil(total / limit)),
+            },
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load admin users.', error);
+    }
+});
+
+app.get('/api/admin/users/:id', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        if (!isValidDocumentId(req.params.id)) {
+            return res.status(400).json({ error: 'Invalid user id.' });
+        }
+
+        const user = await User.findById(req.params.id).select('email displayName role plan planStartedAt planExpiresAt paygCvSaveCredits emailVerified authProvider phone address createdAt updatedAt');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        const [documents, cvCount] = await Promise.all([
+            CVDocument.find({ userId: user._id })
+                .sort({ updatedAt: -1 })
+                .limit(10)
+                .select('title template status createdAt updatedAt'),
+            CVDocument.countDocuments({ userId: user._id }),
+        ]);
+
+        return res.json({
+            user: {
+                ...adminUserSummary(user, cvCount),
+                phone: user.phone,
+                address: user.address,
+                planStartedAt: user.planStartedAt,
+                paygCvSaveCredits: user.paygCvSaveCredits || 0,
+            },
+            documents: documents.map(documentSummary),
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load admin user.', error);
+    }
+});
+
+app.patch('/api/admin/users/:id/plan', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        if (!isValidDocumentId(req.params.id)) {
+            return res.status(400).json({ error: 'Invalid user id.' });
+        }
+
+        const plan = req.body.plan as BillingPlan;
+        if (plan !== 'free' && plan !== 'payg' && plan !== 'monthly') {
+            return res.status(400).json({ error: 'Choose a valid plan.' });
+        }
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        user.plan = plan;
+        if (plan === 'free') {
+            user.planStartedAt = undefined;
+            user.planExpiresAt = undefined;
+        } else {
+            user.planStartedAt = new Date();
+            user.planExpiresAt = createPlanExpiry(plan);
+            if (plan === 'payg') {
+                user.paygCvSaveCredits = Math.max(1, user.paygCvSaveCredits || 0);
+            }
+        }
+
+        await user.save();
+        const cvCount = await CVDocument.countDocuments({ userId: user._id });
+        return res.json({ user: adminUserSummary(user, cvCount) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update user plan.', error);
+    }
+});
+
+app.get('/api/admin/templates', requireSuperAdmin, async (_req: Request, res: Response) => {
+    try {
+        const [settings, usage] = await Promise.all([
+            TemplateSetting.find(),
+            CVDocument.aggregate([
+                { $group: { _id: '$template', count: { $sum: 1 } } },
+            ]),
+        ]);
+        const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
+        const usageMap = new Map(usage.map((item: any) => [item._id, item.count]));
+
+        return res.json({
+            categories: TEMPLATE_CATEGORIES,
+            templates: CV_TEMPLATES.map((template) => adminTemplateSummary(
+                template,
+                settingMap.get(template.key),
+                usageMap.get(template.key) || 0
+            )),
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load admin templates.', error);
+    }
+});
+
+app.get('/api/templates/config', async (_req: Request, res: Response) => {
+    try {
+        const settings = await TemplateSetting.find();
+        const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
+        return res.json({
+            templates: CV_TEMPLATES.map((template) => adminTemplateSummary(template, settingMap.get(template.key), 0)),
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load template configuration.', error);
+    }
+});
+
+app.patch('/api/admin/templates/:key', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const key = req.params.key;
+        const template = CV_TEMPLATES.find((item) => item.key === key);
+        if (!template) {
+            return res.status(404).json({ error: 'Template not found.' });
+        }
+
+        const label = sanitizeProfileField(req.body.label, 80) || template.label;
+        const category = typeof req.body.category === 'string' && TEMPLATE_CATEGORIES.includes(req.body.category as any)
+            ? req.body.category
+            : defaultTemplateCategory(key);
+        const access = req.body.access === 'free' ? 'free' : 'paid';
+        const thumbnail = sanitizeProfileField(req.body.thumbnail, 500) || template.image;
+
+        const setting = await TemplateSetting.findOneAndUpdate(
+            { key },
+            { key, label, category, access, thumbnail },
+            { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+        );
+        const usageCount = await CVDocument.countDocuments({ template: key });
+
+        return res.json({ template: adminTemplateSummary(template, setting, usageCount) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update template.', error);
+    }
+});
+
+app.get('/api/admin/payments', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+        const plan = typeof req.query.plan === 'string' ? req.query.plan.trim() : '';
+        const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+        const provider = typeof req.query.provider === 'string' ? req.query.provider.trim() : '';
+        const limit = Math.min(100, Math.max(10, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
+        const filter: any = {};
+
+        if (['payg', 'monthly'].includes(plan)) {
+            filter.plan = plan;
+        }
+        if (provider === 'payhere') {
+            filter.provider = provider;
+        }
+        if (status === 'processed') {
+            filter.processed = true;
+        } else if (status === 'unprocessed') {
+            filter.processed = false;
+        }
+
+        if (search) {
+            const pattern = new RegExp(escapeRegex(search), 'i');
+            const matchedUsers = await User.find({ $or: [{ email: pattern }, { displayName: pattern }] }).select('_id');
+            filter.$or = [
+                { paymentId: pattern },
+                { orderId: pattern },
+                ...(matchedUsers.length ? [{ userId: { $in: matchedUsers.map((user) => user._id) } }] : []),
+            ];
+        }
+
+        const payments = await PaymentTransaction.find(filter)
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .populate('userId', 'email displayName');
+        const allProcessedPayments = await PaymentTransaction.find({ processed: true }).select('amount currency plan createdAt');
+
+        const revenueCents = allProcessedPayments.reduce((sum, payment) => sum + parsePaymentAmountCents(payment.amount), 0);
+        const revenueByPlan = allProcessedPayments.reduce((acc: Record<string, number>, payment) => {
+            const key = payment.plan || 'unknown';
+            acc[key] = (acc[key] || 0) + parsePaymentAmountCents(payment.amount);
+            return acc;
+        }, {});
+        const sevenDaysAgo = startOfUtcDay();
+        sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6);
+        const revenueByDay = new Map<string, number>();
+        allProcessedPayments.forEach((payment) => {
+            if (!payment.createdAt || payment.createdAt < sevenDaysAgo) return;
+            const day = formatUtcDay(payment.createdAt);
+            revenueByDay.set(day, (revenueByDay.get(day) || 0) + parsePaymentAmountCents(payment.amount));
+        });
+        const dailyRevenue = Array.from({ length: 7 }, (_, index) => {
+            const date = new Date(sevenDaysAgo);
+            date.setUTCDate(sevenDaysAgo.getUTCDate() + index);
+            const day = formatUtcDay(date);
+            return { day, cents: revenueByDay.get(day) || 0 };
+        });
+
+        return res.json({
+            payments: payments.map(adminPaymentSummary),
+            summary: {
+                totalRevenueCents: revenueCents,
+                currency: 'LKR',
+                processedCount: allProcessedPayments.length,
+                revenueByPlan,
+                dailyRevenue,
+            },
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load admin payments.', error);
+    }
+});
+
+app.post('/api/support/tickets', async (req: Request, res: Response) => {
+    try {
+        const fullName = sanitizeDisplayName(req.body.fullName || (req.user as any)?.displayName || '');
+        const email = normalizeEmail(req.body.email || (req.user as any)?.email || '');
+        const type = SUPPORT_TICKET_TYPES.includes(req.body.type) ? req.body.type : 'general';
+        const subject = sanitizeProfileField(req.body.subject, 160) || 'Support request';
+        const message = sanitizeContactMessage(req.body.message);
+
+        if (!fullName) {
+            return res.status(400).json({ error: 'Enter your name.' });
+        }
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ error: 'Enter a valid email address.' });
+        }
+        if (!message || message.length < 10) {
+            return res.status(400).json({ error: 'Enter a message with at least 10 characters.' });
+        }
+
+        const ticket = await SupportTicket.create({
+            userId: req.user ? currentUserId(req) : undefined,
+            fullName,
+            email,
+            type,
+            subject,
+            message,
+            priority: type === 'payment_issue' ? 'high' : 'normal',
+        });
+
+        if (isEmailServiceConfigured()) {
+            void sendContactNotification({ fullName, email, message: `[${type}] ${subject}\n\n${message}` });
+        }
+
+        return res.status(201).json({
+            ticket: adminSupportTicketSummary(ticket),
+            message: 'Support ticket created. We will get back to you soon.',
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not create support ticket.', error);
+    }
+});
+
+app.get('/api/admin/support/tickets', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+        const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+        const type = typeof req.query.type === 'string' ? req.query.type.trim() : '';
+        const priority = typeof req.query.priority === 'string' ? req.query.priority.trim() : '';
+        const filter: any = {};
+
+        if (SUPPORT_TICKET_STATUSES.includes(status as any)) filter.status = status;
+        if (SUPPORT_TICKET_TYPES.includes(type as any)) filter.type = type;
+        if (SUPPORT_TICKET_PRIORITIES.includes(priority as any)) filter.priority = priority;
+        if (search) {
+            const pattern = new RegExp(escapeRegex(search), 'i');
+            filter.$or = [{ fullName: pattern }, { email: pattern }, { subject: pattern }, { message: pattern }];
+        }
+
+        const [tickets, statusCounts] = await Promise.all([
+            SupportTicket.find(filter).sort({ createdAt: -1 }).limit(100).populate('userId', 'email displayName'),
+            SupportTicket.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+        ]);
+        const statusCountMap = new Map(statusCounts.map((item: any) => [item._id, item.count]));
+
+        return res.json({
+            tickets: tickets.map(adminSupportTicketSummary),
+            summary: {
+                open: statusCountMap.get('open') || 0,
+                pending: statusCountMap.get('pending') || 0,
+                resolved: statusCountMap.get('resolved') || 0,
+                closed: statusCountMap.get('closed') || 0,
+            },
+        });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load support tickets.', error);
+    }
+});
+
+app.patch('/api/admin/support/tickets/:id', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        if (!isValidDocumentId(req.params.id)) {
+            return res.status(400).json({ error: 'Invalid ticket id.' });
+        }
+
+        const update: any = {};
+        if (SUPPORT_TICKET_STATUSES.includes(req.body.status)) update.status = req.body.status;
+        if (SUPPORT_TICKET_PRIORITIES.includes(req.body.priority)) update.priority = req.body.priority;
+        if (typeof req.body.adminNotes === 'string') update.adminNotes = sanitizeProfileField(req.body.adminNotes, 2000);
+
+        const ticket = await SupportTicket.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).populate('userId', 'email displayName');
+        if (!ticket) {
+            return res.status(404).json({ error: 'Support ticket not found.' });
+        }
+
+        return res.json({ ticket: adminSupportTicketSummary(ticket) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update support ticket.', error);
+    }
 });
 
 app.post('/api/contact', async (req: Request, res: Response) => {
@@ -1472,6 +2194,9 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
         user.plan = context.plan;
         user.planStartedAt = new Date();
         user.planExpiresAt = createPlanExpiry(context.plan);
+        if (context.plan === 'payg') {
+            user.paygCvSaveCredits = (user.paygCvSaveCredits || 0) + 1;
+        }
         await user.save();
 
         await PaymentTransaction.findOneAndUpdate(
@@ -1592,6 +2317,9 @@ app.post('/api/billing/activate', requireAuth, async (req: Request, res: Respons
         user.plan = plan;
         user.planStartedAt = new Date();
         user.planExpiresAt = createPlanExpiry(plan);
+        if (plan === 'payg') {
+            user.paygCvSaveCredits = (user.paygCvSaveCredits || 0) + 1;
+        }
         await user.save();
 
         const transactionId = typeof req.body.transactionId === 'string' && req.body.transactionId.trim()
@@ -2863,8 +3591,180 @@ function sanitizeCvData(obj: any, depth = 0): any {
     return obj;
 }
 
+const PDF_WARM_BROWSER_IDLE_MS = Number(process.env.PDF_WARM_BROWSER_IDLE_MS || 5 * 60 * 1000);
+let warmPdfBrowser: any = null;
+let warmPdfBrowserLaunchPromise: Promise<any> | null = null;
+let warmPdfBrowserIdleTimer: NodeJS.Timeout | null = null;
+
+async function buildPdfBrowserLaunchOptions() {
+    const isLocal = process.env.NODE_ENV !== 'production';
+    const launchOptions: any = {
+        args: isLocal ? [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-zygote',
+        ] : chromium.args,
+        defaultViewport: (chromium as any).defaultViewport,
+        headless: isLocal ? true : (chromium as any).headless,
+        ignoreHTTPSErrors: true,
+    };
+
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+        launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        console.log(`Using custom browser at: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+    } else if (isLocal) {
+        const systemBrowser = findSystemBrowser();
+        if (systemBrowser) {
+            launchOptions.executablePath = systemBrowser;
+            console.log(`Using system browser at: ${systemBrowser}`);
+        } else {
+            throw new Error("Could not find a local Chrome installation. Please set PUPPETEER_EXECUTABLE_PATH.");
+        }
+    } else {
+        console.log("Using @sparticuz/chromium executable...");
+        launchOptions.executablePath = await chromium.executablePath();
+        console.log(`Sparticuz Chromium path: ${launchOptions.executablePath}`);
+    }
+
+    return launchOptions;
+}
+
+function isPdfBrowserConnected(browser: any) {
+    if (!browser) return false;
+    if (typeof browser.isConnected === 'function') return browser.isConnected();
+    return browser.connected !== false;
+}
+
+function clearWarmPdfBrowserIdleTimer() {
+    if (warmPdfBrowserIdleTimer) {
+        clearTimeout(warmPdfBrowserIdleTimer);
+        warmPdfBrowserIdleTimer = null;
+    }
+}
+
+async function closeWarmPdfBrowser() {
+    clearWarmPdfBrowserIdleTimer();
+    const browser = warmPdfBrowser;
+    warmPdfBrowser = null;
+    warmPdfBrowserLaunchPromise = null;
+
+    if (isPdfBrowserConnected(browser)) {
+        try {
+            await browser.close();
+            console.log("Warm PDF browser closed.");
+        } catch {
+            // Browser may already be gone; nothing to recover here.
+        }
+    }
+}
+
+function scheduleWarmPdfBrowserIdleClose() {
+    clearWarmPdfBrowserIdleTimer();
+    if (!Number.isFinite(PDF_WARM_BROWSER_IDLE_MS) || PDF_WARM_BROWSER_IDLE_MS <= 0) return;
+
+    warmPdfBrowserIdleTimer = setTimeout(() => {
+        void closeWarmPdfBrowser();
+    }, PDF_WARM_BROWSER_IDLE_MS);
+}
+
+async function getWarmPdfBrowser() {
+    if (isPdfBrowserConnected(warmPdfBrowser)) {
+        clearWarmPdfBrowserIdleTimer();
+        return warmPdfBrowser;
+    }
+
+    if (warmPdfBrowserLaunchPromise) {
+        return warmPdfBrowserLaunchPromise;
+    }
+
+    warmPdfBrowserLaunchPromise = (async () => {
+        console.time("PuppeteerWarmLaunch");
+        console.log("Launching warm PDF browser...");
+        const browser = await puppeteer.launch(await buildPdfBrowserLaunchOptions());
+        console.timeEnd("PuppeteerWarmLaunch");
+        console.log("Warm PDF browser ready.");
+
+        browser.on?.('disconnected', () => {
+            if (warmPdfBrowser === browser) {
+                warmPdfBrowser = null;
+            }
+            warmPdfBrowserLaunchPromise = null;
+            clearWarmPdfBrowserIdleTimer();
+        });
+
+        warmPdfBrowser = browser;
+        return browser;
+    })();
+
+    try {
+        return await warmPdfBrowserLaunchPromise;
+    } finally {
+        warmPdfBrowserLaunchPromise = null;
+    }
+}
+
+async function launchOneShotPdfBrowser() {
+    console.time("PuppeteerLaunch");
+    console.log("Launching one-shot PDF browser...");
+    const browser = await puppeteer.launch(await buildPdfBrowserLaunchOptions());
+    console.timeEnd("PuppeteerLaunch");
+    console.log("One-shot PDF browser launched.");
+    return browser;
+}
+
+async function generatePdfWithLambda(cvData: any, template: TemplateName, watermark: boolean): Promise<Buffer | null> {
+    const lambdaUrl = process.env.PDF_LAMBDA_URL?.trim();
+    if (!lambdaUrl) return null;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), Number(process.env.PDF_LAMBDA_TIMEOUT_MS || 45000));
+
+    try {
+        console.time("PdfLambdaGeneration");
+        console.log("Generating PDF with AWS Lambda...");
+        const response = await fetch(lambdaUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-App-Source': 'cv-builder-app',
+            },
+            body: JSON.stringify({ cvData, template, watermark }),
+            signal: controller.signal,
+        });
+
+        const contentType = response.headers.get('content-type') || '';
+        if (!response.ok) {
+            const detail = await response.text().catch(() => '');
+            throw new Error(`PDF Lambda failed with ${response.status}: ${detail.slice(0, 500)}`);
+        }
+
+        if (contentType.includes('application/pdf')) {
+            const arrayBuffer = await response.arrayBuffer();
+            console.timeEnd("PdfLambdaGeneration");
+            return Buffer.from(arrayBuffer);
+        }
+
+        const payload = await response.json();
+        if (payload?.isBase64Encoded && typeof payload.body === 'string') {
+            console.timeEnd("PdfLambdaGeneration");
+            return Buffer.from(payload.body, 'base64');
+        }
+
+        throw new Error('PDF Lambda returned an unexpected response format.');
+    } catch (error) {
+        console.warn('PDF Lambda unavailable; falling back to local PDF generation.', error);
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, res: Response) => {
     let browser: any = null;
+    let page: any = null;
+    let shouldCloseBrowser = true;
     try {
         const { cvData, template } = req.body;
 
@@ -2888,7 +3788,11 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
             ? template
             : DEFAULT_TEMPLATE;
 
-        if (downloadQuota.plan === 'free' && templateRequiresPaidPlan(requestedTemplate)) {
+        const templateSetting = await getTemplateSettingForKey(requestedTemplate);
+        const requestedTemplateIsPaid = templateSetting
+            ? templateSetting.access === 'paid'
+            : templateRequiresPaidPlan(requestedTemplate);
+        if (downloadQuota.plan === 'free' && requestedTemplateIsPaid) {
             return res.status(403).json({
                 error: 'Premium templates require an upgrade to download.',
                 quota: downloadQuota,
@@ -2899,54 +3803,43 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
 
         // Sanitize all string values in cvData to prevent injection
         const safeCvData = sanitizeCvData(cvData);
+        const watermark = downloadQuota.plan === 'free';
 
-        // Generate self-contained HTML
-        console.log("Generating HTML for PDF...");
-        const html = generateCVHTML(safeCvData, requestedTemplate, { watermark: downloadQuota.plan === 'free' });
-        console.log(`HTML generated: ${html.length} bytes`);
+        console.log("Checking S3 template for PDF...");
+        let html: string | null = null;
+        try {
+            html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark });
+        } catch (error) {
+            console.warn('S3 template unavailable; falling back to built-in PDF template.', error);
+        }
+        const usedS3Template = Boolean(html);
 
-        const isLocal = process.env.NODE_ENV !== 'production';
+        const lambdaPdfBuffer = usedS3Template ? null : await generatePdfWithLambda(safeCvData, requestedTemplate, watermark);
+        if (lambdaPdfBuffer) {
+            console.log(`Lambda PDF generated. Buffer size: ${lambdaPdfBuffer.length}`);
 
-        // Launch puppeteer using @sparticuz/chromium in production, or system chrome locally
-        const launchOptions: any = {
-            args: isLocal ? [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--no-zygote',
-            ] : chromium.args,
-            defaultViewport: (chromium as any).defaultViewport,
-            headless: isLocal ? true : (chromium as any).headless,
-            ignoreHTTPSErrors: true,
-        };
+            await incrementDownloadQuota(req.user);
 
-        // Use custom or system browser if available
-        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-            launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-            console.log(`Using custom browser at: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
-        } else if (isLocal) {
-            const systemBrowser = findSystemBrowser();
-            if (systemBrowser) {
-                launchOptions.executablePath = systemBrowser;
-                console.log(`Using system browser at: ${systemBrowser}`);
-            } else {
-                throw new Error("Could not find a local Chrome installation. Please set PUPPETEER_EXECUTABLE_PATH.");
-            }
-        } else {
-            console.log("Using @sparticuz/chromium executable...");
-            launchOptions.executablePath = await chromium.executablePath();
-            console.log(`Sparticuz Chromium path: ${launchOptions.executablePath}`);
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Length': lambdaPdfBuffer.length.toString(),
+                'X-PDF-Renderer': 'lambda',
+            });
+
+            return res.send(Buffer.from(lambdaPdfBuffer));
         }
 
-        console.time("PuppeteerLaunch");
-        console.log("Launching Puppeteer...");
-        browser = await puppeteer.launch(launchOptions);
-        console.timeEnd("PuppeteerLaunch");
-        console.log("Browser launched successfully.");
+        // Generate self-contained HTML
+        console.log(usedS3Template ? "Generating PDF from S3 template..." : "Generating HTML for PDF...");
+        html = html || generateCVHTML(safeCvData, requestedTemplate, { watermark });
+        console.log(`HTML generated: ${html.length} bytes`);
+
+        const useWarmBrowser = downloadQuota.plan !== 'free';
+        browser = useWarmBrowser ? await getWarmPdfBrowser() : await launchOneShotPdfBrowser();
+        shouldCloseBrowser = !useWarmBrowser;
 
         console.time("NewPage");
-        const page = await browser.newPage();
+        page = await browser.newPage();
         console.timeEnd("NewPage");
 
         await page.setRequestInterception(true);
@@ -2996,20 +3889,33 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         console.timeEnd("PdfGeneration");
         console.log(`PDF generated. Buffer size: ${pdfBuffer.length}`);
 
-        await browser.close();
-        browser = null;
+        await page.close();
+        page = null;
+
+        if (shouldCloseBrowser) {
+            await browser.close();
+            browser = null;
+        } else {
+            scheduleWarmPdfBrowserIdleClose();
+        }
 
         await incrementDownloadQuota(req.user);
 
         res.set({
             'Content-Type': 'application/pdf',
-            'Content-Length': pdfBuffer.length.toString()
+            'Content-Length': pdfBuffer.length.toString(),
+            'X-PDF-Template-Source': usedS3Template ? 's3' : 'built-in',
         });
 
         res.send(Buffer.from(pdfBuffer));
     } catch (error: any) {
-        if (browser) {
+        if (page) {
+            try { await page.close(); } catch (e) { /* ignore */ }
+        }
+        if (browser && shouldCloseBrowser) {
             try { await browser.close(); } catch (e) { /* ignore */ }
+        } else if (browser) {
+            scheduleWarmPdfBrowserIdleClose();
         }
         return sendError(res, 500, "Failed to generate PDF. Please try again.", error);
     }

@@ -7,7 +7,8 @@ import DOMPurify from 'dompurify';
 import toast from 'react-hot-toast';
 
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award, Reference } from '../types';
-import { CV_TEMPLATES, templateRequiresPaidPlan, TemplateName } from '../templates';
+import { TemplateName } from '../templates';
+import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
@@ -54,6 +55,7 @@ interface CVFormProps {
 }
 
 export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, isFreePlan = false, onUpgradeRequired }: CVFormProps) {
+  const { templates, isTemplatePaid, getTemplateLabel } = useTemplateConfig();
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design' | 'templates'>(showTemplatesOnMount ? 'templates' : 'content');
   const [pendingTemplate, setPendingTemplate] = useState<TemplateName | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
@@ -825,10 +827,10 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
               </div>
 
               <div className="grid grid-cols-2 gap-3 min-[430px]:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
-                {CV_TEMPLATES.map((item) => {
+                {templates.map((item) => {
                   const isSelected = template === item.key;
                   const isPending = pendingTemplate === item.key;
-                  const isPremium = templateRequiresPaidPlan(item.key);
+                  const isPremium = isTemplatePaid(item.key);
                   return (
                     <button
                       key={item.key}
@@ -860,7 +862,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                       )}
                       <div className="aspect-3/4 overflow-hidden bg-slate-900">
                         <img
-                          src={item.image}
+                          src={item.thumbnail}
                           alt={`${item.label} template preview`}
                           className={`h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03] ${isSelected ? '' : 'opacity-90'}`}
                         />
@@ -888,7 +890,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                     <div>
                       <p className={`text-xs font-black uppercase ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Selected template</p>
                       <p className={`text-sm font-extrabold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                        {CV_TEMPLATES.find((item) => item.key === pendingTemplate)?.label}
+                        {getTemplateLabel(pendingTemplate)}
                       </p>
                     </div>
                     <button

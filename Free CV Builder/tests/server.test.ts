@@ -12,6 +12,7 @@ import {
   getAuthenticatedRateLimitKey,
   payHereAmountToCents,
   resolvePayHerePaymentContext,
+  renderCvTemplateString,
   sanitizeContextField,
   sanitizeTextForPrompt,
   verifyPayHereMd5Signature,
@@ -161,13 +162,27 @@ describe('Server Utils', () => {
       });
     });
 
-    it('should keep Pay As You Go to one saved CV and make Monthly unlimited', () => {
+    it('should add one extra CV save for each Pay As You Go purchase and make Monthly unlimited', () => {
       const future = new Date(Date.now() + 100000);
       expect(buildCvCreationQuota({ role: 'user', plan: 'payg', planExpiresAt: future } as any, 1)).toEqual({
         limit: 1,
         used: 1,
         remaining: 0,
         reached: true,
+        plan: 'payg',
+      });
+      expect(buildCvCreationQuota({ role: 'user', plan: 'payg', planStartedAt: new Date(), planExpiresAt: future } as any, 1)).toEqual({
+        limit: 2,
+        used: 1,
+        remaining: 1,
+        reached: false,
+        plan: 'payg',
+      });
+      expect(buildCvCreationQuota({ role: 'user', plan: 'payg', planExpiresAt: future, paygCvSaveCredits: 2 } as any, 2)).toEqual({
+        limit: 3,
+        used: 2,
+        remaining: 1,
+        reached: false,
         plan: 'payg',
       });
       expect(buildCvCreationQuota({ role: 'user', plan: 'monthly', planExpiresAt: future } as any, 99)).toEqual({
@@ -414,6 +429,43 @@ describe('generateCVHTML', () => {
     };
     const html = generateCVHTML(maliciousData, 'classic');
     expect(html).toContain('John &lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt; Doe');
+    expect(html).not.toContain('<script>');
+  });
+});
+
+describe('renderCvTemplateString', () => {
+  it('renders escaped placeholders and repeated sections for S3 templates', () => {
+    const html = renderCvTemplateString(`
+      <h1>{{personalInfo.fullName}}</h1>
+      <p>{{personalInfo.email}}</p>
+      <ul>{{#experience}}<li>{{position}} at {{company}}</li>{{/experience}}</ul>
+      {{^awards}}<span>No awards</span>{{/awards}}
+    `, {
+      personalInfo: {
+        fullName: 'Jane <Admin>',
+        email: 'jane@example.com',
+      },
+      experience: [
+        { position: 'Engineer', company: 'ACME' },
+        { position: 'Lead', company: 'NexCV' },
+      ],
+      awards: [],
+    });
+
+    expect(html).toContain('Jane &lt;Admin&gt;');
+    expect(html).toContain('<li>Engineer at ACME</li>');
+    expect(html).toContain('<li>Lead at NexCV</li>');
+    expect(html).toContain('<span>No awards</span>');
+  });
+
+  it('sanitizes triple-brace rich text placeholders', () => {
+    const html = renderCvTemplateString('<section>{{{personalInfo.summary}}}</section>', {
+      personalInfo: {
+        summary: 'Safe <strong>text</strong><script>alert(1)</script>',
+      },
+    });
+
+    expect(html).toContain('<strong>text</strong>');
     expect(html).not.toContain('<script>');
   });
 });

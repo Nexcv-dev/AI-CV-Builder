@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Crown, Download, FileText, Home, Info, LayoutTemplate, LogIn, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Upload, Wand2, X, Zap } from 'lucide-react';
 import { AuthModal } from '../components/AuthModal';
 import { CV_TEMPLATES } from '../templates';
+import { useTemplateConfig } from '../hooks/useTemplateConfig';
 
 const stats = [
   { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
@@ -54,8 +55,6 @@ function StatCard({ label, value, suffix, color }: typeof stats[0]) {
   );
 }
 
-const featuredTemplates = CV_TEMPLATES;
-
 const pricingPlans = [
   {
     name: 'Free',
@@ -77,7 +76,7 @@ const pricingPlans = [
     href: '/pricing',
     cta: 'Choose PAYG',
     highlighted: true,
-    features: ['1 saved CV', 'Any template', 'Unlimited edits for 7 days', 'Unlimited downloads for 7 days', 'AI import, summary, and refine tools'],
+    features: ['1 extra saved CV per purchase', 'Any template', 'Unlimited edits for 7 days', 'Unlimited downloads for 7 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
   },
   {
     name: 'Monthly',
@@ -88,7 +87,7 @@ const pricingPlans = [
     href: '/pricing',
     cta: 'Go monthly',
     highlighted: false,
-    features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 30 days', 'AI import, summary, and refine tools'],
+    features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 30 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
   },
 ];
 
@@ -154,6 +153,8 @@ const faqs = [
 
 export default function LandingPage() {
   const location = useLocation();
+  const { templates } = useTemplateConfig();
+  const featuredTemplates = templates;
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({
     isOpen: false,
     mode: 'signup',
@@ -605,7 +606,7 @@ export default function LandingPage() {
                 >
                   <div className="aspect-4/5 overflow-hidden bg-slate-800">
                     <img
-                      src={template.image}
+                      src={template.thumbnail}
                       alt={`${template.label} CV template preview`}
                       className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.035]"
                     />

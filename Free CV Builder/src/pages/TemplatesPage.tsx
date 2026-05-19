@@ -2,9 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, LayoutTemplate, Sparkles } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
-import { CV_TEMPLATES } from '../templates';
+import { useTemplateConfig } from '../hooks/useTemplateConfig';
 
 export default function TemplatesPage() {
+  const { templates } = useTemplateConfig();
   return (
     <div className="overflow-x-hidden bg-slate-950 text-white">
       <SiteHeader />
@@ -29,7 +30,7 @@ export default function TemplatesPage() {
             </div>
 
             <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {CV_TEMPLATES.map((template, index) => (
+              {templates.map((template, index) => (
                 <Link
                   key={template.key}
                   to={`/builder?import=1&template=${template.key}`}
@@ -38,7 +39,7 @@ export default function TemplatesPage() {
                 >
                   <div className="aspect-4/5 overflow-hidden bg-slate-900">
                     <img
-                      src={template.image}
+                      src={template.thumbnail}
                       alt={`${template.label} CV template preview`}
                       className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.035]"
                     />
@@ -48,7 +49,7 @@ export default function TemplatesPage() {
                       <div className="font-montserrat font-black text-white">{template.label}</div>
                       <div className="mt-1 flex items-center gap-1.5 text-xs font-bold text-slate-400">
                         <LayoutTemplate size={13} />
-                        CV template
+                        {template.category} template
                       </div>
                     </div>
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white transition-transform group-hover:translate-x-1">

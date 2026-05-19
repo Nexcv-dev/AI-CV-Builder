@@ -18,9 +18,11 @@ import TipsAndResources from './pages/TipsAndResources';
 import PricingPage from './pages/PricingPage';
 import CheckoutPage from './pages/CheckoutPage';
 import RefundPolicy from './pages/RefundPolicy';
+import AdminDashboard from './pages/AdminDashboard';
 import { Toaster } from 'react-hot-toast';
 import { Footer } from './components/Footer';
 import { getCurrentUser } from './utils/api';
+import { isAdminUser } from './adminPermissions';
 
 function PageLoadingOverlay() {
   const location = useLocation();
@@ -97,7 +99,7 @@ function Layout() {
   const location = useLocation();
   const previousPathname = useRef(location.pathname);
   const isBuilder = location.pathname === '/builder';
-  const hidesFooter = isBuilder || [
+  const hidesFooter = isBuilder || location.pathname.startsWith('/admin') || [
     '/dashboard',
     '/my-cvs',
     '/profile',
@@ -137,6 +139,53 @@ function Layout() {
       {!hidesFooter && <Footer />}
     </div>
   );
+}
+
+function AdminProtectedRoute({ children }: { children: React.ReactElement }) {
+  const [status, setStatus] = useState<'loading' | 'authed' | 'guest' | 'forbidden'>('loading');
+
+  useLayoutEffect(() => {
+    let ignore = false;
+    getCurrentUser()
+      .then((user) => {
+        if (!ignore) setStatus(isAdminUser(user) ? 'authed' : 'forbidden');
+      })
+      .catch(() => {
+        if (!ignore) setStatus('guest');
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm font-bold text-slate-400">
+        Loading admin...
+      </div>
+    );
+  }
+
+  if (status === 'guest') {
+    return <Navigate to="/" replace />;
+  }
+
+  if (status === 'forbidden') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-6 text-center text-white">
+        <h1 className="font-montserrat text-3xl font-black">Admin access required</h1>
+        <p className="mt-3 max-w-md text-sm font-semibold leading-6 text-slate-400">
+          This area is available only for super admin accounts.
+        </p>
+        <Link to="/dashboard" className="mt-6 rounded-xl bg-violet-600 px-5 py-3 text-sm font-black text-white transition hover:bg-violet-500">
+          Back to dashboard
+        </Link>
+      </div>
+    );
+  }
+
+  return children;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactElement }) {
@@ -224,6 +273,8 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+          <Route path="/admin/*" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
           <Route path="/my-cvs" element={<ProtectedRoute><MyCvs /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/settings" element={<Navigate to="/profile" replace />} />
