@@ -23,7 +23,7 @@ import DownloadQuota from './server-models/DownloadQuotaModel';
 import PaymentTransaction from './server-models/PaymentTransaction';
 import TemplateSetting from './server-models/TemplateSetting';
 import './server-models/passportSetup'; // Initialize passport strategy
-import { CV_TEMPLATES, DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan } from './src/templates';
+import { CV_TEMPLATES, DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan, type TemplateName } from './src/templates';
 import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildDownloadQuota } from './server-models/downloadQuotaUtils';
@@ -3358,6 +3358,53 @@ async function launchOneShotPdfBrowser() {
     return browser;
 }
 
+async function generatePdfWithLambda(cvData: any, template: TemplateName, watermark: boolean): Promise<Buffer | null> {
+    const lambdaUrl = process.env.PDF_LAMBDA_URL?.trim();
+    if (!lambdaUrl) return null;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), Number(process.env.PDF_LAMBDA_TIMEOUT_MS || 45000));
+
+    try {
+        console.time("PdfLambdaGeneration");
+        console.log("Generating PDF with AWS Lambda...");
+        const response = await fetch(lambdaUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-App-Source': 'cv-builder-app',
+            },
+            body: JSON.stringify({ cvData, template, watermark }),
+            signal: controller.signal,
+        });
+
+        const contentType = response.headers.get('content-type') || '';
+        if (!response.ok) {
+            const detail = await response.text().catch(() => '');
+            throw new Error(`PDF Lambda failed with ${response.status}: ${detail.slice(0, 500)}`);
+        }
+
+        if (contentType.includes('application/pdf')) {
+            const arrayBuffer = await response.arrayBuffer();
+            console.timeEnd("PdfLambdaGeneration");
+            return Buffer.from(arrayBuffer);
+        }
+
+        const payload = await response.json();
+        if (payload?.isBase64Encoded && typeof payload.body === 'string') {
+            console.timeEnd("PdfLambdaGeneration");
+            return Buffer.from(payload.body, 'base64');
+        }
+
+        throw new Error('PDF Lambda returned an unexpected response format.');
+    } catch (error) {
+        console.warn('PDF Lambda unavailable; falling back to local PDF generation.', error);
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, res: Response) => {
     let browser: any = null;
     let page: any = null;
@@ -3400,10 +3447,26 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
 
         // Sanitize all string values in cvData to prevent injection
         const safeCvData = sanitizeCvData(cvData);
+        const watermark = downloadQuota.plan === 'free';
+
+        const lambdaPdfBuffer = await generatePdfWithLambda(safeCvData, requestedTemplate, watermark);
+        if (lambdaPdfBuffer) {
+            console.log(`Lambda PDF generated. Buffer size: ${lambdaPdfBuffer.length}`);
+
+            await incrementDownloadQuota(req.user);
+
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Length': lambdaPdfBuffer.length.toString(),
+                'X-PDF-Renderer': 'lambda',
+            });
+
+            return res.send(Buffer.from(lambdaPdfBuffer));
+        }
 
         // Generate self-contained HTML
         console.log("Generating HTML for PDF...");
-        const html = generateCVHTML(safeCvData, requestedTemplate, { watermark: downloadQuota.plan === 'free' });
+        const html = generateCVHTML(safeCvData, requestedTemplate, { watermark });
         console.log(`HTML generated: ${html.length} bytes`);
 
         const useWarmBrowser = downloadQuota.plan !== 'free';
