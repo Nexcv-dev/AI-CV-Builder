@@ -836,10 +836,6 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                       key={item.key}
                       type="button"
                       onClick={() => {
-                        if (isFreePlan && isTemplatePaid(item.key)) {
-                          onUpgradeRequired?.('save');
-                          return;
-                        }
                         setPendingTemplate(item.key);
                       }}
                       className={`group relative flex min-w-0 flex-col overflow-hidden rounded-xl border-2 text-left transition-all active:scale-[0.99] ${
