@@ -358,6 +358,7 @@ async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
   } catch (error) {
     console.warn('S3 template unavailable; falling back to built-in PDF template.', error);
   }
+  const templateSource = html ? 's3' : 'built-in';
   html = html || generateCVHTML(safeCvData, requestedTemplate, { watermark });
   const browser = await launchBrowser();
   let page: any = null;
@@ -384,11 +385,12 @@ async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
       await Promise.all(images.map((img: any) => img.decode().catch(() => undefined)));
     });
     await new Promise((resolve) => setTimeout(resolve, 500));
-    return await page.pdf({
+    const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     });
+    return { pdf, templateSource };
   } finally {
     if (page) await page.close().catch(() => undefined);
     await browser.close().catch(() => undefined);
@@ -436,13 +438,14 @@ export async function handler(event: any) {
         body: JSON.stringify({ error: 'Missing or invalid cvData' }),
       };
     }
-    const pdf = await renderPdf(payload.cvData, payload.template, Boolean(payload.watermark));
+    const { pdf, templateSource } = await renderPdf(payload.cvData, payload.template, Boolean(payload.watermark));
     return {
       statusCode: 200,
       isBase64Encoded: true,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'attachment; filename="resume.pdf"',
+        'X-PDF-Template-Source': templateSource,
       },
       body: Buffer.from(pdf).toString('base64'),
     };

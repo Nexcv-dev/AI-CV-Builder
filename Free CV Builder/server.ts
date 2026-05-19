@@ -3714,7 +3714,7 @@ async function launchOneShotPdfBrowser() {
     return browser;
 }
 
-async function generatePdfWithLambda(cvData: any, template: TemplateName, watermark: boolean): Promise<Buffer | null> {
+async function generatePdfWithLambda(cvData: any, template: TemplateName, watermark: boolean): Promise<{ buffer: Buffer; templateSource: string } | null> {
     const lambdaUrl = process.env.PDF_LAMBDA_URL?.trim();
     if (!lambdaUrl) return null;
 
@@ -3743,13 +3743,19 @@ async function generatePdfWithLambda(cvData: any, template: TemplateName, waterm
         if (contentType.includes('application/pdf')) {
             const arrayBuffer = await response.arrayBuffer();
             console.timeEnd("PdfLambdaGeneration");
-            return Buffer.from(arrayBuffer);
+            return {
+                buffer: Buffer.from(arrayBuffer),
+                templateSource: response.headers.get('x-pdf-template-source') || 'unknown',
+            };
         }
 
         const payload = await response.json();
         if (payload?.isBase64Encoded && typeof payload.body === 'string') {
             console.timeEnd("PdfLambdaGeneration");
-            return Buffer.from(payload.body, 'base64');
+            return {
+                buffer: Buffer.from(payload.body, 'base64'),
+                templateSource: payload.headers?.['X-PDF-Template-Source'] || payload.headers?.['x-pdf-template-source'] || 'unknown',
+            };
         }
 
         throw new Error('PDF Lambda returned an unexpected response format.');
@@ -3805,19 +3811,20 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         const safeCvData = sanitizeCvData(cvData);
         const watermark = downloadQuota.plan === 'free';
 
-        const lambdaPdfBuffer = await generatePdfWithLambda(safeCvData, requestedTemplate, watermark);
-        if (lambdaPdfBuffer) {
-            console.log(`Lambda PDF generated. Buffer size: ${lambdaPdfBuffer.length}`);
+        const lambdaPdf = await generatePdfWithLambda(safeCvData, requestedTemplate, watermark);
+        if (lambdaPdf) {
+            console.log(`Lambda PDF generated. Buffer size: ${lambdaPdf.buffer.length}`);
 
             await incrementDownloadQuota(req.user);
 
             res.set({
                 'Content-Type': 'application/pdf',
-                'Content-Length': lambdaPdfBuffer.length.toString(),
+                'Content-Length': lambdaPdf.buffer.length.toString(),
                 'X-PDF-Renderer': 'lambda',
+                'X-PDF-Template-Source': lambdaPdf.templateSource,
             });
 
-            return res.send(Buffer.from(lambdaPdfBuffer));
+            return res.send(Buffer.from(lambdaPdf.buffer));
         }
 
         // Generate self-contained HTML
