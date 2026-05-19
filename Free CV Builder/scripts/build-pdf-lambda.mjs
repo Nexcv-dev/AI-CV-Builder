@@ -396,6 +396,7 @@ const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').repla
 const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 5 * 60 * 1000);
 let s3Client: S3Client | null = null;
 const s3TemplateCache = new Map<string, { html: string; expiresAt: number }>();
+let lastS3TemplateDebug = 'not-attempted';
 
 const getS3Client = () => {
   if (!S3_TEMPLATE_BUCKET) return null;
@@ -443,15 +444,20 @@ const templateS3Key = (template: TemplateName, fileName: string) => (
 
 async function loadS3TemplateHtml(template: TemplateName): Promise<string | null> {
   if (!S3_TEMPLATE_BUCKET) {
+    lastS3TemplateDebug = 'bucket-not-configured';
     console.warn('S3 template bucket is not configured; falling back to built-in PDF template.');
     return null;
   }
 
   const cached = s3TemplateCache.get(template);
-  if (cached && cached.expiresAt > Date.now()) return cached.html;
+  if (cached && cached.expiresAt > Date.now()) {
+    lastS3TemplateDebug = 'cache-hit:' + template;
+    return cached.html;
+  }
 
   const indexHtml = await fetchS3Text(templateS3Key(template, 'index.html'));
   if (!indexHtml) {
+    lastS3TemplateDebug = 'index-not-found:' + templateS3Key(template, 'index.html');
     console.warn(\`S3 template index not found at \${templateS3Key(template, 'index.html')}; falling back to built-in PDF template.\`);
     return null;
   }
@@ -461,6 +467,7 @@ async function loadS3TemplateHtml(template: TemplateName): Promise<string | null
     ? indexHtml.replace('</head>', '<style>\\n' + css + '\\n</style>\\n</head>')
     : indexHtml;
 
+  lastS3TemplateDebug = 'loaded:' + templateS3Key(template, 'index.html') + ':' + (css ? 'css' : 'no-css');
   console.log(\`Loaded S3 PDF template \${template} from \${templateS3Key(template, 'index.html')}\${css ? ' with CSS' : ' without CSS'}.\`);
 
   s3TemplateCache.set(template, {
@@ -526,6 +533,7 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
 ${s3TemplatePreprocessorTs}
 
 async function generateS3CVHTML(cvData: any, template: TemplateName, options: { watermark?: boolean } = {}) {
+  lastS3TemplateDebug = 'attempting';
   const templateHtml = await loadS3TemplateHtml(template);
   return templateHtml ? renderCvTemplateString(templateHtml, prepareS3TemplateData(cvData, template, options), options) : null;
 }
@@ -554,6 +562,7 @@ async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
   try {
     html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark });
   } catch (error) {
+    lastS3TemplateDebug = 'error:' + (error instanceof Error ? error.name : 'unknown');
     console.warn('S3 template unavailable; falling back to built-in PDF template.', error);
   }
   const templateSource = html ? 's3' : 'built-in';
@@ -588,7 +597,7 @@ async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
       printBackground: true,
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     });
-    return { pdf, templateSource };
+    return { pdf, templateSource, s3TemplateDebug: lastS3TemplateDebug };
   } finally {
     if (page) await page.close().catch(() => undefined);
     await browser.close().catch(() => undefined);
@@ -636,7 +645,7 @@ export async function handler(event: any) {
         body: JSON.stringify({ error: 'Missing or invalid cvData' }),
       };
     }
-    const { pdf, templateSource } = await renderPdf(payload.cvData, payload.template, Boolean(payload.watermark));
+    const { pdf, templateSource, s3TemplateDebug } = await renderPdf(payload.cvData, payload.template, Boolean(payload.watermark));
     return {
       statusCode: 200,
       isBase64Encoded: true,
@@ -645,6 +654,7 @@ export async function handler(event: any) {
         'Content-Disposition': 'attachment; filename="resume.pdf"',
         'X-PDF-Template-Source': templateSource,
         'X-PDF-Lambda-Build': PDF_LAMBDA_BUILD_MARKER,
+        'X-PDF-S3-Debug': s3TemplateDebug,
       },
       body: Buffer.from(pdf).toString('base64'),
     };
