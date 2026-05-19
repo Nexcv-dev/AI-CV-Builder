@@ -441,18 +441,26 @@ const templateS3Key = (template: TemplateName, fileName: string) => (
 );
 
 async function loadS3TemplateHtml(template: TemplateName): Promise<string | null> {
-  if (!S3_TEMPLATE_BUCKET) return null;
+  if (!S3_TEMPLATE_BUCKET) {
+    console.warn('S3 template bucket is not configured; falling back to built-in PDF template.');
+    return null;
+  }
 
   const cached = s3TemplateCache.get(template);
   if (cached && cached.expiresAt > Date.now()) return cached.html;
 
   const indexHtml = await fetchS3Text(templateS3Key(template, 'index.html'));
-  if (!indexHtml) return null;
+  if (!indexHtml) {
+    console.warn(\`S3 template index not found at \${templateS3Key(template, 'index.html')}; falling back to built-in PDF template.\`);
+    return null;
+  }
 
   const css = await fetchS3Text(templateS3Key(template, 'style.css'));
   const html = css
     ? indexHtml.replace('</head>', '<style>\\n' + css + '\\n</style>\\n</head>')
     : indexHtml;
+
+  console.log(\`Loaded S3 PDF template \${template} from \${templateS3Key(template, 'index.html')}\${css ? ' with CSS' : ' without CSS'}.\`);
 
   s3TemplateCache.set(template, {
     html,
