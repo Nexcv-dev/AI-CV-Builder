@@ -201,6 +201,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
   const imageY = Number.isFinite(Number(cvData.imageY)) ? Math.min(Math.max(Number(cvData.imageY), -120), 120) : 0;
   const lineSpacing = safeNumberForTemplate(cvData.lineSpacing, 1.5, 1, 2.5);
   const sectionGap = safeNumberForTemplate(cvData.sectionGap, 2, 0.5, 4);
+  const isProfessional = template === 'professional';
 
   const dateInline = (startDate?: string, endDate?: string) =>
     [startDate || '', endDate || ''].filter(Boolean).join(startDate && endDate ? ' - ' : '');
@@ -273,13 +274,13 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
   }));
 
   const sectionBuilders: Record<string, () => any | null> = {
-    summary: () => personalInfo.summary ? { key: 'summary', isSummary: true, title: 'Professional Summary' } : null,
+    summary: () => personalInfo.summary ? { key: 'summary', isSummary: true, title: isProfessional ? 'Professional Summary' : 'Profile' } : null,
     personalDetails: () => hasPersonalDetails ? { key: 'personalDetails', isPersonalDetails: true, title: 'Personal Details', items: personalDetails } : null,
     experience: () => processedExperience.length ? { key: 'experience', isExperience: true, title: 'Experience', items: processedExperience } : null,
     education: () => processedEducation.length ? { key: 'education', isEducation: true, title: 'Education', items: processedEducation } : null,
-    skills: () => skills.length ? { key: 'skills', isSkills: true, title: 'Skills & Expertise', items: skills } : null,
-    projects: () => processedProjects.length ? { key: 'projects', isProjects: true, title: 'Key Projects', items: processedProjects } : null,
-    courses: () => processedCourses.length ? { key: 'courses', isCourses: true, title: 'Certifications & Courses', items: processedCourses } : null,
+    skills: () => skills.length ? { key: 'skills', isSkills: true, title: isProfessional ? 'Skills & Expertise' : 'Skills', items: skills } : null,
+    projects: () => processedProjects.length ? { key: 'projects', isProjects: true, title: isProfessional ? 'Key Projects' : 'Projects', items: processedProjects } : null,
+    courses: () => processedCourses.length ? { key: 'courses', isCourses: true, title: isProfessional ? 'Certifications & Courses' : 'Courses & Certifications', items: processedCourses } : null,
     awards: () => processedAwards.length ? { key: 'awards', isAwards: true, title: 'Awards', items: processedAwards } : null,
     languages: () => processedLanguages.length ? { key: 'languages', isLanguages: true, title: 'Languages', items: processedLanguages } : null,
     references: () => processedReferences.length ? { key: 'references', isReferences: true, title: 'References', items: processedReferences } : null,
@@ -293,6 +294,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
   return {
     ...cvData,
     personalInfo,
+    contactItems: [personalInfo.email, personalInfo.phone, personalInfo.address].filter(Boolean).map((value: string) => ({ value })),
     experience: processedExperience,
     education: processedEducation,
     skills,
@@ -319,7 +321,8 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       profileImageTransform: 'scale(' + imageZoom + ') translate(' + imageX + 'px,' + imageY + 'px)',
     },
     flags: {
-      isProfessional: template === 'professional',
+      isProfessional,
+      isClassic: template === 'classic',
       hasPersonalDetails,
       hasSkillCategories: skills.some((skill: any) => skill.category?.trim()),
     },
