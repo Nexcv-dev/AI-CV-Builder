@@ -8,7 +8,7 @@ import esbuild from 'esbuild';
 const __filename = fileURLToPath(import.meta.url);
 const projectRoot = path.resolve(path.dirname(__filename), '..');
 const repoRoot = path.resolve(projectRoot, '..');
-const serverPath = path.join(projectRoot, 'server.ts');
+const pdfServicePath = path.join(projectRoot, 'services', 'pdfService.ts');
 const outRoot = path.join(projectRoot, 'lambda-pdf');
 const buildDir = path.join(outRoot, 'build');
 const distDir = path.join(outRoot, 'dist');
@@ -136,10 +136,10 @@ function copyDirIfExists(src, dest) {
   if (fs.existsSync(src)) copyDir(src, dest);
 }
 
-const serverSource = fs.readFileSync(serverPath, 'utf8');
-const pdfIcons = extractConstObject(serverSource, 'PDF_ICONS');
-const generateCvHtmlTs = extractBetween(serverSource, 'export function generateCVHTML', '// AI Generate PDF via Puppeteer').replace('export function', 'function');
-const sanitizeCvDataTs = extractFunction(serverSource, 'function sanitizeCvData');
+const pdfServiceSource = fs.readFileSync(pdfServicePath, 'utf8');
+const pdfIcons = extractConstObject(pdfServiceSource, 'PDF_ICONS');
+const generateCvHtmlTs = extractBetween(pdfServiceSource, 'export function generateCVHTML', '// AI Generate PDF via Puppeteer').replace('export function', 'function');
+const sanitizeCvDataTs = extractFunction(pdfServiceSource, 'export function sanitizeCvData').replace('export function', 'function');
 
 const s3TemplatePreprocessorTs = String.raw`
 const safeHexColorForTemplate = (value: unknown, fallback: string) =>
