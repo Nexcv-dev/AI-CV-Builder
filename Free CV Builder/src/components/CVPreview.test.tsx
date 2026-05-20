@@ -16,6 +16,14 @@ vi.mock('lucide-react', () => ({
   Globe: () => <div data-testid="icon-globe" />,
   Sparkles: () => <div data-testid="icon-sparkles" />,
   Heart: () => <div data-testid="icon-heart" />,
+  Award: () => <div data-testid="icon-award" />,
+  BookOpen: () => <div data-testid="icon-book-open" />,
+  Briefcase: () => <div data-testid="icon-briefcase" />,
+  Code2: () => <div data-testid="icon-code" />,
+  GraduationCap: () => <div data-testid="icon-graduation-cap" />,
+  Languages: () => <div data-testid="icon-languages" />,
+  Link2: () => <div data-testid="icon-link" />,
+  Users: () => <div data-testid="icon-users" />,
 }));
 
 const mockCVData: CVData = {

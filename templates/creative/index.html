@@ -22,12 +22,12 @@
             </div>
           {{/computed.hasProfileImage}}
           {{^computed.hasProfileImage}}
-            <div class="monogram">{{personalInfo.fullName}}</div>
+            <div class="monogram" aria-hidden="true"></div>
           {{/computed.hasProfileImage}}
         </div>
 
         <section class="contact-card">
-          <h2>Contact</h2>
+          <h2><span class="section-icon">✉</span><span>Contact</span></h2>
           {{#personalInfo.email}}<p>{{personalInfo.email}}</p>{{/personalInfo.email}}
           {{#personalInfo.phone}}<p>{{personalInfo.phone}}</p>{{/personalInfo.phone}}
           {{#personalInfo.address}}<p>{{personalInfo.address}}</p>{{/personalInfo.address}}
@@ -36,7 +36,7 @@
         {{#creativeSideSections}}
           {{#isPersonalDetails}}
             <section class="side-section">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">☷</span><span>{{title}}</span></h2>
               <div class="detail-list">
                 {{#items}}<div><span>{{label}}</span><strong>{{value}}</strong></div>{{/items}}
               </div>
@@ -45,14 +45,14 @@
 
           {{#isSkills}}
             <section class="side-section">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">◆</span><span>{{title}}</span></h2>
               <div class="skill-list">{{#items}}<span>{{name}}</span>{{/items}}</div>
             </section>
           {{/isSkills}}
 
           {{#isLanguages}}
             <section class="side-section">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">◎</span><span>{{title}}</span></h2>
               <div class="language-list">
                 {{#items}}<div><span>{{name}}</span><em>{{proficiency}}</em></div>{{/items}}
               </div>
@@ -71,14 +71,14 @@
         {{#creativeMainSections}}
           {{#isSummary}}
             <section class="main-section intro">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">✦</span><span>{{title}}</span></h2>
               <div class="rich">{{{personalInfo.summary}}}</div>
             </section>
           {{/isSummary}}
 
           {{#isExperience}}
             <section class="main-section">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">▣</span><span>{{title}}</span></h2>
               <div class="stack">
                 {{#items}}
                   <article class="timeline-item">
@@ -93,7 +93,7 @@
 
           {{#isEducation}}
             <section class="main-section">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">◈</span><span>{{title}}</span></h2>
               <div class="card-grid">
                 {{#items}}
                   <article class="mini-card">
@@ -109,7 +109,7 @@
 
           {{#isProjects}}
             <section class="main-section">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">↗</span><span>{{title}}</span></h2>
               <div class="stack compact">
                 {{#items}}
                   <article class="timeline-item">
@@ -123,7 +123,7 @@
 
           {{#isCourses}}
             <section class="main-section">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">◉</span><span>{{title}}</span></h2>
               <div class="card-grid">
                 {{#items}}<article class="mini-card"><h3>{{name}}</h3><p class="sub">{{institution}}</p><span>{{formattedDate}}</span></article>{{/items}}
               </div>
@@ -132,7 +132,7 @@
 
           {{#isAwards}}
             <section class="main-section">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">★</span><span>{{title}}</span></h2>
               <div class="card-grid">
                 {{#items}}<article class="mini-card"><h3>{{name}}</h3><p class="sub">{{issuer}}</p><span>{{date}}</span></article>{{/items}}
               </div>
@@ -141,7 +141,7 @@
 
           {{#isReferences}}
             <section class="main-section">
-              <h2>{{title}}</h2>
+              <h2><span class="section-icon">☏</span><span>{{title}}</span></h2>
               <div class="card-grid">
                 {{#items}}
                   <article class="mini-card">
