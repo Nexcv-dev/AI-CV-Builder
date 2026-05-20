@@ -35,7 +35,12 @@ ul {
   margin: 4px 0;
 }
 li { margin-bottom: 4px; }
-@page { margin: 0 !important; }
+@page {
+  margin: 10mm 0 0 0;
+}
+@page :first {
+  margin-top: 0;
+}
 .pdf-shell {
   width: 210mm;
   background: transparent;
@@ -73,9 +78,9 @@ li { margin-bottom: 4px; }
 body::before {
   content: "";
   position: fixed;
-  top: 0;
+  top: -10mm;
   left: 0;
-  bottom: 0;
+  bottom: -10mm;
   width: 30%;
   background: {{{computed.templateSurfaceColor}}};
   z-index: 0;
@@ -104,6 +109,10 @@ body::before {
 .sidebar-section {
   margin-bottom: 32px;
   break-inside: avoid;
+}
+.sidebar-section:last-child,
+.main-section:last-child {
+  margin-bottom: 0;
 }
 .skills-section { margin-top: 16px; }
 .languages-section { margin-top: 32px; }

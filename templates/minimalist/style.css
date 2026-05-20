@@ -5,6 +5,12 @@ body {
   background: #ffffff;
   font-family: {{{computed.fontFamilyCSS}}};
 }
+@page {
+  margin: 10mm 0 0 0;
+}
+@page :first {
+  margin-top: 0;
+}
 .pdf-shell { background: #ffffff; }
 .page {
   width: 210mm;
@@ -120,6 +126,10 @@ h1 {
 section {
   margin: 0 0 22px;
   break-inside: avoid;
+}
+.main-column section:last-child,
+.side-column section:last-child {
+  margin-bottom: 0;
 }
 .side-column section { margin-bottom: 0; }
 article {
