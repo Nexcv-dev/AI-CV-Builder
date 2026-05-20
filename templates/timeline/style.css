@@ -115,6 +115,7 @@ tfoot {
   align-items: flex-start;
   justify-content: space-between;
   gap: 32px;
+  flex-wrap: wrap;
 }
 
 .identity {
@@ -148,6 +149,13 @@ h1 {
   font-weight: 500;
   line-height: 1.65;
   color: #6b7280;
+  overflow: hidden;
+}
+
+.contact-list span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .profile-frame {
@@ -189,12 +197,12 @@ section {
 }
 
 .section-head h2 {
-  flex-shrink: 0;
   font-size: 0.6875rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.22em;
   color: {{computed.themeColor}};
+  min-width: 0;
 }
 
 .section-head span {
@@ -314,8 +322,10 @@ aside a {
 .detail-row {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   border-bottom: 1px solid #f3f4f6;
   padding-bottom: 4px;
+  flex-wrap: wrap;
 }
 
 .detail-row span:first-child {
@@ -371,6 +381,8 @@ aside a {
   font-size: 0.75rem;
   color: #6b7280;
   font-style: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .reference-grid {
