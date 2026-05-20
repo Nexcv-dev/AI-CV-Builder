@@ -3,38 +3,42 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #154 from bimanthaperera-lab/test/overview (9a3ba7d) - Bimantha Perera, 9 seconds ago
-* Migrate timeline PDF template to S3 pipeline (efd7551) - Bimantha Perera, 4 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (0e6772c) - bimanthaperera-lab, 23 minutes ago
-* Merge pull request #153 from bimanthaperera-lab/test/overview (dd94497) - Bimantha Perera, 24 minutes ago
-* Migrate classic PDF template to S3 pipeline (9b8f92a) - Bimantha Perera, 30 minutes ago
-* Expose S3 template debug state (e95bdc0) - Bimantha Perera, 12 hours ago
+* Merge pull request #155 from bimanthaperera-lab/test/overview (6880209) - Bimantha Perera, 10 seconds ago
+* Migrate minimalist PDF template to S3 pipeline (8cf0a2d) - Bimantha Perera, 5 minutes ago
+* Soften PDF template name weights (6cae675) - Bimantha Perera, 15 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (ac66de7) - bimanthaperera-lab, 38 minutes ago
+* Merge pull request #154 from bimanthaperera-lab/test/overview (9a3ba7d) - Bimantha Perera, 39 minutes ago
+* Migrate timeline PDF template to S3 pipeline (efd7551) - Bimantha Perera, 42 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (0e6772c) - bimanthaperera-lab, 62 minutes ago
+* Merge pull request #153 from bimanthaperera-lab/test/overview (dd94497) - Bimantha Perera, 62 minutes ago
+* Migrate classic PDF template to S3 pipeline (9b8f92a) - Bimantha Perera, 68 minutes ago
+* Expose S3 template debug state (e95bdc0) - Bimantha Perera, 13 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (2f2b8b9) - bimanthaperera-lab, 13 hours ago
 * Merge pull request #152 from bimanthaperera-lab/test/overview (998ed66) - Bimantha Perera, 13 hours ago
 * Expose PDF Lambda build marker (ce83141) - Bimantha Perera, 13 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (2030b4e) - bimanthaperera-lab, 13 hours ago
 * Merge pull request #151 from bimanthaperera-lab/test/overview (cd27add) - Bimantha Perera, 13 hours ago
 * Log S3 template fallback reason (b88c464) - Bimantha Perera, 13 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (e1bb4e8) - bimanthaperera-lab, 14 hours ago
-* Merge pull request #150 from bimanthaperera-lab/test/overview (13dcdf7) - Bimantha Perera, 14 hours ago
-* Restore generated PDF handler source (d912b94) - Bimantha Perera, 14 hours ago
-* Migrate professional PDF template to S3 data pipeline (2823c0c) - Bimantha Perera, 14 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e1bb4e8) - bimanthaperera-lab, 15 hours ago
+* Merge pull request #150 from bimanthaperera-lab/test/overview (13dcdf7) - Bimantha Perera, 15 hours ago
+* Restore generated PDF handler source (d912b94) - Bimantha Perera, 15 hours ago
+* Migrate professional PDF template to S3 data pipeline (2823c0c) - Bimantha Perera, 15 hours ago
 * add tempaltes to S3 (58c42dd) - Bimantha Perera, 18 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (2fd1248) - bimanthaperera-lab, 18 hours ago
 * Merge pull request #149 from bimanthaperera-lab/test/overview (f91807e) - Bimantha Perera, 18 hours ago
-* Check the pdf generation with S3 (6a67d29) - Bimantha Perera, 18 hours ago
+* Check the pdf generation with S3 (6a67d29) - Bimantha Perera, 19 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (0802aba) - bimanthaperera-lab, 19 hours ago
 * Merge pull request #148 from bimanthaperera-lab/test/overview (d489841) - Bimantha Perera, 19 hours ago
 * automate AWS lambda file upload (3bc4ce9) - Bimantha Perera, 19 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (7c34a34) - bimanthaperera-lab, 19 hours ago
-* Merge pull request #147 from bimanthaperera-lab/test/overview (55ab151) - Bimantha Perera, 19 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (7c34a34) - bimanthaperera-lab, 20 hours ago
+* Merge pull request #147 from bimanthaperera-lab/test/overview (55ab151) - Bimantha Perera, 20 hours ago
 * Update main.yml (609ae43) - Bimantha Perera, 20 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (2335721) - bimanthaperera-lab, 20 hours ago
 * Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 20 hours ago
-* Send template request to S3 bucket (77118d3) - Bimantha Perera, 20 hours ago
+* Send template request to S3 bucket (77118d3) - Bimantha Perera, 21 hours ago
 * Implement Support Ticket (1e7163a) - Bimantha Perera, 23 hours ago
-* move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 23 hours ago
-* Update CVForm.tsx (37f2feb) - Bimantha Perera, 26 hours ago
+* move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 24 hours ago
+* Update CVForm.tsx (37f2feb) - Bimantha Perera, 27 hours ago
 * implement template management settings with backend (932c731) - Bimantha Perera, 2 days ago
 * implement Admin Panel Template and dashboard settings (07345f4) - Bimantha Perera, 2 days ago
 * Create Admin Panel Structre (aff3de4) - Bimantha Perera, 2 days ago
@@ -141,8 +145,8 @@ All notable changes to this project will be documented in this file.
 * fix security issues (32c0076) - Bimantha Perera, 8 days ago
 * Improve UI/UX with user logins and create profile, dashboard,settings pages (61d7944) - Bimantha Perera, 8 days ago
 * Create User Login (0ab92c2) - Bimantha Perera, 8 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (e1f7032) - bimanthaperera-lab, 8 days ago
-* Merge pull request #92 from bimanthaperera-lab/test/overview (f6ee3e1) - Bimantha Perera, 8 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (e1f7032) - bimanthaperera-lab, 9 days ago
+* Merge pull request #92 from bimanthaperera-lab/test/overview (f6ee3e1) - Bimantha Perera, 9 days ago
 * Implement MongoDB database and Google Auth for Future Developments (65dd7b5) - Bimantha Perera, 9 days ago
 * Update App.tsx (e9775cd) - Bimantha Perera, 9 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (09d756a) - bimanthaperera-lab, 9 days ago
@@ -180,8 +184,8 @@ All notable changes to this project will be documented in this file.
 * Merge pull request #82 from bimanthaperera-lab/test/overview (6dc2031) - Bimantha Perera, 9 days ago
 * Update README.md (15f3fcd) - Bimantha Perera, 9 days ago
 * Add FAQ section to the Landing Page (447d3e7) - Bimantha Perera, 9 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (7fec5af) - bimanthaperera-lab, 9 days ago
-* Merge pull request #77 from bimanthaperera-lab/test/overview (7eb0802) - Bimantha Perera, 9 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (7fec5af) - bimanthaperera-lab, 10 days ago
+* Merge pull request #77 from bimanthaperera-lab/test/overview (7eb0802) - Bimantha Perera, 10 days ago
 * fix hamburger scrolling and template selection (a757e67) - Bimantha Perera, 10 days ago
 * Update LandingPage.tsx (9c9760c) - Bimantha Perera, 10 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (c1958e2) - bimanthaperera-lab, 10 days ago
@@ -248,13 +252,13 @@ All notable changes to this project will be documented in this file.
 * Update README.md (e1b0841) - Bimantha Perera, 12 days ago
 * Update main.yml (2922038) - Bimantha Perera, 12 days ago
 * Dockerization the App (359fe20) - Bimantha Perera, 12 days ago
-* chore: bump version to 0.1.2 (2d4e777) - bimanthaperera-lab, 12 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (b80c98c) - bimanthaperera-lab, 12 days ago
-* Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 12 days ago
-* fix: move secrets check into bash script (69dd804) - Bimantha Perera, 12 days ago
-* fix: if condition for secret checking in GitHub Action (2884e28) - Bimantha Perera, 12 days ago
-* feat: add render deploy hook to release workflow (85477c6) - Bimantha Perera, 12 days ago
-* feat: add render.yaml blueprint for automated deployment (97983d5) - Bimantha Perera, 12 days ago
+* chore: bump version to 0.1.2 (2d4e777) - bimanthaperera-lab, 13 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (b80c98c) - bimanthaperera-lab, 13 days ago
+* Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 13 days ago
+* fix: move secrets check into bash script (69dd804) - Bimantha Perera, 13 days ago
+* fix: if condition for secret checking in GitHub Action (2884e28) - Bimantha Perera, 13 days ago
+* feat: add render deploy hook to release workflow (85477c6) - Bimantha Perera, 13 days ago
+* feat: add render.yaml blueprint for automated deployment (97983d5) - Bimantha Perera, 13 days ago
 * chore: bump version to 0.1.1 (201936c) - bimanthaperera-lab, 13 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (8db5394) - bimanthaperera-lab, 13 days ago
 * Merge pull request #31 from bimanthaperera-lab/test/overview (6ecda2c) - Bimantha Perera, 13 days ago
