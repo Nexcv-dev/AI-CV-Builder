@@ -1121,17 +1121,17 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
 
             <div className="grid grid-cols-[1fr_250px] gap-10 relative">
               {/* Vertical Divider */}
-              <div className="absolute top-0 bottom-0 left-[calc(100%-250px-20px)] w-px bg-gray-400" />
+              <div className="absolute top-0 bottom-0 left-[calc(100%-250px-20px)] w-px bg-gray-200" />
 
               <div className="flex flex-col gap-2">
                 {(cvData.sectionOrder || [])
-                  .filter(key => !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
+                  .filter(key => !['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
                   .map(renderSection)}
               </div>
 
               <div className="flex flex-col gap-6">
                 {(cvData.sectionOrder || [])
-                  .filter(key => ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
+                  .filter(key => ['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(key))
                   .map(renderSection)}
               </div>
             </div>

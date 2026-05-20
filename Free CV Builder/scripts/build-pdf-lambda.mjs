@@ -308,10 +308,19 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     .filter((key: string) => !hiddenSections.includes(key))
     .map((key: string) => sectionBuilders[key]?.())
     .filter(Boolean);
-  const minimalistSideSectionKeys = ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
+  const minimalistSideSectionKeys = ['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const minimalistLeftSections = sections.filter((section: any) => !minimalistSideSectionKeys.includes(section.key));
   const minimalistRightSections = sections.filter((section: any) => minimalistSideSectionKeys.includes(section.key));
   const modernMainSections = sections.filter((section: any) => !['personalDetails', 'skills', 'languages'].includes(section.key));
+  const startupLeftSections = sections.filter((section: any) => ['personalDetails', 'summary', 'experience'].includes(section.key));
+  const startupRightSections = sections.filter((section: any) => ['education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(section.key));
+  const creativeSideSections = sections.filter((section: any) => ['personalDetails', 'skills', 'languages'].includes(section.key));
+  const creativeMainSections = sections.filter((section: any) => !['personalDetails', 'skills', 'languages'].includes(section.key));
+  const startupHeaderTextColor = getContrastColorForTemplate(templateSurfaceColor);
+  const startupHeaderMutedColor = startupHeaderTextColor === '#ffffff' ? 'rgba(236, 253, 245, 0.92)' : 'rgba(15, 23, 42, 0.72)';
+  const startupHeaderBackground = cvData.templateSurfaceColor
+    ? templateSurfaceColor
+    : 'linear-gradient(135deg, ' + themeColor + ' 0%, #047857 100%)';
 
   return {
     ...cvData,
@@ -328,6 +337,10 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     references: processedReferences,
     sections,
     modernMainSections,
+    startupLeftSections,
+    startupRightSections,
+    creativeSideSections,
+    creativeMainSections,
     minimalistLeftSections,
     minimalistRightSections,
     computed: {
@@ -337,6 +350,9 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       sidebarTextColor,
       sidebarMutedColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
       sidebarBorderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+      startupHeaderTextColor,
+      startupHeaderMutedColor,
+      startupHeaderBackground,
       fontFamily,
       fontFamilyCSS: templateFontMap[fontFamily] || "'Inter', sans-serif",
       googleFontName: String(fontFamily || 'Inter').replace(/\s+/g, '+'),
@@ -346,6 +362,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: 'scale(' + imageZoom + ') translate(' + imageX + 'px,' + imageY + 'px)',
+      startupHeadlineTitle: processedExperience[0]?.position || 'Professional Title',
     },
     flags: {
       isProfessional,
@@ -393,17 +410,19 @@ const CV_TEMPLATES = [
   { key: 'timeline', label: 'Timeline', image: '/templates/timeline.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'minimalist', label: 'Minimalist', image: '/templates/minimalist.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'startup', label: 'Startup', image: '/templates/startup.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Header Background' },
+  { key: 'creative', label: 'Creative', image: '/templates/creative.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Accent Background' },
 ] as const;
 
 type TemplateName = (typeof CV_TEMPLATES)[number]['key'];
 const DEFAULT_TEMPLATE: TemplateName = 'professional';
 const PDF_LAMBDA_BUILD_MARKER = 's3-template-diagnostics-2026-05-19';
 const TEMPLATE_KEYS = CV_TEMPLATES.map((template) => template.key) as TemplateName[];
+const TEMPLATE_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
 function getTemplateDefinition(template: TemplateName) {
   return CV_TEMPLATES.find((item) => item.key === template) || CV_TEMPLATES[0];
 }
 function isTemplateName(value: unknown): value is TemplateName {
-  return typeof value === 'string' && TEMPLATE_KEYS.includes(value as TemplateName);
+  return typeof value === 'string' && TEMPLATE_KEY_PATTERN.test(value);
 }
 function getTemplateSurfaceColorFallback(template: TemplateName, colors: { themeColor: string; sidebarColor: string }): string {
   const definition = getTemplateDefinition(template);

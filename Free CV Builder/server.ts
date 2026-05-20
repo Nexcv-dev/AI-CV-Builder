@@ -9,7 +9,7 @@ import nodemailer from 'nodemailer';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import fs from 'fs';
 import { createHash, pbkdf2Sync, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { JSDOM } from 'jsdom';
@@ -22,6 +22,9 @@ import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import DownloadQuota from './server-models/DownloadQuotaModel';
 import PaymentTransaction from './server-models/PaymentTransaction';
+import BillingPlanSetting from './server-models/BillingPlanSetting';
+import Coupon from './server-models/Coupon';
+import CheckoutSession from './server-models/CheckoutSession';
 import TemplateSetting from './server-models/TemplateSetting';
 import SupportTicket from './server-models/SupportTicket';
 import './server-models/passportSetup'; // Initialize passport strategy
@@ -201,10 +204,11 @@ app.use('/api/auth/signup', emailVerificationLimiter);
 const defaultJsonParser = express.json({ limit: '1mb' });
 const cvImportJsonParser = express.json({ limit: '16mb' });
 const pdfJsonParser = express.json({ limit: '5mb' });
+const adminTemplateJsonParser = express.json({ limit: '6mb' });
 
 // Default JSON limit for most endpoints. Larger payloads are allowed only on specific routes.
 app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf') {
+    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf' || req.path.startsWith('/api/admin/templates')) {
         return next();
     }
     return defaultJsonParser(req, res, next);
@@ -335,11 +339,24 @@ async function fetchS3Text(key: string): Promise<string | null> {
     }
 }
 
-const templateS3Key = (template: TemplateName, fileName: string) => (
+const templateS3Key = (template: string, fileName: string) => (
     S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${template}/${fileName}` : `${template}/${fileName}`
 );
 
-async function loadS3TemplateHtml(template: TemplateName): Promise<string | null> {
+async function putS3Object(key: string, body: string | Buffer, contentType: string) {
+    const client = getS3Client();
+    if (!client || !S3_TEMPLATE_BUCKET) {
+        throw new Error('S3 template bucket is not configured.');
+    }
+    await client.send(new PutObjectCommand({
+        Bucket: S3_TEMPLATE_BUCKET,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+    }));
+}
+
+async function loadS3TemplateHtml(template: string): Promise<string | null> {
     if (!S3_TEMPLATE_BUCKET) return null;
 
     const cacheKey = template;
@@ -414,7 +431,7 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
     return renderBlock(templateHtml, root);
 }
 
-async function generateS3CVHTML(cvData: any, template: TemplateName, options: { watermark?: boolean } = {}) {
+async function generateS3CVHTML(cvData: any, template: string, options: { watermark?: boolean } = {}) {
     const templateHtml = await loadS3TemplateHtml(template);
     return templateHtml ? renderCvTemplateString(templateHtml, cvData, options) : null;
 }
@@ -896,6 +913,91 @@ export const PAYHERE_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount:
     monthly: { amount: '2199.00', cents: 219900, currency: 'LKR' },
 };
 
+const centsToPayHereAmount = (cents: number) => (Math.max(0, cents) / 100).toFixed(2);
+
+const calculateDiscountCents = (amountCents: number, discountType?: string, discountValue?: number) => {
+    if (!discountType || !discountValue) return 0;
+    const rawDiscount = discountType === 'percent'
+        ? Math.floor(amountCents * Math.min(Math.max(discountValue, 0), 100) / 100)
+        : Math.round(discountValue);
+    return Math.min(Math.max(rawDiscount, 0), Math.max(amountCents - 100, 0));
+};
+
+const normalizeCouponCode = (value: unknown) => (
+    typeof value === 'string'
+        ? value.replace(/[^a-z0-9_-]/gi, '').trim().toUpperCase().slice(0, 32)
+        : ''
+);
+
+const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>) => {
+    const setting = await BillingPlanSetting.findOne({ plan, active: true });
+    const fallback = PAYHERE_PLAN_PRICES[plan];
+    const baseAmountCents = setting?.amountCents ?? fallback.cents;
+    const promotionDiscountCents = setting?.promotionActive
+        ? calculateDiscountCents(baseAmountCents, setting.promotionDiscountType, setting.promotionDiscountValue)
+        : 0;
+    const finalAmountCents = Math.max(baseAmountCents - promotionDiscountCents, 100);
+    return {
+        plan,
+        label: setting?.label || planDisplayName(plan),
+        amount: centsToPayHereAmount(finalAmountCents),
+        cents: finalAmountCents,
+        baseAmountCents,
+        promotionDiscountCents,
+        promotionActive: promotionDiscountCents > 0,
+        promotionLabel: promotionDiscountCents > 0 ? (setting?.promotionLabel || 'Limited offer') : '',
+        promotionDiscountType: setting?.promotionDiscountType || 'fixed',
+        promotionDiscountValue: setting?.promotionDiscountValue || 0,
+        discountBadge: promotionDiscountCents > 0
+            ? (setting?.promotionDiscountType === 'percent'
+                ? `${setting.promotionDiscountValue}% OFF`
+                : `${setting?.currency || fallback.currency} ${Math.round(promotionDiscountCents / 100)} OFF`)
+            : '',
+        currency: (setting?.currency || fallback.currency) as 'LKR',
+        source: setting ? 'admin' : 'default',
+        updatedAt: setting?.updatedAt,
+    };
+};
+
+const getPublicBillingPlans = async () => {
+    const [payg, monthly] = await Promise.all([getPlanPrice('payg'), getPlanPrice('monthly')]);
+    return [payg, monthly];
+};
+
+const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCode?: string) => {
+    const price = await getPlanPrice(plan);
+    let coupon: any = null;
+    let discountCents = 0;
+    const code = normalizeCouponCode(couponCode);
+    const now = new Date();
+    if (code) {
+        coupon = await Coupon.findOne({ code, active: true });
+        const planAllowed = coupon && (!coupon.appliesTo?.length || coupon.appliesTo.includes(plan));
+        const started = !coupon?.startsAt || coupon.startsAt <= now;
+        const notExpired = !coupon?.expiresAt || coupon.expiresAt >= now;
+        const underLimit = !coupon?.maxRedemptions || coupon.redeemedCount < coupon.maxRedemptions;
+        if (!coupon || !planAllowed || !started || !notExpired || !underLimit) {
+            return { error: 'Coupon is not valid for this plan.' };
+        }
+        discountCents = calculateDiscountCents(price.cents, coupon.discountType, coupon.discountValue);
+    }
+    const finalAmountCents = Math.max(price.cents - discountCents, 100);
+    return {
+        plan,
+        currency: price.currency,
+        baseAmountCents: price.baseAmountCents,
+        promotionDiscountCents: price.promotionDiscountCents,
+        discountCents: price.promotionDiscountCents + discountCents,
+        couponDiscountCents: discountCents,
+        finalAmountCents,
+        amount: centsToPayHereAmount(finalAmountCents),
+        couponCode: coupon?.code || '',
+        couponLabel: coupon?.label || '',
+        promotionLabel: price.promotionLabel,
+        discountBadge: price.discountBadge,
+    };
+};
+
 const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated() || !req.user) {
         return res.status(401).json({ error: 'Not authenticated' });
@@ -1106,26 +1208,58 @@ const adminUserSummary = (user: any, cvCount = 0) => ({
 });
 
 const TEMPLATE_CATEGORIES = ['Modern', 'ATS Friendly', 'Minimal', 'Executive', 'Creative', 'Tech', 'Corporate'] as const;
+const TEMPLATE_STATUSES = ['draft', 'active', 'archived'] as const;
+const TEMPLATE_SURFACE_COLOR_ROLES = ['none', 'sidebar', 'header'] as const;
+const CUSTOM_TEMPLATE_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
+const MAX_TEMPLATE_HTML_LENGTH = 240_000;
+const MAX_TEMPLATE_CSS_LENGTH = 160_000;
+const MAX_TEMPLATE_THUMBNAIL_BYTES = 900_000;
 
 const defaultTemplateCategory = (key: string) => {
     if (key === 'classic') return 'ATS Friendly';
     if (key === 'minimalist') return 'Minimal';
     if (key === 'professional') return 'Corporate';
-    if (key === 'startup') return 'Creative';
+    if (key === 'startup' || key === 'creative') return 'Creative';
     if (key === 'timeline') return 'Executive';
     return 'Modern';
 };
 
-const adminTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
+const templateThumbnailPath = (key: string, version?: unknown) => (
+    `/api/templates/${encodeURIComponent(key)}/thumbnail${version ? `?v=${encodeURIComponent(String(version))}` : ''}`
+);
+
+const builtInTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
     key: template.key,
     label: setting?.label || template.label,
     category: setting?.category || defaultTemplateCategory(template.key),
     access: setting?.access || template.access,
     thumbnail: setting?.thumbnail || template.image,
     builtInThumbnail: template.image,
-    surfaceColorRole: template.surfaceColorRole,
+    surfaceColorRole: setting?.surfaceColorRole || template.surfaceColorRole,
+    surfaceColorLabel: setting?.surfaceColorLabel || template.surfaceColorLabel || null,
+    source: 'built_in',
+    status: setting?.status || 'active',
     usageCount,
     updatedAt: setting?.updatedAt,
+});
+
+const customTemplateSummary = (setting: any, usageCount = 0) => ({
+    key: setting.key,
+    label: setting.label || setting.key,
+    category: setting.category || defaultTemplateCategory(setting.key),
+    access: setting.access || 'paid',
+    thumbnail: setting.thumbnail || templateThumbnailPath(setting.key, setting.updatedAt?.getTime?.() || setting.updatedAt),
+    builtInThumbnail: setting.thumbnail || templateThumbnailPath(setting.key, setting.updatedAt?.getTime?.() || setting.updatedAt),
+    surfaceColorRole: setting.surfaceColorRole || 'none',
+    surfaceColorLabel: setting.surfaceColorLabel || null,
+    source: 'custom',
+    status: setting.status || 'draft',
+    usageCount,
+    updatedAt: setting.updatedAt,
+});
+
+const adminTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
+    ...builtInTemplateSummary(template, setting, usageCount),
 });
 
 const adminPaymentSummary = (payment: any) => {
@@ -1143,6 +1277,10 @@ const adminPaymentSummary = (payment: any) => {
         plan: payment.plan || null,
         amount: payment.amount || '0.00',
         amountCents: parsePaymentAmountCents(payment.amount),
+        baseAmountCents: payment.baseAmountCents || 0,
+        discountCents: payment.discountCents || 0,
+        finalAmountCents: payment.finalAmountCents || parsePaymentAmountCents(payment.amount),
+        couponCode: payment.couponCode || '',
         currency: payment.currency || 'LKR',
         statusCode: payment.statusCode,
         processed: Boolean(payment.processed),
@@ -1177,9 +1315,70 @@ const adminSupportTicketSummary = (ticket: any) => ({
 
 const getTemplateSettingForKey = async (key: string) => {
     const template = CV_TEMPLATES.find((item) => item.key === key);
-    if (!template) return null;
+    if (!template) {
+        const setting = await TemplateSetting.findOne({ key, source: 'custom', status: { $ne: 'archived' } });
+        return setting ? customTemplateSummary(setting, 0) : null;
+    }
     const setting = await TemplateSetting.findOne({ key });
     return adminTemplateSummary(template, setting, 0);
+};
+
+const getActiveTemplateForKey = async (key: unknown) => {
+    if (!isTemplateName(key)) return null;
+    const builtIn = CV_TEMPLATES.find((item) => item.key === key);
+    if (builtIn) {
+        const setting = await TemplateSetting.findOne({ key });
+        const summary = builtInTemplateSummary(builtIn, setting, 0);
+        return summary.status === 'archived' ? null : summary;
+    }
+    const custom = await TemplateSetting.findOne({ key, source: 'custom', status: 'active' });
+    return custom ? customTemplateSummary(custom, 0) : null;
+};
+
+const resolveRequestedTemplate = async (value: unknown): Promise<TemplateName> => {
+    const template = await getActiveTemplateForKey(value);
+    return (template?.key || DEFAULT_TEMPLATE) as TemplateName;
+};
+
+const validateCustomTemplateKey = (value: unknown) => {
+    const key = sanitizeProfileField(value, 60).toLowerCase();
+    return CUSTOM_TEMPLATE_KEY_PATTERN.test(key) ? key : '';
+};
+
+const sanitizeTemplateSource = (value: unknown, maxLength: number) => (
+    typeof value === 'string'
+        ? value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, maxLength)
+        : ''
+);
+
+const validateTemplateHtml = (html: string) => {
+    if (!html.trim()) return 'Template HTML is required.';
+    if (html.length > MAX_TEMPLATE_HTML_LENGTH) return 'Template HTML is too large.';
+    if (/<\s*script\b/i.test(html)) return 'Template HTML cannot include script tags.';
+    if (/\son[a-z]+\s*=/i.test(html)) return 'Template HTML cannot include inline event handlers.';
+    if (/javascript:/i.test(html)) return 'Template HTML cannot include javascript URLs.';
+    if (!/{{\s*personalInfo\.fullName\s*}}/.test(html) && !/{{\s*#/.test(html)) {
+        return 'Template HTML must include NexCV template placeholders.';
+    }
+    return '';
+};
+
+const validateTemplateCss = (css: string) => {
+    if (!css.trim()) return 'Template CSS is required.';
+    if (css.length > MAX_TEMPLATE_CSS_LENGTH) return 'Template CSS is too large.';
+    if (/<\s*script\b/i.test(css) || /javascript:/i.test(css)) return 'Template CSS contains unsafe content.';
+    return '';
+};
+
+const parseThumbnailUpload = (value: unknown) => {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    const match = value.match(/^data:image\/(png|jpe?g|webp|svg\+xml);base64,([a-z0-9+/=\s]+)$/i);
+    if (!match) return null;
+    const extension = match[1].toLowerCase().replace('jpeg', 'jpg').replace('svg+xml', 'svg');
+    const buffer = Buffer.from(match[2].replace(/\s+/g, ''), 'base64');
+    if (!buffer.length || buffer.length > MAX_TEMPLATE_THUMBNAIL_BYTES) return null;
+    const contentType = extension === 'svg' ? 'image/svg+xml' : `image/${extension === 'jpg' ? 'jpeg' : extension}`;
+    return { buffer, extension, contentType };
 };
 
 // ─── API Routes ──────────────────────────────────────────────────────
@@ -1437,14 +1636,23 @@ app.get('/api/admin/templates', requireSuperAdmin, async (_req: Request, res: Re
         ]);
         const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
         const usageMap = new Map(usage.map((item: any) => [item._id, item.count]));
+        const builtInKeys = new Set<string>(CV_TEMPLATES.map((template) => template.key));
+        const customTemplates = settings
+            .filter((setting) => setting.source === 'custom' && !builtInKeys.has(setting.key))
+            .map((setting) => customTemplateSummary(setting, usageMap.get(setting.key) || 0));
 
         return res.json({
             categories: TEMPLATE_CATEGORIES,
-            templates: CV_TEMPLATES.map((template) => adminTemplateSummary(
+            statuses: TEMPLATE_STATUSES,
+            surfaceColorRoles: TEMPLATE_SURFACE_COLOR_ROLES,
+            templates: [
+                ...CV_TEMPLATES.map((template) => adminTemplateSummary(
                 template,
                 settingMap.get(template.key),
                 usageMap.get(template.key) || 0
-            )),
+                )),
+                ...customTemplates,
+            ],
         });
     } catch (error) {
         return sendError(res, 500, 'Could not load admin templates.', error);
@@ -1455,39 +1663,356 @@ app.get('/api/templates/config', async (_req: Request, res: Response) => {
     try {
         const settings = await TemplateSetting.find();
         const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
+        const builtInKeys = new Set<string>(CV_TEMPLATES.map((template) => template.key));
+        const builtIns = CV_TEMPLATES
+            .map((template) => adminTemplateSummary(template, settingMap.get(template.key), 0))
+            .filter((template) => template.status !== 'archived');
+        const customTemplates = settings
+            .filter((setting) => setting.source === 'custom' && setting.status === 'active' && !builtInKeys.has(setting.key))
+            .map((setting) => customTemplateSummary(setting, 0));
         return res.json({
-            templates: CV_TEMPLATES.map((template) => adminTemplateSummary(template, settingMap.get(template.key), 0)),
+            templates: [...builtIns, ...customTemplates],
         });
     } catch (error) {
         return sendError(res, 500, 'Could not load template configuration.', error);
     }
 });
 
-app.patch('/api/admin/templates/:key', requireSuperAdmin, async (req: Request, res: Response) => {
+app.get('/api/templates/:key/thumbnail', async (req: Request, res: Response) => {
     try {
-        const key = req.params.key;
-        const template = CV_TEMPLATES.find((item) => item.key === key);
-        if (!template) {
-            return res.status(404).json({ error: 'Template not found.' });
+        const key = validateCustomTemplateKey(req.params.key);
+        if (!key) return res.status(400).json({ error: 'Invalid template key.' });
+        const setting = await TemplateSetting.findOne({ key, source: 'custom', thumbnailS3Key: { $exists: true, $ne: '' } });
+        if (!setting?.thumbnailS3Key) return res.status(404).json({ error: 'Template thumbnail not found.' });
+        const client = getS3Client();
+        if (!client || !S3_TEMPLATE_BUCKET) return res.status(404).json({ error: 'Template thumbnail not configured.' });
+
+        const response = await client.send(new GetObjectCommand({
+            Bucket: S3_TEMPLATE_BUCKET,
+            Key: setting.thumbnailS3Key,
+        }));
+        res.setHeader('Content-Type', response.ContentType || 'image/svg+xml');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        if (response.Body && typeof (response.Body as any).pipe === 'function') {
+            return (response.Body as any).pipe(res);
+        }
+        const chunks: Buffer[] = [];
+        for await (const chunk of response.Body as any) {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        return res.send(Buffer.concat(chunks));
+    } catch (error) {
+        return sendError(res, 500, 'Could not load template thumbnail.', error);
+    }
+});
+
+app.post('/api/admin/templates', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    try {
+        const key = validateCustomTemplateKey(req.body.key);
+        if (!key) return res.status(400).json({ error: 'Use a lowercase slug key like creative-2026.' });
+        if (CV_TEMPLATES.some((template) => template.key === key) || await TemplateSetting.exists({ key })) {
+            return res.status(409).json({ error: 'A template with this key already exists.' });
+        }
+        if (!S3_TEMPLATE_BUCKET) {
+            return res.status(400).json({ error: 'S3 template bucket is not configured.' });
         }
 
-        const label = sanitizeProfileField(req.body.label, 80) || template.label;
+        const label = sanitizeProfileField(req.body.label, 80) || key;
         const category = typeof req.body.category === 'string' && TEMPLATE_CATEGORIES.includes(req.body.category as any)
             ? req.body.category
             : defaultTemplateCategory(key);
         const access = req.body.access === 'free' ? 'free' : 'paid';
-        const thumbnail = sanitizeProfileField(req.body.thumbnail, 500) || template.image;
+        const surfaceColorRole = TEMPLATE_SURFACE_COLOR_ROLES.includes(req.body.surfaceColorRole)
+            ? req.body.surfaceColorRole
+            : 'none';
+        const surfaceColorLabel = sanitizeProfileField(req.body.surfaceColorLabel, 80);
+        const indexHtml = sanitizeTemplateSource(req.body.indexHtml, MAX_TEMPLATE_HTML_LENGTH);
+        const styleCss = sanitizeTemplateSource(req.body.styleCss, MAX_TEMPLATE_CSS_LENGTH);
+        const thumbnailUpload = parseThumbnailUpload(req.body.thumbnailDataUrl);
+        const htmlError = validateTemplateHtml(indexHtml);
+        const cssError = validateTemplateCss(styleCss);
+        if (htmlError || cssError) return res.status(400).json({ error: htmlError || cssError });
+        if (!thumbnailUpload) return res.status(400).json({ error: 'Upload a PNG, JPG, WebP, or SVG thumbnail under 900 KB.' });
+
+        const s3Prefix = S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key;
+        const indexS3Key = `${s3Prefix}/index.html`;
+        const styleS3Key = `${s3Prefix}/style.css`;
+        const thumbnailS3Key = `${s3Prefix}/thumbnail.${thumbnailUpload.extension}`;
+        await Promise.all([
+            putS3Object(indexS3Key, indexHtml, 'text/html; charset=utf-8'),
+            putS3Object(styleS3Key, styleCss, 'text/css; charset=utf-8'),
+            putS3Object(thumbnailS3Key, thumbnailUpload.buffer, thumbnailUpload.contentType),
+        ]);
+
+        const setting = await TemplateSetting.create({
+            key,
+            label,
+            category,
+            access,
+            thumbnail: templateThumbnailPath(key, Date.now()),
+            surfaceColorRole,
+            surfaceColorLabel,
+            source: 'custom',
+            status: req.body.status === 'active' ? 'active' : 'draft',
+            s3Prefix,
+            indexS3Key,
+            styleS3Key,
+            thumbnailS3Key,
+            createdBy: currentUserId(req),
+            updatedBy: currentUserId(req),
+        });
+
+        s3TemplateCache.delete(key);
+        return res.status(201).json({ template: customTemplateSummary(setting, 0) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not create template.', error);
+    }
+});
+
+app.patch('/api/admin/templates/:key', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    try {
+        const key = req.params.key;
+        const template = CV_TEMPLATES.find((item) => item.key === key);
+        const existingCustom = !template ? await TemplateSetting.findOne({ key, source: 'custom' }) : null;
+        if (!template && !existingCustom) {
+            return res.status(404).json({ error: 'Template not found.' });
+        }
+
+        const label = sanitizeProfileField(req.body.label, 80) || template?.label || existingCustom?.label || key;
+        const category = typeof req.body.category === 'string' && TEMPLATE_CATEGORIES.includes(req.body.category as any)
+            ? req.body.category
+            : defaultTemplateCategory(key);
+        const access = req.body.access === 'free' ? 'free' : 'paid';
+        const surfaceColorRole = TEMPLATE_SURFACE_COLOR_ROLES.includes(req.body.surfaceColorRole)
+            ? req.body.surfaceColorRole
+            : (template?.surfaceColorRole || existingCustom?.surfaceColorRole || 'none');
+        const surfaceColorLabel = sanitizeProfileField(req.body.surfaceColorLabel, 80) || (template && 'surfaceColorLabel' in template ? template.surfaceColorLabel : '') || existingCustom?.surfaceColorLabel || '';
+        let thumbnail = sanitizeProfileField(req.body.thumbnail, 500) || template?.image || existingCustom?.thumbnail || templateThumbnailPath(key, Date.now());
+        const update: any = {
+            key,
+            label,
+            category,
+            access,
+            thumbnail,
+            surfaceColorRole,
+            surfaceColorLabel,
+            source: template ? 'built_in' : 'custom',
+            updatedBy: currentUserId(req),
+        };
+
+        if (!template) {
+            const indexHtml = typeof req.body.indexHtml === 'string' ? sanitizeTemplateSource(req.body.indexHtml, MAX_TEMPLATE_HTML_LENGTH) : '';
+            const styleCss = typeof req.body.styleCss === 'string' ? sanitizeTemplateSource(req.body.styleCss, MAX_TEMPLATE_CSS_LENGTH) : '';
+            const thumbnailUpload = parseThumbnailUpload(req.body.thumbnailDataUrl);
+            const s3Prefix = existingCustom?.s3Prefix || (S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key);
+            update.s3Prefix = s3Prefix;
+
+            if (indexHtml) {
+                const htmlError = validateTemplateHtml(indexHtml);
+                if (htmlError) return res.status(400).json({ error: htmlError });
+                update.indexS3Key = `${s3Prefix}/index.html`;
+                await putS3Object(update.indexS3Key, indexHtml, 'text/html; charset=utf-8');
+            }
+            if (styleCss) {
+                const cssError = validateTemplateCss(styleCss);
+                if (cssError) return res.status(400).json({ error: cssError });
+                update.styleS3Key = `${s3Prefix}/style.css`;
+                await putS3Object(update.styleS3Key, styleCss, 'text/css; charset=utf-8');
+            }
+            if (thumbnailUpload) {
+                update.thumbnailS3Key = `${s3Prefix}/thumbnail.${thumbnailUpload.extension}`;
+                await putS3Object(update.thumbnailS3Key, thumbnailUpload.buffer, thumbnailUpload.contentType);
+                thumbnail = templateThumbnailPath(key, Date.now());
+                update.thumbnail = thumbnail;
+            }
+            update.status = TEMPLATE_STATUSES.includes(req.body.status) ? req.body.status : existingCustom?.status || 'draft';
+        }
 
         const setting = await TemplateSetting.findOneAndUpdate(
             { key },
-            { key, label, category, access, thumbnail },
+            update,
             { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
         );
         const usageCount = await CVDocument.countDocuments({ template: key });
 
-        return res.json({ template: adminTemplateSummary(template, setting, usageCount) });
+        s3TemplateCache.delete(key);
+        return res.json({ template: template ? adminTemplateSummary(template, setting, usageCount) : customTemplateSummary(setting, usageCount) });
     } catch (error) {
         return sendError(res, 500, 'Could not update template.', error);
+    }
+});
+
+app.post('/api/admin/templates/:key/publish', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    try {
+        const key = validateCustomTemplateKey(req.params.key);
+        const setting = key ? await TemplateSetting.findOne({ key, source: 'custom' }) : null;
+        if (!setting) return res.status(404).json({ error: 'Template not found.' });
+        const indexHtml = setting.indexS3Key ? await fetchS3Text(setting.indexS3Key) : null;
+        const styleCss = setting.styleS3Key ? await fetchS3Text(setting.styleS3Key) : null;
+        if (!indexHtml || !styleCss || !setting.thumbnailS3Key) {
+            return res.status(400).json({ error: 'Template needs HTML, CSS, and thumbnail files before publishing.' });
+        }
+        setting.status = 'active';
+        setting.updatedBy = currentUserId(req);
+        await setting.save();
+        s3TemplateCache.delete(key);
+        const usageCount = await CVDocument.countDocuments({ template: key });
+        return res.json({ template: customTemplateSummary(setting, usageCount) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not publish template.', error);
+    }
+});
+
+app.post('/api/admin/templates/:key/archive', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    try {
+        const key = validateCustomTemplateKey(req.params.key);
+        const setting = key ? await TemplateSetting.findOne({ key, source: 'custom' }) : null;
+        if (!setting) return res.status(404).json({ error: 'Template not found.' });
+        setting.status = 'archived';
+        setting.updatedBy = currentUserId(req);
+        await setting.save();
+        s3TemplateCache.delete(key);
+        const usageCount = await CVDocument.countDocuments({ template: key });
+        return res.json({ template: customTemplateSummary(setting, usageCount) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not archive template.', error);
+    }
+});
+
+const adminCouponSummary = (coupon: any) => ({
+    id: coupon._id?.toString?.() || coupon.id,
+    code: coupon.code,
+    label: coupon.label,
+    discountType: coupon.discountType,
+    discountValue: coupon.discountValue,
+    active: Boolean(coupon.active),
+    appliesTo: coupon.appliesTo || [],
+    startsAt: coupon.startsAt,
+    expiresAt: coupon.expiresAt,
+    maxRedemptions: coupon.maxRedemptions || null,
+    redeemedCount: coupon.redeemedCount || 0,
+    updatedAt: coupon.updatedAt,
+});
+
+app.get('/api/billing/plans', async (_req: Request, res: Response) => {
+    try {
+        const plans = await getPublicBillingPlans();
+        return res.json({ plans });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load billing plans.', error);
+    }
+});
+
+app.post('/api/billing/quote', async (req: Request, res: Response) => {
+    try {
+        const plan = req.body.plan as BillingPlan;
+        if (plan !== 'payg' && plan !== 'monthly') {
+            return res.status(400).json({ error: 'Choose a valid paid plan.' });
+        }
+        const quote = await quoteCheckout(plan, req.body.couponCode);
+        if ('error' in quote) return res.status(400).json({ error: quote.error });
+        return res.json({ quote });
+    } catch (error) {
+        return sendError(res, 500, 'Could not calculate checkout total.', error);
+    }
+});
+
+app.get('/api/admin/billing/config', requireSuperAdmin, async (_req: Request, res: Response) => {
+    try {
+        const [plans, coupons] = await Promise.all([
+            getPublicBillingPlans(),
+            Coupon.find().sort({ createdAt: -1 }),
+        ]);
+        return res.json({ plans, coupons: coupons.map(adminCouponSummary) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load billing configuration.', error);
+    }
+});
+
+app.patch('/api/admin/billing/plans/:plan', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const plan = req.params.plan as BillingPlan;
+        if (plan !== 'payg' && plan !== 'monthly') return res.status(400).json({ error: 'Choose a valid paid plan.' });
+        const amountCents = Math.round(Number(req.body.amountCents));
+        if (!Number.isFinite(amountCents) || amountCents < 100) {
+            return res.status(400).json({ error: 'Enter a valid price in cents.' });
+        }
+        const label = sanitizeProfileField(req.body.label, 80) || planDisplayName(plan);
+        const setting = await BillingPlanSetting.findOneAndUpdate(
+            { plan },
+            {
+                plan,
+                label,
+                amountCents,
+                currency: 'LKR',
+                active: req.body.active !== false,
+                promotionActive: Boolean(req.body.promotionActive),
+                promotionLabel: sanitizeProfileField(req.body.promotionLabel, 80),
+                promotionDiscountType: req.body.promotionDiscountType === 'percent' ? 'percent' : 'fixed',
+                promotionDiscountValue: req.body.promotionDiscountType === 'percent'
+                    ? Math.min(Math.max(Math.round(Number(req.body.promotionDiscountValue) || 0), 1), 100)
+                    : Math.max(Math.round(Number(req.body.promotionDiscountValue) || 0), 1),
+                updatedBy: currentUserId(req),
+            },
+            { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+        );
+        return res.json({ plan: await getPlanPrice(setting.plan) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update plan price.', error);
+    }
+});
+
+app.post('/api/admin/billing/coupons', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const code = normalizeCouponCode(req.body.code);
+        if (!code) return res.status(400).json({ error: 'Enter a coupon code.' });
+        const discountType = req.body.discountType === 'percent' ? 'percent' : 'fixed';
+        const rawValue = Number(req.body.discountValue);
+        const discountValue = discountType === 'percent' ? Math.min(Math.max(Math.round(rawValue), 1), 100) : Math.round(rawValue);
+        if (!Number.isFinite(discountValue) || discountValue <= 0) return res.status(400).json({ error: 'Enter a valid discount.' });
+        const appliesTo = Array.isArray(req.body.appliesTo)
+            ? req.body.appliesTo.filter((item: unknown) => item === 'payg' || item === 'monthly')
+            : [];
+        const coupon = await Coupon.findOneAndUpdate(
+            { code },
+            {
+                code,
+                label: sanitizeProfileField(req.body.label, 100) || code,
+                discountType,
+                discountValue,
+                active: req.body.active !== false,
+                appliesTo,
+                startsAt: req.body.startsAt ? new Date(req.body.startsAt) : undefined,
+                expiresAt: req.body.expiresAt ? new Date(req.body.expiresAt) : undefined,
+                maxRedemptions: req.body.maxRedemptions ? Math.max(1, Math.round(Number(req.body.maxRedemptions))) : undefined,
+                updatedBy: currentUserId(req),
+            },
+            { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+        );
+        return res.status(201).json({ coupon: adminCouponSummary(coupon) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not save coupon.', error);
+    }
+});
+
+app.patch('/api/admin/billing/coupons/:code', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const code = normalizeCouponCode(req.params.code);
+        const coupon = code ? await Coupon.findOne({ code }) : null;
+        if (!coupon) return res.status(404).json({ error: 'Coupon not found.' });
+        if (typeof req.body.label === 'string') coupon.label = sanitizeProfileField(req.body.label, 100) || coupon.label;
+        if (req.body.discountType === 'fixed' || req.body.discountType === 'percent') coupon.discountType = req.body.discountType;
+        if (req.body.discountValue !== undefined) coupon.discountValue = Math.max(1, Math.round(Number(req.body.discountValue)));
+        if (typeof req.body.active === 'boolean') coupon.active = req.body.active;
+        if (Array.isArray(req.body.appliesTo)) coupon.appliesTo = req.body.appliesTo.filter((item: unknown) => item === 'payg' || item === 'monthly');
+        coupon.startsAt = req.body.startsAt ? new Date(req.body.startsAt) : undefined;
+        coupon.expiresAt = req.body.expiresAt ? new Date(req.body.expiresAt) : undefined;
+        coupon.maxRedemptions = req.body.maxRedemptions ? Math.max(1, Math.round(Number(req.body.maxRedemptions))) : undefined;
+        coupon.updatedBy = currentUserId(req);
+        await coupon.save();
+        return res.json({ coupon: adminCouponSummary(coupon) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update coupon.', error);
     }
 });
 
@@ -2142,6 +2667,7 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
         }
 
         const context = resolvePayHerePaymentContext(payload);
+        const checkoutSession = await CheckoutSession.findOne({ orderId: payload.order_id });
         const transactionFilter = { provider: 'payhere' as const, paymentId: payload.payment_id };
         const existingTransaction = await PaymentTransaction.findOne(transactionFilter);
         if (existingTransaction?.processed) {
@@ -2155,10 +2681,14 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
                     provider: 'payhere',
                     paymentId: payload.payment_id,
                     orderId: payload.order_id,
-                    ...(context.userId ? { userId: context.userId } : {}),
-                    ...(context.plan ? { plan: context.plan } : {}),
+                    ...(checkoutSession?.userId ? { userId: checkoutSession.userId } : (context.userId ? { userId: context.userId } : {})),
+                    ...(checkoutSession?.plan ? { plan: checkoutSession.plan } : (context.plan ? { plan: context.plan } : {})),
                     amount: payload.payhere_amount,
                     currency: payload.payhere_currency,
+                    baseAmountCents: checkoutSession?.baseAmountCents,
+                    discountCents: checkoutSession?.discountCents,
+                    finalAmountCents: checkoutSession?.finalAmountCents,
+                    couponCode: checkoutSession?.couponCode,
                     statusCode: payload.status_code,
                     processed: false,
                     rawPayload: payload,
@@ -2168,36 +2698,47 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
             return res.status(200).send('OK');
         }
 
-        if (!context.userId || !context.plan) {
+        if (!checkoutSession && (!context.userId || !context.plan)) {
             console.warn('PayHere IPN could not resolve user or plan for order:', payload.order_id);
             return res.status(400).send('Invalid payment context.');
         }
 
-        const expectedPrice = PAYHERE_PLAN_PRICES[context.plan];
+        const expectedPrice = checkoutSession
+            ? { currency: checkoutSession.currency, cents: checkoutSession.finalAmountCents }
+            : PAYHERE_PLAN_PRICES[context.plan!];
         const paidCents = payHereAmountToCents(payload.payhere_amount);
         if (payload.payhere_currency.toUpperCase() !== expectedPrice.currency || paidCents !== expectedPrice.cents) {
             console.warn('PayHere IPN amount mismatch:', {
                 orderId: payload.order_id,
-                plan: context.plan,
+                plan: checkoutSession?.plan || context.plan,
                 paidAmount: payload.payhere_amount,
                 paidCurrency: payload.payhere_currency,
             });
             return res.status(400).send('Invalid payment amount.');
         }
 
-        const user = await User.findById(context.userId);
+        const user = await User.findById(checkoutSession?.userId || context.userId);
         if (!user) {
-            console.warn('PayHere IPN user not found:', context.userId);
+            console.warn('PayHere IPN user not found:', checkoutSession?.userId || context.userId);
             return res.status(404).send('User not found.');
         }
 
-        user.plan = context.plan;
+        const purchasedPlan = checkoutSession?.plan || context.plan!;
+        user.plan = purchasedPlan;
         user.planStartedAt = new Date();
-        user.planExpiresAt = createPlanExpiry(context.plan);
-        if (context.plan === 'payg') {
+        user.planExpiresAt = createPlanExpiry(purchasedPlan);
+        if (purchasedPlan === 'payg') {
             user.paygCvSaveCredits = (user.paygCvSaveCredits || 0) + 1;
         }
         await user.save();
+
+        if (checkoutSession) {
+            checkoutSession.status = 'paid';
+            await checkoutSession.save();
+        }
+        if (checkoutSession?.couponCode) {
+            await Coupon.updateOne({ code: checkoutSession.couponCode }, { $inc: { redeemedCount: 1 } });
+        }
 
         await PaymentTransaction.findOneAndUpdate(
             transactionFilter,
@@ -2206,9 +2747,13 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
                 paymentId: payload.payment_id,
                 orderId: payload.order_id,
                 userId: user._id,
-                plan: context.plan,
+                plan: purchasedPlan,
                 amount: payload.payhere_amount,
                 currency: payload.payhere_currency,
+                baseAmountCents: checkoutSession?.baseAmountCents,
+                discountCents: checkoutSession?.discountCents,
+                finalAmountCents: checkoutSession?.finalAmountCents || paidCents || undefined,
+                couponCode: checkoutSession?.couponCode,
                 statusCode: payload.status_code,
                 processed: true,
                 rawPayload: payload,
@@ -2218,7 +2763,7 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
 
         await sendBillingSuccessNotifications({
             user,
-            plan: context.plan,
+            plan: purchasedPlan,
             transactionId: payload.payment_id,
             planExpiresAt: user.planExpiresAt,
         });
@@ -2258,15 +2803,28 @@ app.post('/api/billing/payhere-checkout', requireAuth, async (req: Request, res:
         }
 
         const userId = currentUserId(req).toString();
-        const price = PAYHERE_PLAN_PRICES[plan];
+        const quote = await quoteCheckout(plan, req.body.couponCode);
+        if ('error' in quote) return res.status(400).json({ error: quote.error });
         const orderId = `${generateTransactionId()}-${userId}-${plan}`;
+        await CheckoutSession.create({
+            orderId,
+            userId,
+            plan,
+            currency: quote.currency,
+            baseAmountCents: quote.baseAmountCents,
+            discountCents: quote.discountCents,
+            finalAmountCents: quote.finalAmountCents,
+            couponCode: quote.couponCode || undefined,
+            status: 'pending',
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        });
         const frontendOrigin = getFrontendOrigin(req);
         const notifyUrl = process.env.PAYHERE_NOTIFY_URL?.trim() || `${getApiOrigin(req)}/api/payhere/ipn`;
         const checkoutPayload = {
             merchant_id: merchantId,
             order_id: orderId,
-            amount: price.amount,
-            currency: price.currency,
+            amount: quote.amount,
+            currency: quote.currency,
         };
 
         return res.json({
@@ -2286,12 +2844,13 @@ app.post('/api/billing/payhere-checkout', requireAuth, async (req: Request, res:
                 country,
                 order_id: orderId,
                 items: `NexCV ${planDisplayName(plan)} Plan`,
-                currency: price.currency,
-                amount: price.amount,
+                currency: quote.currency,
+                amount: quote.amount,
                 custom_1: userId,
                 custom_2: plan,
                 hash: buildPayHereCheckoutHash(checkoutPayload, merchantSecret),
             },
+            quote,
         });
     } catch (error) {
         return sendError(res, 500, 'Could not start PayHere checkout.', error);
@@ -2376,7 +2935,7 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
         }
 
         const { cvData, status } = req.body;
-        const requestedTemplate = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
+        const requestedTemplate = await resolveRequestedTemplate(req.body.template);
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
 
         if (!cvData || typeof cvData !== 'object') {
@@ -2417,7 +2976,7 @@ app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) =
         }
 
         const { cvData, status } = req.body;
-        const requestedTemplate = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
+        const requestedTemplate = await resolveRequestedTemplate(req.body.template);
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
 
         if (!cvData || typeof cvData !== 'object') {
@@ -2911,7 +3470,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
             </h2>`;
         }
         if (isTimeline || isMin) {
-            const hasLine = !isMin || !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(sectionKey || '');
+            const hasLine = !isMin || !['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(sectionKey || '');
             return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
                 <h2 style="flex-shrink:0;font-size:${headingFontSize};font-weight:900;text-transform:uppercase;letter-spacing:${isMin ? '0.15em' : '0.22em'};color:${themeColor}">${title}</h2>
                 ${hasLine ? '<div style="height:1px;flex:1;background:#e5e7eb"></div>' : ''}
@@ -3210,8 +3769,8 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
         return '';
     };
 
-    const leftSectionsHTML = isMin ? sectionOrder.filter(k => !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
-    const rightSectionsHTML = isMin ? sectionOrder.filter(k => ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
+    const leftSectionsHTML = isMin ? sectionOrder.filter(k => !['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
+    const rightSectionsHTML = isMin ? sectionOrder.filter(k => ['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
     const startupLeftSectionsHTML = isStartup ? sectionOrder.filter(k => ['personalDetails', 'summary', 'experience'].includes(k)).map(renderSection).join('') : '';
     const startupRightSectionsHTML = isStartup ? sectionOrder.filter(k => ['education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
     const sectionsHTML = isMin ? '' : sectionOrder.map(renderSection).join('');
@@ -3714,7 +4273,7 @@ async function launchOneShotPdfBrowser() {
     return browser;
 }
 
-async function generatePdfWithLambda(cvData: any, template: TemplateName, watermark: boolean): Promise<{ buffer: Buffer; templateSource: string } | null> {
+async function generatePdfWithLambda(cvData: any, template: string, watermark: boolean): Promise<{ buffer: Buffer; templateSource: string } | null> {
     const lambdaUrl = process.env.PDF_LAMBDA_URL?.trim();
     if (!lambdaUrl) return null;
 
@@ -3789,12 +4348,10 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
 
 
 
-        // Validate template against allow-list
-        const requestedTemplate = isTemplateName(template)
-            ? template
-            : DEFAULT_TEMPLATE;
+        // Validate template against built-in or active admin-created templates.
+        const templateSetting = await getActiveTemplateForKey(template);
+        const requestedTemplate = (templateSetting?.key || DEFAULT_TEMPLATE) as TemplateName;
 
-        const templateSetting = await getTemplateSettingForKey(requestedTemplate);
         const requestedTemplateIsPaid = templateSetting
             ? templateSetting.access === 'paid'
             : templateRequiresPaidPlan(requestedTemplate);
@@ -3828,8 +4385,9 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         }
 
         // Generate self-contained HTML
-        console.log("Generating built-in HTML for local PDF fallback...");
-        const html = generateCVHTML(safeCvData, requestedTemplate, { watermark });
+        console.log("Generating HTML for local PDF fallback...");
+        const s3Html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark }).catch(() => null);
+        const html = s3Html || generateCVHTML(safeCvData, requestedTemplate, { watermark });
         console.log(`HTML generated: ${html.length} bytes`);
 
         const useWarmBrowser = downloadQuota.plan !== 'free';
@@ -3903,7 +4461,7 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
             'Content-Type': 'application/pdf',
             'Content-Length': pdfBuffer.length.toString(),
             'X-PDF-Renderer': 'local',
-            'X-PDF-Template-Source': 'built-in',
+            'X-PDF-Template-Source': s3Html ? 's3' : 'built-in',
         });
 
         res.send(Buffer.from(pdfBuffer));

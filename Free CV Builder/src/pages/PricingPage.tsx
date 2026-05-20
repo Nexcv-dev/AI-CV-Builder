@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Crown, Download, FileText, Sparkles, Zap, type LucideIcon } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
-import { AuthUser, getCurrentUser } from '../utils/api';
+import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
 
 type PlanKey = 'free' | 'payg' | 'monthly';
 
@@ -68,6 +68,14 @@ const plans: Array<{
 export default function PricingPage() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [planPrices, setPlanPrices] = useState<Record<string, {
+    cents: number;
+    baseAmountCents: number;
+    promotionActive: boolean;
+    promotionLabel?: string;
+    discountBadge?: string;
+    currency: string;
+  }> | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -87,6 +95,27 @@ export default function PricingPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+    apiFetch<{ plans: Array<{ plan: string; cents: number; baseAmountCents: number; promotionActive: boolean; promotionLabel?: string; discountBadge?: string; currency: string }> }>('/api/billing/plans')
+      .then((data) => {
+        if (!ignore) {
+          setPlanPrices(data.plans.reduce((acc, plan) => ({ ...acc, [plan.plan]: plan }), {} as Record<string, {
+            cents: number;
+            baseAmountCents: number;
+            promotionActive: boolean;
+            promotionLabel?: string;
+            discountBadge?: string;
+            currency: string;
+          }>));
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const activePlanLabel = useMemo(() => {
     if (!user) return '';
     if (user.plan === 'payg') return 'Pay As You Go';
@@ -94,6 +123,8 @@ export default function PricingPage() {
     if (user.plan === 'unlimited') return 'Admin';
     return 'Free';
   }, [user]);
+
+  const formatPrice = (cents: number, currency = 'LKR') => `${currency} ${new Intl.NumberFormat().format(Math.round(cents / 100))}`;
 
   return (
     <>
@@ -156,7 +187,18 @@ export default function PricingPage() {
                   <p className="mt-2 min-h-14 text-sm font-semibold leading-6 text-slate-400">{plan.description}</p>
 
                   <div className="mt-6">
-                    <div className="text-4xl font-black">{plan.price}</div>
+                    {planPrices?.[plan.key]?.promotionActive && (
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="text-lg font-black text-slate-500 line-through">{formatPrice(planPrices[plan.key].baseAmountCents, planPrices[plan.key].currency)}</span>
+                        <span className="rounded-full bg-emerald-300 px-2.5 py-1 text-[10px] font-black uppercase text-slate-950">{planPrices[plan.key].discountBadge}</span>
+                      </div>
+                    )}
+                    <div className={`text-4xl font-black ${planPrices?.[plan.key]?.promotionActive ? 'text-emerald-300' : ''}`}>
+                      {planPrices?.[plan.key] ? formatPrice(planPrices[plan.key].cents, planPrices[plan.key].currency) : plan.price}
+                    </div>
+                    {planPrices?.[plan.key]?.promotionLabel && (
+                      <div className="mt-2 text-xs font-black uppercase text-emerald-200">{planPrices[plan.key].promotionLabel}</div>
+                    )}
                     <div className="mt-1 text-sm font-bold text-slate-400">{plan.duration}</div>
                   </div>
 

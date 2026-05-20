@@ -11,7 +11,7 @@ export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
 };
 
 export const ADMIN_ROLE_ACCESS: Record<AdminRole, string[]> = {
-  super_admin: ['dashboard', 'users', 'templates', 'billing', 'cms', 'notifications', 'support', 'settings', 'roles'],
+  super_admin: ['dashboard', 'users', 'templates', 'billing', 'promotions', 'cms', 'notifications', 'support', 'settings', 'roles'],
   admin_manager: ['dashboard', 'users', 'templates'],
   editor: ['dashboard', 'cms'],
   support_agent: ['dashboard', 'support'],

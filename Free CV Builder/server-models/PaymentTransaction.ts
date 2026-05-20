@@ -9,6 +9,10 @@ export interface IPaymentTransaction extends Document {
   plan?: Exclude<BillingPlan, 'free'>;
   amount?: string;
   currency?: string;
+  baseAmountCents?: number;
+  discountCents?: number;
+  finalAmountCents?: number;
+  couponCode?: string;
   statusCode: string;
   processed: boolean;
   rawPayload: Record<string, unknown>;
@@ -25,6 +29,10 @@ const PaymentTransactionSchema = new Schema<IPaymentTransaction>(
     plan: { type: String, enum: ['payg', 'monthly'] },
     amount: { type: String },
     currency: { type: String },
+    baseAmountCents: { type: Number },
+    discountCents: { type: Number },
+    finalAmountCents: { type: Number },
+    couponCode: { type: String, uppercase: true, trim: true },
     statusCode: { type: String, required: true },
     processed: { type: Boolean, default: false, required: true },
     rawPayload: { type: Schema.Types.Mixed, default: {} },
