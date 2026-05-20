@@ -266,6 +266,14 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     label: item.proficiency ? String(item.name || '') + ' (' + String(item.proficiency) + ')' : (item.name || ''),
   }));
 
+  const groupedSkillsMap = skills.reduce((acc: Record<string, any[]>, skill: any) => {
+    const category = skill.category?.trim() || 'Core Skills';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(skill);
+    return acc;
+  }, {});
+  const groupedSkills = Object.entries(groupedSkillsMap).map(([category, items]) => ({ category, items }));
+
   const processedReferences = references.map((item: any) => ({
     ...item,
     name: item.name || 'Reference Name',
@@ -278,7 +286,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     personalDetails: () => hasPersonalDetails ? { key: 'personalDetails', isPersonalDetails: true, title: 'Personal Details', items: personalDetails } : null,
     experience: () => processedExperience.length ? { key: 'experience', isExperience: true, title: 'Experience', items: processedExperience } : null,
     education: () => processedEducation.length ? { key: 'education', isEducation: true, title: 'Education', items: processedEducation } : null,
-    skills: () => skills.length ? { key: 'skills', isSkills: true, title: isProfessional ? 'Skills & Expertise' : 'Skills', items: skills } : null,
+    skills: () => skills.length ? { key: 'skills', isSkills: true, title: isProfessional ? 'Skills & Expertise' : 'Skills', items: skills, groupedItems: groupedSkills } : null,
     projects: () => processedProjects.length ? { key: 'projects', isProjects: true, title: isProfessional ? 'Key Projects' : 'Projects', items: processedProjects } : null,
     courses: () => processedCourses.length ? { key: 'courses', isCourses: true, title: isProfessional ? 'Certifications & Courses' : 'Courses & Certifications', items: processedCourses } : null,
     awards: () => processedAwards.length ? { key: 'awards', isAwards: true, title: 'Awards', items: processedAwards } : null,
@@ -298,6 +306,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     experience: processedExperience,
     education: processedEducation,
     skills,
+    groupedSkills,
     projects: processedProjects,
     courses: processedCourses,
     awards: processedAwards,
