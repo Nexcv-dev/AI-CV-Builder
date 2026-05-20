@@ -312,6 +312,13 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
   const minimalistLeftSections = sections.filter((section: any) => !minimalistSideSectionKeys.includes(section.key));
   const minimalistRightSections = sections.filter((section: any) => minimalistSideSectionKeys.includes(section.key));
   const modernMainSections = sections.filter((section: any) => !['personalDetails', 'skills', 'languages'].includes(section.key));
+  const startupLeftSections = sections.filter((section: any) => ['personalDetails', 'summary', 'experience'].includes(section.key));
+  const startupRightSections = sections.filter((section: any) => ['education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(section.key));
+  const startupHeaderTextColor = getContrastColorForTemplate(templateSurfaceColor);
+  const startupHeaderMutedColor = startupHeaderTextColor === '#ffffff' ? 'rgba(236, 253, 245, 0.92)' : 'rgba(15, 23, 42, 0.72)';
+  const startupHeaderBackground = cvData.templateSurfaceColor
+    ? templateSurfaceColor
+    : 'linear-gradient(135deg, ' + themeColor + ' 0%, #047857 100%)';
 
   return {
     ...cvData,
@@ -328,6 +335,8 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     references: processedReferences,
     sections,
     modernMainSections,
+    startupLeftSections,
+    startupRightSections,
     minimalistLeftSections,
     minimalistRightSections,
     computed: {
@@ -337,6 +346,9 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       sidebarTextColor,
       sidebarMutedColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
       sidebarBorderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+      startupHeaderTextColor,
+      startupHeaderMutedColor,
+      startupHeaderBackground,
       fontFamily,
       fontFamilyCSS: templateFontMap[fontFamily] || "'Inter', sans-serif",
       googleFontName: String(fontFamily || 'Inter').replace(/\s+/g, '+'),
@@ -346,6 +358,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: 'scale(' + imageZoom + ') translate(' + imageX + 'px,' + imageY + 'px)',
+      startupHeadlineTitle: processedExperience[0]?.position || 'Professional Title',
     },
     flags: {
       isProfessional,
