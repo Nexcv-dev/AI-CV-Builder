@@ -262,7 +262,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           {title}
         </h2>
       ) : isMin ? (
-        <h2 className="mb-[13px] text-[15px] font-bold uppercase tracking-[0.14em]" style={{ color: themeColor }}>
+        <h2 className="mb-[13px] text-[16px] font-bold uppercase tracking-[0.14em]" style={{ color: themeColor }}>
           {title}
         </h2>
       ) : isTimeline ? (
@@ -290,7 +290,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
 
     const ProseContent = ({ html, className = '' }: { html: string, className?: string }) => (
       <div
-        className={`cv-preview-rich-text ${isMin ? 'text-[13px]' : 'text-sm'} text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap wrap-break-word ${className}`}
+        className={`cv-preview-rich-text ${isMin ? 'text-[13.5px]' : 'text-sm'} text-gray-700 prose prose-sm max-w-none prose-p:my-0 whitespace-pre-wrap wrap-break-word ${className}`}
         style={{ lineHeight: lineSpacing }}
         dangerouslySetInnerHTML={{ __html: sanitizeRichText(html) }}
       />
@@ -371,12 +371,12 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           <SectionWrapper key="personalDetails">
             <SectionHeader title={isPro ? 'Personal Information' : 'Personal Details'} />
             <div className={`grid ${isMin ? 'grid-cols-1 gap-y-2' : 'grid-cols-2 gap-x-12 gap-y-2'} text-sm ${isPro ? 'ml-[130px]' : ''} ${isTimeline ? 'text-[13px]' : ''}`}>
-              {personalInfo.dob && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[12px] font-medium uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Date of Birth{isMin ? '' : ':'}</span><span className={isMin ? "text-[13px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.dob}</span></div>}
-              {personalInfo.nic && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[12px] font-medium uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>NIC{isPro || isMin ? '' : ' Number'}{isMin ? '' : ':'}</span><span className={isMin ? "text-[13px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.nic}</span></div>}
-              {personalInfo.gender && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[12px] font-medium uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Gender{isMin ? '' : ':'}</span><span className={isMin ? "text-[13px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.gender}</span></div>}
-              {personalInfo.maritalStatus && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[12px] font-medium uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Marital Status{isMin ? '' : ':'}</span><span className={isMin ? "text-[13px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.maritalStatus}</span></div>}
-              {personalInfo.nationality && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[12px] font-medium uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Nationality{isMin ? '' : ':'}</span><span className={isMin ? "text-[13px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.nationality}</span></div>}
-              {personalInfo.religion && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[12px] font-medium uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Religion{isMin ? '' : ':'}</span><span className={isMin ? "text-[13px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.religion}</span></div>}
+              {personalInfo.dob && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[11px] font-semibold uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Date of Birth{isMin ? '' : ':'}</span><span className={isMin ? "text-[13.5px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.dob}</span></div>}
+              {personalInfo.nic && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[11px] font-semibold uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>NIC{isPro || isMin ? '' : ' Number'}{isMin ? '' : ':'}</span><span className={isMin ? "text-[13.5px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.nic}</span></div>}
+              {personalInfo.gender && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[11px] font-semibold uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Gender{isMin ? '' : ':'}</span><span className={isMin ? "text-[13.5px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.gender}</span></div>}
+              {personalInfo.maritalStatus && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[11px] font-semibold uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Marital Status{isMin ? '' : ':'}</span><span className={isMin ? "text-[13.5px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.maritalStatus}</span></div>}
+              {personalInfo.nationality && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[11px] font-semibold uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Nationality{isMin ? '' : ':'}</span><span className={isMin ? "text-[13.5px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.nationality}</span></div>}
+              {personalInfo.religion && <div className={isMin ? "flex flex-col gap-0.5" : "flex justify-between border-b border-gray-100 pb-1"}><span className={isMin ? "text-[11px] font-semibold uppercase tracking-wider text-gray-500" : "font-semibold text-gray-600"}>Religion{isMin ? '' : ':'}</span><span className={isMin ? "text-[13.5px] font-semibold text-gray-700" : "text-gray-800"}>{personalInfo.religion}</span></div>}
             </div>
           </SectionWrapper>
         );
@@ -393,9 +393,9 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <div key={exp.id} data-page-break="avoid" className="mb-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div className="mb-0.5 flex items-baseline justify-between gap-5">
                         <h3 className="text-sm font-bold leading-snug text-gray-900">{exp.position || 'Position'}</h3>
-                        <span className="shrink-0 text-xs font-medium text-gray-500">{exp.startDate} {exp.startDate && exp.endDate ? '-' : ''} {exp.endDate}</span>
+                        <span className="shrink-0 text-[13.5px] font-medium text-gray-500">{exp.startDate} {exp.startDate && exp.endDate ? '-' : ''} {exp.endDate}</span>
                       </div>
-                      <p className="mb-2 text-[13px] font-medium text-gray-600">{exp.company || 'Company'}</p>
+                      <p className="mb-2 text-[13.5px] font-medium text-gray-600">{exp.company || 'Company'}</p>
                       {exp.description && <ProseContent html={exp.description} />}
                     </div>
                   );
@@ -446,9 +446,9 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                     <div key={edu.id} data-page-break="avoid" className="mb-4" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div className="mb-0.5 flex items-baseline justify-between gap-5">
                         <h3 className="text-sm font-bold leading-snug text-gray-900">{edu.degree || 'Degree'}</h3>
-                        <span className="shrink-0 text-xs font-medium text-gray-500">{edu.startDate} {edu.startDate && edu.endDate ? '-' : ''} {edu.endDate}</span>
+                        <span className="shrink-0 text-[13.5px] font-medium text-gray-500">{edu.startDate} {edu.startDate && edu.endDate ? '-' : ''} {edu.endDate}</span>
                       </div>
-                      <p className="mb-2 text-[13px] font-medium text-gray-600">{edu.institution || 'Institution'}</p>
+                      <p className="mb-2 text-[13.5px] font-medium text-gray-600">{edu.institution || 'Institution'}</p>
                       {edu.description && <ProseContent html={edu.description} />}
                     </div>
                   );
@@ -546,9 +546,15 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
           return (
             <SectionWrapper key="skills">
               <SectionHeader title="Skills" />
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2">
                 {skills.map((skill) => (
-                  <p key={skill.id} className="m-0 text-[13px] leading-5 text-gray-600">{skill.name}</p>
+                  <span
+                    key={skill.id}
+                    className="inline-block bg-gray-50 text-gray-700 text-[12px] px-2.5 py-1 rounded-full border border-gray-200 font-medium"
+                    style={{ pageBreakInside: 'avoid' }}
+                  >
+                    {skill.name}
+                  </span>
                 ))}
               </div>
             </SectionWrapper>
@@ -667,8 +673,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   return (
                     <div key={course.id} className="flex flex-col gap-0.5" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <h3 className="text-sm font-bold leading-snug text-gray-900">{course.name || 'Course Name'}</h3>
-                      <p className="m-0 text-[13px] text-gray-600">{course.institution || 'Institution'}</p>
-                      <span className="text-xs leading-5 text-gray-500">{course.startDate} {course.startDate && course.endDate ? '-' : ''} {course.endDate}</span>
+                      <p className="m-0 text-[13.5px] text-gray-600">{course.institution || 'Institution'}</p>
+                      <span className="text-[13.5px] leading-5 text-gray-500">{course.startDate} {course.startDate && course.endDate ? '-' : ''} {course.endDate}</span>
                     </div>
                   );
                 }
@@ -716,8 +722,8 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   return (
                     <div key={award.id} data-page-break="avoid" className="flex flex-col gap-0.5" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <h3 className="text-sm font-bold leading-snug text-gray-900">{award.name || 'Award Name'}</h3>
-                      <p className="m-0 text-[13px] text-gray-600">{award.issuer || 'Issuer'}</p>
-                      <span className="text-xs leading-5 text-gray-500">{award.date}</span>
+                      <p className="m-0 text-[13.5px] text-gray-600">{award.issuer || 'Issuer'}</p>
+                      <span className="text-[13.5px] leading-5 text-gray-500">{award.date}</span>
                     </div>
                   );
                 }
@@ -789,11 +795,11 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                 </div>
               </div>
             ) : isMin ? (
-              <div className="flex flex-col gap-2 text-sm">
+              <div className="flex flex-col gap-2 text-[13.5px]">
                 {cvData.languages.map((lang) => (
                   <div key={lang.id} className="flex justify-between border-b border-gray-50 pb-1">
                     <span className="font-semibold text-gray-700">{lang.name}</span>
-                    <span className="text-[13px] text-gray-500">{lang.proficiency}</span>
+                    <span className="text-[13.5px] text-gray-500">{lang.proficiency}</span>
                   </div>
                 ))}
               </div>
@@ -841,11 +847,11 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   <div key={reference.id} data-page-break="avoid" className="flex flex-col gap-0.5" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                     <h3 className="text-sm font-bold leading-snug text-gray-900">{reference.name || 'Reference Name'}</h3>
                     {(reference.position || reference.company) && (
-                      <p className="m-0 text-[13px] text-gray-600">
+                      <p className="m-0 text-[13.5px] text-gray-600">
                         {[reference.position, reference.company].filter(Boolean).join(', ')}
                       </p>
                     )}
-                    <div className="mt-1 space-y-0.5 text-xs leading-5 text-gray-500">
+                    <div className="mt-1 space-y-0.5 text-[13.5px] leading-5 text-gray-500">
                       {reference.email && <div>{reference.email}</div>}
                       {reference.phone && <div>{reference.phone}</div>}
                     </div>
@@ -1097,7 +1103,7 @@ const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvDat
                   />
                 </div>
               )}
-              <h1 className="mb-2.5 text-[2.25rem] font-[450] leading-[1.1] text-gray-900 wrap-break-word">
+              <h1 className="mb-2.5 text-[2.25rem] font-medium leading-[1.1] text-gray-900 wrap-break-word">
                 {personalInfo.fullName || 'Your Name'}
               </h1>
               <div className="flex flex-wrap justify-center gap-x-[15px] gap-y-1 text-[13px] font-medium text-gray-600">
