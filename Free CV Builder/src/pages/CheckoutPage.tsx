@@ -25,6 +25,25 @@ interface PayHereCheckoutResponse {
   actionUrl: string;
   orderId: string;
   fields: Record<string, string>;
+  quote: CheckoutQuote;
+}
+
+interface BillingPlanPrice {
+  plan: CheckoutPlanKey;
+  amount: string;
+  cents: number;
+  currency: 'LKR';
+}
+
+interface CheckoutQuote {
+  plan: CheckoutPlanKey;
+  currency: 'LKR';
+  baseAmountCents: number;
+  discountCents: number;
+  finalAmountCents: number;
+  amount: string;
+  couponCode?: string;
+  couponLabel?: string;
 }
 
 const checkoutPlans: Record<CheckoutPlanKey, {
@@ -103,6 +122,10 @@ export default function CheckoutPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [planPrices, setPlanPrices] = useState<Record<CheckoutPlanKey, BillingPlanPrice> | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -141,6 +164,47 @@ export default function CheckoutPage() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    apiFetch<{ plans: BillingPlanPrice[] }>('/api/billing/plans')
+      .then((data) => {
+        if (ignore) return;
+        const next = data.plans.reduce((acc, plan) => ({ ...acc, [plan.plan]: plan }), {} as Record<CheckoutPlanKey, BillingPlanPrice>);
+        setPlanPrices(next);
+      })
+      .catch(() => undefined);
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    const timer = window.setTimeout(() => {
+      setQuoteLoading(true);
+      apiFetch<{ quote: CheckoutQuote }>('/api/billing/quote', {
+        method: 'POST',
+        body: JSON.stringify({ plan: selectedPlan.key, couponCode: couponCode.trim() }),
+      })
+        .then((data) => {
+          if (!ignore) setQuote(data.quote);
+        })
+        .catch((error) => {
+          if (!ignore) {
+            setQuote(null);
+            if (couponCode.trim()) toast.error(error instanceof Error ? error.message : 'Coupon is not valid.');
+          }
+        })
+        .finally(() => {
+          if (!ignore) setQuoteLoading(false);
+        });
+    }, 250);
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [couponCode, selectedPlan.key]);
 
   useEffect(() => {
     const paymentStatus = searchParams.get('payment');
@@ -198,7 +262,10 @@ export default function CheckoutPage() {
 
   const selectPlan = (plan: CheckoutPlanKey) => {
     setSearchParams({ plan });
+    setQuote(null);
   };
+
+  const formatCents = (cents: number, currency = 'LKR') => `${currency} ${new Intl.NumberFormat().format(Math.round(cents / 100))}`;
 
   const completeCheckout = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -228,6 +295,7 @@ export default function CheckoutPage() {
 
     const checkoutPayload = {
       plan: selectedPlan.key,
+      couponCode: couponCode.trim(),
       customer: {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
@@ -443,8 +511,28 @@ export default function CheckoutPage() {
                 <p className="mt-2 text-sm font-semibold leading-6 text-slate-300">{selectedPlan.summary}</p>
 
                 <div className="mt-6 border-y border-white/10 py-5">
-                  <div className="text-4xl font-black">{selectedPlan.price}</div>
+                  <div className="text-4xl font-black">
+                    {quote ? formatCents(quote.finalAmountCents, quote.currency) : planPrices?.[selectedPlan.key] ? formatCents(planPrices[selectedPlan.key].cents, planPrices[selectedPlan.key].currency) : selectedPlan.price}
+                  </div>
                   <div className="mt-1 text-sm font-bold text-slate-400">{selectedPlan.duration}</div>
+                  {quote && quote.discountCents > 0 && (
+                    <div className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-sm font-black text-emerald-200">
+                      Coupon {quote.couponCode}: -{formatCents(quote.discountCents, quote.currency)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/50 p-3">
+                  <label className="grid gap-2 text-sm font-black text-slate-200">
+                    Coupon code
+                    <input
+                      value={couponCode}
+                      onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+                      className="h-11 rounded-xl border border-white/10 bg-white/6 px-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
+                      placeholder="PROMO2026"
+                    />
+                  </label>
+                  {quoteLoading && <p className="mt-2 text-xs font-bold text-slate-500">Checking coupon...</p>}
                 </div>
 
                 <div className="mt-5 grid gap-3">
@@ -483,7 +571,7 @@ export default function CheckoutPage() {
                           <OptionIcon size={17} className={isSelected ? 'text-violet-200' : 'text-slate-500'} />
                           <span className="text-sm font-black">{plan.name}</span>
                         </span>
-                        <span className="text-xs font-black text-slate-400">{plan.price}</span>
+                        <span className="text-xs font-black text-slate-400">{planPrices?.[plan.key] ? formatCents(planPrices[plan.key].cents, planPrices[plan.key].currency) : plan.price}</span>
                       </button>
                     );
                   })}

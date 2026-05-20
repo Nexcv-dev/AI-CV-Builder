@@ -22,6 +22,9 @@ import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import DownloadQuota from './server-models/DownloadQuotaModel';
 import PaymentTransaction from './server-models/PaymentTransaction';
+import BillingPlanSetting from './server-models/BillingPlanSetting';
+import Coupon from './server-models/Coupon';
+import CheckoutSession from './server-models/CheckoutSession';
 import TemplateSetting from './server-models/TemplateSetting';
 import SupportTicket from './server-models/SupportTicket';
 import './server-models/passportSetup'; // Initialize passport strategy
@@ -910,6 +913,66 @@ export const PAYHERE_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount:
     monthly: { amount: '2199.00', cents: 219900, currency: 'LKR' },
 };
 
+const centsToPayHereAmount = (cents: number) => (Math.max(0, cents) / 100).toFixed(2);
+
+const normalizeCouponCode = (value: unknown) => (
+    typeof value === 'string'
+        ? value.replace(/[^a-z0-9_-]/gi, '').trim().toUpperCase().slice(0, 32)
+        : ''
+);
+
+const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>) => {
+    const setting = await BillingPlanSetting.findOne({ plan, active: true });
+    const fallback = PAYHERE_PLAN_PRICES[plan];
+    return {
+        plan,
+        label: setting?.label || planDisplayName(plan),
+        amount: centsToPayHereAmount(setting?.amountCents ?? fallback.cents),
+        cents: setting?.amountCents ?? fallback.cents,
+        currency: (setting?.currency || fallback.currency) as 'LKR',
+        source: setting ? 'admin' : 'default',
+        updatedAt: setting?.updatedAt,
+    };
+};
+
+const getPublicBillingPlans = async () => {
+    const [payg, monthly] = await Promise.all([getPlanPrice('payg'), getPlanPrice('monthly')]);
+    return [payg, monthly];
+};
+
+const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCode?: string) => {
+    const price = await getPlanPrice(plan);
+    let coupon: any = null;
+    let discountCents = 0;
+    const code = normalizeCouponCode(couponCode);
+    const now = new Date();
+    if (code) {
+        coupon = await Coupon.findOne({ code, active: true });
+        const planAllowed = coupon && (!coupon.appliesTo?.length || coupon.appliesTo.includes(plan));
+        const started = !coupon?.startsAt || coupon.startsAt <= now;
+        const notExpired = !coupon?.expiresAt || coupon.expiresAt >= now;
+        const underLimit = !coupon?.maxRedemptions || coupon.redeemedCount < coupon.maxRedemptions;
+        if (!coupon || !planAllowed || !started || !notExpired || !underLimit) {
+            return { error: 'Coupon is not valid for this plan.' };
+        }
+        discountCents = coupon.discountType === 'percent'
+            ? Math.floor(price.cents * Math.min(coupon.discountValue, 100) / 100)
+            : Math.round(coupon.discountValue);
+        discountCents = Math.min(Math.max(discountCents, 0), Math.max(price.cents - 100, 0));
+    }
+    const finalAmountCents = Math.max(price.cents - discountCents, 100);
+    return {
+        plan,
+        currency: price.currency,
+        baseAmountCents: price.cents,
+        discountCents,
+        finalAmountCents,
+        amount: centsToPayHereAmount(finalAmountCents),
+        couponCode: coupon?.code || '',
+        couponLabel: coupon?.label || '',
+    };
+};
+
 const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated() || !req.user) {
         return res.status(401).json({ error: 'Not authenticated' });
@@ -1189,6 +1252,10 @@ const adminPaymentSummary = (payment: any) => {
         plan: payment.plan || null,
         amount: payment.amount || '0.00',
         amountCents: parsePaymentAmountCents(payment.amount),
+        baseAmountCents: payment.baseAmountCents || 0,
+        discountCents: payment.discountCents || 0,
+        finalAmountCents: payment.finalAmountCents || parsePaymentAmountCents(payment.amount),
+        couponCode: payment.couponCode || '',
         currency: payment.currency || 'LKR',
         statusCode: payment.statusCode,
         processed: Boolean(payment.processed),
@@ -1784,6 +1851,130 @@ app.post('/api/admin/templates/:key/archive', requireSuperAdmin, adminTemplateJs
         return res.json({ template: customTemplateSummary(setting, usageCount) });
     } catch (error) {
         return sendError(res, 500, 'Could not archive template.', error);
+    }
+});
+
+const adminCouponSummary = (coupon: any) => ({
+    id: coupon._id?.toString?.() || coupon.id,
+    code: coupon.code,
+    label: coupon.label,
+    discountType: coupon.discountType,
+    discountValue: coupon.discountValue,
+    active: Boolean(coupon.active),
+    appliesTo: coupon.appliesTo || [],
+    startsAt: coupon.startsAt,
+    expiresAt: coupon.expiresAt,
+    maxRedemptions: coupon.maxRedemptions || null,
+    redeemedCount: coupon.redeemedCount || 0,
+    updatedAt: coupon.updatedAt,
+});
+
+app.get('/api/billing/plans', async (_req: Request, res: Response) => {
+    try {
+        const plans = await getPublicBillingPlans();
+        return res.json({ plans });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load billing plans.', error);
+    }
+});
+
+app.post('/api/billing/quote', async (req: Request, res: Response) => {
+    try {
+        const plan = req.body.plan as BillingPlan;
+        if (plan !== 'payg' && plan !== 'monthly') {
+            return res.status(400).json({ error: 'Choose a valid paid plan.' });
+        }
+        const quote = await quoteCheckout(plan, req.body.couponCode);
+        if ('error' in quote) return res.status(400).json({ error: quote.error });
+        return res.json({ quote });
+    } catch (error) {
+        return sendError(res, 500, 'Could not calculate checkout total.', error);
+    }
+});
+
+app.get('/api/admin/billing/config', requireSuperAdmin, async (_req: Request, res: Response) => {
+    try {
+        const [plans, coupons] = await Promise.all([
+            getPublicBillingPlans(),
+            Coupon.find().sort({ createdAt: -1 }),
+        ]);
+        return res.json({ plans, coupons: coupons.map(adminCouponSummary) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not load billing configuration.', error);
+    }
+});
+
+app.patch('/api/admin/billing/plans/:plan', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const plan = req.params.plan as BillingPlan;
+        if (plan !== 'payg' && plan !== 'monthly') return res.status(400).json({ error: 'Choose a valid paid plan.' });
+        const amountCents = Math.round(Number(req.body.amountCents));
+        if (!Number.isFinite(amountCents) || amountCents < 100) {
+            return res.status(400).json({ error: 'Enter a valid price in cents.' });
+        }
+        const label = sanitizeProfileField(req.body.label, 80) || planDisplayName(plan);
+        const setting = await BillingPlanSetting.findOneAndUpdate(
+            { plan },
+            { plan, label, amountCents, currency: 'LKR', active: req.body.active !== false, updatedBy: currentUserId(req) },
+            { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+        );
+        return res.json({ plan: await getPlanPrice(setting.plan) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update plan price.', error);
+    }
+});
+
+app.post('/api/admin/billing/coupons', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const code = normalizeCouponCode(req.body.code);
+        if (!code) return res.status(400).json({ error: 'Enter a coupon code.' });
+        const discountType = req.body.discountType === 'percent' ? 'percent' : 'fixed';
+        const rawValue = Number(req.body.discountValue);
+        const discountValue = discountType === 'percent' ? Math.min(Math.max(Math.round(rawValue), 1), 100) : Math.round(rawValue);
+        if (!Number.isFinite(discountValue) || discountValue <= 0) return res.status(400).json({ error: 'Enter a valid discount.' });
+        const appliesTo = Array.isArray(req.body.appliesTo)
+            ? req.body.appliesTo.filter((item: unknown) => item === 'payg' || item === 'monthly')
+            : [];
+        const coupon = await Coupon.findOneAndUpdate(
+            { code },
+            {
+                code,
+                label: sanitizeProfileField(req.body.label, 100) || code,
+                discountType,
+                discountValue,
+                active: req.body.active !== false,
+                appliesTo,
+                startsAt: req.body.startsAt ? new Date(req.body.startsAt) : undefined,
+                expiresAt: req.body.expiresAt ? new Date(req.body.expiresAt) : undefined,
+                maxRedemptions: req.body.maxRedemptions ? Math.max(1, Math.round(Number(req.body.maxRedemptions))) : undefined,
+                updatedBy: currentUserId(req),
+            },
+            { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+        );
+        return res.status(201).json({ coupon: adminCouponSummary(coupon) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not save coupon.', error);
+    }
+});
+
+app.patch('/api/admin/billing/coupons/:code', requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+        const code = normalizeCouponCode(req.params.code);
+        const coupon = code ? await Coupon.findOne({ code }) : null;
+        if (!coupon) return res.status(404).json({ error: 'Coupon not found.' });
+        if (typeof req.body.label === 'string') coupon.label = sanitizeProfileField(req.body.label, 100) || coupon.label;
+        if (req.body.discountType === 'fixed' || req.body.discountType === 'percent') coupon.discountType = req.body.discountType;
+        if (req.body.discountValue !== undefined) coupon.discountValue = Math.max(1, Math.round(Number(req.body.discountValue)));
+        if (typeof req.body.active === 'boolean') coupon.active = req.body.active;
+        if (Array.isArray(req.body.appliesTo)) coupon.appliesTo = req.body.appliesTo.filter((item: unknown) => item === 'payg' || item === 'monthly');
+        coupon.startsAt = req.body.startsAt ? new Date(req.body.startsAt) : undefined;
+        coupon.expiresAt = req.body.expiresAt ? new Date(req.body.expiresAt) : undefined;
+        coupon.maxRedemptions = req.body.maxRedemptions ? Math.max(1, Math.round(Number(req.body.maxRedemptions))) : undefined;
+        coupon.updatedBy = currentUserId(req);
+        await coupon.save();
+        return res.json({ coupon: adminCouponSummary(coupon) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not update coupon.', error);
     }
 });
 
@@ -2438,6 +2629,7 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
         }
 
         const context = resolvePayHerePaymentContext(payload);
+        const checkoutSession = await CheckoutSession.findOne({ orderId: payload.order_id });
         const transactionFilter = { provider: 'payhere' as const, paymentId: payload.payment_id };
         const existingTransaction = await PaymentTransaction.findOne(transactionFilter);
         if (existingTransaction?.processed) {
@@ -2451,10 +2643,14 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
                     provider: 'payhere',
                     paymentId: payload.payment_id,
                     orderId: payload.order_id,
-                    ...(context.userId ? { userId: context.userId } : {}),
-                    ...(context.plan ? { plan: context.plan } : {}),
+                    ...(checkoutSession?.userId ? { userId: checkoutSession.userId } : (context.userId ? { userId: context.userId } : {})),
+                    ...(checkoutSession?.plan ? { plan: checkoutSession.plan } : (context.plan ? { plan: context.plan } : {})),
                     amount: payload.payhere_amount,
                     currency: payload.payhere_currency,
+                    baseAmountCents: checkoutSession?.baseAmountCents,
+                    discountCents: checkoutSession?.discountCents,
+                    finalAmountCents: checkoutSession?.finalAmountCents,
+                    couponCode: checkoutSession?.couponCode,
                     statusCode: payload.status_code,
                     processed: false,
                     rawPayload: payload,
@@ -2464,36 +2660,47 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
             return res.status(200).send('OK');
         }
 
-        if (!context.userId || !context.plan) {
+        if (!checkoutSession && (!context.userId || !context.plan)) {
             console.warn('PayHere IPN could not resolve user or plan for order:', payload.order_id);
             return res.status(400).send('Invalid payment context.');
         }
 
-        const expectedPrice = PAYHERE_PLAN_PRICES[context.plan];
+        const expectedPrice = checkoutSession
+            ? { currency: checkoutSession.currency, cents: checkoutSession.finalAmountCents }
+            : PAYHERE_PLAN_PRICES[context.plan!];
         const paidCents = payHereAmountToCents(payload.payhere_amount);
         if (payload.payhere_currency.toUpperCase() !== expectedPrice.currency || paidCents !== expectedPrice.cents) {
             console.warn('PayHere IPN amount mismatch:', {
                 orderId: payload.order_id,
-                plan: context.plan,
+                plan: checkoutSession?.plan || context.plan,
                 paidAmount: payload.payhere_amount,
                 paidCurrency: payload.payhere_currency,
             });
             return res.status(400).send('Invalid payment amount.');
         }
 
-        const user = await User.findById(context.userId);
+        const user = await User.findById(checkoutSession?.userId || context.userId);
         if (!user) {
-            console.warn('PayHere IPN user not found:', context.userId);
+            console.warn('PayHere IPN user not found:', checkoutSession?.userId || context.userId);
             return res.status(404).send('User not found.');
         }
 
-        user.plan = context.plan;
+        const purchasedPlan = checkoutSession?.plan || context.plan!;
+        user.plan = purchasedPlan;
         user.planStartedAt = new Date();
-        user.planExpiresAt = createPlanExpiry(context.plan);
-        if (context.plan === 'payg') {
+        user.planExpiresAt = createPlanExpiry(purchasedPlan);
+        if (purchasedPlan === 'payg') {
             user.paygCvSaveCredits = (user.paygCvSaveCredits || 0) + 1;
         }
         await user.save();
+
+        if (checkoutSession) {
+            checkoutSession.status = 'paid';
+            await checkoutSession.save();
+        }
+        if (checkoutSession?.couponCode) {
+            await Coupon.updateOne({ code: checkoutSession.couponCode }, { $inc: { redeemedCount: 1 } });
+        }
 
         await PaymentTransaction.findOneAndUpdate(
             transactionFilter,
@@ -2502,9 +2709,13 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
                 paymentId: payload.payment_id,
                 orderId: payload.order_id,
                 userId: user._id,
-                plan: context.plan,
+                plan: purchasedPlan,
                 amount: payload.payhere_amount,
                 currency: payload.payhere_currency,
+                baseAmountCents: checkoutSession?.baseAmountCents,
+                discountCents: checkoutSession?.discountCents,
+                finalAmountCents: checkoutSession?.finalAmountCents || paidCents || undefined,
+                couponCode: checkoutSession?.couponCode,
                 statusCode: payload.status_code,
                 processed: true,
                 rawPayload: payload,
@@ -2514,7 +2725,7 @@ app.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req
 
         await sendBillingSuccessNotifications({
             user,
-            plan: context.plan,
+            plan: purchasedPlan,
             transactionId: payload.payment_id,
             planExpiresAt: user.planExpiresAt,
         });
@@ -2554,15 +2765,28 @@ app.post('/api/billing/payhere-checkout', requireAuth, async (req: Request, res:
         }
 
         const userId = currentUserId(req).toString();
-        const price = PAYHERE_PLAN_PRICES[plan];
+        const quote = await quoteCheckout(plan, req.body.couponCode);
+        if ('error' in quote) return res.status(400).json({ error: quote.error });
         const orderId = `${generateTransactionId()}-${userId}-${plan}`;
+        await CheckoutSession.create({
+            orderId,
+            userId,
+            plan,
+            currency: quote.currency,
+            baseAmountCents: quote.baseAmountCents,
+            discountCents: quote.discountCents,
+            finalAmountCents: quote.finalAmountCents,
+            couponCode: quote.couponCode || undefined,
+            status: 'pending',
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        });
         const frontendOrigin = getFrontendOrigin(req);
         const notifyUrl = process.env.PAYHERE_NOTIFY_URL?.trim() || `${getApiOrigin(req)}/api/payhere/ipn`;
         const checkoutPayload = {
             merchant_id: merchantId,
             order_id: orderId,
-            amount: price.amount,
-            currency: price.currency,
+            amount: quote.amount,
+            currency: quote.currency,
         };
 
         return res.json({
@@ -2582,12 +2806,13 @@ app.post('/api/billing/payhere-checkout', requireAuth, async (req: Request, res:
                 country,
                 order_id: orderId,
                 items: `NexCV ${planDisplayName(plan)} Plan`,
-                currency: price.currency,
-                amount: price.amount,
+                currency: quote.currency,
+                amount: quote.amount,
                 custom_1: userId,
                 custom_2: plan,
                 hash: buildPayHereCheckoutHash(checkoutPayload, merchantSecret),
             },
+            quote,
         });
     } catch (error) {
         return sendError(res, 500, 'Could not start PayHere checkout.', error);

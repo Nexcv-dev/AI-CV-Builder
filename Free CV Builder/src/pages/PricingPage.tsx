@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Crown, Download, FileText, Sparkles, Zap, type LucideIcon } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
-import { AuthUser, getCurrentUser } from '../utils/api';
+import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
 
 type PlanKey = 'free' | 'payg' | 'monthly';
 
@@ -68,6 +68,7 @@ const plans: Array<{
 export default function PricingPage() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [planPrices, setPlanPrices] = useState<Record<string, { cents: number; currency: string }> | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -82,6 +83,20 @@ export default function PricingPage() {
         if (!ignore) setLoadingUser(false);
       });
 
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    apiFetch<{ plans: Array<{ plan: string; cents: number; currency: string }> }>('/api/billing/plans')
+      .then((data) => {
+        if (!ignore) {
+          setPlanPrices(data.plans.reduce((acc, plan) => ({ ...acc, [plan.plan]: plan }), {} as Record<string, { cents: number; currency: string }>));
+        }
+      })
+      .catch(() => undefined);
     return () => {
       ignore = true;
     };
@@ -156,7 +171,9 @@ export default function PricingPage() {
                   <p className="mt-2 min-h-14 text-sm font-semibold leading-6 text-slate-400">{plan.description}</p>
 
                   <div className="mt-6">
-                    <div className="text-4xl font-black">{plan.price}</div>
+                    <div className="text-4xl font-black">
+                      {planPrices?.[plan.key] ? `${planPrices[plan.key].currency} ${new Intl.NumberFormat().format(Math.round(planPrices[plan.key].cents / 100))}` : plan.price}
+                    </div>
                     <div className="mt-1 text-sm font-bold text-slate-400">{plan.duration}</div>
                   </div>
 

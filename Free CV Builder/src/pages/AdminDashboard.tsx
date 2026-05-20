@@ -108,12 +108,39 @@ interface AdminPaymentItem {
   plan: 'payg' | 'monthly' | null;
   amount: string;
   amountCents: number;
+  baseAmountCents?: number;
+  discountCents?: number;
+  finalAmountCents?: number;
+  couponCode?: string;
   currency: string;
   statusCode: string;
   processed: boolean;
   rawPayload: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+}
+
+interface AdminBillingPlan {
+  plan: 'payg' | 'monthly';
+  label: string;
+  amount: string;
+  cents: number;
+  currency: 'LKR';
+  source: string;
+  updatedAt?: string;
+}
+
+interface AdminCoupon {
+  id: string;
+  code: string;
+  label: string;
+  discountType: 'fixed' | 'percent';
+  discountValue: number;
+  active: boolean;
+  appliesTo: Array<'payg' | 'monthly'>;
+  expiresAt?: string;
+  maxRedemptions?: number | null;
+  redeemedCount: number;
 }
 
 interface AdminPaymentSummary {
@@ -210,6 +237,10 @@ export default function AdminDashboard() {
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [payments, setPayments] = useState<AdminPaymentItem[]>([]);
   const [paymentSummary, setPaymentSummary] = useState<AdminPaymentSummary | null>(null);
+  const [billingPlans, setBillingPlans] = useState<AdminBillingPlan[]>([]);
+  const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
+  const [couponForm, setCouponForm] = useState({ code: '', label: '', discountType: 'fixed' as 'fixed' | 'percent', discountValue: '', appliesTo: 'both', active: true });
+  const [savingBilling, setSavingBilling] = useState(false);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [paymentSearch, setPaymentSearch] = useState('');
   const [paymentPlanFilter, setPaymentPlanFilter] = useState('all');
@@ -328,6 +359,23 @@ export default function AdminDashboard() {
       window.clearTimeout(timer);
     };
   }, [isBillingPage, paymentPlanFilter, paymentSearch, paymentStatusFilter]);
+
+  useEffect(() => {
+    if (!isBillingPage) return;
+    let ignore = false;
+    apiFetch<{ plans: AdminBillingPlan[]; coupons: AdminCoupon[] }>('/api/admin/billing/config')
+      .then((data) => {
+        if (ignore) return;
+        setBillingPlans(data.plans);
+        setCoupons(data.coupons);
+      })
+      .catch((error) => {
+        if (!ignore) toast.error(error instanceof Error ? error.message : 'Could not load billing settings.');
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [isBillingPage]);
 
   useEffect(() => {
     if (!isSupportPage) return;
@@ -532,6 +580,61 @@ export default function AdminDashboard() {
     }
   };
 
+  const updateBillingPlanPrice = async (plan: AdminBillingPlan, amount: string) => {
+    setSavingBilling(true);
+    try {
+      const amountCents = Math.round(Number(amount) * 100);
+      const data = await apiFetch<{ plan: AdminBillingPlan }>(`/api/admin/billing/plans/${plan.plan}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ label: plan.label, amountCents }),
+      });
+      setBillingPlans((items) => items.map((item) => item.plan === data.plan.plan ? data.plan : item));
+      toast.success('Plan price updated.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not update plan price.');
+    } finally {
+      setSavingBilling(false);
+    }
+  };
+
+  const saveCoupon = async () => {
+    setSavingBilling(true);
+    try {
+      const appliesTo = couponForm.appliesTo === 'both' ? ['payg', 'monthly'] : [couponForm.appliesTo];
+      const data = await apiFetch<{ coupon: AdminCoupon }>('/api/admin/billing/coupons', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...couponForm,
+          discountValue: couponForm.discountType === 'fixed' ? Math.round(Number(couponForm.discountValue) * 100) : Number(couponForm.discountValue),
+          appliesTo,
+        }),
+      });
+      setCoupons((items) => [data.coupon, ...items.filter((item) => item.code !== data.coupon.code)]);
+      setCouponForm({ code: '', label: '', discountType: 'fixed', discountValue: '', appliesTo: 'both', active: true });
+      toast.success('Coupon saved.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save coupon.');
+    } finally {
+      setSavingBilling(false);
+    }
+  };
+
+  const toggleCoupon = async (coupon: AdminCoupon) => {
+    setSavingBilling(true);
+    try {
+      const data = await apiFetch<{ coupon: AdminCoupon }>(`/api/admin/billing/coupons/${coupon.code}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ ...coupon, active: !coupon.active }),
+      });
+      setCoupons((items) => items.map((item) => item.code === data.coupon.code ? data.coupon : item));
+      toast.success(data.coupon.active ? 'Coupon activated.' : 'Coupon paused.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not update coupon.');
+    } finally {
+      setSavingBilling(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="lg:flex lg:h-dvh lg:overflow-hidden">
@@ -677,6 +780,10 @@ export default function AdminDashboard() {
             <BillingManagementSection
               payments={payments}
               summary={paymentSummary}
+              billingPlans={billingPlans}
+              coupons={coupons}
+              couponForm={couponForm}
+              savingBilling={savingBilling}
               loading={paymentsLoading}
               search={paymentSearch}
               planFilter={paymentPlanFilter}
@@ -687,6 +794,10 @@ export default function AdminDashboard() {
               onStatusFilterChange={setPaymentStatusFilter}
               onOpenPayment={setSelectedPayment}
               onCloseDetail={() => setSelectedPayment(null)}
+              onUpdatePlanPrice={updateBillingPlanPrice}
+              onCouponFormChange={setCouponForm}
+              onSaveCoupon={saveCoupon}
+              onToggleCoupon={toggleCoupon}
             />
           ) : isSupportPage ? (
             <SupportManagementSection
@@ -1457,6 +1568,10 @@ function TemplateAccessBadge({ access }: { access: 'free' | 'paid' }) {
 function BillingManagementSection({
   payments,
   summary,
+  billingPlans,
+  coupons,
+  couponForm,
+  savingBilling,
   loading,
   search,
   planFilter,
@@ -1467,9 +1582,17 @@ function BillingManagementSection({
   onStatusFilterChange,
   onOpenPayment,
   onCloseDetail,
+  onUpdatePlanPrice,
+  onCouponFormChange,
+  onSaveCoupon,
+  onToggleCoupon,
 }: {
   payments: AdminPaymentItem[];
   summary: AdminPaymentSummary | null;
+  billingPlans: AdminBillingPlan[];
+  coupons: AdminCoupon[];
+  couponForm: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; active: boolean };
+  savingBilling: boolean;
   loading: boolean;
   search: string;
   planFilter: string;
@@ -1480,7 +1603,12 @@ function BillingManagementSection({
   onStatusFilterChange: (value: string) => void;
   onOpenPayment: (payment: AdminPaymentItem) => void;
   onCloseDetail: () => void;
+  onUpdatePlanPrice: (plan: AdminBillingPlan, amount: string) => void;
+  onCouponFormChange: (value: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; active: boolean }) => void;
+  onSaveCoupon: () => void;
+  onToggleCoupon: (coupon: AdminCoupon) => void;
 }) {
+  const [planDrafts, setPlanDrafts] = useState<Record<string, string>>({});
   return (
     <section className="mt-6">
       <div className="grid gap-4 md:grid-cols-3">
@@ -1488,6 +1616,62 @@ function BillingManagementSection({
         <AdminStat icon={<Check size={19} />} label="Processed Payments" value={String(summary?.processedCount || 0)} />
         <AdminStat icon={<Crown size={19} />} label="Monthly Revenue" value={formatCurrency(summary?.revenueByPlan.monthly || 0, summary?.currency || 'LKR')} />
       </div>
+
+      <section className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
+          <h2 className="font-montserrat text-lg font-black">Package Prices</h2>
+          <div className="mt-4 grid gap-3">
+            {billingPlans.map((plan) => {
+              const draft = planDrafts[plan.plan] ?? String(Math.round(plan.cents) / 100);
+              return (
+                <div key={plan.plan} className="grid gap-3 rounded-xl border border-white/10 bg-slate-950/50 p-3 sm:grid-cols-[1fr_150px_auto] sm:items-end">
+                  <div>
+                    <p className="text-sm font-black text-slate-100">{plan.label}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">{plan.plan} · {plan.source}</p>
+                  </div>
+                  <label className="grid gap-1 text-xs font-black text-slate-400">
+                    Price LKR
+                    <input value={draft} onChange={(event) => setPlanDrafts((current) => ({ ...current, [plan.plan]: event.target.value }))} className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
+                  </label>
+                  <button type="button" disabled={savingBilling} onClick={() => onUpdatePlanPrice(plan, draft)} className="h-10 rounded-xl bg-violet-600 px-4 text-xs font-black text-white transition hover:bg-violet-500 disabled:opacity-60">Save</button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
+          <h2 className="font-montserrat text-lg font-black">Coupons</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_130px_120px_auto]">
+            <input value={couponForm.code} onChange={(event) => onCouponFormChange({ ...couponForm, code: event.target.value.toUpperCase() })} placeholder="CODE" className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
+            <input value={couponForm.label} onChange={(event) => onCouponFormChange({ ...couponForm, label: event.target.value })} placeholder="Label" className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
+            <select value={couponForm.discountType} onChange={(event) => onCouponFormChange({ ...couponForm, discountType: event.target.value as 'fixed' | 'percent' })} className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
+              <option value="fixed">LKR off</option>
+              <option value="percent">% off</option>
+            </select>
+            <input value={couponForm.discountValue} onChange={(event) => onCouponFormChange({ ...couponForm, discountValue: event.target.value })} placeholder={couponForm.discountType === 'fixed' ? '250' : '15'} className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
+            <button type="button" disabled={savingBilling} onClick={onSaveCoupon} className="h-10 rounded-xl bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-500 disabled:opacity-60">Save</button>
+          </div>
+          <select value={couponForm.appliesTo} onChange={(event) => onCouponFormChange({ ...couponForm, appliesTo: event.target.value })} className="mt-3 h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
+            <option value="both">Both plans</option>
+            <option value="payg">Pay As You Go only</option>
+            <option value="monthly">Monthly only</option>
+          </select>
+          <div className="mt-4 grid gap-2">
+            {coupons.map((coupon) => (
+              <div key={coupon.code} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/50 p-3">
+                <div>
+                  <p className="text-sm font-black text-slate-100">{coupon.code} <span className="text-slate-500">· {coupon.label}</span></p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">{coupon.discountType === 'percent' ? `${coupon.discountValue}%` : formatCurrency(coupon.discountValue, 'LKR')} off · used {coupon.redeemedCount}</p>
+                </div>
+                <button type="button" disabled={savingBilling} onClick={() => onToggleCoupon(coupon)} className={`h-9 rounded-xl px-3 text-xs font-black transition disabled:opacity-60 ${coupon.active ? 'bg-amber-500/15 text-amber-200 ring-1 ring-amber-300/20' : 'bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-300/20'}`}>
+                  {coupon.active ? 'Pause' : 'Activate'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px]">
         <label className="relative block">
