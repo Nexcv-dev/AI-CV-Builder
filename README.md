@@ -37,10 +37,12 @@ Currently in version: `1.1.0` (Stable Production Release)
 - **Zero Mobile Input Zooming:** Set input font sizes on the checkout page to a comfortable `16px` to prevent default iOS/Android browsers from zoom-focusing and breaking layout alignments.
 - **Distraction-Free Layouts:** Global layout footers are dynamically hidden on key focused pages (such as checkout, dashboard, password reset, and settings) to ensure high focus and seamless checkouts.
 
-### 🚀 Performance, Security & Export
-- **Pixel-Perfect PDFs:** Server-side rendering using Puppeteer ensures downloaded CVs look identical to their online previews.
-- **Secure Document Limits:** Quota models (`CvCreationQuotaModel` and `DownloadQuotaModel`) enforce document limits on free accounts and unlock unlimited operations upon verified subscriptions.
-- **Security Engineering:** Restrictive CORS, custom rate limiters for PDF endpoints, XSS protection with `DOMPurify`, and cryptographically salted password hashing via Node's `pbkdf2Sync`.
+### 🚀 Performance, Serverless Rendering & Cloud Templates
+- **AWS Lambda PDF Generation:** High-performance, pixel-perfect PDF rendering offloaded to a serverless AWS Lambda microservice using Puppeteer Core and `@sparticuz/chromium`. This isolates memory-heavy Puppeteer processes, drastically reducing main application resource consumption and page-load lag.
+- **AWS S3 Dynamic Template Pipeline:** Hardcoded CV templates have been fully migrated to S3. They are stored as modern Mustache-based HTML/CSS template assets inside S3 (`s3://cv-template-bucket/templates`), acting as the single source of truth for both live previewing and final downloads.
+- **Intelligent Pre-processing & Caching:** A robust data pre-processing layer dynamically formats dates, groups skills, checks typography contrast, and orders sections. To maximize speed, an optimized S3 caching mechanism (`s3TemplateCache`) stores retrieved S3 templates locally with custom TTL configs.
+- **Robust Quota Management:** Quota models (`CvCreationQuotaModel` and `DownloadQuotaModel`) enforce strict resume creation and export limits on free accounts, seamlessly unlocking unlimited premium operations upon verified subscriptions.
+- **Production-Grade Security:** Enforced via restrictive CORS, secure rate limiters, client-side & server-side JSDOM/DOMPurify XSS filters, and secure PBKDF2 cryptographically salted password hashing.
 
 ---
 
@@ -59,10 +61,25 @@ AI-CV-Builder/
 ├── split_preview.html
 ├── startup_preview.html
 ├── studio_preview.html
+├── templates/                 # S3-syncable Mustache PDF templates
+│   ├── classic/               # Standard layout files (index.html, style.css)
+│   ├── modern/
+│   ├── professional/
+│   ├── timeline/
+│   ├── minimalist/
+│   ├── startup/
+│   └── README.md              # S3 template sync instructions & placeholders
 └── Free CV Builder/
     ├── Dockerfile
-    ├── server.ts             # Express backend entry point
+    ├── server.ts             # Express backend entry point with S3/Lambda client integration
     ├── vite.config.ts        # Vite configuration
+    ├── lambda-pdf/           # AWS Lambda PDF rendering microservice bundle
+    │   ├── README.md         # Lambda deployment configuration & parameters
+    │   ├── dist/             # Packaged nexcv-pdf-lambda.zip zipfile
+    │   └── src/
+    │       └── handler.ts    # Transpiled AWS Lambda Puppeteer handler
+    ├── scripts/
+    │   └── build-pdf-lambda.mjs # Compilation, bundling (esbuild) & zipping script
     ├── server-models/        # MongoDB Schemas, Quotas & Auth
     │   ├── CVDocument.ts
     │   ├── CvCreationQuotaModel.ts
@@ -128,15 +145,19 @@ AI-CV-Builder/
 - React Hot Toast (Notifications)
 - Vitest & Testing Library (Automated unit tests)
 
-**Backend:**
+**Backend & Cloud Services:**
 - Node.js & Express
 - TypeScript & tsx (TypeScript execute runner)
 - MongoDB with Mongoose
+- AWS Lambda (PDF generation microservice)
+- AWS S3 (Mustache-based HTML/CSS template storage)
+- AWS SDK (`@aws-sdk/client-s3`) for fetching templates dynamically
 - Passport.js (Google OAuth 2.0 & Local stateful sessions)
 - Express Session (Stateful authentication storage)
 - Nodemailer (Email Delivery for Password Resets & Account Verification)
 - `@google/genai` (Google Gemini API integration)
-- Puppeteer Core & `@sparticuz/chromium` (Server-side pixel-perfect PDF rendering)
+- Puppeteer Core & `@sparticuz/chromium` (Serverless pixel-perfect PDF rendering)
+- esbuild & typescript compiler (AWS Lambda package compiler)
 - DOMPurify & JSDOM (Input sanitization)
 - Helmet, CORS, & Express Rate Limit (Strict production API security)
 
@@ -183,6 +204,20 @@ GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
 # Email Configuration (for Password Resets & Account Verifications)
 EMAIL_USER=your_gmail_address@gmail.com
 EMAIL_PASS=your_gmail_app_password
+
+# AWS Lambda PDF Rendering Microservice
+PDF_LAMBDA_URL=your_aws_lambda_function_url
+PDF_LAMBDA_TIMEOUT_MS=45000
+
+# AWS S3 Dynamic Template Cache configuration
+S3_TEMPLATE_BUCKET_NAME=your_s3_template_bucket
+S3_TEMPLATE_PREFIX=templates
+S3_TEMPLATE_CACHE_TTL_MS=300000
+
+# Optional: AWS Credentials (if not running with IAM Roles on EC2/ECS/Lambda)
+AWS_REGION=eu-north-1
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 ```
 > **Note:** For local development, ensure your Google OAuth authorized redirect URI is set to `http://localhost:3002/api/auth/google/callback`.
 
@@ -225,17 +260,20 @@ NexCV includes Docker support for a seamless, containerized development experien
 | `npm run start` | Runs the compiled production backend server |
 | `npm run test` | Runs the automated Vitest suites in watch mode |
 | `npm run lint` | Runs TypeScript type checking and validation |
+| `npm run build:pdf-lambda` | Compiles, bundles (esbuild), and packages the AWS Lambda function zip |
 
 ---
 
 ## 🛡️ Security Implementation
 
 NexCV prioritizes user data security through multiple layers of protection:
-- **Rate Limiting:** Protects API endpoints, authentication routes, and computationally expensive PDF generation endpoints from abuse.
-- **CSRF Protection:** Non-GET requests require a specific `X-App-Source` header, and origins are strictly verified.
-- **Sanitization:** All user inputs and AI-generated content are sanitized using `DOMPurify` before database storage and PDF rendering to prevent XSS.
-- **Secure Headers:** Implemented via `Helmet.js`, including restrictive Content Security Policies (CSP).
-- **Password Hashing:** Passwords are cryptographically hashed with unique salts using `pbkdf2Sync` before storage.
+- **Process Isolation (AWS Lambda):** Computationally heavy PDF generation using Puppeteer is fully isolated in an AWS Lambda sandbox, protecting the main backend from denial-of-service (DoS) memory exhaustion.
+- **Strict CORS & Rate Limiting:** Restricts API requests to approved domains and limits requests to authentication, AI generation, and PDF download endpoints.
+- **CSRF Protection:** State-modifying endpoints strictly require custom source validations (`X-App-Source` header checks).
+- **Sanitization Pipeline:** All user input and AI-generated contents undergo comprehensive HTML sanitization using `DOMPurify` (with a custom tags/attributes allowlist in both the main Express application and the Lambda compiler).
+- **Template Security Constraints:** S3 Mustache template compilations are sandboxed, escaping HTML dynamic bindings by default (double curly braces `{{}}`) and sanitizing only verified rich-text fields (triple curly braces `{{{}}}`).
+- **Secure Headers:** Configured with `Helmet.js` using highly restrictive Content Security Policy (CSP) headers.
+- **Password Hashing:** Implemented with Node's native `pbkdf2Sync` using secure cryptographic salts before storing user credentials.
 
 ---
 
