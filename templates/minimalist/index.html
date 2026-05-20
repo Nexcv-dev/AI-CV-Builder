@@ -3,40 +3,184 @@
   <head>
     <meta charset="utf-8">
     <title>{{personalInfo.fullName}} CV</title>
+    <link href="https://fonts.googleapis.com/css2?family={{computed.googleFontName}}:wght@400;450;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
-    <main class="page minimalist">
-      <header>
-        <h1>{{personalInfo.fullName}}</h1>
-        <p>{{personalInfo.email}} | {{personalInfo.phone}} | {{personalInfo.address}}</p>
-      </header>
-
-      <div class="layout">
-        <div>
-          <section>
-            <h2>Profile</h2>
-            <div class="rich">{{{personalInfo.summary}}}</div>
-          </section>
-          <section>
-            <h2>Experience</h2>
-            {{#experience}}<article><h3>{{position}}</h3><p>{{company}} | {{startDate}} - {{endDate}}</p><div class="rich">{{{description}}}</div></article>{{/experience}}
-          </section>
-          <section>
-            <h2>Education</h2>
-            {{#education}}<article><h3>{{degree}}</h3><p>{{institution}} | {{startDate}} - {{endDate}}</p><div class="rich">{{{description}}}</div></article>{{/education}}
-          </section>
-          <section>
-            <h2>Projects</h2>
-            {{#projects}}<article><h3>{{name}}</h3><p>{{link}}</p><div class="rich">{{{description}}}</div></article>{{/projects}}
-          </section>
-        </div>
-        <aside>
-          <section><h2>Skills</h2>{{#skills}}<p>{{name}}</p>{{/skills}}</section>
-          <section><h2>Courses</h2>{{#courses}}<p><strong>{{name}}</strong><br>{{institution}}</p>{{/courses}}</section>
-          <section><h2>Awards</h2>{{#awards}}<p><strong>{{name}}</strong><br>{{issuer}} {{date}}</p>{{/awards}}</section>
-          <section><h2>Languages</h2>{{#languages}}<p>{{name}} - {{proficiency}}</p>{{/languages}}</section>
-        </aside>
+    {{#watermark}}
+      <div class="nexcv-watermark" aria-hidden="true">
+        <div>Created with NexCV Free</div>
+        <div>Upgrade to remove watermark</div>
       </div>
-    </main>
+    {{/watermark}}
+
+    <div class="pdf-shell">
+      <main class="page minimalist">
+        <div class="page-pad">
+          <table class="pdf-table">
+            <thead><tr><td></td></tr></thead>
+            <tbody>
+              <tr>
+                <td>
+                  <header class="masthead">
+                    {{#computed.hasProfileImage}}
+                      <div class="profile-frame">
+                        <img src="{{computed.profileImage}}" alt="" style="transform:{{computed.profileImageTransform}}">
+                      </div>
+                    {{/computed.hasProfileImage}}
+                    <h1>{{personalInfo.fullName}}</h1>
+                    <div class="contact-line">{{#contactItems}}<span>{{value}}</span>{{/contactItems}}</div>
+                  </header>
+
+                  <div class="layout">
+                    <div class="main-column">
+                      {{#minimalistLeftSections}}
+                        {{#isSummary}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="rich">{{{personalInfo.summary}}}</div>
+                          </section>
+                        {{/isSummary}}
+
+                        {{#isExperience}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="stack">
+                              {{#items}}
+                                <article class="item">
+                                  <div class="item-head">
+                                    <h3>{{position}}</h3>
+                                    <span>{{formattedDate}}</span>
+                                  </div>
+                                  <p class="sub">{{company}}</p>
+                                  <div class="rich">{{{description}}}</div>
+                                </article>
+                              {{/items}}
+                            </div>
+                          </section>
+                        {{/isExperience}}
+
+                        {{#isEducation}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="stack">
+                              {{#items}}
+                                <article class="item">
+                                  <div class="item-head">
+                                    <h3>{{degree}}</h3>
+                                    <span>{{formattedDate}}</span>
+                                  </div>
+                                  <p class="sub">{{institution}}</p>
+                                  <div class="rich">{{{description}}}</div>
+                                </article>
+                              {{/items}}
+                            </div>
+                          </section>
+                        {{/isEducation}}
+                      {{/minimalistLeftSections}}
+                    </div>
+
+                    <aside class="side-column">
+                      {{#minimalistRightSections}}
+                        {{#isPersonalDetails}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="side-stack">
+                              {{#items}}
+                                <div class="detail-row"><span>{{label}}</span><strong>{{value}}</strong></div>
+                              {{/items}}
+                            </div>
+                          </section>
+                        {{/isPersonalDetails}}
+
+                        {{#isSkills}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="side-stack">{{#items}}<p>{{name}}</p>{{/items}}</div>
+                          </section>
+                        {{/isSkills}}
+
+                        {{#isProjects}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="side-stack">
+                              {{#items}}
+                                <article class="side-item">
+                                  <h3>{{name}}</h3>
+                                  {{#hasLink}}<a href="{{link}}">View Project</a>{{/hasLink}}
+                                  <div class="rich">{{{description}}}</div>
+                                </article>
+                              {{/items}}
+                            </div>
+                          </section>
+                        {{/isProjects}}
+
+                        {{#isCourses}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="side-stack">
+                              {{#items}}
+                                <article class="side-item">
+                                  <h3>{{name}}</h3>
+                                  <p>{{institution}}</p>
+                                  <span>{{formattedDate}}</span>
+                                </article>
+                              {{/items}}
+                            </div>
+                          </section>
+                        {{/isCourses}}
+
+                        {{#isAwards}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="side-stack">
+                              {{#items}}
+                                <article class="side-item">
+                                  <h3>{{name}}</h3>
+                                  <p>{{issuer}}</p>
+                                  <span>{{date}}</span>
+                                </article>
+                              {{/items}}
+                            </div>
+                          </section>
+                        {{/isAwards}}
+
+                        {{#isLanguages}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="side-stack">
+                              {{#items}}<div class="language-row"><span>{{name}}</span><em>{{proficiency}}</em></div>{{/items}}
+                            </div>
+                          </section>
+                        {{/isLanguages}}
+
+                        {{#isReferences}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="side-stack">
+                              {{#items}}
+                                <article class="side-item">
+                                  <h3>{{name}}</h3>
+                                  {{#sub}}<p>{{sub}}</p>{{/sub}}
+                                  {{#hasContact}}
+                                    <div class="reference-contact">
+                                      {{#email}}<div>{{email}}</div>{{/email}}
+                                      {{#phone}}<div>{{phone}}</div>{{/phone}}
+                                    </div>
+                                  {{/hasContact}}
+                                </article>
+                              {{/items}}
+                            </div>
+                          </section>
+                        {{/isReferences}}
+                      {{/minimalistRightSections}}
+                    </aside>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
   </body>
 </html>
