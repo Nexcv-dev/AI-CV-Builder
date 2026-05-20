@@ -3,50 +3,59 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #157 from bimanthaperera-lab/test/overview (60cd988) - Bimantha Perera, 10 seconds ago
-* minimalist template layout fixing (a1d27b7) - Bimantha Perera, 4 minutes ago
-* Migrate modern PDF template to S3 pipeline (73dea2d) - Bimantha Perera, 43 minutes ago
-* update minimal template layout with s3 (f30ac7f) - Bimantha Perera, 58 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (e6dcf16) - bimanthaperera-lab, 80 minutes ago
-* Merge pull request #156 from bimanthaperera-lab/test/overview (889a3b5) - Bimantha Perera, 80 minutes ago
-* Prevent PDF template text overflow (d55ca42) - Bimantha Perera, 85 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (cb34f9a) - bimanthaperera-lab, 2 hours ago
-* Merge pull request #155 from bimanthaperera-lab/test/overview (6880209) - Bimantha Perera, 2 hours ago
-* Migrate minimalist PDF template to S3 pipeline (8cf0a2d) - Bimantha Perera, 2 hours ago
-* Soften PDF template name weights (6cae675) - Bimantha Perera, 2 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (ac66de7) - bimanthaperera-lab, 3 hours ago
-* Merge pull request #154 from bimanthaperera-lab/test/overview (9a3ba7d) - Bimantha Perera, 3 hours ago
-* Migrate timeline PDF template to S3 pipeline (efd7551) - Bimantha Perera, 3 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (0e6772c) - bimanthaperera-lab, 3 hours ago
-* Merge pull request #153 from bimanthaperera-lab/test/overview (dd94497) - Bimantha Perera, 3 hours ago
-* Migrate classic PDF template to S3 pipeline (9b8f92a) - Bimantha Perera, 3 hours ago
-* Expose S3 template debug state (e95bdc0) - Bimantha Perera, 15 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2f2b8b9) - bimanthaperera-lab, 15 hours ago
-* Merge pull request #152 from bimanthaperera-lab/test/overview (998ed66) - Bimantha Perera, 15 hours ago
-* Expose PDF Lambda build marker (ce83141) - Bimantha Perera, 15 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2030b4e) - bimanthaperera-lab, 15 hours ago
-* Merge pull request #151 from bimanthaperera-lab/test/overview (cd27add) - Bimantha Perera, 15 hours ago
-* Log S3 template fallback reason (b88c464) - Bimantha Perera, 15 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (e1bb4e8) - bimanthaperera-lab, 16 hours ago
-* Merge pull request #150 from bimanthaperera-lab/test/overview (13dcdf7) - Bimantha Perera, 16 hours ago
-* Restore generated PDF handler source (d912b94) - Bimantha Perera, 16 hours ago
-* Migrate professional PDF template to S3 data pipeline (2823c0c) - Bimantha Perera, 17 hours ago
-* add tempaltes to S3 (58c42dd) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2fd1248) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #149 from bimanthaperera-lab/test/overview (f91807e) - Bimantha Perera, 20 hours ago
-* Check the pdf generation with S3 (6a67d29) - Bimantha Perera, 21 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (0802aba) - bimanthaperera-lab, 21 hours ago
-* Merge pull request #148 from bimanthaperera-lab/test/overview (d489841) - Bimantha Perera, 21 hours ago
-* automate AWS lambda file upload (3bc4ce9) - Bimantha Perera, 21 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (7c34a34) - bimanthaperera-lab, 22 hours ago
-* Merge pull request #147 from bimanthaperera-lab/test/overview (55ab151) - Bimantha Perera, 22 hours ago
-* Update main.yml (609ae43) - Bimantha Perera, 22 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2335721) - bimanthaperera-lab, 22 hours ago
-* Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 22 hours ago
-* Send template request to S3 bucket (77118d3) - Bimantha Perera, 22 hours ago
-* Implement Support Ticket (1e7163a) - Bimantha Perera, 25 hours ago
-* move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 26 hours ago
-* Update CVForm.tsx (37f2feb) - Bimantha Perera, 28 hours ago
+* Merge pull request #159 from bimanthaperera-lab/test/overview (67856a1) - Bimantha Perera, 11 seconds ago
+* Optimized admin panel code and add promotional tab to admin panel (2e37a72) - Bimantha Perera, 4 minutes ago
+* Add admin pricing and coupon support (d95bb32) - Bimantha Perera, 2 hours ago
+* Support admin-created S3 templates (d9fa6f9) - Bimantha Perera, 2 hours ago
+* Add creative S3 PDF template (4e76a30) - Bimantha Perera, 3 hours ago
+* Fix PDF pagination spacing for S3 templates (7192dbe) - Bimantha Perera, 3 hours ago
+* Migrate startup PDF template to S3 pipeline (c88ed33) - Bimantha Perera, 3 hours ago
+* minimal template devider keep minimal (574e151) - Bimantha Perera, 5 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e2b3552) - bimanthaperera-lab, 5 hours ago
+* Merge pull request #157 from bimanthaperera-lab/test/overview (60cd988) - Bimantha Perera, 5 hours ago
+* minimalist template layout fixing (a1d27b7) - Bimantha Perera, 5 hours ago
+* Migrate modern PDF template to S3 pipeline (73dea2d) - Bimantha Perera, 6 hours ago
+* update minimal template layout with s3 (f30ac7f) - Bimantha Perera, 6 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e6dcf16) - bimanthaperera-lab, 6 hours ago
+* Merge pull request #156 from bimanthaperera-lab/test/overview (889a3b5) - Bimantha Perera, 6 hours ago
+* Prevent PDF template text overflow (d55ca42) - Bimantha Perera, 6 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (cb34f9a) - bimanthaperera-lab, 7 hours ago
+* Merge pull request #155 from bimanthaperera-lab/test/overview (6880209) - Bimantha Perera, 7 hours ago
+* Migrate minimalist PDF template to S3 pipeline (8cf0a2d) - Bimantha Perera, 7 hours ago
+* Soften PDF template name weights (6cae675) - Bimantha Perera, 7 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (ac66de7) - bimanthaperera-lab, 7 hours ago
+* Merge pull request #154 from bimanthaperera-lab/test/overview (9a3ba7d) - Bimantha Perera, 7 hours ago
+* Migrate timeline PDF template to S3 pipeline (efd7551) - Bimantha Perera, 7 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (0e6772c) - bimanthaperera-lab, 8 hours ago
+* Merge pull request #153 from bimanthaperera-lab/test/overview (dd94497) - Bimantha Perera, 8 hours ago
+* Migrate classic PDF template to S3 pipeline (9b8f92a) - Bimantha Perera, 8 hours ago
+* Expose S3 template debug state (e95bdc0) - Bimantha Perera, 20 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2f2b8b9) - bimanthaperera-lab, 20 hours ago
+* Merge pull request #152 from bimanthaperera-lab/test/overview (998ed66) - Bimantha Perera, 20 hours ago
+* Expose PDF Lambda build marker (ce83141) - Bimantha Perera, 20 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2030b4e) - bimanthaperera-lab, 20 hours ago
+* Merge pull request #151 from bimanthaperera-lab/test/overview (cd27add) - Bimantha Perera, 20 hours ago
+* Log S3 template fallback reason (b88c464) - Bimantha Perera, 20 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e1bb4e8) - bimanthaperera-lab, 21 hours ago
+* Merge pull request #150 from bimanthaperera-lab/test/overview (13dcdf7) - Bimantha Perera, 21 hours ago
+* Restore generated PDF handler source (d912b94) - Bimantha Perera, 21 hours ago
+* Migrate professional PDF template to S3 data pipeline (2823c0c) - Bimantha Perera, 21 hours ago
+* add tempaltes to S3 (58c42dd) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2fd1248) - bimanthaperera-lab, 25 hours ago
+* Merge pull request #149 from bimanthaperera-lab/test/overview (f91807e) - Bimantha Perera, 25 hours ago
+* Check the pdf generation with S3 (6a67d29) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (0802aba) - bimanthaperera-lab, 26 hours ago
+* Merge pull request #148 from bimanthaperera-lab/test/overview (d489841) - Bimantha Perera, 26 hours ago
+* automate AWS lambda file upload (3bc4ce9) - Bimantha Perera, 26 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (7c34a34) - bimanthaperera-lab, 27 hours ago
+* Merge pull request #147 from bimanthaperera-lab/test/overview (55ab151) - Bimantha Perera, 27 hours ago
+* Update main.yml (609ae43) - Bimantha Perera, 27 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2335721) - bimanthaperera-lab, 27 hours ago
+* Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 27 hours ago
+* Send template request to S3 bucket (77118d3) - Bimantha Perera, 27 hours ago
+* Implement Support Ticket (1e7163a) - Bimantha Perera, 30 hours ago
+* move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 31 hours ago
+* Update CVForm.tsx (37f2feb) - Bimantha Perera, 33 hours ago
 * implement template management settings with backend (932c731) - Bimantha Perera, 2 days ago
 * implement Admin Panel Template and dashboard settings (07345f4) - Bimantha Perera, 2 days ago
 * Create Admin Panel Structre (aff3de4) - Bimantha Perera, 2 days ago
