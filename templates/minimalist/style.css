@@ -67,7 +67,7 @@ h1 {
   margin: 0 0 10px;
   font-size: 2.25rem;
   line-height: 1.1;
-  font-weight: 450;
+  font-weight: 500;
   color: #111827;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -127,8 +127,8 @@ article {
 }
 h2 {
   margin: 0 0 13px;
-  font-size: 0.6875rem;
-  letter-spacing: 0.12em;
+  font-size: 16px;
+  letter-spacing: 0.14em;
   color: {{{computed.themeColor}}};
   text-transform: uppercase;
   font-weight: 700;
@@ -142,7 +142,7 @@ h3 {
 }
 p {
   margin: 0 0 8px;
-  font-size: 0.75rem;
+  font-size: 13.5px;
   color: #4b5563;
   line-height: {{{computed.lineSpacing}}};
 }
@@ -170,7 +170,7 @@ a {
 }
 .item-head span {
   color: #6b7280;
-  font-size: 0.75rem;
+  font-size: 13.5px;
   font-weight: 500;
 }
 .sub {
@@ -179,7 +179,7 @@ a {
 }
 .rich,
 .rich * {
-  font-size: 0.78125rem;
+  font-size: 13.5px;
   line-height: {{{computed.lineSpacing}}};
   color: #374151;
   overflow-wrap: anywhere;
@@ -199,6 +199,22 @@ a {
 .side-stack p {
   margin: 0;
 }
+.skills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.skill-tag {
+  display: inline-block;
+  background: #f9fafb;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+  break-inside: avoid;
+}
 .side-item {
   display: flex;
   flex-direction: column;
@@ -207,7 +223,7 @@ a {
 .side-item span,
 .reference-contact {
   color: #6b7280;
-  font-size: 0.75rem;
+  font-size: 13.5px;
   line-height: 1.4;
 }
 .detail-row {
@@ -217,13 +233,14 @@ a {
 }
 .detail-row span {
   color: #6b7280;
-  font-size: 0.6875rem;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  font-weight: 500;
 }
 .detail-row strong {
   color: #374151;
-  font-size: 0.75rem;
+  font-size: 13.5px;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -236,14 +253,14 @@ a {
   padding-bottom: 4px;
 }
 .language-row span {
-  font-size: 0.875rem;
+  font-size: 13.5px;
   font-weight: 600;
   color: #374151;
   min-width: 0;
 }
 .language-row em {
   color: #6b7280;
-  font-size: 0.8125rem;
+  font-size: 13.5px;
   font-style: normal;
   min-width: 0;
   text-align: right;

@@ -261,12 +261,22 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     issuer: item.issuer || 'Issuer',
   }));
 
+  const processedSkills = skills.map((item: any) => {
+    const level = Number(item.level || 0);
+    const clampedLevel = Number.isFinite(level) ? Math.min(Math.max(level, 0), 5) : 0;
+    return {
+      ...item,
+      level: clampedLevel,
+      levelPercent: String((clampedLevel / 5) * 100) + '%',
+    };
+  });
+
   const processedLanguages = languages.map((item: any) => ({
     ...item,
     label: item.proficiency ? String(item.name || '') + ' (' + String(item.proficiency) + ')' : (item.name || ''),
   }));
 
-  const groupedSkillsMap = skills.reduce((acc: Record<string, any[]>, skill: any) => {
+  const groupedSkillsMap = processedSkills.reduce((acc: Record<string, any[]>, skill: any) => {
     const category = skill.category?.trim() || 'Core Skills';
     if (!acc[category]) acc[category] = [];
     acc[category].push(skill);
@@ -286,7 +296,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     personalDetails: () => hasPersonalDetails ? { key: 'personalDetails', isPersonalDetails: true, title: 'Personal Details', items: personalDetails } : null,
     experience: () => processedExperience.length ? { key: 'experience', isExperience: true, title: 'Experience', items: processedExperience } : null,
     education: () => processedEducation.length ? { key: 'education', isEducation: true, title: 'Education', items: processedEducation } : null,
-    skills: () => skills.length ? { key: 'skills', isSkills: true, title: isProfessional ? 'Skills & Expertise' : 'Skills', items: skills, groupedItems: groupedSkills } : null,
+    skills: () => processedSkills.length ? { key: 'skills', isSkills: true, title: isProfessional ? 'Skills & Expertise' : 'Skills', items: processedSkills, groupedItems: groupedSkills } : null,
     projects: () => processedProjects.length ? { key: 'projects', isProjects: true, title: isProfessional ? 'Key Projects' : 'Projects', items: processedProjects } : null,
     courses: () => processedCourses.length ? { key: 'courses', isCourses: true, title: isProfessional ? 'Certifications & Courses' : 'Courses & Certifications', items: processedCourses } : null,
     awards: () => processedAwards.length ? { key: 'awards', isAwards: true, title: 'Awards', items: processedAwards } : null,
@@ -301,6 +311,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
   const minimalistSideSectionKeys = ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const minimalistLeftSections = sections.filter((section: any) => !minimalistSideSectionKeys.includes(section.key));
   const minimalistRightSections = sections.filter((section: any) => minimalistSideSectionKeys.includes(section.key));
+  const modernMainSections = sections.filter((section: any) => !['personalDetails', 'skills', 'languages'].includes(section.key));
 
   return {
     ...cvData,
@@ -308,7 +319,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     contactItems: [personalInfo.email, personalInfo.phone, personalInfo.address].filter(Boolean).map((value: string) => ({ value })),
     experience: processedExperience,
     education: processedEducation,
-    skills,
+    skills: processedSkills,
     groupedSkills,
     projects: processedProjects,
     courses: processedCourses,
@@ -316,6 +327,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     languages: processedLanguages,
     references: processedReferences,
     sections,
+    modernMainSections,
     minimalistLeftSections,
     minimalistRightSections,
     computed: {
@@ -324,6 +336,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       templateSurfaceColor,
       sidebarTextColor,
       sidebarMutedColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+      sidebarBorderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
       fontFamily,
       fontFamilyCSS: templateFontMap[fontFamily] || "'Inter', sans-serif",
       googleFontName: String(fontFamily || 'Inter').replace(/\s+/g, '+'),
@@ -338,7 +351,9 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       isProfessional,
       isClassic: template === 'classic',
       hasPersonalDetails,
-      hasSkillCategories: skills.some((skill: any) => skill.category?.trim()),
+      hasSkills: processedSkills.length > 0,
+      hasLanguages: processedLanguages.length > 0,
+      hasSkillCategories: processedSkills.some((skill: any) => skill.category?.trim()),
     },
     watermark: Boolean(options.watermark),
   };
