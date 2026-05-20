@@ -10,6 +10,9 @@ export interface TemplateConfigItem {
   thumbnail: string;
   builtInThumbnail: string;
   surfaceColorRole: string;
+  surfaceColorLabel?: string | null;
+  source?: 'built_in' | 'custom';
+  status?: 'draft' | 'active' | 'archived';
   usageCount?: number;
 }
 

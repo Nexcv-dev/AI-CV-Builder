@@ -53,20 +53,22 @@ export const CV_TEMPLATES = [
   },
 ] as const;
 
-export type TemplateName = (typeof CV_TEMPLATES)[number]['key'];
+export type BuiltInTemplateName = (typeof CV_TEMPLATES)[number]['key'];
+export type TemplateName = BuiltInTemplateName | (string & {});
 export type TemplateAccess = (typeof CV_TEMPLATES)[number]['access'];
 export type TemplateSurfaceColorRole = (typeof CV_TEMPLATES)[number]['surfaceColorRole'];
 
 export const DEFAULT_TEMPLATE: TemplateName = 'professional';
 
-export const TEMPLATE_KEYS = CV_TEMPLATES.map((template) => template.key) as TemplateName[];
+export const TEMPLATE_KEYS = CV_TEMPLATES.map((template) => template.key) as BuiltInTemplateName[];
+export const TEMPLATE_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
 
 export function getTemplateDefinition(template: TemplateName) {
   return CV_TEMPLATES.find((item) => item.key === template) || CV_TEMPLATES[0];
 }
 
 export function isTemplateName(value: unknown): value is TemplateName {
-  return typeof value === 'string' && TEMPLATE_KEYS.includes(value as TemplateName);
+  return typeof value === 'string' && TEMPLATE_KEY_PATTERN.test(value);
 }
 
 export function templateRequiresPaidPlan(template: TemplateName): boolean {

@@ -7,6 +7,7 @@ import {
   CreditCard,
   Crown,
   FileText,
+  Plus,
   LayoutDashboard,
   LayoutTemplate,
   Eye,
@@ -90,7 +91,10 @@ interface AdminTemplateItem {
   access: 'free' | 'paid';
   thumbnail: string;
   builtInThumbnail: string;
-  surfaceColorRole: string;
+  surfaceColorRole: 'none' | 'sidebar' | 'header';
+  surfaceColorLabel?: string | null;
+  source: 'built_in' | 'custom';
+  status: 'draft' | 'active' | 'archived';
   usageCount: number;
   updatedAt?: string;
 }
@@ -147,6 +151,19 @@ const adminNavItems = [
   { key: 'roles', label: 'Roles', to: '/admin/roles', icon: Shield },
 ];
 
+const emptyCustomTemplateForm = {
+  key: '',
+  label: '',
+  category: 'Modern',
+  access: 'paid' as 'free' | 'paid',
+  surfaceColorRole: 'none' as 'none' | 'sidebar' | 'header',
+  surfaceColorLabel: '',
+  indexHtml: '',
+  styleCss: '',
+  thumbnailDataUrl: '',
+  status: 'draft' as 'draft' | 'active',
+};
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat().format(value);
 }
@@ -186,8 +203,11 @@ export default function AdminDashboard() {
   const [templateCategoryFilter, setTemplateCategoryFilter] = useState('all');
   const [templateAccessFilter, setTemplateAccessFilter] = useState('all');
   const [selectedTemplate, setSelectedTemplate] = useState<AdminTemplateItem | null>(null);
-  const [templateForm, setTemplateForm] = useState({ label: '', category: 'Modern', access: 'paid' as 'free' | 'paid', thumbnail: '' });
+  const [templateForm, setTemplateForm] = useState({ label: '', category: 'Modern', access: 'paid' as 'free' | 'paid', thumbnail: '', surfaceColorRole: 'none' as 'none' | 'sidebar' | 'header', surfaceColorLabel: '' });
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [createTemplateOpen, setCreateTemplateOpen] = useState(false);
+  const [customTemplateForm, setCustomTemplateForm] = useState(emptyCustomTemplateForm);
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [payments, setPayments] = useState<AdminPaymentItem[]>([]);
   const [paymentSummary, setPaymentSummary] = useState<AdminPaymentSummary | null>(null);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
@@ -390,6 +410,8 @@ export default function AdminDashboard() {
       category: template.category,
       access: template.access,
       thumbnail: template.thumbnail,
+      surfaceColorRole: template.surfaceColorRole || 'none',
+      surfaceColorLabel: template.surfaceColorLabel || '',
     });
   };
 
@@ -408,6 +430,8 @@ export default function AdminDashboard() {
         category: data.template.category,
         access: data.template.access,
         thumbnail: data.template.thumbnail,
+        surfaceColorRole: data.template.surfaceColorRole || 'none',
+        surfaceColorLabel: data.template.surfaceColorLabel || '',
       });
       toast.success('Template metadata updated.');
     } catch (error) {
@@ -424,6 +448,65 @@ export default function AdminDashboard() {
     const matchesAccess = templateAccessFilter === 'all' || template.access === templateAccessFilter;
     return matchesSearch && matchesCategory && matchesAccess;
   }), [templateAccessFilter, templateCategoryFilter, templateSearch, templates]);
+
+  const readTemplateFile = (file: File, mode: 'text' | 'dataUrl') => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read file.'));
+    reader.onload = () => resolve(String(reader.result || ''));
+    if (mode === 'dataUrl') reader.readAsDataURL(file);
+    else reader.readAsText(file);
+  });
+
+  const createCustomTemplate = async () => {
+    setCreatingTemplate(true);
+    try {
+      const data = await apiFetch<{ template: AdminTemplateItem }>('/api/admin/templates', {
+        method: 'POST',
+        body: JSON.stringify(customTemplateForm),
+      });
+      setTemplates((items) => [...items, data.template]);
+      setSelectedTemplate(data.template);
+      setTemplateForm({
+        label: data.template.label,
+        category: data.template.category,
+        access: data.template.access,
+        thumbnail: data.template.thumbnail,
+        surfaceColorRole: data.template.surfaceColorRole || 'none',
+        surfaceColorLabel: data.template.surfaceColorLabel || '',
+      });
+      setCustomTemplateForm(emptyCustomTemplateForm);
+      setCreateTemplateOpen(false);
+      toast.success(data.template.status === 'active' ? 'Template created and published.' : 'Template draft created.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not create template.');
+    } finally {
+      setCreatingTemplate(false);
+    }
+  };
+
+  const changeCustomTemplateStatus = async (template: AdminTemplateItem, action: 'publish' | 'archive') => {
+    setSavingTemplate(true);
+    try {
+      const data = await apiFetch<{ template: AdminTemplateItem }>(`/api/admin/templates/${template.key}/${action}`, { method: 'POST' });
+      setTemplates((items) => items.map((item) => item.key === data.template.key ? data.template : item));
+      setSelectedTemplate(data.template);
+      toast.success(action === 'publish' ? 'Template published.' : 'Template archived.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Could not ${action} template.`);
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const setCustomTemplateFile = async (file: File | undefined, field: 'indexHtml' | 'styleCss' | 'thumbnailDataUrl') => {
+    if (!file) return;
+    try {
+      const value = await readTemplateFile(file, field === 'thumbnailDataUrl' ? 'dataUrl' : 'text');
+      setCustomTemplateForm((current) => ({ ...current, [field]: value }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not read file.');
+    }
+  };
 
   const openTicketDetail = (ticket: AdminSupportTicket) => {
     setSelectedTicket(ticket);
@@ -573,6 +656,9 @@ export default function AdminDashboard() {
               selectedTemplate={selectedTemplate}
               templateForm={templateForm}
               savingTemplate={savingTemplate}
+              createTemplateOpen={createTemplateOpen}
+              customTemplateForm={customTemplateForm}
+              creatingTemplate={creatingTemplate}
               onSearchChange={setTemplateSearch}
               onCategoryFilterChange={setTemplateCategoryFilter}
               onAccessFilterChange={setTemplateAccessFilter}
@@ -580,6 +666,12 @@ export default function AdminDashboard() {
               onCloseDetail={() => setSelectedTemplate(null)}
               onFormChange={setTemplateForm}
               onSaveTemplate={saveSelectedTemplate}
+              onOpenCreate={() => setCreateTemplateOpen(true)}
+              onCloseCreate={() => setCreateTemplateOpen(false)}
+              onCustomFormChange={setCustomTemplateForm}
+              onCustomFileChange={setCustomTemplateFile}
+              onCreateTemplate={createCustomTemplate}
+              onChangeCustomStatus={changeCustomTemplateStatus}
             />
           ) : isBillingPage ? (
             <BillingManagementSection
@@ -970,6 +1062,9 @@ function TemplateManagementSection({
   selectedTemplate,
   templateForm,
   savingTemplate,
+  createTemplateOpen,
+  customTemplateForm,
+  creatingTemplate,
   onSearchChange,
   onCategoryFilterChange,
   onAccessFilterChange,
@@ -977,6 +1072,12 @@ function TemplateManagementSection({
   onCloseDetail,
   onFormChange,
   onSaveTemplate,
+  onOpenCreate,
+  onCloseCreate,
+  onCustomFormChange,
+  onCustomFileChange,
+  onCreateTemplate,
+  onChangeCustomStatus,
 }: {
   templates: AdminTemplateItem[];
   categories: string[];
@@ -985,19 +1086,28 @@ function TemplateManagementSection({
   categoryFilter: string;
   accessFilter: string;
   selectedTemplate: AdminTemplateItem | null;
-  templateForm: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string };
+  templateForm: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string };
   savingTemplate: boolean;
+  createTemplateOpen: boolean;
+  customTemplateForm: typeof emptyCustomTemplateForm;
+  creatingTemplate: boolean;
   onSearchChange: (value: string) => void;
   onCategoryFilterChange: (value: string) => void;
   onAccessFilterChange: (value: string) => void;
   onOpenTemplate: (template: AdminTemplateItem) => void;
   onCloseDetail: () => void;
-  onFormChange: (value: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string }) => void;
+  onFormChange: (value: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string }) => void;
   onSaveTemplate: () => void;
+  onOpenCreate: () => void;
+  onCloseCreate: () => void;
+  onCustomFormChange: (value: typeof emptyCustomTemplateForm) => void;
+  onCustomFileChange: (file: File | undefined, field: 'indexHtml' | 'styleCss' | 'thumbnailDataUrl') => void;
+  onCreateTemplate: () => void;
+  onChangeCustomStatus: (template: AdminTemplateItem, action: 'publish' | 'archive') => void;
 }) {
   return (
     <section className="mt-6">
-      <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px]">
+      <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px_auto]">
         <label className="relative block">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
@@ -1024,13 +1134,22 @@ function TemplateManagementSection({
           <option value="free">Free</option>
           <option value="paid">Premium</option>
         </select>
+        <button
+          type="button"
+          onClick={onOpenCreate}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98]"
+        >
+          <Plus size={16} />
+          Add
+        </button>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
-        <div className="grid grid-cols-[1.2fr_150px_120px_100px_90px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
+        <div className="grid grid-cols-[1.2fr_130px_100px_100px_80px_90px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
           <span>Template</span>
           <span>Category</span>
           <span>Access</span>
+          <span>Status</span>
           <span>Usage</span>
           <span>Action</span>
         </div>
@@ -1044,7 +1163,7 @@ function TemplateManagementSection({
           <div className="px-5 py-8 text-center text-sm font-bold text-slate-500">No templates match these filters.</div>
         )}
         {!loading && templates.map((template) => (
-          <article key={template.key} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_150px_120px_100px_90px] lg:items-center lg:px-5">
+          <article key={template.key} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_130px_100px_100px_80px_90px] lg:items-center lg:px-5">
             <div className="flex min-w-0 items-center gap-3">
               <div className="h-16 w-12 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900">
                 <img src={template.thumbnail} alt="" className="h-full w-full object-cover object-top" />
@@ -1056,6 +1175,7 @@ function TemplateManagementSection({
             </div>
             <span className="w-fit rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-slate-300 ring-1 ring-white/10">{template.category}</span>
             <TemplateAccessBadge access={template.access} />
+            <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${template.status === 'active' ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20' : template.status === 'draft' ? 'bg-amber-400/10 text-amber-300 ring-amber-300/20' : 'bg-slate-400/10 text-slate-300 ring-slate-300/20'}`}>{template.status}</span>
             <span className="text-sm font-black text-slate-200">{template.usageCount}</span>
             <button
               type="button"
@@ -1068,6 +1188,129 @@ function TemplateManagementSection({
           </article>
         ))}
       </div>
+
+      {createTemplateOpen && (
+        <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+          <aside className="h-full w-full max-w-2xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase text-violet-300">New Template</p>
+                <h2 className="mt-1 font-montserrat text-2xl font-black">Add S3 template</h2>
+              </div>
+              <button
+                type="button"
+                onClick={onCloseCreate}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                aria-label="Close add template"
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            <section className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Key
+                  <input
+                    value={customTemplateForm.key}
+                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, key: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
+                    placeholder="creative-2026"
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  />
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Label
+                  <input
+                    value={customTemplateForm.label}
+                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, label: event.target.value })}
+                    placeholder="Creative 2026"
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  />
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Category
+                  <select
+                    value={customTemplateForm.category}
+                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, category: event.target.value })}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  >
+                    {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Access
+                  <select
+                    value={customTemplateForm.access}
+                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, access: event.target.value as 'free' | 'paid' })}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  >
+                    <option value="paid">Premium</option>
+                    <option value="free">Free</option>
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Surface color
+                  <select
+                    value={customTemplateForm.surfaceColorRole}
+                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, surfaceColorRole: event.target.value as 'none' | 'sidebar' | 'header' })}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  >
+                    <option value="none">None</option>
+                    <option value="header">Header</option>
+                    <option value="sidebar">Sidebar</option>
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Initial status
+                  <select
+                    value={customTemplateForm.status}
+                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, status: event.target.value as 'draft' | 'active' })}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="active">Active</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  index.html
+                  <input type="file" accept=".html,text/html" onChange={(event) => void onCustomFileChange(event.target.files?.[0], 'indexHtml')} className="text-xs font-bold text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-black file:text-white" />
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  style.css
+                  <input type="file" accept=".css,text/css" onChange={(event) => void onCustomFileChange(event.target.files?.[0], 'styleCss')} className="text-xs font-bold text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-black file:text-white" />
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Thumbnail
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(event) => void onCustomFileChange(event.target.files?.[0], 'thumbnailDataUrl')} className="text-xs font-bold text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-black file:text-white" />
+                </label>
+              </div>
+
+              <div className="grid gap-4">
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  HTML preview
+                  <textarea value={customTemplateForm.indexHtml} onChange={(event) => onCustomFormChange({ ...customTemplateForm, indexHtml: event.target.value })} rows={8} className="rounded-xl border border-white/10 bg-slate-950 p-3 font-mono text-xs text-white outline-none focus:border-violet-400" />
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  CSS preview
+                  <textarea value={customTemplateForm.styleCss} onChange={(event) => onCustomFormChange({ ...customTemplateForm, styleCss: event.target.value })} rows={8} className="rounded-xl border border-white/10 bg-slate-950 p-3 font-mono text-xs text-white outline-none focus:border-violet-400" />
+                </label>
+              </div>
+
+              <button
+                type="button"
+                onClick={onCreateTemplate}
+                disabled={creatingTemplate}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
+              >
+                {creatingTemplate ? <Loader2 className="animate-spin" size={16} /> : 'Create template'}
+              </button>
+            </section>
+          </aside>
+        </div>
+      )}
 
       {selectedTemplate && (
         <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
@@ -1132,6 +1375,27 @@ function TemplateManagementSection({
                     className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
                   />
                 </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Surface color
+                  <select
+                    value={templateForm.surfaceColorRole}
+                    onChange={(event) => onFormChange({ ...templateForm, surfaceColorRole: event.target.value as 'none' | 'sidebar' | 'header' })}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  >
+                    <option value="none">None</option>
+                    <option value="header">Header</option>
+                    <option value="sidebar">Sidebar</option>
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Surface label
+                  <input
+                    value={templateForm.surfaceColorLabel}
+                    onChange={(event) => onFormChange({ ...templateForm, surfaceColorLabel: event.target.value })}
+                    placeholder="Accent Background"
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  />
+                </label>
                 <button
                   type="button"
                   onClick={onSaveTemplate}
@@ -1140,11 +1404,33 @@ function TemplateManagementSection({
                 >
                   {savingTemplate ? <Loader2 className="animate-spin" size={16} /> : 'Save metadata'}
                 </button>
+                {selectedTemplate.source === 'custom' && (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => onChangeCustomStatus(selectedTemplate, 'publish')}
+                      disabled={savingTemplate || selectedTemplate.status === 'active'}
+                      className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50"
+                    >
+                      Publish
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onChangeCustomStatus(selectedTemplate, 'archive')}
+                      disabled={savingTemplate || selectedTemplate.status === 'archived'}
+                      className="inline-flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/6 px-4 text-sm font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
+                    >
+                      Archive
+                    </button>
+                  </div>
+                )}
               </div>
             </section>
 
             <section className="mt-6 grid gap-3 sm:grid-cols-2">
               <DetailTile label="Usage Count" value={String(selectedTemplate.usageCount)} />
+              <DetailTile label="Source" value={selectedTemplate.source} />
+              <DetailTile label="Status" value={selectedTemplate.status} />
               <DetailTile label="Surface Color" value={selectedTemplate.surfaceColorRole} />
               <DetailTile label="Built-In Thumbnail" value={selectedTemplate.builtInThumbnail} />
               <DetailTile label="Last Updated" value={selectedTemplate.updatedAt ? formatDate(selectedTemplate.updatedAt) : 'Not customized'} />

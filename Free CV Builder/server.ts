@@ -9,7 +9,7 @@ import nodemailer from 'nodemailer';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import fs from 'fs';
 import { createHash, pbkdf2Sync, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { JSDOM } from 'jsdom';
@@ -201,10 +201,11 @@ app.use('/api/auth/signup', emailVerificationLimiter);
 const defaultJsonParser = express.json({ limit: '1mb' });
 const cvImportJsonParser = express.json({ limit: '16mb' });
 const pdfJsonParser = express.json({ limit: '5mb' });
+const adminTemplateJsonParser = express.json({ limit: '6mb' });
 
 // Default JSON limit for most endpoints. Larger payloads are allowed only on specific routes.
 app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf') {
+    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf' || req.path.startsWith('/api/admin/templates')) {
         return next();
     }
     return defaultJsonParser(req, res, next);
@@ -335,11 +336,24 @@ async function fetchS3Text(key: string): Promise<string | null> {
     }
 }
 
-const templateS3Key = (template: TemplateName, fileName: string) => (
+const templateS3Key = (template: string, fileName: string) => (
     S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${template}/${fileName}` : `${template}/${fileName}`
 );
 
-async function loadS3TemplateHtml(template: TemplateName): Promise<string | null> {
+async function putS3Object(key: string, body: string | Buffer, contentType: string) {
+    const client = getS3Client();
+    if (!client || !S3_TEMPLATE_BUCKET) {
+        throw new Error('S3 template bucket is not configured.');
+    }
+    await client.send(new PutObjectCommand({
+        Bucket: S3_TEMPLATE_BUCKET,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+    }));
+}
+
+async function loadS3TemplateHtml(template: string): Promise<string | null> {
     if (!S3_TEMPLATE_BUCKET) return null;
 
     const cacheKey = template;
@@ -414,7 +428,7 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
     return renderBlock(templateHtml, root);
 }
 
-async function generateS3CVHTML(cvData: any, template: TemplateName, options: { watermark?: boolean } = {}) {
+async function generateS3CVHTML(cvData: any, template: string, options: { watermark?: boolean } = {}) {
     const templateHtml = await loadS3TemplateHtml(template);
     return templateHtml ? renderCvTemplateString(templateHtml, cvData, options) : null;
 }
@@ -1106,6 +1120,12 @@ const adminUserSummary = (user: any, cvCount = 0) => ({
 });
 
 const TEMPLATE_CATEGORIES = ['Modern', 'ATS Friendly', 'Minimal', 'Executive', 'Creative', 'Tech', 'Corporate'] as const;
+const TEMPLATE_STATUSES = ['draft', 'active', 'archived'] as const;
+const TEMPLATE_SURFACE_COLOR_ROLES = ['none', 'sidebar', 'header'] as const;
+const CUSTOM_TEMPLATE_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
+const MAX_TEMPLATE_HTML_LENGTH = 240_000;
+const MAX_TEMPLATE_CSS_LENGTH = 160_000;
+const MAX_TEMPLATE_THUMBNAIL_BYTES = 900_000;
 
 const defaultTemplateCategory = (key: string) => {
     if (key === 'classic') return 'ATS Friendly';
@@ -1116,16 +1136,42 @@ const defaultTemplateCategory = (key: string) => {
     return 'Modern';
 };
 
-const adminTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
+const templateThumbnailPath = (key: string, version?: unknown) => (
+    `/api/templates/${encodeURIComponent(key)}/thumbnail${version ? `?v=${encodeURIComponent(String(version))}` : ''}`
+);
+
+const builtInTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
     key: template.key,
     label: setting?.label || template.label,
     category: setting?.category || defaultTemplateCategory(template.key),
     access: setting?.access || template.access,
     thumbnail: setting?.thumbnail || template.image,
     builtInThumbnail: template.image,
-    surfaceColorRole: template.surfaceColorRole,
+    surfaceColorRole: setting?.surfaceColorRole || template.surfaceColorRole,
+    surfaceColorLabel: setting?.surfaceColorLabel || template.surfaceColorLabel || null,
+    source: 'built_in',
+    status: setting?.status || 'active',
     usageCount,
     updatedAt: setting?.updatedAt,
+});
+
+const customTemplateSummary = (setting: any, usageCount = 0) => ({
+    key: setting.key,
+    label: setting.label || setting.key,
+    category: setting.category || defaultTemplateCategory(setting.key),
+    access: setting.access || 'paid',
+    thumbnail: setting.thumbnail || templateThumbnailPath(setting.key, setting.updatedAt?.getTime?.() || setting.updatedAt),
+    builtInThumbnail: setting.thumbnail || templateThumbnailPath(setting.key, setting.updatedAt?.getTime?.() || setting.updatedAt),
+    surfaceColorRole: setting.surfaceColorRole || 'none',
+    surfaceColorLabel: setting.surfaceColorLabel || null,
+    source: 'custom',
+    status: setting.status || 'draft',
+    usageCount,
+    updatedAt: setting.updatedAt,
+});
+
+const adminTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
+    ...builtInTemplateSummary(template, setting, usageCount),
 });
 
 const adminPaymentSummary = (payment: any) => {
@@ -1177,9 +1223,70 @@ const adminSupportTicketSummary = (ticket: any) => ({
 
 const getTemplateSettingForKey = async (key: string) => {
     const template = CV_TEMPLATES.find((item) => item.key === key);
-    if (!template) return null;
+    if (!template) {
+        const setting = await TemplateSetting.findOne({ key, source: 'custom', status: { $ne: 'archived' } });
+        return setting ? customTemplateSummary(setting, 0) : null;
+    }
     const setting = await TemplateSetting.findOne({ key });
     return adminTemplateSummary(template, setting, 0);
+};
+
+const getActiveTemplateForKey = async (key: unknown) => {
+    if (!isTemplateName(key)) return null;
+    const builtIn = CV_TEMPLATES.find((item) => item.key === key);
+    if (builtIn) {
+        const setting = await TemplateSetting.findOne({ key });
+        const summary = builtInTemplateSummary(builtIn, setting, 0);
+        return summary.status === 'archived' ? null : summary;
+    }
+    const custom = await TemplateSetting.findOne({ key, source: 'custom', status: 'active' });
+    return custom ? customTemplateSummary(custom, 0) : null;
+};
+
+const resolveRequestedTemplate = async (value: unknown): Promise<TemplateName> => {
+    const template = await getActiveTemplateForKey(value);
+    return (template?.key || DEFAULT_TEMPLATE) as TemplateName;
+};
+
+const validateCustomTemplateKey = (value: unknown) => {
+    const key = sanitizeProfileField(value, 60).toLowerCase();
+    return CUSTOM_TEMPLATE_KEY_PATTERN.test(key) ? key : '';
+};
+
+const sanitizeTemplateSource = (value: unknown, maxLength: number) => (
+    typeof value === 'string'
+        ? value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, maxLength)
+        : ''
+);
+
+const validateTemplateHtml = (html: string) => {
+    if (!html.trim()) return 'Template HTML is required.';
+    if (html.length > MAX_TEMPLATE_HTML_LENGTH) return 'Template HTML is too large.';
+    if (/<\s*script\b/i.test(html)) return 'Template HTML cannot include script tags.';
+    if (/\son[a-z]+\s*=/i.test(html)) return 'Template HTML cannot include inline event handlers.';
+    if (/javascript:/i.test(html)) return 'Template HTML cannot include javascript URLs.';
+    if (!/{{\s*personalInfo\.fullName\s*}}/.test(html) && !/{{\s*#/.test(html)) {
+        return 'Template HTML must include NexCV template placeholders.';
+    }
+    return '';
+};
+
+const validateTemplateCss = (css: string) => {
+    if (!css.trim()) return 'Template CSS is required.';
+    if (css.length > MAX_TEMPLATE_CSS_LENGTH) return 'Template CSS is too large.';
+    if (/<\s*script\b/i.test(css) || /javascript:/i.test(css)) return 'Template CSS contains unsafe content.';
+    return '';
+};
+
+const parseThumbnailUpload = (value: unknown) => {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    const match = value.match(/^data:image\/(png|jpe?g|webp|svg\+xml);base64,([a-z0-9+/=\s]+)$/i);
+    if (!match) return null;
+    const extension = match[1].toLowerCase().replace('jpeg', 'jpg').replace('svg+xml', 'svg');
+    const buffer = Buffer.from(match[2].replace(/\s+/g, ''), 'base64');
+    if (!buffer.length || buffer.length > MAX_TEMPLATE_THUMBNAIL_BYTES) return null;
+    const contentType = extension === 'svg' ? 'image/svg+xml' : `image/${extension === 'jpg' ? 'jpeg' : extension}`;
+    return { buffer, extension, contentType };
 };
 
 // ─── API Routes ──────────────────────────────────────────────────────
@@ -1437,14 +1544,23 @@ app.get('/api/admin/templates', requireSuperAdmin, async (_req: Request, res: Re
         ]);
         const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
         const usageMap = new Map(usage.map((item: any) => [item._id, item.count]));
+        const builtInKeys = new Set<string>(CV_TEMPLATES.map((template) => template.key));
+        const customTemplates = settings
+            .filter((setting) => setting.source === 'custom' && !builtInKeys.has(setting.key))
+            .map((setting) => customTemplateSummary(setting, usageMap.get(setting.key) || 0));
 
         return res.json({
             categories: TEMPLATE_CATEGORIES,
-            templates: CV_TEMPLATES.map((template) => adminTemplateSummary(
+            statuses: TEMPLATE_STATUSES,
+            surfaceColorRoles: TEMPLATE_SURFACE_COLOR_ROLES,
+            templates: [
+                ...CV_TEMPLATES.map((template) => adminTemplateSummary(
                 template,
                 settingMap.get(template.key),
                 usageMap.get(template.key) || 0
-            )),
+                )),
+                ...customTemplates,
+            ],
         });
     } catch (error) {
         return sendError(res, 500, 'Could not load admin templates.', error);
@@ -1455,39 +1571,219 @@ app.get('/api/templates/config', async (_req: Request, res: Response) => {
     try {
         const settings = await TemplateSetting.find();
         const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
+        const builtInKeys = new Set<string>(CV_TEMPLATES.map((template) => template.key));
+        const builtIns = CV_TEMPLATES
+            .map((template) => adminTemplateSummary(template, settingMap.get(template.key), 0))
+            .filter((template) => template.status !== 'archived');
+        const customTemplates = settings
+            .filter((setting) => setting.source === 'custom' && setting.status === 'active' && !builtInKeys.has(setting.key))
+            .map((setting) => customTemplateSummary(setting, 0));
         return res.json({
-            templates: CV_TEMPLATES.map((template) => adminTemplateSummary(template, settingMap.get(template.key), 0)),
+            templates: [...builtIns, ...customTemplates],
         });
     } catch (error) {
         return sendError(res, 500, 'Could not load template configuration.', error);
     }
 });
 
-app.patch('/api/admin/templates/:key', requireSuperAdmin, async (req: Request, res: Response) => {
+app.get('/api/templates/:key/thumbnail', async (req: Request, res: Response) => {
     try {
-        const key = req.params.key;
-        const template = CV_TEMPLATES.find((item) => item.key === key);
-        if (!template) {
-            return res.status(404).json({ error: 'Template not found.' });
+        const key = validateCustomTemplateKey(req.params.key);
+        if (!key) return res.status(400).json({ error: 'Invalid template key.' });
+        const setting = await TemplateSetting.findOne({ key, source: 'custom', thumbnailS3Key: { $exists: true, $ne: '' } });
+        if (!setting?.thumbnailS3Key) return res.status(404).json({ error: 'Template thumbnail not found.' });
+        const client = getS3Client();
+        if (!client || !S3_TEMPLATE_BUCKET) return res.status(404).json({ error: 'Template thumbnail not configured.' });
+
+        const response = await client.send(new GetObjectCommand({
+            Bucket: S3_TEMPLATE_BUCKET,
+            Key: setting.thumbnailS3Key,
+        }));
+        res.setHeader('Content-Type', response.ContentType || 'image/svg+xml');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        if (response.Body && typeof (response.Body as any).pipe === 'function') {
+            return (response.Body as any).pipe(res);
+        }
+        const chunks: Buffer[] = [];
+        for await (const chunk of response.Body as any) {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        return res.send(Buffer.concat(chunks));
+    } catch (error) {
+        return sendError(res, 500, 'Could not load template thumbnail.', error);
+    }
+});
+
+app.post('/api/admin/templates', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    try {
+        const key = validateCustomTemplateKey(req.body.key);
+        if (!key) return res.status(400).json({ error: 'Use a lowercase slug key like creative-2026.' });
+        if (CV_TEMPLATES.some((template) => template.key === key) || await TemplateSetting.exists({ key })) {
+            return res.status(409).json({ error: 'A template with this key already exists.' });
+        }
+        if (!S3_TEMPLATE_BUCKET) {
+            return res.status(400).json({ error: 'S3 template bucket is not configured.' });
         }
 
-        const label = sanitizeProfileField(req.body.label, 80) || template.label;
+        const label = sanitizeProfileField(req.body.label, 80) || key;
         const category = typeof req.body.category === 'string' && TEMPLATE_CATEGORIES.includes(req.body.category as any)
             ? req.body.category
             : defaultTemplateCategory(key);
         const access = req.body.access === 'free' ? 'free' : 'paid';
-        const thumbnail = sanitizeProfileField(req.body.thumbnail, 500) || template.image;
+        const surfaceColorRole = TEMPLATE_SURFACE_COLOR_ROLES.includes(req.body.surfaceColorRole)
+            ? req.body.surfaceColorRole
+            : 'none';
+        const surfaceColorLabel = sanitizeProfileField(req.body.surfaceColorLabel, 80);
+        const indexHtml = sanitizeTemplateSource(req.body.indexHtml, MAX_TEMPLATE_HTML_LENGTH);
+        const styleCss = sanitizeTemplateSource(req.body.styleCss, MAX_TEMPLATE_CSS_LENGTH);
+        const thumbnailUpload = parseThumbnailUpload(req.body.thumbnailDataUrl);
+        const htmlError = validateTemplateHtml(indexHtml);
+        const cssError = validateTemplateCss(styleCss);
+        if (htmlError || cssError) return res.status(400).json({ error: htmlError || cssError });
+        if (!thumbnailUpload) return res.status(400).json({ error: 'Upload a PNG, JPG, WebP, or SVG thumbnail under 900 KB.' });
+
+        const s3Prefix = S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key;
+        const indexS3Key = `${s3Prefix}/index.html`;
+        const styleS3Key = `${s3Prefix}/style.css`;
+        const thumbnailS3Key = `${s3Prefix}/thumbnail.${thumbnailUpload.extension}`;
+        await Promise.all([
+            putS3Object(indexS3Key, indexHtml, 'text/html; charset=utf-8'),
+            putS3Object(styleS3Key, styleCss, 'text/css; charset=utf-8'),
+            putS3Object(thumbnailS3Key, thumbnailUpload.buffer, thumbnailUpload.contentType),
+        ]);
+
+        const setting = await TemplateSetting.create({
+            key,
+            label,
+            category,
+            access,
+            thumbnail: templateThumbnailPath(key, Date.now()),
+            surfaceColorRole,
+            surfaceColorLabel,
+            source: 'custom',
+            status: req.body.status === 'active' ? 'active' : 'draft',
+            s3Prefix,
+            indexS3Key,
+            styleS3Key,
+            thumbnailS3Key,
+            createdBy: currentUserId(req),
+            updatedBy: currentUserId(req),
+        });
+
+        s3TemplateCache.delete(key);
+        return res.status(201).json({ template: customTemplateSummary(setting, 0) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not create template.', error);
+    }
+});
+
+app.patch('/api/admin/templates/:key', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    try {
+        const key = req.params.key;
+        const template = CV_TEMPLATES.find((item) => item.key === key);
+        const existingCustom = !template ? await TemplateSetting.findOne({ key, source: 'custom' }) : null;
+        if (!template && !existingCustom) {
+            return res.status(404).json({ error: 'Template not found.' });
+        }
+
+        const label = sanitizeProfileField(req.body.label, 80) || template?.label || existingCustom?.label || key;
+        const category = typeof req.body.category === 'string' && TEMPLATE_CATEGORIES.includes(req.body.category as any)
+            ? req.body.category
+            : defaultTemplateCategory(key);
+        const access = req.body.access === 'free' ? 'free' : 'paid';
+        const surfaceColorRole = TEMPLATE_SURFACE_COLOR_ROLES.includes(req.body.surfaceColorRole)
+            ? req.body.surfaceColorRole
+            : (template?.surfaceColorRole || existingCustom?.surfaceColorRole || 'none');
+        const surfaceColorLabel = sanitizeProfileField(req.body.surfaceColorLabel, 80) || (template && 'surfaceColorLabel' in template ? template.surfaceColorLabel : '') || existingCustom?.surfaceColorLabel || '';
+        let thumbnail = sanitizeProfileField(req.body.thumbnail, 500) || template?.image || existingCustom?.thumbnail || templateThumbnailPath(key, Date.now());
+        const update: any = {
+            key,
+            label,
+            category,
+            access,
+            thumbnail,
+            surfaceColorRole,
+            surfaceColorLabel,
+            source: template ? 'built_in' : 'custom',
+            updatedBy: currentUserId(req),
+        };
+
+        if (!template) {
+            const indexHtml = typeof req.body.indexHtml === 'string' ? sanitizeTemplateSource(req.body.indexHtml, MAX_TEMPLATE_HTML_LENGTH) : '';
+            const styleCss = typeof req.body.styleCss === 'string' ? sanitizeTemplateSource(req.body.styleCss, MAX_TEMPLATE_CSS_LENGTH) : '';
+            const thumbnailUpload = parseThumbnailUpload(req.body.thumbnailDataUrl);
+            const s3Prefix = existingCustom?.s3Prefix || (S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key);
+            update.s3Prefix = s3Prefix;
+
+            if (indexHtml) {
+                const htmlError = validateTemplateHtml(indexHtml);
+                if (htmlError) return res.status(400).json({ error: htmlError });
+                update.indexS3Key = `${s3Prefix}/index.html`;
+                await putS3Object(update.indexS3Key, indexHtml, 'text/html; charset=utf-8');
+            }
+            if (styleCss) {
+                const cssError = validateTemplateCss(styleCss);
+                if (cssError) return res.status(400).json({ error: cssError });
+                update.styleS3Key = `${s3Prefix}/style.css`;
+                await putS3Object(update.styleS3Key, styleCss, 'text/css; charset=utf-8');
+            }
+            if (thumbnailUpload) {
+                update.thumbnailS3Key = `${s3Prefix}/thumbnail.${thumbnailUpload.extension}`;
+                await putS3Object(update.thumbnailS3Key, thumbnailUpload.buffer, thumbnailUpload.contentType);
+                thumbnail = templateThumbnailPath(key, Date.now());
+                update.thumbnail = thumbnail;
+            }
+            update.status = TEMPLATE_STATUSES.includes(req.body.status) ? req.body.status : existingCustom?.status || 'draft';
+        }
 
         const setting = await TemplateSetting.findOneAndUpdate(
             { key },
-            { key, label, category, access, thumbnail },
+            update,
             { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
         );
         const usageCount = await CVDocument.countDocuments({ template: key });
 
-        return res.json({ template: adminTemplateSummary(template, setting, usageCount) });
+        s3TemplateCache.delete(key);
+        return res.json({ template: template ? adminTemplateSummary(template, setting, usageCount) : customTemplateSummary(setting, usageCount) });
     } catch (error) {
         return sendError(res, 500, 'Could not update template.', error);
+    }
+});
+
+app.post('/api/admin/templates/:key/publish', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    try {
+        const key = validateCustomTemplateKey(req.params.key);
+        const setting = key ? await TemplateSetting.findOne({ key, source: 'custom' }) : null;
+        if (!setting) return res.status(404).json({ error: 'Template not found.' });
+        const indexHtml = setting.indexS3Key ? await fetchS3Text(setting.indexS3Key) : null;
+        const styleCss = setting.styleS3Key ? await fetchS3Text(setting.styleS3Key) : null;
+        if (!indexHtml || !styleCss || !setting.thumbnailS3Key) {
+            return res.status(400).json({ error: 'Template needs HTML, CSS, and thumbnail files before publishing.' });
+        }
+        setting.status = 'active';
+        setting.updatedBy = currentUserId(req);
+        await setting.save();
+        s3TemplateCache.delete(key);
+        const usageCount = await CVDocument.countDocuments({ template: key });
+        return res.json({ template: customTemplateSummary(setting, usageCount) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not publish template.', error);
+    }
+});
+
+app.post('/api/admin/templates/:key/archive', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    try {
+        const key = validateCustomTemplateKey(req.params.key);
+        const setting = key ? await TemplateSetting.findOne({ key, source: 'custom' }) : null;
+        if (!setting) return res.status(404).json({ error: 'Template not found.' });
+        setting.status = 'archived';
+        setting.updatedBy = currentUserId(req);
+        await setting.save();
+        s3TemplateCache.delete(key);
+        const usageCount = await CVDocument.countDocuments({ template: key });
+        return res.json({ template: customTemplateSummary(setting, usageCount) });
+    } catch (error) {
+        return sendError(res, 500, 'Could not archive template.', error);
     }
 });
 
@@ -2376,7 +2672,7 @@ app.post('/api/documents', requireAuth, async (req: Request, res: Response) => {
         }
 
         const { cvData, status } = req.body;
-        const requestedTemplate = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
+        const requestedTemplate = await resolveRequestedTemplate(req.body.template);
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
 
         if (!cvData || typeof cvData !== 'object') {
@@ -2417,7 +2713,7 @@ app.put('/api/documents/:id', requireAuth, async (req: Request, res: Response) =
         }
 
         const { cvData, status } = req.body;
-        const requestedTemplate = isTemplateName(req.body.template) ? req.body.template : DEFAULT_TEMPLATE;
+        const requestedTemplate = await resolveRequestedTemplate(req.body.template);
         const title = sanitizeContextField(req.body.title || titleFromCvData(cvData));
 
         if (!cvData || typeof cvData !== 'object') {
@@ -3714,7 +4010,7 @@ async function launchOneShotPdfBrowser() {
     return browser;
 }
 
-async function generatePdfWithLambda(cvData: any, template: TemplateName, watermark: boolean): Promise<{ buffer: Buffer; templateSource: string } | null> {
+async function generatePdfWithLambda(cvData: any, template: string, watermark: boolean): Promise<{ buffer: Buffer; templateSource: string } | null> {
     const lambdaUrl = process.env.PDF_LAMBDA_URL?.trim();
     if (!lambdaUrl) return null;
 
@@ -3789,12 +4085,10 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
 
 
 
-        // Validate template against allow-list
-        const requestedTemplate = isTemplateName(template)
-            ? template
-            : DEFAULT_TEMPLATE;
+        // Validate template against built-in or active admin-created templates.
+        const templateSetting = await getActiveTemplateForKey(template);
+        const requestedTemplate = (templateSetting?.key || DEFAULT_TEMPLATE) as TemplateName;
 
-        const templateSetting = await getTemplateSettingForKey(requestedTemplate);
         const requestedTemplateIsPaid = templateSetting
             ? templateSetting.access === 'paid'
             : templateRequiresPaidPlan(requestedTemplate);
@@ -3828,8 +4122,9 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
         }
 
         // Generate self-contained HTML
-        console.log("Generating built-in HTML for local PDF fallback...");
-        const html = generateCVHTML(safeCvData, requestedTemplate, { watermark });
+        console.log("Generating HTML for local PDF fallback...");
+        const s3Html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark }).catch(() => null);
+        const html = s3Html || generateCVHTML(safeCvData, requestedTemplate, { watermark });
         console.log(`HTML generated: ${html.length} bytes`);
 
         const useWarmBrowser = downloadQuota.plan !== 'free';
@@ -3903,7 +4198,7 @@ app.post('/api/generate-pdf', requireAuth, pdfJsonParser, async (req: Request, r
             'Content-Type': 'application/pdf',
             'Content-Length': pdfBuffer.length.toString(),
             'X-PDF-Renderer': 'local',
-            'X-PDF-Template-Source': 'built-in',
+            'X-PDF-Template-Source': s3Html ? 's3' : 'built-in',
         });
 
         res.send(Buffer.from(pdfBuffer));

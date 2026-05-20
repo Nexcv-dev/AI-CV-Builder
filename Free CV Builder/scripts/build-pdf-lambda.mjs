@@ -417,11 +417,12 @@ type TemplateName = (typeof CV_TEMPLATES)[number]['key'];
 const DEFAULT_TEMPLATE: TemplateName = 'professional';
 const PDF_LAMBDA_BUILD_MARKER = 's3-template-diagnostics-2026-05-19';
 const TEMPLATE_KEYS = CV_TEMPLATES.map((template) => template.key) as TemplateName[];
+const TEMPLATE_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
 function getTemplateDefinition(template: TemplateName) {
   return CV_TEMPLATES.find((item) => item.key === template) || CV_TEMPLATES[0];
 }
 function isTemplateName(value: unknown): value is TemplateName {
-  return typeof value === 'string' && TEMPLATE_KEYS.includes(value as TemplateName);
+  return typeof value === 'string' && TEMPLATE_KEY_PATTERN.test(value);
 }
 function getTemplateSurfaceColorFallback(template: TemplateName, colors: { themeColor: string; sidebarColor: string }): string {
   const definition = getTemplateDefinition(template);
