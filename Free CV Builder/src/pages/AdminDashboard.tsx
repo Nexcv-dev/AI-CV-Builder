@@ -2,23 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  Bell,
-  Check,
   CreditCard,
-  Crown,
   FileText,
-  Plus,
-  LayoutDashboard,
-  LayoutTemplate,
-  Eye,
   Loader2,
   LogOut,
-  MessageSquare,
-  Palette,
   Search,
-  Settings,
   Shield,
-  X,
   UserCog,
   Users,
 } from 'lucide-react';
@@ -26,182 +15,26 @@ import { ADMIN_ROLE_ACCESS, ADMIN_ROLE_LABELS } from '../adminPermissions';
 import { apiFetch, AuthUser, getCurrentUser } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 
-interface AdminSummary {
-  widgets: {
-    totalUsers: number;
-    activeUsersToday: number;
-    premiumSubscribers: number;
-    totalCvsCreated: number;
-    revenue: { cents: number; currency: string };
-    supportTickets: Record<'open' | 'pending' | 'resolved' | 'closed', number>;
-  };
-  recentRegistrations: Array<{
-    id: string;
-    email: string;
-    displayName: string;
-    role: string;
-    plan: string;
-    createdAt: string;
-  }>;
-  templateUsage: Array<{ template: string; count: number }>;
-  charts: {
-    userGrowth: Array<{ day: string; count: number }>;
-    subscriptionRevenue: Array<{ day: string; cents: number }>;
-    cvDownloadsPerDay: Array<{ day: string; count: number }>;
-    templateUsage: Array<{ template: string; count: number }>;
-  };
-  modules: Array<{ key: string; label: string; status: string }>;
-}
-
-interface AdminUserListItem {
-  id: string;
-  email: string;
-  displayName: string;
-  role: 'user' | 'super_admin';
-  plan: 'free' | 'payg' | 'monthly' | 'unlimited';
-  rawPlan: 'free' | 'payg' | 'monthly';
-  planExpiresAt?: string;
-  emailVerified: boolean;
-  authProvider: 'email' | 'google';
-  cvCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface AdminUserDetail extends AdminUserListItem {
-  phone?: string;
-  address?: string;
-  planStartedAt?: string;
-  paygCvSaveCredits: number;
-}
-
-interface AdminUserDocument {
-  id: string;
-  title: string;
-  template: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface AdminTemplateItem {
-  key: string;
-  label: string;
-  category: string;
-  access: 'free' | 'paid';
-  thumbnail: string;
-  builtInThumbnail: string;
-  surfaceColorRole: 'none' | 'sidebar' | 'header';
-  surfaceColorLabel?: string | null;
-  source: 'built_in' | 'custom';
-  status: 'draft' | 'active' | 'archived';
-  usageCount: number;
-  updatedAt?: string;
-}
-
-interface AdminPaymentItem {
-  id: string;
-  provider: string;
-  paymentId: string;
-  orderId: string;
-  user: { id: string; email: string; displayName: string } | null;
-  plan: 'payg' | 'monthly' | null;
-  amount: string;
-  amountCents: number;
-  baseAmountCents?: number;
-  discountCents?: number;
-  finalAmountCents?: number;
-  couponCode?: string;
-  currency: string;
-  statusCode: string;
-  processed: boolean;
-  rawPayload: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface AdminBillingPlan {
-  plan: 'payg' | 'monthly';
-  label: string;
-  amount: string;
-  cents: number;
-  currency: 'LKR';
-  source: string;
-  updatedAt?: string;
-}
-
-interface AdminCoupon {
-  id: string;
-  code: string;
-  label: string;
-  discountType: 'fixed' | 'percent';
-  discountValue: number;
-  active: boolean;
-  appliesTo: Array<'payg' | 'monthly'>;
-  expiresAt?: string;
-  maxRedemptions?: number | null;
-  redeemedCount: number;
-}
-
-interface AdminPaymentSummary {
-  totalRevenueCents: number;
-  currency: string;
-  processedCount: number;
-  revenueByPlan: Record<string, number>;
-  dailyRevenue: Array<{ day: string; cents: number }>;
-}
-
-interface AdminSupportTicket {
-  id: string;
-  user: { id: string; email: string; displayName: string } | null;
-  fullName: string;
-  email: string;
-  type: 'complaint' | 'bug' | 'feature_request' | 'payment_issue' | 'general';
-  subject: string;
-  message: string;
-  status: 'open' | 'pending' | 'resolved' | 'closed';
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  adminNotes: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const adminNavItems = [
-  { key: 'dashboard', label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
-  { key: 'users', label: 'Users', to: '/admin/users', icon: Users },
-  { key: 'templates', label: 'Templates', to: '/admin/templates', icon: LayoutTemplate },
-  { key: 'billing', label: 'Billing', to: '/admin/billing', icon: CreditCard },
-  { key: 'cms', label: 'CMS', to: '/admin/cms', icon: Palette },
-  { key: 'notifications', label: 'Notifications', to: '/admin/notifications', icon: Bell },
-  { key: 'support', label: 'Support', to: '/admin/support', icon: MessageSquare },
-  { key: 'settings', label: 'Settings', to: '/admin/settings', icon: Settings },
-  { key: 'roles', label: 'Roles', to: '/admin/roles', icon: Shield },
-];
-
-const emptyCustomTemplateForm = {
-  key: '',
-  label: '',
-  category: 'Modern',
-  access: 'paid' as 'free' | 'paid',
-  surfaceColorRole: 'none' as 'none' | 'sidebar' | 'header',
-  surfaceColorLabel: '',
-  indexHtml: '',
-  styleCss: '',
-  thumbnailDataUrl: '',
-  status: 'draft' as 'draft' | 'active',
-};
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat().format(value);
-}
-
-function formatCurrency(cents: number, currency: string) {
-  return `${currency} ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(cents / 100))}`;
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value));
-}
+import type {
+  AdminBillingPlan,
+  AdminBillingPlanDraft,
+  AdminCoupon,
+  AdminPaymentItem,
+  AdminPaymentSummary,
+  AdminSummary,
+  AdminSupportTicket,
+  AdminTemplateItem,
+  AdminUserDetail,
+  AdminUserDocument,
+  AdminUserListItem,
+} from './admin/adminTypes';
+import { adminNavItems, emptyCustomTemplateForm, formatCurrency, formatDate, formatNumber } from './admin/adminUtils';
+import { AdminStat, ChartBar, MiniRow } from './admin/AdminSharedComponents';
+import UserManagementSection from './admin/UserManagementSection';
+import TemplateManagementSection from './admin/TemplateManagementSection';
+import BillingManagementSection from './admin/BillingManagementSection';
+import PromotionManagementSection from './admin/PromotionManagementSection';
+import SupportManagementSection from './admin/SupportManagementSection';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -222,6 +55,7 @@ export default function AdminDashboard() {
   const isUsersPage = location.pathname.startsWith('/admin/users');
   const isTemplatesPage = location.pathname.startsWith('/admin/templates');
   const isBillingPage = location.pathname.startsWith('/admin/billing');
+  const isPromotionsPage = location.pathname.startsWith('/admin/promotions');
   const isSupportPage = location.pathname.startsWith('/admin/support');
   const [templates, setTemplates] = useState<AdminTemplateItem[]>([]);
   const [templateCategories, setTemplateCategories] = useState<string[]>([]);
@@ -361,7 +195,7 @@ export default function AdminDashboard() {
   }, [isBillingPage, paymentPlanFilter, paymentSearch, paymentStatusFilter]);
 
   useEffect(() => {
-    if (!isBillingPage) return;
+    if (!isPromotionsPage) return;
     let ignore = false;
     apiFetch<{ plans: AdminBillingPlan[]; coupons: AdminCoupon[] }>('/api/admin/billing/config')
       .then((data) => {
@@ -375,7 +209,7 @@ export default function AdminDashboard() {
     return () => {
       ignore = true;
     };
-  }, [isBillingPage]);
+  }, [isPromotionsPage]);
 
   useEffect(() => {
     if (!isSupportPage) return;
@@ -580,13 +414,22 @@ export default function AdminDashboard() {
     }
   };
 
-  const updateBillingPlanPrice = async (plan: AdminBillingPlan, amount: string) => {
+  const updateBillingPlanPrice = async (plan: AdminBillingPlan, draft: AdminBillingPlanDraft) => {
     setSavingBilling(true);
     try {
-      const amountCents = Math.round(Number(amount) * 100);
+      const amountCents = Math.round(Number(draft.amount) * 100);
       const data = await apiFetch<{ plan: AdminBillingPlan }>(`/api/admin/billing/plans/${plan.plan}`, {
         method: 'PATCH',
-        body: JSON.stringify({ label: plan.label, amountCents }),
+        body: JSON.stringify({
+          label: draft.label,
+          amountCents,
+          promotionActive: draft.promotionActive,
+          promotionLabel: draft.promotionLabel,
+          promotionDiscountType: draft.promotionDiscountType,
+          promotionDiscountValue: draft.promotionDiscountType === 'fixed'
+            ? Math.round(Number(draft.promotionDiscountValue) * 100)
+            : Number(draft.promotionDiscountValue),
+        }),
       });
       setBillingPlans((items) => items.map((item) => item.plan === data.plan.plan ? data.plan : item));
       toast.success('Plan price updated.');
@@ -706,7 +549,7 @@ export default function AdminDashboard() {
                 {ADMIN_ROLE_LABELS.super_admin}
               </div>
               <h1 className="mt-2 font-montserrat text-2xl font-black leading-tight sm:text-4xl">
-                {isUsersPage ? 'User Management' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isSupportPage ? 'Support Tickets' : 'Admin Dashboard'}
+                {isUsersPage ? 'User Management' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isPromotionsPage ? 'Promotions & Pricing' : isSupportPage ? 'Support Tickets' : 'Admin Dashboard'}
               </h1>
               <p className="mt-2 text-sm font-semibold text-slate-400">
                 {isUsersPage
@@ -715,18 +558,22 @@ export default function AdminDashboard() {
                     ? 'Manage template metadata, access, categories, and usage stats.'
                     : isBillingPage
                       ? 'Review payment history, revenue, and transaction status.'
-                      : isSupportPage
-                        ? 'Track complaints, bugs, feature requests, and payment issues.'
-                    : 'Operational overview and module foundation.'}
+                      : isPromotionsPage
+                        ? 'Manage plan pricing, promotions, and discount coupons.'
+                        : isSupportPage
+                          ? 'Track complaints, bugs, feature requests, and payment issues.'
+                          : 'Operational overview and module foundation.'}
               </p>
             </div>
-            <div className="relative w-full sm:max-w-xs">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.035] pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
-                placeholder={isUsersPage ? 'Search users' : isTemplatesPage ? 'Search templates' : isBillingPage ? 'Search payments' : isSupportPage ? 'Search tickets' : 'Search admin modules'}
-              />
-            </div>
+            {!isPromotionsPage && (
+              <div className="relative w-full sm:max-w-xs">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.035] pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
+                  placeholder={isUsersPage ? 'Search users' : isTemplatesPage ? 'Search templates' : isBillingPage ? 'Search payments' : isSupportPage ? 'Search tickets' : 'Search admin modules'}
+                />
+              </div>
+            )}
           </header>
 
           {isUsersPage ? (
@@ -780,10 +627,6 @@ export default function AdminDashboard() {
             <BillingManagementSection
               payments={payments}
               summary={paymentSummary}
-              billingPlans={billingPlans}
-              coupons={coupons}
-              couponForm={couponForm}
-              savingBilling={savingBilling}
               loading={paymentsLoading}
               search={paymentSearch}
               planFilter={paymentPlanFilter}
@@ -794,6 +637,13 @@ export default function AdminDashboard() {
               onStatusFilterChange={setPaymentStatusFilter}
               onOpenPayment={setSelectedPayment}
               onCloseDetail={() => setSelectedPayment(null)}
+            />
+          ) : isPromotionsPage ? (
+            <PromotionManagementSection
+              billingPlans={billingPlans}
+              coupons={coupons}
+              couponForm={couponForm}
+              savingBilling={savingBilling}
               onUpdatePlanPrice={updateBillingPlanPrice}
               onCouponFormChange={setCouponForm}
               onSaveCoupon={saveCoupon}
@@ -918,1056 +768,5 @@ export default function AdminDashboard() {
         </main>
       </div>
     </div>
-  );
-}
-
-function AdminStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-      <div className="flex items-center gap-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-300/20">
-          {icon}
-        </span>
-        <div className="min-w-0">
-          <div className="truncate text-2xl font-black text-white">{value}</div>
-          <p className="mt-1 text-sm font-semibold text-slate-400">{label}</p>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function ChartBar({ label, value, max }: { label: string; value: number; max: number }) {
-  const height = Math.max(8, Math.round((value / max) * 100));
-  return (
-    <div className="flex h-full min-w-0 flex-col items-center justify-end gap-2">
-      <div className="flex w-full items-end rounded-t-xl bg-slate-900">
-        <div className="w-full rounded-t-xl bg-violet-500" style={{ height: `${height}%` }} />
-      </div>
-      <div className="text-[10px] font-bold text-slate-500">{label}</div>
-    </div>
-  );
-}
-
-function MiniRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2">
-      <span className="min-w-0 truncate text-sm font-bold text-slate-300">{label}</span>
-      <span className="shrink-0 text-sm font-black text-slate-100">{value}</span>
-    </div>
-  );
-}
-
-function UserManagementSection({
-  users,
-  loading,
-  search,
-  planFilter,
-  roleFilter,
-  onSearchChange,
-  onPlanFilterChange,
-  onRoleFilterChange,
-  onOpenUser,
-  selectedUser,
-  selectedUserDocuments,
-  selectedPlan,
-  savingPlan,
-  onSelectedPlanChange,
-  onSavePlan,
-  onCloseDetail,
-}: {
-  users: AdminUserListItem[];
-  loading: boolean;
-  search: string;
-  planFilter: string;
-  roleFilter: string;
-  onSearchChange: (value: string) => void;
-  onPlanFilterChange: (value: string) => void;
-  onRoleFilterChange: (value: string) => void;
-  onOpenUser: (id: string) => void;
-  selectedUser: AdminUserDetail | null;
-  selectedUserDocuments: AdminUserDocument[];
-  selectedPlan: 'free' | 'payg' | 'monthly';
-  savingPlan: boolean;
-  onSelectedPlanChange: (value: 'free' | 'payg' | 'monthly') => void;
-  onSavePlan: () => void;
-  onCloseDetail: () => void;
-}) {
-  return (
-    <section className="mt-6">
-      <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px]">
-        <label className="relative block">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
-            placeholder="Search by name or email"
-          />
-        </label>
-        <select
-          value={planFilter}
-          onChange={(event) => onPlanFilterChange(event.target.value)}
-          className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-        >
-          <option value="all">All plans</option>
-          <option value="free">Free</option>
-          <option value="payg">Pay As You Go</option>
-          <option value="monthly">Monthly</option>
-        </select>
-        <select
-          value={roleFilter}
-          onChange={(event) => onRoleFilterChange(event.target.value)}
-          className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-        >
-          <option value="all">All roles</option>
-          <option value="user">User</option>
-          <option value="super_admin">Super Admin</option>
-        </select>
-      </div>
-
-      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
-        <div className="grid grid-cols-[1.3fr_120px_120px_90px_90px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
-          <span>User</span>
-          <span>Plan</span>
-          <span>Role</span>
-          <span>CVs</span>
-          <span>Action</span>
-        </div>
-        {loading && (
-          <div className="flex items-center gap-3 px-5 py-5 text-sm font-bold text-slate-400">
-            <Loader2 className="animate-spin text-violet-300" size={17} />
-            Loading users...
-          </div>
-        )}
-        {!loading && users.length === 0 && (
-          <div className="px-5 py-8 text-center text-sm font-bold text-slate-500">No users match these filters.</div>
-        )}
-        {!loading && users.map((item) => (
-          <article key={item.id} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.3fr_120px_120px_90px_90px] lg:items-center lg:px-5">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black text-slate-100">{item.displayName || 'Unnamed user'}</p>
-              <p className="mt-1 truncate text-xs font-semibold text-slate-500">{item.email}</p>
-              <p className="mt-1 text-xs font-bold text-slate-600">Joined {formatDate(item.createdAt)}</p>
-            </div>
-            <PlanBadge plan={item.plan} expiresAt={item.planExpiresAt} />
-            <span className="w-fit rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-slate-300 ring-1 ring-white/10">
-              {item.role === 'super_admin' ? 'Super Admin' : 'User'}
-            </span>
-            <span className="text-sm font-black text-slate-200">{item.cvCount}</span>
-            <button
-              type="button"
-              onClick={() => onOpenUser(item.id)}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-3 text-xs font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98]"
-            >
-              <Eye size={14} />
-              View
-            </button>
-          </article>
-        ))}
-      </div>
-
-      {selectedUser && (
-        <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <aside className="h-full w-full max-w-xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-black uppercase text-violet-300">User Details</p>
-                <h2 className="mt-1 truncate font-montserrat text-2xl font-black">{selectedUser.displayName || selectedUser.email}</h2>
-                <p className="mt-1 truncate text-sm font-semibold text-slate-400">{selectedUser.email}</p>
-              </div>
-              <button
-                type="button"
-                onClick={onCloseDetail}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
-                aria-label="Close user details"
-              >
-                <X size={17} />
-              </button>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <DetailTile label="Role" value={selectedUser.role === 'super_admin' ? 'Super Admin' : 'User'} />
-              <DetailTile label="Auth" value={selectedUser.authProvider} />
-              <DetailTile label="Email" value={selectedUser.emailVerified ? 'Verified' : 'Not verified'} />
-              <DetailTile label="Saved CVs" value={String(selectedUser.cvCount)} />
-              <DetailTile label="Joined" value={formatDate(selectedUser.createdAt)} />
-              <DetailTile label="Last Updated" value={formatDate(selectedUser.updatedAt)} />
-            </div>
-
-            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <h3 className="font-montserrat text-lg font-black">Change User Plan</h3>
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-                <select
-                  value={selectedPlan}
-                  onChange={(event) => onSelectedPlanChange(event.target.value as 'free' | 'payg' | 'monthly')}
-                  className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                >
-                  <option value="free">Free</option>
-                  <option value="payg">Pay As You Go</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={onSavePlan}
-                  disabled={savingPlan || selectedPlan === selectedUser.rawPlan}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
-                >
-                  {savingPlan ? <Loader2 className="animate-spin" size={16} /> : 'Save plan'}
-                </button>
-              </div>
-              <p className="mt-3 text-xs font-semibold text-slate-500">
-                Paid plans receive a fresh expiry window. PAYG keeps at least one save credit.
-              </p>
-            </section>
-
-            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <h3 className="font-montserrat text-lg font-black">Recent CVs</h3>
-              <div className="mt-4 grid gap-3">
-                {selectedUserDocuments.length ? selectedUserDocuments.map((document) => (
-                  <div key={document.id} className="rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                    <p className="truncate text-sm font-black text-slate-100">{document.title}</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">{document.template} - {document.status}</p>
-                    <p className="mt-1 text-xs font-bold text-violet-300">Updated {formatDate(document.updatedAt)}</p>
-                  </div>
-                )) : <p className="text-sm font-semibold text-slate-500">No saved CVs yet.</p>}
-              </div>
-            </section>
-          </aside>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function PlanBadge({ plan, expiresAt }: { plan: AdminUserListItem['plan']; expiresAt?: string }) {
-  const label = plan === 'payg' ? 'PAYG' : plan === 'monthly' ? 'Monthly' : plan === 'unlimited' ? 'Admin' : 'Free';
-  const tone = plan === 'free'
-    ? 'bg-slate-900 text-slate-300 ring-white/10'
-    : plan === 'payg'
-      ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20'
-      : 'bg-violet-400/10 text-violet-300 ring-violet-300/20';
-  return (
-    <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${tone}`} title={expiresAt ? `Expires ${formatDate(expiresAt)}` : undefined}>
-      {label}
-    </span>
-  );
-}
-
-function DetailTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-white/10 bg-slate-950/40 p-3">
-      <p className="text-xs font-black uppercase text-slate-500">{label}</p>
-      <p className="mt-2 break-words text-sm font-black text-slate-100">{value}</p>
-    </div>
-  );
-}
-
-function TemplateManagementSection({
-  templates,
-  categories,
-  loading,
-  search,
-  categoryFilter,
-  accessFilter,
-  selectedTemplate,
-  templateForm,
-  savingTemplate,
-  createTemplateOpen,
-  customTemplateForm,
-  creatingTemplate,
-  onSearchChange,
-  onCategoryFilterChange,
-  onAccessFilterChange,
-  onOpenTemplate,
-  onCloseDetail,
-  onFormChange,
-  onSaveTemplate,
-  onOpenCreate,
-  onCloseCreate,
-  onCustomFormChange,
-  onCustomFileChange,
-  onCreateTemplate,
-  onChangeCustomStatus,
-}: {
-  templates: AdminTemplateItem[];
-  categories: string[];
-  loading: boolean;
-  search: string;
-  categoryFilter: string;
-  accessFilter: string;
-  selectedTemplate: AdminTemplateItem | null;
-  templateForm: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string };
-  savingTemplate: boolean;
-  createTemplateOpen: boolean;
-  customTemplateForm: typeof emptyCustomTemplateForm;
-  creatingTemplate: boolean;
-  onSearchChange: (value: string) => void;
-  onCategoryFilterChange: (value: string) => void;
-  onAccessFilterChange: (value: string) => void;
-  onOpenTemplate: (template: AdminTemplateItem) => void;
-  onCloseDetail: () => void;
-  onFormChange: (value: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string }) => void;
-  onSaveTemplate: () => void;
-  onOpenCreate: () => void;
-  onCloseCreate: () => void;
-  onCustomFormChange: (value: typeof emptyCustomTemplateForm) => void;
-  onCustomFileChange: (file: File | undefined, field: 'indexHtml' | 'styleCss' | 'thumbnailDataUrl') => void;
-  onCreateTemplate: () => void;
-  onChangeCustomStatus: (template: AdminTemplateItem, action: 'publish' | 'archive') => void;
-}) {
-  return (
-    <section className="mt-6">
-      <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px_auto]">
-        <label className="relative block">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
-            placeholder="Search by template name"
-          />
-        </label>
-        <select
-          value={categoryFilter}
-          onChange={(event) => onCategoryFilterChange(event.target.value)}
-          className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-        >
-          <option value="all">All categories</option>
-          {categories.map((category) => <option key={category} value={category}>{category}</option>)}
-        </select>
-        <select
-          value={accessFilter}
-          onChange={(event) => onAccessFilterChange(event.target.value)}
-          className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-        >
-          <option value="all">All access</option>
-          <option value="free">Free</option>
-          <option value="paid">Premium</option>
-        </select>
-        <button
-          type="button"
-          onClick={onOpenCreate}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98]"
-        >
-          <Plus size={16} />
-          Add
-        </button>
-      </div>
-
-      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
-        <div className="grid grid-cols-[1.2fr_130px_100px_100px_80px_90px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
-          <span>Template</span>
-          <span>Category</span>
-          <span>Access</span>
-          <span>Status</span>
-          <span>Usage</span>
-          <span>Action</span>
-        </div>
-        {loading && (
-          <div className="flex items-center gap-3 px-5 py-5 text-sm font-bold text-slate-400">
-            <Loader2 className="animate-spin text-violet-300" size={17} />
-            Loading templates...
-          </div>
-        )}
-        {!loading && templates.length === 0 && (
-          <div className="px-5 py-8 text-center text-sm font-bold text-slate-500">No templates match these filters.</div>
-        )}
-        {!loading && templates.map((template) => (
-          <article key={template.key} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_130px_100px_100px_80px_90px] lg:items-center lg:px-5">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="h-16 w-12 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-slate-900">
-                <img src={template.thumbnail} alt="" className="h-full w-full object-cover object-top" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black text-slate-100">{template.label}</p>
-                <p className="mt-1 truncate text-xs font-semibold text-slate-500">{template.key}</p>
-              </div>
-            </div>
-            <span className="w-fit rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-slate-300 ring-1 ring-white/10">{template.category}</span>
-            <TemplateAccessBadge access={template.access} />
-            <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${template.status === 'active' ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20' : template.status === 'draft' ? 'bg-amber-400/10 text-amber-300 ring-amber-300/20' : 'bg-slate-400/10 text-slate-300 ring-slate-300/20'}`}>{template.status}</span>
-            <span className="text-sm font-black text-slate-200">{template.usageCount}</span>
-            <button
-              type="button"
-              onClick={() => onOpenTemplate(template)}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-3 text-xs font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98]"
-            >
-              <Eye size={14} />
-              Edit
-            </button>
-          </article>
-        ))}
-      </div>
-
-      {createTemplateOpen && (
-        <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <aside className="h-full w-full max-w-2xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-black uppercase text-violet-300">New Template</p>
-                <h2 className="mt-1 font-montserrat text-2xl font-black">Add S3 template</h2>
-              </div>
-              <button
-                type="button"
-                onClick={onCloseCreate}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
-                aria-label="Close add template"
-              >
-                <X size={17} />
-              </button>
-            </div>
-
-            <section className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Key
-                  <input
-                    value={customTemplateForm.key}
-                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, key: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
-                    placeholder="creative-2026"
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  />
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Label
-                  <input
-                    value={customTemplateForm.label}
-                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, label: event.target.value })}
-                    placeholder="Creative 2026"
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  />
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Category
-                  <select
-                    value={customTemplateForm.category}
-                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, category: event.target.value })}
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  >
-                    {categories.map((category) => <option key={category} value={category}>{category}</option>)}
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Access
-                  <select
-                    value={customTemplateForm.access}
-                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, access: event.target.value as 'free' | 'paid' })}
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  >
-                    <option value="paid">Premium</option>
-                    <option value="free">Free</option>
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Surface color
-                  <select
-                    value={customTemplateForm.surfaceColorRole}
-                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, surfaceColorRole: event.target.value as 'none' | 'sidebar' | 'header' })}
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  >
-                    <option value="none">None</option>
-                    <option value="header">Header</option>
-                    <option value="sidebar">Sidebar</option>
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Initial status
-                  <select
-                    value={customTemplateForm.status}
-                    onChange={(event) => onCustomFormChange({ ...customTemplateForm, status: event.target.value as 'draft' | 'active' })}
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="active">Active</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  index.html
-                  <input type="file" accept=".html,text/html" onChange={(event) => void onCustomFileChange(event.target.files?.[0], 'indexHtml')} className="text-xs font-bold text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-black file:text-white" />
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  style.css
-                  <input type="file" accept=".css,text/css" onChange={(event) => void onCustomFileChange(event.target.files?.[0], 'styleCss')} className="text-xs font-bold text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-black file:text-white" />
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Thumbnail
-                  <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(event) => void onCustomFileChange(event.target.files?.[0], 'thumbnailDataUrl')} className="text-xs font-bold text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-black file:text-white" />
-                </label>
-              </div>
-
-              <div className="grid gap-4">
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  HTML preview
-                  <textarea value={customTemplateForm.indexHtml} onChange={(event) => onCustomFormChange({ ...customTemplateForm, indexHtml: event.target.value })} rows={8} className="rounded-xl border border-white/10 bg-slate-950 p-3 font-mono text-xs text-white outline-none focus:border-violet-400" />
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  CSS preview
-                  <textarea value={customTemplateForm.styleCss} onChange={(event) => onCustomFormChange({ ...customTemplateForm, styleCss: event.target.value })} rows={8} className="rounded-xl border border-white/10 bg-slate-950 p-3 font-mono text-xs text-white outline-none focus:border-violet-400" />
-                </label>
-              </div>
-
-              <button
-                type="button"
-                onClick={onCreateTemplate}
-                disabled={creatingTemplate}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
-              >
-                {creatingTemplate ? <Loader2 className="animate-spin" size={16} /> : 'Create template'}
-              </button>
-            </section>
-          </aside>
-        </div>
-      )}
-
-      {selectedTemplate && (
-        <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <aside className="h-full w-full max-w-xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-black uppercase text-violet-300">Template Details</p>
-                <h2 className="mt-1 truncate font-montserrat text-2xl font-black">{selectedTemplate.label}</h2>
-                <p className="mt-1 truncate text-sm font-semibold text-slate-400">{selectedTemplate.key}</p>
-              </div>
-              <button
-                type="button"
-                onClick={onCloseDetail}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
-                aria-label="Close template details"
-              >
-                <X size={17} />
-              </button>
-            </div>
-
-            <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
-              <img src={templateForm.thumbnail || selectedTemplate.builtInThumbnail} alt="" className="h-64 w-full object-cover object-top" />
-            </div>
-
-            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <h3 className="font-montserrat text-lg font-black">Metadata</h3>
-              <div className="mt-4 grid gap-4">
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Label
-                  <input
-                    value={templateForm.label}
-                    onChange={(event) => onFormChange({ ...templateForm, label: event.target.value })}
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  />
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Category
-                  <select
-                    value={templateForm.category}
-                    onChange={(event) => onFormChange({ ...templateForm, category: event.target.value })}
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  >
-                    {categories.map((category) => <option key={category} value={category}>{category}</option>)}
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Access
-                  <select
-                    value={templateForm.access}
-                    onChange={(event) => onFormChange({ ...templateForm, access: event.target.value as 'free' | 'paid' })}
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  >
-                    <option value="free">Free</option>
-                    <option value="paid">Premium</option>
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Thumbnail path
-                  <input
-                    value={templateForm.thumbnail}
-                    onChange={(event) => onFormChange({ ...templateForm, thumbnail: event.target.value })}
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  />
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Surface color
-                  <select
-                    value={templateForm.surfaceColorRole}
-                    onChange={(event) => onFormChange({ ...templateForm, surfaceColorRole: event.target.value as 'none' | 'sidebar' | 'header' })}
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  >
-                    <option value="none">None</option>
-                    <option value="header">Header</option>
-                    <option value="sidebar">Sidebar</option>
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm font-black text-slate-200">
-                  Surface label
-                  <input
-                    value={templateForm.surfaceColorLabel}
-                    onChange={(event) => onFormChange({ ...templateForm, surfaceColorLabel: event.target.value })}
-                    placeholder="Accent Background"
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={onSaveTemplate}
-                  disabled={savingTemplate}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
-                >
-                  {savingTemplate ? <Loader2 className="animate-spin" size={16} /> : 'Save metadata'}
-                </button>
-                {selectedTemplate.source === 'custom' && (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => onChangeCustomStatus(selectedTemplate, 'publish')}
-                      disabled={savingTemplate || selectedTemplate.status === 'active'}
-                      className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50"
-                    >
-                      Publish
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onChangeCustomStatus(selectedTemplate, 'archive')}
-                      disabled={savingTemplate || selectedTemplate.status === 'archived'}
-                      className="inline-flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/6 px-4 text-sm font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
-                    >
-                      Archive
-                    </button>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section className="mt-6 grid gap-3 sm:grid-cols-2">
-              <DetailTile label="Usage Count" value={String(selectedTemplate.usageCount)} />
-              <DetailTile label="Source" value={selectedTemplate.source} />
-              <DetailTile label="Status" value={selectedTemplate.status} />
-              <DetailTile label="Surface Color" value={selectedTemplate.surfaceColorRole} />
-              <DetailTile label="Built-In Thumbnail" value={selectedTemplate.builtInThumbnail} />
-              <DetailTile label="Last Updated" value={selectedTemplate.updatedAt ? formatDate(selectedTemplate.updatedAt) : 'Not customized'} />
-            </section>
-          </aside>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function TemplateAccessBadge({ access }: { access: 'free' | 'paid' }) {
-  return (
-    <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${
-      access === 'free'
-        ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20'
-        : 'bg-violet-400/10 text-violet-300 ring-violet-300/20'
-    }`}>
-      {access === 'free' ? 'Free' : 'Premium'}
-    </span>
-  );
-}
-
-function BillingManagementSection({
-  payments,
-  summary,
-  billingPlans,
-  coupons,
-  couponForm,
-  savingBilling,
-  loading,
-  search,
-  planFilter,
-  statusFilter,
-  selectedPayment,
-  onSearchChange,
-  onPlanFilterChange,
-  onStatusFilterChange,
-  onOpenPayment,
-  onCloseDetail,
-  onUpdatePlanPrice,
-  onCouponFormChange,
-  onSaveCoupon,
-  onToggleCoupon,
-}: {
-  payments: AdminPaymentItem[];
-  summary: AdminPaymentSummary | null;
-  billingPlans: AdminBillingPlan[];
-  coupons: AdminCoupon[];
-  couponForm: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; active: boolean };
-  savingBilling: boolean;
-  loading: boolean;
-  search: string;
-  planFilter: string;
-  statusFilter: string;
-  selectedPayment: AdminPaymentItem | null;
-  onSearchChange: (value: string) => void;
-  onPlanFilterChange: (value: string) => void;
-  onStatusFilterChange: (value: string) => void;
-  onOpenPayment: (payment: AdminPaymentItem) => void;
-  onCloseDetail: () => void;
-  onUpdatePlanPrice: (plan: AdminBillingPlan, amount: string) => void;
-  onCouponFormChange: (value: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; active: boolean }) => void;
-  onSaveCoupon: () => void;
-  onToggleCoupon: (coupon: AdminCoupon) => void;
-}) {
-  const [planDrafts, setPlanDrafts] = useState<Record<string, string>>({});
-  return (
-    <section className="mt-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <AdminStat icon={<CreditCard size={19} />} label="Total Revenue" value={summary ? formatCurrency(summary.totalRevenueCents, summary.currency) : 'LKR 0'} />
-        <AdminStat icon={<Check size={19} />} label="Processed Payments" value={String(summary?.processedCount || 0)} />
-        <AdminStat icon={<Crown size={19} />} label="Monthly Revenue" value={formatCurrency(summary?.revenueByPlan.monthly || 0, summary?.currency || 'LKR')} />
-      </div>
-
-      <section className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
-          <h2 className="font-montserrat text-lg font-black">Package Prices</h2>
-          <div className="mt-4 grid gap-3">
-            {billingPlans.map((plan) => {
-              const draft = planDrafts[plan.plan] ?? String(Math.round(plan.cents) / 100);
-              return (
-                <div key={plan.plan} className="grid gap-3 rounded-xl border border-white/10 bg-slate-950/50 p-3 sm:grid-cols-[1fr_150px_auto] sm:items-end">
-                  <div>
-                    <p className="text-sm font-black text-slate-100">{plan.label}</p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">{plan.plan} · {plan.source}</p>
-                  </div>
-                  <label className="grid gap-1 text-xs font-black text-slate-400">
-                    Price LKR
-                    <input value={draft} onChange={(event) => setPlanDrafts((current) => ({ ...current, [plan.plan]: event.target.value }))} className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
-                  </label>
-                  <button type="button" disabled={savingBilling} onClick={() => onUpdatePlanPrice(plan, draft)} className="h-10 rounded-xl bg-violet-600 px-4 text-xs font-black text-white transition hover:bg-violet-500 disabled:opacity-60">Save</button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
-          <h2 className="font-montserrat text-lg font-black">Coupons</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_130px_120px_auto]">
-            <input value={couponForm.code} onChange={(event) => onCouponFormChange({ ...couponForm, code: event.target.value.toUpperCase() })} placeholder="CODE" className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
-            <input value={couponForm.label} onChange={(event) => onCouponFormChange({ ...couponForm, label: event.target.value })} placeholder="Label" className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
-            <select value={couponForm.discountType} onChange={(event) => onCouponFormChange({ ...couponForm, discountType: event.target.value as 'fixed' | 'percent' })} className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-              <option value="fixed">LKR off</option>
-              <option value="percent">% off</option>
-            </select>
-            <input value={couponForm.discountValue} onChange={(event) => onCouponFormChange({ ...couponForm, discountValue: event.target.value })} placeholder={couponForm.discountType === 'fixed' ? '250' : '15'} className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
-            <button type="button" disabled={savingBilling} onClick={onSaveCoupon} className="h-10 rounded-xl bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-500 disabled:opacity-60">Save</button>
-          </div>
-          <select value={couponForm.appliesTo} onChange={(event) => onCouponFormChange({ ...couponForm, appliesTo: event.target.value })} className="mt-3 h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-            <option value="both">Both plans</option>
-            <option value="payg">Pay As You Go only</option>
-            <option value="monthly">Monthly only</option>
-          </select>
-          <div className="mt-4 grid gap-2">
-            {coupons.map((coupon) => (
-              <div key={coupon.code} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/50 p-3">
-                <div>
-                  <p className="text-sm font-black text-slate-100">{coupon.code} <span className="text-slate-500">· {coupon.label}</span></p>
-                  <p className="mt-1 text-xs font-bold text-slate-500">{coupon.discountType === 'percent' ? `${coupon.discountValue}%` : formatCurrency(coupon.discountValue, 'LKR')} off · used {coupon.redeemedCount}</p>
-                </div>
-                <button type="button" disabled={savingBilling} onClick={() => onToggleCoupon(coupon)} className={`h-9 rounded-xl px-3 text-xs font-black transition disabled:opacity-60 ${coupon.active ? 'bg-amber-500/15 text-amber-200 ring-1 ring-amber-300/20' : 'bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-300/20'}`}>
-                  {coupon.active ? 'Pause' : 'Activate'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px]">
-        <label className="relative block">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
-            placeholder="Search payment, order, or user"
-          />
-        </label>
-        <select value={planFilter} onChange={(event) => onPlanFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-          <option value="all">All plans</option>
-          <option value="payg">Pay As You Go</option>
-          <option value="monthly">Monthly</option>
-        </select>
-        <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-          <option value="all">All statuses</option>
-          <option value="processed">Processed</option>
-          <option value="unprocessed">Unprocessed</option>
-        </select>
-      </div>
-
-      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
-        <div className="grid grid-cols-[1.2fr_150px_110px_120px_100px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
-          <span>Transaction</span>
-          <span>User</span>
-          <span>Plan</span>
-          <span>Amount</span>
-          <span>Action</span>
-        </div>
-        {loading && (
-          <div className="flex items-center gap-3 px-5 py-5 text-sm font-bold text-slate-400">
-            <Loader2 className="animate-spin text-violet-300" size={17} />
-            Loading payments...
-          </div>
-        )}
-        {!loading && payments.length === 0 && (
-          <div className="px-5 py-8 text-center text-sm font-bold text-slate-500">No payments match these filters.</div>
-        )}
-        {!loading && payments.map((payment) => (
-          <article key={payment.id} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_150px_110px_120px_100px] lg:items-center lg:px-5">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black text-slate-100">{payment.paymentId}</p>
-              <p className="mt-1 truncate text-xs font-semibold text-slate-500">{payment.orderId}</p>
-              <p className="mt-1 text-xs font-bold text-slate-600">{formatDate(payment.createdAt)}</p>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-slate-200">{payment.user?.displayName || 'Unknown'}</p>
-              <p className="mt-1 truncate text-xs font-semibold text-slate-500">{payment.user?.email || 'No linked user'}</p>
-            </div>
-            <span className="w-fit rounded-full bg-violet-400/10 px-3 py-1 text-xs font-black text-violet-300 ring-1 ring-violet-300/20">{payment.plan || 'Unknown'}</span>
-            <div>
-              <p className="text-sm font-black text-slate-100">{payment.currency} {payment.amount}</p>
-              <PaymentStatusBadge processed={payment.processed} statusCode={payment.statusCode} />
-            </div>
-            <button type="button" onClick={() => onOpenPayment(payment)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-3 text-xs font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98]">
-              <Eye size={14} />
-              View
-            </button>
-          </article>
-        ))}
-      </div>
-
-      {summary && (
-        <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
-          <h2 className="font-montserrat text-lg font-black">Daily Revenue</h2>
-          <div className="mt-4 grid gap-2 sm:grid-cols-7">
-            {summary.dailyRevenue.map((item) => (
-              <MiniRow key={item.day} label={item.day.slice(5)} value={formatCurrency(item.cents, summary.currency)} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {selectedPayment && (
-        <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <aside className="h-full w-full max-w-xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-black uppercase text-violet-300">Payment Details</p>
-                <h2 className="mt-1 truncate font-montserrat text-2xl font-black">{selectedPayment.paymentId}</h2>
-                <p className="mt-1 truncate text-sm font-semibold text-slate-400">{selectedPayment.orderId}</p>
-              </div>
-              <button type="button" onClick={onCloseDetail} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Close payment details">
-                <X size={17} />
-              </button>
-            </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <DetailTile label="Provider" value={selectedPayment.provider} />
-              <DetailTile label="Status" value={selectedPayment.processed ? 'Processed' : `Code ${selectedPayment.statusCode}`} />
-              <DetailTile label="Plan" value={selectedPayment.plan || 'Unknown'} />
-              <DetailTile label="Amount" value={`${selectedPayment.currency} ${selectedPayment.amount}`} />
-              <DetailTile label="User" value={selectedPayment.user?.email || 'No linked user'} />
-              <DetailTile label="Date" value={formatDate(selectedPayment.createdAt)} />
-            </div>
-            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <h3 className="font-montserrat text-lg font-black">Payload Summary</h3>
-              <pre className="mt-4 max-h-80 overflow-auto rounded-xl bg-slate-900 p-3 text-xs font-semibold text-slate-300">
-                {JSON.stringify(selectedPayment.rawPayload, null, 2)}
-              </pre>
-            </section>
-          </aside>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function PaymentStatusBadge({ processed, statusCode }: { processed: boolean; statusCode: string }) {
-  return (
-    <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase ring-1 ${
-      processed
-        ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20'
-        : 'bg-amber-400/10 text-amber-300 ring-amber-300/20'
-    }`}>
-      {processed ? 'Processed' : `Code ${statusCode}`}
-    </span>
-  );
-}
-
-function SupportManagementSection({
-  tickets,
-  summary,
-  loading,
-  search,
-  statusFilter,
-  typeFilter,
-  selectedTicket,
-  ticketForm,
-  savingTicket,
-  onSearchChange,
-  onStatusFilterChange,
-  onTypeFilterChange,
-  onOpenTicket,
-  onCloseDetail,
-  onFormChange,
-  onSaveTicket,
-}: {
-  tickets: AdminSupportTicket[];
-  summary: Record<'open' | 'pending' | 'resolved' | 'closed', number> | null;
-  loading: boolean;
-  search: string;
-  statusFilter: string;
-  typeFilter: string;
-  selectedTicket: AdminSupportTicket | null;
-  ticketForm: { status: AdminSupportTicket['status']; priority: AdminSupportTicket['priority']; adminNotes: string };
-  savingTicket: boolean;
-  onSearchChange: (value: string) => void;
-  onStatusFilterChange: (value: string) => void;
-  onTypeFilterChange: (value: string) => void;
-  onOpenTicket: (ticket: AdminSupportTicket) => void;
-  onCloseDetail: () => void;
-  onFormChange: (value: { status: AdminSupportTicket['status']; priority: AdminSupportTicket['priority']; adminNotes: string }) => void;
-  onSaveTicket: () => void;
-}) {
-  return (
-    <section className="mt-6">
-      <div className="grid gap-3 sm:grid-cols-4">
-        {(['open', 'pending', 'resolved', 'closed'] as const).map((status) => (
-          <article key={status} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
-            <p className="text-xs font-black uppercase text-slate-500">{status}</p>
-            <p className="mt-2 text-3xl font-black">{summary?.[status] || 0}</p>
-          </article>
-        ))}
-      </div>
-
-      <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_190px]">
-        <label className="relative block">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
-            placeholder="Search tickets"
-          />
-        </label>
-        <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-          <option value="all">All statuses</option>
-          <option value="open">Open</option>
-          <option value="pending">Pending</option>
-          <option value="resolved">Resolved</option>
-          <option value="closed">Closed</option>
-        </select>
-        <select value={typeFilter} onChange={(event) => onTypeFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-          <option value="all">All types</option>
-          <option value="general">General</option>
-          <option value="complaint">Complaint</option>
-          <option value="bug">Bug Report</option>
-          <option value="feature_request">Feature Request</option>
-          <option value="payment_issue">Payment Issue</option>
-        </select>
-      </div>
-
-      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
-        <div className="grid grid-cols-[1.2fr_140px_110px_110px_90px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
-          <span>Ticket</span>
-          <span>User</span>
-          <span>Type</span>
-          <span>Status</span>
-          <span>Action</span>
-        </div>
-        {loading && (
-          <div className="flex items-center gap-3 px-5 py-5 text-sm font-bold text-slate-400">
-            <Loader2 className="animate-spin text-violet-300" size={17} />
-            Loading tickets...
-          </div>
-        )}
-        {!loading && tickets.length === 0 && (
-          <div className="px-5 py-8 text-center text-sm font-bold text-slate-500">No support tickets match these filters.</div>
-        )}
-        {!loading && tickets.map((ticket) => (
-          <article key={ticket.id} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_140px_110px_110px_90px] lg:items-center lg:px-5">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black text-slate-100">{ticket.subject}</p>
-              <p className="mt-1 line-clamp-1 text-xs font-semibold text-slate-500">{ticket.message}</p>
-              <p className="mt-1 text-xs font-bold text-slate-600">{formatDate(ticket.createdAt)}</p>
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-slate-200">{ticket.fullName}</p>
-              <p className="mt-1 truncate text-xs font-semibold text-slate-500">{ticket.email}</p>
-            </div>
-            <span className="w-fit rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-slate-300 ring-1 ring-white/10">{ticket.type}</span>
-            <TicketStatusBadge status={ticket.status} priority={ticket.priority} />
-            <button type="button" onClick={() => onOpenTicket(ticket)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-3 text-xs font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98]">
-              <Eye size={14} />
-              View
-            </button>
-          </article>
-        ))}
-      </div>
-
-      {selectedTicket && (
-        <div className="fixed inset-0 z-80 flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <aside className="h-full w-full max-w-xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-black uppercase text-violet-300">Support Ticket</p>
-                <h2 className="mt-1 truncate font-montserrat text-2xl font-black">{selectedTicket.subject}</h2>
-                <p className="mt-1 truncate text-sm font-semibold text-slate-400">{selectedTicket.email}</p>
-              </div>
-              <button type="button" onClick={onCloseDetail} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Close ticket details">
-                <X size={17} />
-              </button>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <DetailTile label="Name" value={selectedTicket.fullName} />
-              <DetailTile label="Email" value={selectedTicket.email} />
-              <DetailTile label="Type" value={selectedTicket.type} />
-              <DetailTile label="Created" value={formatDate(selectedTicket.createdAt)} />
-            </div>
-
-            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <h3 className="font-montserrat text-lg font-black">Message</h3>
-              <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-300">{selectedTicket.message}</p>
-            </section>
-
-            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <h3 className="font-montserrat text-lg font-black">Admin Workflow</h3>
-              <div className="mt-4 grid gap-4">
-                <select value={ticketForm.status} onChange={(event) => onFormChange({ ...ticketForm, status: event.target.value as AdminSupportTicket['status'] })} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-                  <option value="open">Open</option>
-                  <option value="pending">Pending</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                </select>
-                <select value={ticketForm.priority} onChange={(event) => onFormChange({ ...ticketForm, priority: event.target.value as AdminSupportTicket['priority'] })} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-                <textarea value={ticketForm.adminNotes} onChange={(event) => onFormChange({ ...ticketForm, adminNotes: event.target.value })} rows={5} className="rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm font-bold text-white outline-none focus:border-violet-400" placeholder="Admin notes" />
-                <button type="button" onClick={onSaveTicket} disabled={savingTicket} className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60">
-                  {savingTicket ? <Loader2 className="animate-spin" size={16} /> : 'Save ticket'}
-                </button>
-              </div>
-            </section>
-          </aside>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function TicketStatusBadge({ status, priority }: { status: string; priority: string }) {
-  return (
-    <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${
-      status === 'resolved' || status === 'closed'
-        ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20'
-        : priority === 'urgent' || priority === 'high'
-          ? 'bg-red-400/10 text-red-300 ring-red-300/20'
-          : 'bg-amber-400/10 text-amber-300 ring-amber-300/20'
-    }`}>
-      {status}
-    </span>
   );
 }

@@ -7,6 +7,10 @@ export interface IBillingPlanSetting extends Document {
   amountCents: number;
   currency: 'LKR';
   active: boolean;
+  promotionActive: boolean;
+  promotionLabel?: string;
+  promotionDiscountType?: 'fixed' | 'percent';
+  promotionDiscountValue?: number;
   updatedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -19,6 +23,10 @@ const BillingPlanSettingSchema = new Schema<IBillingPlanSetting>(
     amountCents: { type: Number, required: true, min: 100, max: 10_000_000 },
     currency: { type: String, enum: ['LKR'], default: 'LKR', required: true },
     active: { type: Boolean, default: true, required: true },
+    promotionActive: { type: Boolean, default: false, required: true },
+    promotionLabel: { type: String, trim: true, maxlength: 80 },
+    promotionDiscountType: { type: String, enum: ['fixed', 'percent'] },
+    promotionDiscountValue: { type: Number, min: 1 },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

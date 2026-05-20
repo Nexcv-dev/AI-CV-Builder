@@ -308,7 +308,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     .filter((key: string) => !hiddenSections.includes(key))
     .map((key: string) => sectionBuilders[key]?.())
     .filter(Boolean);
-  const minimalistSideSectionKeys = ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
+  const minimalistSideSectionKeys = ['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const minimalistLeftSections = sections.filter((section: any) => !minimalistSideSectionKeys.includes(section.key));
   const minimalistRightSections = sections.filter((section: any) => minimalistSideSectionKeys.includes(section.key));
   const modernMainSections = sections.filter((section: any) => !['personalDetails', 'skills', 'languages'].includes(section.key));

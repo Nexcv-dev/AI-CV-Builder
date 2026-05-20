@@ -915,6 +915,14 @@ export const PAYHERE_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount:
 
 const centsToPayHereAmount = (cents: number) => (Math.max(0, cents) / 100).toFixed(2);
 
+const calculateDiscountCents = (amountCents: number, discountType?: string, discountValue?: number) => {
+    if (!discountType || !discountValue) return 0;
+    const rawDiscount = discountType === 'percent'
+        ? Math.floor(amountCents * Math.min(Math.max(discountValue, 0), 100) / 100)
+        : Math.round(discountValue);
+    return Math.min(Math.max(rawDiscount, 0), Math.max(amountCents - 100, 0));
+};
+
 const normalizeCouponCode = (value: unknown) => (
     typeof value === 'string'
         ? value.replace(/[^a-z0-9_-]/gi, '').trim().toUpperCase().slice(0, 32)
@@ -924,11 +932,27 @@ const normalizeCouponCode = (value: unknown) => (
 const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>) => {
     const setting = await BillingPlanSetting.findOne({ plan, active: true });
     const fallback = PAYHERE_PLAN_PRICES[plan];
+    const baseAmountCents = setting?.amountCents ?? fallback.cents;
+    const promotionDiscountCents = setting?.promotionActive
+        ? calculateDiscountCents(baseAmountCents, setting.promotionDiscountType, setting.promotionDiscountValue)
+        : 0;
+    const finalAmountCents = Math.max(baseAmountCents - promotionDiscountCents, 100);
     return {
         plan,
         label: setting?.label || planDisplayName(plan),
-        amount: centsToPayHereAmount(setting?.amountCents ?? fallback.cents),
-        cents: setting?.amountCents ?? fallback.cents,
+        amount: centsToPayHereAmount(finalAmountCents),
+        cents: finalAmountCents,
+        baseAmountCents,
+        promotionDiscountCents,
+        promotionActive: promotionDiscountCents > 0,
+        promotionLabel: promotionDiscountCents > 0 ? (setting?.promotionLabel || 'Limited offer') : '',
+        promotionDiscountType: setting?.promotionDiscountType || 'fixed',
+        promotionDiscountValue: setting?.promotionDiscountValue || 0,
+        discountBadge: promotionDiscountCents > 0
+            ? (setting?.promotionDiscountType === 'percent'
+                ? `${setting.promotionDiscountValue}% OFF`
+                : `${setting?.currency || fallback.currency} ${Math.round(promotionDiscountCents / 100)} OFF`)
+            : '',
         currency: (setting?.currency || fallback.currency) as 'LKR',
         source: setting ? 'admin' : 'default',
         updatedAt: setting?.updatedAt,
@@ -955,21 +979,22 @@ const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCode?: st
         if (!coupon || !planAllowed || !started || !notExpired || !underLimit) {
             return { error: 'Coupon is not valid for this plan.' };
         }
-        discountCents = coupon.discountType === 'percent'
-            ? Math.floor(price.cents * Math.min(coupon.discountValue, 100) / 100)
-            : Math.round(coupon.discountValue);
-        discountCents = Math.min(Math.max(discountCents, 0), Math.max(price.cents - 100, 0));
+        discountCents = calculateDiscountCents(price.cents, coupon.discountType, coupon.discountValue);
     }
     const finalAmountCents = Math.max(price.cents - discountCents, 100);
     return {
         plan,
         currency: price.currency,
-        baseAmountCents: price.cents,
-        discountCents,
+        baseAmountCents: price.baseAmountCents,
+        promotionDiscountCents: price.promotionDiscountCents,
+        discountCents: price.promotionDiscountCents + discountCents,
+        couponDiscountCents: discountCents,
         finalAmountCents,
         amount: centsToPayHereAmount(finalAmountCents),
         couponCode: coupon?.code || '',
         couponLabel: coupon?.label || '',
+        promotionLabel: price.promotionLabel,
+        discountBadge: price.discountBadge,
     };
 };
 
@@ -1915,7 +1940,20 @@ app.patch('/api/admin/billing/plans/:plan', requireSuperAdmin, async (req: Reque
         const label = sanitizeProfileField(req.body.label, 80) || planDisplayName(plan);
         const setting = await BillingPlanSetting.findOneAndUpdate(
             { plan },
-            { plan, label, amountCents, currency: 'LKR', active: req.body.active !== false, updatedBy: currentUserId(req) },
+            {
+                plan,
+                label,
+                amountCents,
+                currency: 'LKR',
+                active: req.body.active !== false,
+                promotionActive: Boolean(req.body.promotionActive),
+                promotionLabel: sanitizeProfileField(req.body.promotionLabel, 80),
+                promotionDiscountType: req.body.promotionDiscountType === 'percent' ? 'percent' : 'fixed',
+                promotionDiscountValue: req.body.promotionDiscountType === 'percent'
+                    ? Math.min(Math.max(Math.round(Number(req.body.promotionDiscountValue) || 0), 1), 100)
+                    : Math.max(Math.round(Number(req.body.promotionDiscountValue) || 0), 1),
+                updatedBy: currentUserId(req),
+            },
             { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
         );
         return res.json({ plan: await getPlanPrice(setting.plan) });
@@ -3432,7 +3470,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
             </h2>`;
         }
         if (isTimeline || isMin) {
-            const hasLine = !isMin || !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(sectionKey || '');
+            const hasLine = !isMin || !['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(sectionKey || '');
             return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
                 <h2 style="flex-shrink:0;font-size:${headingFontSize};font-weight:900;text-transform:uppercase;letter-spacing:${isMin ? '0.15em' : '0.22em'};color:${themeColor}">${title}</h2>
                 ${hasLine ? '<div style="height:1px;flex:1;background:#e5e7eb"></div>' : ''}
@@ -3731,8 +3769,8 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
         return '';
     };
 
-    const leftSectionsHTML = isMin ? sectionOrder.filter(k => !['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
-    const rightSectionsHTML = isMin ? sectionOrder.filter(k => ['personalDetails', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
+    const leftSectionsHTML = isMin ? sectionOrder.filter(k => !['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
+    const rightSectionsHTML = isMin ? sectionOrder.filter(k => ['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
     const startupLeftSectionsHTML = isStartup ? sectionOrder.filter(k => ['personalDetails', 'summary', 'experience'].includes(k)).map(renderSection).join('') : '';
     const startupRightSectionsHTML = isStartup ? sectionOrder.filter(k => ['education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(k)).map(renderSection).join('') : '';
     const sectionsHTML = isMin ? '' : sectionOrder.map(renderSection).join('');

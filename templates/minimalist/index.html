@@ -59,23 +59,6 @@
                           </section>
                         {{/isExperience}}
 
-                        {{#isEducation}}
-                          <section>
-                            <h2>{{title}}</h2>
-                            <div class="stack">
-                              {{#items}}
-                                <article class="item">
-                                  <div class="item-head">
-                                    <h3>{{degree}}</h3>
-                                    <span>{{formattedDate}}</span>
-                                  </div>
-                                  <p class="sub">{{institution}}</p>
-                                  <div class="rich">{{{description}}}</div>
-                                </article>
-                              {{/items}}
-                            </div>
-                          </section>
-                        {{/isEducation}}
                       {{/minimalistLeftSections}}
                     </div>
 
@@ -91,6 +74,22 @@
                             </div>
                           </section>
                         {{/isPersonalDetails}}
+
+                        {{#isEducation}}
+                          <section>
+                            <h2>{{title}}</h2>
+                            <div class="side-stack">
+                              {{#items}}
+                                <article class="side-item">
+                                  <h3>{{degree}}</h3>
+                                  <p>{{institution}}</p>
+                                  <span>{{formattedDate}}</span>
+                                  <div class="rich">{{{description}}}</div>
+                                </article>
+                              {{/items}}
+                            </div>
+                          </section>
+                        {{/isEducation}}
 
                         {{#isSkills}}
                           <section>

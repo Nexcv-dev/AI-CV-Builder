@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Cr
 import { AuthModal } from '../components/AuthModal';
 import { CV_TEMPLATES } from '../templates';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
+import { apiFetch } from '../utils/api';
 
 const stats = [
   { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
@@ -57,6 +58,7 @@ function StatCard({ label, value, suffix, color }: typeof stats[0]) {
 
 const pricingPlans = [
   {
+    key: 'free',
     name: 'Free',
     price: 'LKR 0',
     duration: 'Starter',
@@ -68,6 +70,7 @@ const pricingPlans = [
     features: ['1 saved CV', 'Classic template', '1 watermarked PDF download', 'Manual editing tools'],
   },
   {
+    key: 'payg',
     name: 'Pay As You Go',
     price: 'LKR 499',
     duration: '7 days (One-time payment)',
@@ -79,6 +82,7 @@ const pricingPlans = [
     features: ['1 extra saved CV per purchase', 'Any template', 'Unlimited edits for 7 days', 'Unlimited downloads for 7 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
   },
   {
+    key: 'monthly',
     name: 'Monthly',
     price: 'LKR 2199',
     duration: '30 days (One-time payment)',
@@ -159,6 +163,39 @@ export default function LandingPage() {
     isOpen: false,
     mode: 'signup',
   });
+  
+  const [planPrices, setPlanPrices] = useState<Record<string, {
+    cents: number;
+    baseAmountCents: number;
+    promotionActive: boolean;
+    promotionLabel?: string;
+    discountBadge?: string;
+    currency: string;
+  }> | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+    apiFetch<{ plans: Array<{ plan: string; cents: number; baseAmountCents: number; promotionActive: boolean; promotionLabel?: string; discountBadge?: string; currency: string }> }>('/api/billing/plans')
+      .then((data) => {
+        if (!ignore) {
+          setPlanPrices(data.plans.reduce((acc, plan) => ({ ...acc, [plan.plan]: plan }), {} as Record<string, {
+            cents: number;
+            baseAmountCents: number;
+            promotionActive: boolean;
+            promotionLabel?: string;
+            discountBadge?: string;
+            currency: string;
+          }>));
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const formatPrice = (cents: number, currency = 'LKR') => `${currency} ${new Intl.NumberFormat().format(Math.round(cents / 100))}`;
+
   const templateCarouselRef = useRef<HTMLDivElement>(null);
   const openAuthModal = (mode: 'login' | 'signup') => {
     setAuthModal({ isOpen: true, mode });
@@ -658,7 +695,18 @@ export default function LandingPage() {
                     <h3 className="mt-5 font-montserrat text-2xl font-black">{plan.name}</h3>
                     <p className="mt-2 min-h-14 text-sm font-semibold leading-6 text-slate-400">{plan.description}</p>
                     <div className="mt-5">
-                      <div className="text-4xl font-black">{plan.price}</div>
+                      {planPrices?.[plan.key]?.promotionActive && (
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className="text-lg font-black text-slate-500 line-through">{formatPrice(planPrices[plan.key].baseAmountCents, planPrices[plan.key].currency)}</span>
+                          <span className="rounded-full bg-emerald-300 px-2.5 py-1 text-[10px] font-black uppercase text-slate-950">{planPrices[plan.key].discountBadge}</span>
+                        </div>
+                      )}
+                      <div className={`text-4xl font-black ${planPrices?.[plan.key]?.promotionActive ? 'text-emerald-300' : ''}`}>
+                        {planPrices?.[plan.key] ? formatPrice(planPrices[plan.key].cents, planPrices[plan.key].currency) : plan.price}
+                      </div>
+                      {planPrices?.[plan.key]?.promotionLabel && (
+                        <div className="mt-2 text-xs font-black uppercase text-emerald-200">{planPrices[plan.key].promotionLabel}</div>
+                      )}
                       <div className="mt-1 text-sm font-bold text-slate-400">{plan.duration}</div>
                     </div>
                     <div className="mt-7 mb-8 grid gap-3">
