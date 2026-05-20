@@ -122,6 +122,7 @@ tfoot {
 
 .identity {
   flex: 1;
+  min-width: 0;
 }
 
 h1 {
@@ -142,6 +143,13 @@ h1 {
   font-weight: 500;
   margin-top: 16px;
   color: #4b5563;
+  overflow: hidden;
+}
+
+.contact-list div {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .contact-list .muted {
@@ -298,8 +306,10 @@ aside a {
 .detail-row {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   border-bottom: 1px solid #f3f4f6;
   padding-bottom: 4px;
+  flex-wrap: wrap;
 }
 
 .detail-row span:first-child {
@@ -337,6 +347,9 @@ aside a {
   font-size: 0.875rem;
   font-weight: 500;
   color: #1f2937;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .reference-grid {

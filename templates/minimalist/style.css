@@ -11,6 +11,14 @@ body {
   min-height: 297mm;
   background: #ffffff;
 }
+.page *,
+.page *::before,
+.page *::after {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 .page-pad {
   padding: 15mm 20mm;
 }
@@ -61,6 +69,7 @@ h1 {
   line-height: 1.1;
   font-weight: 450;
   color: #111827;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 .contact-line {
@@ -71,6 +80,15 @@ h1 {
   gap: 15px;
   font-weight: 500;
   flex-wrap: wrap;
+  max-width: 100%;
+  overflow: hidden;
+  line-height: 1.45;
+}
+.contact-line span {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .contact-line span:not(:last-child)::after {
   content: "|";
@@ -148,9 +166,9 @@ a {
   gap: 20px;
   align-items: baseline;
   margin-bottom: 2px;
+  flex-wrap: wrap;
 }
 .item-head span {
-  flex-shrink: 0;
   color: #6b7280;
   font-size: 0.75rem;
   font-weight: 500;
@@ -221,11 +239,14 @@ a {
   font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
+  min-width: 0;
 }
 .language-row em {
   color: #6b7280;
   font-size: 0.8125rem;
   font-style: normal;
+  min-width: 0;
+  text-align: right;
 }
 .nexcv-watermark {
   position: fixed;

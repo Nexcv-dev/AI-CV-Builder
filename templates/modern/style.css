@@ -1,16 +1,18 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111827; background: #ffffff; }
 .page { width: 210mm; min-height: 297mm; display: grid; grid-template-columns: 32% 68%; }
+.page *, .page *::before, .page *::after { min-width: 0; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+a { overflow-wrap: anywhere; word-break: break-all; }
 .sidebar { background: #111827; color: #ffffff; padding: 16mm 12mm; }
 .content { padding: 16mm; }
-h1 { margin: 0 0 18px; font-size: 30px; line-height: 1.1; font-weight: 600; }
+h1 { margin: 0 0 18px; font-size: 30px; line-height: 1.1; font-weight: 600; overflow-wrap: anywhere; word-break: break-word; }
 h2 { margin: 0 0 12px; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: #2563eb; }
 .sidebar h2 { color: #ffffff; border-bottom: 1px solid rgba(255,255,255,0.35); padding-bottom: 5px; }
 h3 { margin: 0; font-size: 15px; }
 p { margin: 0 0 8px; font-size: 12px; line-height: 1.45; }
 section { margin-bottom: 24px; break-inside: avoid; }
 article { margin-bottom: 16px; break-inside: avoid; }
-.item-head { display: flex; justify-content: space-between; gap: 16px; }
+.item-head { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .item-head span, .sub { color: #6b7280; font-size: 12px; }
-.rich, .rich * { font-size: 12.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.rich, .rich * { font-size: 12.5px; line-height: 1.5; overflow-wrap: anywhere; word-break: break-word; }
 .pill { display: inline-block; margin: 0 5px 6px 0; padding: 5px 8px; border: 1px solid rgba(255,255,255,0.35); border-radius: 999px; }
