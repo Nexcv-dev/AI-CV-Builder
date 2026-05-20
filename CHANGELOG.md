@@ -3,67 +3,70 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #162 from bimanthaperera-lab/test/overview (3931f7c) - Bimantha Perera, 11 seconds ago
-* Code Optimization (13c0107) - Bimantha Perera, 8 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (bb756b1) - bimanthaperera-lab, 4 hours ago
-* Merge pull request #159 from bimanthaperera-lab/test/overview (67856a1) - Bimantha Perera, 4 hours ago
-* Optimized admin panel code and add promotional tab to admin panel (2e37a72) - Bimantha Perera, 4 hours ago
+* Merge pull request #163 from bimanthaperera-lab/test/overview (910549f) - Bimantha Perera, 12 seconds ago
+* fix pipe line lambda failier (3a1d513) - Bimantha Perera, 17 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (d72b51c) - bimanthaperera-lab, 29 minutes ago
+* Merge pull request #162 from bimanthaperera-lab/test/overview (3931f7c) - Bimantha Perera, 29 minutes ago
+* Code Optimization (13c0107) - Bimantha Perera, 36 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (bb756b1) - bimanthaperera-lab, 5 hours ago
+* Merge pull request #159 from bimanthaperera-lab/test/overview (67856a1) - Bimantha Perera, 5 hours ago
+* Optimized admin panel code and add promotional tab to admin panel (2e37a72) - Bimantha Perera, 5 hours ago
 * Add admin pricing and coupon support (d95bb32) - Bimantha Perera, 6 hours ago
-* Support admin-created S3 templates (d9fa6f9) - Bimantha Perera, 6 hours ago
+* Support admin-created S3 templates (d9fa6f9) - Bimantha Perera, 7 hours ago
 * Add creative S3 PDF template (4e76a30) - Bimantha Perera, 7 hours ago
-* Fix PDF pagination spacing for S3 templates (7192dbe) - Bimantha Perera, 7 hours ago
-* Migrate startup PDF template to S3 pipeline (c88ed33) - Bimantha Perera, 7 hours ago
+* Fix PDF pagination spacing for S3 templates (7192dbe) - Bimantha Perera, 8 hours ago
+* Migrate startup PDF template to S3 pipeline (c88ed33) - Bimantha Perera, 8 hours ago
 * minimal template devider keep minimal (574e151) - Bimantha Perera, 9 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (e2b3552) - bimanthaperera-lab, 9 hours ago
-* Merge pull request #157 from bimanthaperera-lab/test/overview (60cd988) - Bimantha Perera, 9 hours ago
-* minimalist template layout fixing (a1d27b7) - Bimantha Perera, 9 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e2b3552) - bimanthaperera-lab, 10 hours ago
+* Merge pull request #157 from bimanthaperera-lab/test/overview (60cd988) - Bimantha Perera, 10 hours ago
+* minimalist template layout fixing (a1d27b7) - Bimantha Perera, 10 hours ago
 * Migrate modern PDF template to S3 pipeline (73dea2d) - Bimantha Perera, 10 hours ago
-* update minimal template layout with s3 (f30ac7f) - Bimantha Perera, 10 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (e6dcf16) - bimanthaperera-lab, 10 hours ago
-* Merge pull request #156 from bimanthaperera-lab/test/overview (889a3b5) - Bimantha Perera, 10 hours ago
+* update minimal template layout with s3 (f30ac7f) - Bimantha Perera, 11 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e6dcf16) - bimanthaperera-lab, 11 hours ago
+* Merge pull request #156 from bimanthaperera-lab/test/overview (889a3b5) - Bimantha Perera, 11 hours ago
 * Prevent PDF template text overflow (d55ca42) - Bimantha Perera, 11 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (cb34f9a) - bimanthaperera-lab, 11 hours ago
 * Merge pull request #155 from bimanthaperera-lab/test/overview (6880209) - Bimantha Perera, 11 hours ago
-* Migrate minimalist PDF template to S3 pipeline (8cf0a2d) - Bimantha Perera, 11 hours ago
-* Soften PDF template name weights (6cae675) - Bimantha Perera, 11 hours ago
+* Migrate minimalist PDF template to S3 pipeline (8cf0a2d) - Bimantha Perera, 12 hours ago
+* Soften PDF template name weights (6cae675) - Bimantha Perera, 12 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (ac66de7) - bimanthaperera-lab, 12 hours ago
 * Merge pull request #154 from bimanthaperera-lab/test/overview (9a3ba7d) - Bimantha Perera, 12 hours ago
 * Migrate timeline PDF template to S3 pipeline (efd7551) - Bimantha Perera, 12 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (0e6772c) - bimanthaperera-lab, 12 hours ago
 * Merge pull request #153 from bimanthaperera-lab/test/overview (dd94497) - Bimantha Perera, 12 hours ago
-* Migrate classic PDF template to S3 pipeline (9b8f92a) - Bimantha Perera, 12 hours ago
+* Migrate classic PDF template to S3 pipeline (9b8f92a) - Bimantha Perera, 13 hours ago
 * Expose S3 template debug state (e95bdc0) - Bimantha Perera, 24 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2f2b8b9) - bimanthaperera-lab, 24 hours ago
-* Merge pull request #152 from bimanthaperera-lab/test/overview (998ed66) - Bimantha Perera, 24 hours ago
-* Expose PDF Lambda build marker (ce83141) - Bimantha Perera, 24 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2030b4e) - bimanthaperera-lab, 24 hours ago
-* Merge pull request #151 from bimanthaperera-lab/test/overview (cd27add) - Bimantha Perera, 24 hours ago
-* Log S3 template fallback reason (b88c464) - Bimantha Perera, 24 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (e1bb4e8) - bimanthaperera-lab, 25 hours ago
-* Merge pull request #150 from bimanthaperera-lab/test/overview (13dcdf7) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2f2b8b9) - bimanthaperera-lab, 25 hours ago
+* Merge pull request #152 from bimanthaperera-lab/test/overview (998ed66) - Bimantha Perera, 25 hours ago
+* Expose PDF Lambda build marker (ce83141) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2030b4e) - bimanthaperera-lab, 25 hours ago
+* Merge pull request #151 from bimanthaperera-lab/test/overview (cd27add) - Bimantha Perera, 25 hours ago
+* Log S3 template fallback reason (b88c464) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e1bb4e8) - bimanthaperera-lab, 26 hours ago
+* Merge pull request #150 from bimanthaperera-lab/test/overview (13dcdf7) - Bimantha Perera, 26 hours ago
 * Restore generated PDF handler source (d912b94) - Bimantha Perera, 26 hours ago
 * Migrate professional PDF template to S3 data pipeline (2823c0c) - Bimantha Perera, 26 hours ago
-* add tempaltes to S3 (58c42dd) - Bimantha Perera, 29 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2fd1248) - bimanthaperera-lab, 29 hours ago
-* Merge pull request #149 from bimanthaperera-lab/test/overview (f91807e) - Bimantha Perera, 29 hours ago
+* add tempaltes to S3 (58c42dd) - Bimantha Perera, 30 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2fd1248) - bimanthaperera-lab, 30 hours ago
+* Merge pull request #149 from bimanthaperera-lab/test/overview (f91807e) - Bimantha Perera, 30 hours ago
 * Check the pdf generation with S3 (6a67d29) - Bimantha Perera, 30 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (0802aba) - bimanthaperera-lab, 30 hours ago
-* Merge pull request #148 from bimanthaperera-lab/test/overview (d489841) - Bimantha Perera, 30 hours ago
-* automate AWS lambda file upload (3bc4ce9) - Bimantha Perera, 30 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (0802aba) - bimanthaperera-lab, 31 hours ago
+* Merge pull request #148 from bimanthaperera-lab/test/overview (d489841) - Bimantha Perera, 31 hours ago
+* automate AWS lambda file upload (3bc4ce9) - Bimantha Perera, 31 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (7c34a34) - bimanthaperera-lab, 31 hours ago
 * Merge pull request #147 from bimanthaperera-lab/test/overview (55ab151) - Bimantha Perera, 31 hours ago
-* Update main.yml (609ae43) - Bimantha Perera, 31 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2335721) - bimanthaperera-lab, 31 hours ago
-* Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 31 hours ago
+* Update main.yml (609ae43) - Bimantha Perera, 32 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2335721) - bimanthaperera-lab, 32 hours ago
+* Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 32 hours ago
 * Send template request to S3 bucket (77118d3) - Bimantha Perera, 32 hours ago
-* Implement Support Ticket (1e7163a) - Bimantha Perera, 34 hours ago
+* Implement Support Ticket (1e7163a) - Bimantha Perera, 35 hours ago
 * move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 35 hours ago
 * Update CVForm.tsx (37f2feb) - Bimantha Perera, 2 days ago
 * implement template management settings with backend (932c731) - Bimantha Perera, 2 days ago
 * implement Admin Panel Template and dashboard settings (07345f4) - Bimantha Perera, 2 days ago
 * Create Admin Panel Structre (aff3de4) - Bimantha Perera, 2 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (5aa8c13) - bimanthaperera-lab, 2 days ago
-* Merge pull request #143 from bimanthaperera-lab/test/overview (ade11e7) - Bimantha Perera, 2 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (5aa8c13) - bimanthaperera-lab, 3 days ago
+* Merge pull request #143 from bimanthaperera-lab/test/overview (ade11e7) - Bimantha Perera, 3 days ago
 * payment gateway sand box test (ccc8d08) - Bimantha Perera, 3 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (12b6b16) - bimanthaperera-lab, 3 days ago
 * Merge pull request #142 from bimanthaperera-lab/test/overview (2713caf) - Bimantha Perera, 3 days ago
@@ -76,9 +79,9 @@ All notable changes to this project will be documented in this file.
 * Setup Transaction Email and Support Tickets Emails (eaba468) - Bimantha Perera, 3 days ago
 * fix layout issues (e272552) - Bimantha Perera, 3 days ago
 * update documentation (3d86090) - Bimantha Perera, 3 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (7359672) - bimanthaperera-lab, 3 days ago
-* Merge pull request #138 from bimanthaperera-lab/test/overview (f3436cc) - Bimantha Perera, 3 days ago
-* text dont wrap bug and other bug fixing (b0a328a) - Bimantha Perera, 3 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (7359672) - bimanthaperera-lab, 4 days ago
+* Merge pull request #138 from bimanthaperera-lab/test/overview (f3436cc) - Bimantha Perera, 4 days ago
+* text dont wrap bug and other bug fixing (b0a328a) - Bimantha Perera, 4 days ago
 * Add New Startup template and Add Payment models (a645564) - Bimantha Perera, 4 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (6f30bc8) - bimanthaperera-lab, 5 days ago
 * Merge pull request #135 from bimanthaperera-lab/test/overview (f38ad94) - Bimantha Perera, 5 days ago
@@ -97,9 +100,9 @@ All notable changes to this project will be documented in this file.
 * Update MyCvs.tsx (c380933) - Bimantha Perera, 5 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (c6099bc) - bimanthaperera-lab, 5 days ago
 * Merge pull request #122 from bimanthaperera-lab/test/overview (53ac36c) - Bimantha Perera, 5 days ago
-* fix browser console issues (1db7a57) - Bimantha Perera, 5 days ago
-* fix css warnings (2c6747c) - Bimantha Perera, 5 days ago
-* add draft option (db215a6) - Bimantha Perera, 5 days ago
+* fix browser console issues (1db7a57) - Bimantha Perera, 6 days ago
+* fix css warnings (2c6747c) - Bimantha Perera, 6 days ago
+* add draft option (db215a6) - Bimantha Perera, 6 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (45502fe) - bimanthaperera-lab, 6 days ago
 * Merge pull request #121 from bimanthaperera-lab/test/overview (98ccc00) - Bimantha Perera, 6 days ago
 * Clean the layout and bug fixing (d348fdb) - Bimantha Perera, 6 days ago
@@ -139,7 +142,7 @@ All notable changes to this project will be documented in this file.
 * Fix email not send issue and bug fixing (7adec93) - Bimantha Perera, 7 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (bb9bed8) - bimanthaperera-lab, 7 days ago
 * Merge pull request #102 from bimanthaperera-lab/test/overview (a37a15b) - Bimantha Perera, 7 days ago
-* Add CV Creation limit and improve UI/UX (7ee85d4) - Bimantha Perera, 7 days ago
+* Add CV Creation limit and improve UI/UX (7ee85d4) - Bimantha Perera, 8 days ago
 * improve layout issues (d613b27) - Bimantha Perera, 8 days ago
 * create Superuser (bcce7c7) - Bimantha Perera, 8 days ago
 * fix template section selected icon overlap issue (4fae2a8) - Bimantha Perera, 8 days ago
@@ -249,11 +252,11 @@ All notable changes to this project will be documented in this file.
 * Fix import popup issue and change the icon (13592ad) - Bimantha Perera, 11 days ago
 * Change CV Import pop up cloud icon (fda6fd7) - Bimantha Perera, 11 days ago
 * Fix Footer White Space Issue (a545b13) - Bimantha Perera, 11 days ago
-* chore: bump version to 0.1.3 (a3265f5) - bimanthaperera-lab, 11 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (eca81c1) - bimanthaperera-lab, 11 days ago
-* Merge pull request #56 from bimanthaperera-lab/test/overview (b48f90a) - Bimantha Perera, 11 days ago
-* Update CVPreview.tsx (7e88f32) - Bimantha Perera, 11 days ago
-* Redesign Download/Reset/CV Import Pop Ups & Reduce name text size from professional template (f15f19f) - Bimantha Perera, 11 days ago
+* chore: bump version to 0.1.3 (a3265f5) - bimanthaperera-lab, 12 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (eca81c1) - bimanthaperera-lab, 12 days ago
+* Merge pull request #56 from bimanthaperera-lab/test/overview (b48f90a) - Bimantha Perera, 12 days ago
+* Update CVPreview.tsx (7e88f32) - Bimantha Perera, 12 days ago
+* Redesign Download/Reset/CV Import Pop Ups & Reduce name text size from professional template (f15f19f) - Bimantha Perera, 12 days ago
 * Fixed the console/accessibility issues (47f1c21) - Bimantha Perera, 12 days ago
 * When i refine the data using AI space is too much in the preview while compare with text box issue fix (e1654f3) - Bimantha Perera, 12 days ago
 * Fix Text Box Bullet Point Issue (c865d13) - Bimantha Perera, 12 days ago
