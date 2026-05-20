@@ -1,0 +1,72 @@
+import type { Express, Request } from 'express';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+
+export const EMAIL_VERIFICATION_RESEND_LIMIT = 3;
+export const EMAIL_VERIFICATION_RESEND_WINDOW_MS = 60 * 60 * 1000;
+export const EMAIL_VERIFICATION_ATTEMPT_LIMIT = 5;
+export const EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
+
+export const getAuthenticatedRateLimitKey = (req: Request) => {
+    const user = req.user as any;
+    return user?._id?.toString?.() || user?.id?.toString?.() || ipKeyGenerator(req.ip);
+};
+
+export const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 150,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Please try again later.' },
+});
+
+export const pdfLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'PDF generation limit reached. Please wait a few minutes before trying again.' },
+});
+
+export const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 8,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    message: { error: 'Too many login attempts. Please wait a few minutes before trying again.' },
+});
+
+export const passwordResetLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 3,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many password reset attempts. Please wait an hour before trying again.' },
+});
+
+export const emailVerificationLimiter = rateLimit({
+    windowMs: EMAIL_VERIFICATION_RESEND_WINDOW_MS,
+    max: EMAIL_VERIFICATION_RESEND_LIMIT,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: getAuthenticatedRateLimitKey,
+    message: { error: 'Too many verification OTP requests. Please wait an hour before trying again.' },
+});
+
+export const emailVerificationAttemptLimiter = rateLimit({
+    windowMs: EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS,
+    max: EMAIL_VERIFICATION_ATTEMPT_LIMIT,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    keyGenerator: getAuthenticatedRateLimitKey,
+    message: { error: 'Too many OTP verification attempts. Please wait 10 minutes before trying again.' },
+});
+
+export const configureRateLimiters = (app: Express) => {
+    app.use('/api/', apiLimiter);
+    app.use('/api/generate-pdf', pdfLimiter);
+    app.use('/api/auth/login', authLimiter);
+    app.use('/api/auth/signup', authLimiter);
+    app.use('/api/auth/signup', emailVerificationLimiter);
+};
