@@ -3,65 +3,214 @@
   <head>
     <meta charset="utf-8">
     <title>{{personalInfo.fullName}} CV</title>
+    <link href="https://fonts.googleapis.com/css2?family={{computed.googleFontName}}:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body>
-    <main class="page modern">
-      <aside class="sidebar">
-        <h1>{{personalInfo.fullName}}</h1>
-        <p>{{personalInfo.email}}</p>
-        <p>{{personalInfo.phone}}</p>
-        <p>{{personalInfo.address}}</p>
-
-        <section>
-          <h2>Skills</h2>
-          {{#skills}}<p class="pill">{{name}}</p>{{/skills}}
-        </section>
-
-        <section>
-          <h2>Languages</h2>
-          {{#languages}}<p><strong>{{name}}</strong><br>{{proficiency}}</p>{{/languages}}
-        </section>
-
-        <section>
-          <h2>Details</h2>
-          <p>{{personalInfo.dob}}</p>
-          <p>{{personalInfo.nationality}}</p>
-        </section>
-      </aside>
-
-      <div class="content">
-        <section>
-          <h2>Profile</h2>
-          <div class="rich">{{{personalInfo.summary}}}</div>
-        </section>
-
-        <section>
-          <h2>Experience</h2>
-          {{#experience}}
-            <article>
-              <div class="item-head"><h3>{{position}}</h3><span>{{startDate}} - {{endDate}}</span></div>
-              <p class="sub">{{company}}</p>
-              <div class="rich">{{{description}}}</div>
-            </article>
-          {{/experience}}
-        </section>
-
-        <section>
-          <h2>Education</h2>
-          {{#education}}
-            <article>
-              <div class="item-head"><h3>{{degree}}</h3><span>{{startDate}} - {{endDate}}</span></div>
-              <p class="sub">{{institution}}</p>
-              <div class="rich">{{{description}}}</div>
-            </article>
-          {{/education}}
-        </section>
-
-        <section>
-          <h2>Projects</h2>
-          {{#projects}}<article><h3>{{name}}</h3><p class="sub">{{link}}</p><div class="rich">{{{description}}}</div></article>{{/projects}}
-        </section>
+    {{#watermark}}
+      <div class="nexcv-watermark" aria-hidden="true">
+        <div>Created with NexCV Free</div>
+        <div>Upgrade to remove watermark</div>
       </div>
-    </main>
+    {{/watermark}}
+
+    <div class="pdf-shell">
+      <main class="page modern">
+        <aside class="sidebar">
+          {{#computed.hasProfileImage}}
+            <div class="profile-frame">
+              <img src="{{computed.profileImage}}" alt="" style="transform:{{computed.profileImageTransform}}">
+            </div>
+          {{/computed.hasProfileImage}}
+
+          <section class="sidebar-section">
+            <h2>Details</h2>
+            <div class="sidebar-stack contact-stack">
+              {{#personalInfo.email}}
+                <div class="icon-row">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>
+                  <span>{{personalInfo.email}}</span>
+                </div>
+              {{/personalInfo.email}}
+              {{#personalInfo.phone}}
+                <div class="icon-row">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.4 2.7a2 2 0 0 1-.6 1.8L7.7 9.4a16 16 0 0 0 6.9 6.9l1.2-1.2a2 2 0 0 1 1.8-.6l2.7.4a2 2 0 0 1 1.7 2z"/></svg>
+                  <span>{{personalInfo.phone}}</span>
+                </div>
+              {{/personalInfo.phone}}
+              {{#personalInfo.address}}
+                <div class="icon-row">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.3 7-12a7 7 0 1 0-14 0c0 6.7 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
+                  <span>{{personalInfo.address}}</span>
+                </div>
+              {{/personalInfo.address}}
+            </div>
+          </section>
+
+          {{#flags.hasPersonalDetails}}
+            <section class="sidebar-section personal-section">
+              <h2>Personal Info</h2>
+              <div class="sidebar-stack personal-stack">
+                {{#personalInfo.dob}}<div class="icon-row small"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg><span>{{personalInfo.dob}}</span></div>{{/personalInfo.dob}}
+                {{#personalInfo.nic}}<div class="icon-row small"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h6M7 12h10M7 16h8"/></svg><span>{{personalInfo.nic}}</span></div>{{/personalInfo.nic}}
+                {{#personalInfo.gender}}<div class="icon-row small"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/></svg><span>{{personalInfo.gender}}</span></div>{{/personalInfo.gender}}
+                {{#personalInfo.nationality}}<div class="icon-row small"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg><span>{{personalInfo.nationality}}</span></div>{{/personalInfo.nationality}}
+                {{#personalInfo.religion}}<div class="icon-row small"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.7 5.1L19 9l-5.3 1.9L12 16l-1.7-5.1L5 9l5.3-1.9z"/></svg><span>{{personalInfo.religion}}</span></div>{{/personalInfo.religion}}
+                {{#personalInfo.maritalStatus}}<div class="icon-row small"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg><span>{{personalInfo.maritalStatus}}</span></div>{{/personalInfo.maritalStatus}}
+              </div>
+            </section>
+          {{/flags.hasPersonalDetails}}
+
+          {{#flags.hasSkills}}
+            <section class="sidebar-section skills-section">
+              <h2>Skills</h2>
+              <div class="skills-stack">
+                {{#flags.hasSkillCategories}}
+                  {{#groupedSkills}}
+                    <div class="skill-group">
+                      <h3>{{category}}</h3>
+                      <div class="skill-items">
+                        {{#items}}
+                          <div class="skill-item">
+                            <span>{{name}}</span>
+                            <div class="bar"><i style="width:{{levelPercent}}"></i></div>
+                          </div>
+                        {{/items}}
+                      </div>
+                    </div>
+                  {{/groupedSkills}}
+                {{/flags.hasSkillCategories}}
+                {{^flags.hasSkillCategories}}
+                  {{#skills}}
+                    <div class="skill-item">
+                      <span>{{name}}</span>
+                      <div class="bar"><i style="width:{{levelPercent}}"></i></div>
+                    </div>
+                  {{/skills}}
+                {{/flags.hasSkillCategories}}
+              </div>
+            </section>
+          {{/flags.hasSkills}}
+
+          {{#flags.hasLanguages}}
+            <section class="sidebar-section languages-section">
+              <h2>Languages</h2>
+              <div class="language-stack">
+                {{#languages}}
+                  <div class="language-row"><span>{{name}}</span><em>{{proficiency}}</em></div>
+                {{/languages}}
+              </div>
+            </section>
+          {{/flags.hasLanguages}}
+        </aside>
+
+        <section class="content">
+          <header class="masthead">
+            <h1>{{personalInfo.fullName}}</h1>
+            <div class="rule"></div>
+          </header>
+
+          {{#modernMainSections}}
+            {{#isSummary}}
+              <section class="main-section">
+                <h2>{{title}}</h2>
+                <div class="rich">{{{personalInfo.summary}}}</div>
+              </section>
+            {{/isSummary}}
+
+            {{#isExperience}}
+              <section class="main-section">
+                <h2>{{title}}</h2>
+                <div class="stack">
+                  {{#items}}
+                    <article class="item">
+                      <h3>{{position}}</h3>
+                      <div class="item-meta"><span class="accent">{{company}}</span><span>{{formattedDate}}</span></div>
+                      <div class="rich">{{{description}}}</div>
+                    </article>
+                  {{/items}}
+                </div>
+              </section>
+            {{/isExperience}}
+
+            {{#isEducation}}
+              <section class="main-section">
+                <h2>{{title}}</h2>
+                <div class="stack">
+                  {{#items}}
+                    <article class="item">
+                      <h3>{{degree}}</h3>
+                      <div class="item-meta"><span>{{institution}}</span><span>{{formattedDate}}</span></div>
+                      <div class="rich">{{{description}}}</div>
+                    </article>
+                  {{/items}}
+                </div>
+              </section>
+            {{/isEducation}}
+
+            {{#isProjects}}
+              <section class="main-section">
+                <h2>{{title}}</h2>
+                <div class="stack compact">
+                  {{#items}}
+                    <article class="item">
+                      <div class="item-head"><h3>{{name}}</h3>{{#hasLink}}<a href="{{link}}">View Project</a>{{/hasLink}}</div>
+                      <div class="rich project-rich">{{{description}}}</div>
+                    </article>
+                  {{/items}}
+                </div>
+              </section>
+            {{/isProjects}}
+
+            {{#isCourses}}
+              <section class="main-section">
+                <h2>{{title}}</h2>
+                <div class="stack compact">
+                  {{#items}}
+                    <article class="item">
+                      <h3>{{name}}</h3>
+                      <div class="item-meta"><span>{{institution}}</span><span>{{formattedDate}}</span></div>
+                    </article>
+                  {{/items}}
+                </div>
+              </section>
+            {{/isCourses}}
+
+            {{#isAwards}}
+              <section class="main-section">
+                <h2>{{title}}</h2>
+                <div class="stack compact">
+                  {{#items}}
+                    <article class="item">
+                      <h3>{{name}}</h3>
+                      <div class="item-meta"><span>{{issuer}}</span><span>{{date}}</span></div>
+                    </article>
+                  {{/items}}
+                </div>
+              </section>
+            {{/isAwards}}
+
+            {{#isReferences}}
+              <section class="main-section">
+                <h2>{{title}}</h2>
+                <div class="reference-grid">
+                  {{#items}}
+                    <article>
+                      <h3>{{name}}</h3>
+                      {{#sub}}<p class="sub">{{sub}}</p>{{/sub}}
+                      {{#hasContact}}
+                        <div class="reference-contact">
+                          {{#email}}<div>{{email}}</div>{{/email}}
+                          {{#phone}}<div>{{phone}}</div>{{/phone}}
+                        </div>
+                      {{/hasContact}}
+                    </article>
+                  {{/items}}
+                </div>
+              </section>
+            {{/isReferences}}
+          {{/modernMainSections}}
+        </section>
+      </main>
+    </div>
   </body>
 </html>
