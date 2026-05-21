@@ -31,9 +31,10 @@ const CustomPreview = forwardRef<HTMLDivElement, CustomPreviewProps>(({ cvData, 
           </div>
         ) : (
           <iframe
+            key={template}
             title="Custom CV template preview"
             srcDoc={renderedHtml}
-            className="block min-h-[297mm] w-full border-0"
+            className="block min-h-[297mm] w-full border-0 transition-opacity duration-150"
             sandbox=""
           />
         )}

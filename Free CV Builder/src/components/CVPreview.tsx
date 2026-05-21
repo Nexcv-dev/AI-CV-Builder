@@ -14,7 +14,7 @@ interface CVPreviewProps {
 
 const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvData, template }, ref) => {
   if (!TEMPLATE_KEYS.includes(template as any)) {
-    return <CustomPreview ref={ref} cvData={cvData} template={template} />;
+    return <CustomPreview key={template} ref={ref} cvData={cvData} template={template} />;
   }
 
   const {

@@ -871,7 +871,7 @@ const routeDeps = {
     adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser,
     authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter,
     getRequestOrigin, isAllowedOrigin,
-    clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
+    clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
     generateCVHTML, generatePdfDocument, sanitizeCvData,
     getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey,
     sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail,
