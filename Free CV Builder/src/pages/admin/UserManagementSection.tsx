@@ -8,6 +8,7 @@ import {
 import type { AdminUserDetail, AdminUserDocument, AdminUserListItem } from './adminTypes';
 import { formatDate } from './adminUtils';
 import { DetailTile, PlanBadge } from './AdminSharedComponents';
+import { ADMIN_ROLE_LABELS, isAdminRole } from '../../adminPermissions';
 
 export default function UserManagementSection({
   users,
@@ -23,6 +24,7 @@ export default function UserManagementSection({
   selectedUserDocuments,
   selectedPlan,
   savingPlan,
+  canUpdatePlan,
   onSelectedPlanChange,
   onSavePlan,
   onCloseDetail,
@@ -40,6 +42,7 @@ export default function UserManagementSection({
   selectedUserDocuments: AdminUserDocument[];
   selectedPlan: 'free' | 'payg' | 'monthly';
   savingPlan: boolean;
+  canUpdatePlan: boolean;
   onSelectedPlanChange: (value: 'free' | 'payg' | 'monthly') => void;
   onSavePlan: () => void;
   onCloseDetail: () => void;
@@ -74,6 +77,11 @@ export default function UserManagementSection({
           <option value="all">All roles</option>
           <option value="user">User</option>
           <option value="super_admin">Super Admin</option>
+          <option value="admin_manager">Admin Manager</option>
+          <option value="billing_manager">Billing Manager</option>
+          <option value="template_manager">Template Manager</option>
+          <option value="support_agent">Support Agent</option>
+          <option value="analyst">Analyst</option>
         </select>
       </div>
 
@@ -103,7 +111,7 @@ export default function UserManagementSection({
             </div>
             <PlanBadge plan={item.plan} expiresAt={item.planExpiresAt} />
             <span className="w-fit rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-slate-300 ring-1 ring-white/10">
-              {item.role === 'super_admin' ? 'Super Admin' : 'User'}
+              {roleLabel(item.role)}
             </span>
             <span className="text-sm font-black text-slate-200">{item.cvCount}</span>
             <button
@@ -138,7 +146,7 @@ export default function UserManagementSection({
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <DetailTile label="Role" value={selectedUser.role === 'super_admin' ? 'Super Admin' : 'User'} />
+              <DetailTile label="Role" value={roleLabel(selectedUser.role)} />
               <DetailTile label="Auth" value={selectedUser.authProvider} />
               <DetailTile label="Email" value={selectedUser.emailVerified ? 'Verified' : 'Not verified'} />
               <DetailTile label="Saved CVs" value={String(selectedUser.cvCount)} />
@@ -146,31 +154,33 @@ export default function UserManagementSection({
               <DetailTile label="Last Updated" value={formatDate(selectedUser.updatedAt)} />
             </div>
 
-            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-              <h3 className="font-montserrat text-lg font-black">Change User Plan</h3>
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-                <select
-                  value={selectedPlan}
-                  onChange={(event) => onSelectedPlanChange(event.target.value as 'free' | 'payg' | 'monthly')}
-                  className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
-                >
-                  <option value="free">Free</option>
-                  <option value="payg">Pay As You Go</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={onSavePlan}
-                  disabled={savingPlan || selectedPlan === selectedUser.rawPlan}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
-                >
-                  {savingPlan ? <Loader2 className="animate-spin" size={16} /> : 'Save plan'}
-                </button>
-              </div>
-              <p className="mt-3 text-xs font-semibold text-slate-500">
-                Paid plans receive a fresh expiry window. PAYG keeps at least one save credit.
-              </p>
-            </section>
+            {canUpdatePlan && (
+              <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                <h3 className="font-montserrat text-lg font-black">Change User Plan</h3>
+                <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+                  <select
+                    value={selectedPlan}
+                    onChange={(event) => onSelectedPlanChange(event.target.value as 'free' | 'payg' | 'monthly')}
+                    className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  >
+                    <option value="free">Free</option>
+                    <option value="payg">Pay As You Go</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={onSavePlan}
+                    disabled={savingPlan || selectedPlan === selectedUser.rawPlan}
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
+                  >
+                    {savingPlan ? <Loader2 className="animate-spin" size={16} /> : 'Save plan'}
+                  </button>
+                </div>
+                <p className="mt-3 text-xs font-semibold text-slate-500">
+                  Paid plans receive a fresh expiry window. PAYG keeps at least one save credit.
+                </p>
+              </section>
+            )}
 
             <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
               <h3 className="font-montserrat text-lg font-black">Recent CVs</h3>
@@ -189,4 +199,8 @@ export default function UserManagementSection({
       )}
     </section>
   );
+}
+
+function roleLabel(role: AdminUserListItem['role']) {
+  return isAdminRole(role) ? ADMIN_ROLE_LABELS[role] : 'User';
 }

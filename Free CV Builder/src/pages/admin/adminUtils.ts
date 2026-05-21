@@ -1,6 +1,7 @@
 import {
   Bell,
   CreditCard,
+  History,
   LayoutDashboard,
   LayoutTemplate,
   MessageSquare,
@@ -21,6 +22,7 @@ export const adminNavItems = [
   { key: 'cms', label: 'CMS', to: '/admin/cms', icon: Palette },
   { key: 'notifications', label: 'Notifications', to: '/admin/notifications', icon: Bell },
   { key: 'support', label: 'Support', to: '/admin/support', icon: MessageSquare },
+  { key: 'audit', label: 'Audit Logs', to: '/admin/audit', icon: History },
   { key: 'settings', label: 'Settings', to: '/admin/settings', icon: Settings },
   { key: 'roles', label: 'Roles', to: '/admin/roles', icon: Shield },
 ];

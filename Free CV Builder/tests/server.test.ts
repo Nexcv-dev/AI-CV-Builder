@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   EMAIL_VERIFICATION_ATTEMPT_LIMIT,
   EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS,
@@ -16,8 +16,10 @@ import {
   sanitizeContextField,
   sanitizeTextForPrompt,
   verifyPayHereMd5Signature,
+  requireAdminPermission,
 } from '../server';
-import { isSuperAdminEmail, roleForEmail } from '../server-models/userRole';
+import { isSuperAdminEmail, roleForEmail, syncUserRoleFromAllowlist } from '../server-models/userRole';
+import { hasAdminPermission } from '../src/adminAccess';
 import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
 import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getUtcDayKey } from '../server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
@@ -109,6 +111,85 @@ describe('Server Utils', () => {
       } else {
         process.env.SUPER_ADMIN_EMAILS = original;
       }
+    });
+
+    it('should not demote DB-managed admin roles when email is not allowlisted', async () => {
+      const original = process.env.SUPER_ADMIN_EMAILS;
+      process.env.SUPER_ADMIN_EMAILS = 'owner@example.com';
+      const user = {
+        email: 'manager@example.com',
+        role: 'admin_manager',
+        isModified: vi.fn(() => false),
+        save: vi.fn(),
+      } as any;
+
+      await syncUserRoleFromAllowlist(user);
+
+      expect(user.role).toBe('admin_manager');
+      expect(user.save).not.toHaveBeenCalled();
+
+      if (original === undefined) {
+        delete process.env.SUPER_ADMIN_EMAILS;
+      } else {
+        process.env.SUPER_ADMIN_EMAILS = original;
+      }
+    });
+
+    it('should promote allowlisted emails to super_admin', async () => {
+      const original = process.env.SUPER_ADMIN_EMAILS;
+      process.env.SUPER_ADMIN_EMAILS = 'owner@example.com';
+      const user = {
+        email: 'owner@example.com',
+        role: 'support_agent',
+        isModified: vi.fn(() => true),
+        save: vi.fn(),
+      } as any;
+
+      await syncUserRoleFromAllowlist(user);
+
+      expect(user.role).toBe('super_admin');
+      expect(user.save).toHaveBeenCalled();
+
+      if (original === undefined) {
+        delete process.env.SUPER_ADMIN_EMAILS;
+      } else {
+        process.env.SUPER_ADMIN_EMAILS = original;
+      }
+    });
+  });
+
+  describe('admin permissions', () => {
+    it('should allow only expected role capabilities', () => {
+      expect(hasAdminPermission({ role: 'super_admin' }, 'users.role.update')).toBe(true);
+      expect(hasAdminPermission({ role: 'admin_manager' }, 'users.read')).toBe(true);
+      expect(hasAdminPermission({ role: 'admin_manager' }, 'users.plan.update')).toBe(true);
+      expect(hasAdminPermission({ role: 'admin_manager' }, 'users.role.update')).toBe(false);
+      expect(hasAdminPermission({ role: 'billing_manager' }, 'billing.write')).toBe(true);
+      expect(hasAdminPermission({ role: 'support_agent' }, 'support.write')).toBe(true);
+      expect(hasAdminPermission({ role: 'analyst' }, 'billing.read')).toBe(false);
+      expect(hasAdminPermission({ role: 'user' }, 'dashboard.read')).toBe(false);
+    });
+
+    it('should enforce permission middleware with 401, 403, and allow outcomes', () => {
+      const middleware = requireAdminPermission('billing.write');
+      const next = vi.fn();
+      const unauthenticatedReq = { isAuthenticated: () => false } as any;
+      const forbiddenReq = { isAuthenticated: () => true, user: { role: 'support_agent' } } as any;
+      const allowedReq = { isAuthenticated: () => true, user: { role: 'billing_manager' } } as any;
+      const res = () => ({ status: vi.fn().mockReturnThis(), json: vi.fn() } as any);
+
+      const unauthenticatedRes = res();
+      middleware(unauthenticatedReq, unauthenticatedRes, next);
+      expect(unauthenticatedRes.status).toHaveBeenCalledWith(401);
+
+      const forbiddenRes = res();
+      middleware(forbiddenReq, forbiddenRes, next);
+      expect(forbiddenRes.status).toHaveBeenCalledWith(403);
+
+      const allowedRes = res();
+      middleware(allowedReq, allowedRes, next);
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(allowedRes.status).not.toHaveBeenCalled();
     });
   });
 

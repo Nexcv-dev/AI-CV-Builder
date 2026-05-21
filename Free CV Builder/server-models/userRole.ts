@@ -1,6 +1,6 @@
 import type { IUser } from './User';
-
-export type UserRole = 'user' | 'super_admin';
+import { isAdminRole, type UserRole } from '../src/adminAccess';
+export type { UserRole } from '../src/adminAccess';
 
 export const DEFAULT_USER_ROLE: UserRole = 'user';
 export const SUPER_ADMIN_ROLE: UserRole = 'super_admin';
@@ -21,9 +21,8 @@ export function roleForEmail(email: unknown): UserRole {
 }
 
 export async function syncUserRoleFromAllowlist(user: IUser) {
-  const nextRole = roleForEmail(user.email);
-  if (user.role !== nextRole) {
-    user.role = nextRole;
+  if (isSuperAdminEmail(user.email) && user.role !== SUPER_ADMIN_ROLE) {
+    user.role = SUPER_ADMIN_ROLE;
   }
   if (typeof user.isModified === 'function' ? user.isModified() : true) {
     await user.save();
@@ -33,4 +32,8 @@ export async function syncUserRoleFromAllowlist(user: IUser) {
 
 export function isSuperAdmin(user: Pick<IUser, 'role'> | null | undefined) {
   return user?.role === SUPER_ADMIN_ROLE;
+}
+
+export function isAdminUserRole(user: Pick<IUser, 'role'> | null | undefined) {
+  return isAdminRole(user?.role);
 }

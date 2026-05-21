@@ -1,7 +1,8 @@
 import React, { forwardRef } from 'react';
 import { Mail, Phone, MapPin, Calendar, IdCard, User, Globe, Sparkles, Heart, type LucideIcon } from 'lucide-react';
 import { CVData } from '../types';
-import { getTemplateSurfaceColorFallback, TemplateName } from '../templates';
+import { getTemplateSurfaceColorFallback, TEMPLATE_KEYS, TemplateName } from '../templates';
+import CustomPreview from './cv-preview/CustomPreview';
 import CreativePreview from './cv-preview/CreativePreview';
 import { ClassicPreview, MinimalistPreview, ModernPreview, ProfessionalPreview, StartupPreview, TimelinePreview } from './cv-preview/templateLayouts';
 import { getContrastColor, getValidUrl, sanitizeRichText } from './cv-preview/previewUtils';
@@ -12,6 +13,10 @@ interface CVPreviewProps {
 }
 
 const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvData, template }, ref) => {
+  if (!TEMPLATE_KEYS.includes(template as any)) {
+    return <CustomPreview ref={ref} cvData={cvData} template={template} />;
+  }
+
   const {
     personalInfo,
     experience,

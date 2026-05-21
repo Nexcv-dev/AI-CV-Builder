@@ -33,6 +33,33 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     });
 
 
+    router.get('/api/templates/:key/html', async (req: Request, res: Response) => {
+        try {
+            const key = validateCustomTemplateKey(req.params.key);
+            if (!key) return res.status(400).json({ error: 'Invalid template key.' });
+
+            const setting = await TemplateSetting.findOne({ key, source: 'custom', status: 'active' }).select('indexS3Key styleS3Key');
+            if (!setting?.indexS3Key) return res.status(404).json({ error: 'Template HTML not found.' });
+
+            const indexHtml = await fetchS3Text(setting.indexS3Key);
+            if (!indexHtml) return res.status(404).json({ error: 'Template HTML not found.' });
+
+            const css = setting.styleS3Key ? await fetchS3Text(setting.styleS3Key) : '';
+            const html = css
+                ? indexHtml.includes('</head>')
+                    ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
+                    : `<style>\n${css}\n</style>\n${indexHtml}`
+                : indexHtml;
+
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.setHeader('Cache-Control', 'public, max-age=300');
+            return res.send(html);
+        } catch (error) {
+            return sendError(res, 500, 'Could not load template HTML.', error);
+        }
+    });
+
+
     router.get('/api/templates/:key/thumbnail', async (req: Request, res: Response) => {
         try {
             const key = validateCustomTemplateKey(req.params.key);

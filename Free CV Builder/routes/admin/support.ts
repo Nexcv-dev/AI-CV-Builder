@@ -1,14 +1,11 @@
-﻿import express, { Router, Request, Response, NextFunction } from 'express';
-import { bindDeps } from '../_shared';
-import type { BillingPlan } from '../../server-models/userPlan';
-import type { TemplateName } from '../../src/templates';
+import { Router, Request, Response } from 'express';
+import { bindDeps, type RouteDeps } from '../_shared';
 
-type RouteDeps = Record<string, any>;
 
 export function registerAdminSupportRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash } = bindDeps(deps);
+    const { SupportTicket, requireAdminPermission, sendError, currentUserId, isValidDocumentId, sanitizeProfileField, escapeRegex, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, adminSupportTicketSummary, recordAdminAuditLog } = bindDeps(deps);
 
-    router.get('/api/admin/support/tickets', requireSuperAdmin, async (req: Request, res: Response) => {
+    router.get('/api/admin/support/tickets', requireAdminPermission('support.read'), async (req: Request, res: Response) => {
         try {
             const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
             const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
@@ -45,7 +42,7 @@ export function registerAdminSupportRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.patch('/api/admin/support/tickets/:id', requireSuperAdmin, async (req: Request, res: Response) => {
+    router.patch('/api/admin/support/tickets/:id', requireAdminPermission('support.write'), async (req: Request, res: Response) => {
         try {
             if (!isValidDocumentId(req.params.id)) {
                 return res.status(400).json({ error: 'Invalid ticket id.' });
@@ -56,10 +53,27 @@ export function registerAdminSupportRoutes(router: Router, deps: RouteDeps) {
             if (SUPPORT_TICKET_PRIORITIES.includes(req.body.priority)) update.priority = req.body.priority;
             if (typeof req.body.adminNotes === 'string') update.adminNotes = sanitizeProfileField(req.body.adminNotes, 2000);
     
+            const existingTicket = await SupportTicket.findById(req.params.id).select('status priority adminNotes email subject');
             const ticket = await SupportTicket.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).populate('userId', 'email displayName');
             if (!ticket) {
                 return res.status(404).json({ error: 'Support ticket not found.' });
             }
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'support.ticket.updated',
+                targetType: 'support_ticket',
+                targetId: ticket._id.toString(),
+                targetLabel: ticket.subject,
+                metadata: {
+                    previousStatus: existingTicket?.status,
+                    nextStatus: ticket.status,
+                    previousPriority: existingTicket?.priority,
+                    nextPriority: ticket.priority,
+                    notesChanged: existingTicket?.adminNotes !== ticket.adminNotes,
+                },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
     
             return res.json({ ticket: adminSupportTicketSummary(ticket) });
         } catch (error) {

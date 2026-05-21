@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, FileText, LayoutDashboard, LogOut, Plus, Shield, User } from 'lucide-react';
 import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification } from '../utils/api';
+import { isAdminUser } from '../adminPermissions';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -52,7 +53,7 @@ export function AppSidebar() {
 
   const visibleName = user?.displayName?.trim() || 'Account';
   const initial = visibleName.charAt(0).toUpperCase() || 'U';
-  const visibleNavItems = user?.role === 'super_admin'
+  const visibleNavItems = isAdminUser(user)
     ? [...navItems, { to: '/admin', label: 'Admin', icon: Shield }]
     : navItems;
 

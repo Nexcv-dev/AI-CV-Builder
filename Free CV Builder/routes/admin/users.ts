@@ -1,14 +1,12 @@
-﻿import express, { Router, Request, Response, NextFunction } from 'express';
-import { bindDeps } from '../_shared';
+import { Router, Request, Response } from 'express';
+import { bindDeps, type RouteDeps } from '../_shared';
 import type { BillingPlan } from '../../server-models/userPlan';
-import type { TemplateName } from '../../src/templates';
 
-type RouteDeps = Record<string, any>;
 
 export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash } = bindDeps(deps);
+    const { User, CVDocument, requireAdminPermission, sendError, currentUserId, isValidDocumentId, createPlanExpiry, documentSummary, escapeRegex, adminUserSummary, recordAdminAuditLog, isUserRole } = bindDeps(deps);
 
-    router.get('/api/admin/users', requireSuperAdmin, async (req: Request, res: Response) => {
+    router.get('/api/admin/users', requireAdminPermission('users.read'), async (req: Request, res: Response) => {
         try {
             const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
             const plan = typeof req.query.plan === 'string' ? req.query.plan.trim() : '';
@@ -24,7 +22,7 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
             if (['free', 'payg', 'monthly'].includes(plan)) {
                 filter.plan = plan;
             }
-            if (['user', 'super_admin'].includes(role)) {
+            if (isUserRole(role)) {
                 filter.role = role;
             }
     
@@ -59,7 +57,7 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.get('/api/admin/users/:id', requireSuperAdmin, async (req: Request, res: Response) => {
+    router.get('/api/admin/users/:id', requireAdminPermission('users.read'), async (req: Request, res: Response) => {
         try {
             if (!isValidDocumentId(req.params.id)) {
                 return res.status(400).json({ error: 'Invalid user id.' });
@@ -94,7 +92,7 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.patch('/api/admin/users/:id/plan', requireSuperAdmin, async (req: Request, res: Response) => {
+    router.patch('/api/admin/users/:id/plan', requireAdminPermission('users.plan.update'), async (req: Request, res: Response) => {
         try {
             if (!isValidDocumentId(req.params.id)) {
                 return res.status(400).json({ error: 'Invalid user id.' });
@@ -110,6 +108,7 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
                 return res.status(404).json({ error: 'User not found.' });
             }
     
+            const previousPlan = user.plan;
             user.plan = plan;
             if (plan === 'free') {
                 user.planStartedAt = undefined;
@@ -123,6 +122,16 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
             }
     
             await user.save();
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'user.plan.updated',
+                targetType: 'user',
+                targetId: user._id.toString(),
+                targetLabel: user.email,
+                metadata: { previousPlan, nextPlan: plan },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
             const cvCount = await CVDocument.countDocuments({ userId: user._id });
             return res.json({ user: adminUserSummary(user, cvCount) });
         } catch (error) {
