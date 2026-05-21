@@ -788,6 +788,7 @@ interface GeneratePdfDocumentOptions {
     html: string;
     templateSource: string;
     useWarmBrowser: boolean;
+    useLambda?: boolean;
 }
 
 const PDF_WARM_BROWSER_IDLE_MS = Number(process.env.PDF_WARM_BROWSER_IDLE_MS || 5 * 60 * 1000);
@@ -982,15 +983,19 @@ export async function generatePdfWithLambda(cvData: any, template: string, water
     }
 }
 
-export async function generatePdfDocument({ cvData, template, watermark, html, templateSource, useWarmBrowser }: GeneratePdfDocumentOptions) {
-    const lambdaPdf = await generatePdfWithLambda(cvData, template, watermark);
-    if (lambdaPdf) {
-        console.log(`Lambda PDF generated. Buffer size: ${lambdaPdf.buffer.length}`);
-        return {
-            buffer: Buffer.from(lambdaPdf.buffer),
-            renderer: 'lambda',
-            templateSource: lambdaPdf.templateSource,
-        };
+export async function generatePdfDocument({ cvData, template, watermark, html, templateSource, useWarmBrowser, useLambda = true }: GeneratePdfDocumentOptions) {
+    if (useLambda) {
+        const lambdaPdf = await generatePdfWithLambda(cvData, template, watermark);
+        if (lambdaPdf) {
+            console.log(`Lambda PDF generated. Buffer size: ${lambdaPdf.buffer.length}`);
+            return {
+                buffer: Buffer.from(lambdaPdf.buffer),
+                renderer: 'lambda',
+                templateSource: lambdaPdf.templateSource,
+            };
+        }
+    } else {
+        console.log(`Skipping PDF Lambda for ${templateSource} template; using rendered HTML.`);
     }
 
     let browser: any = null;

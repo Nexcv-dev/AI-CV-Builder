@@ -1,12 +1,10 @@
-﻿import express, { Router, Request, Response, NextFunction } from 'express';
-import { bindDeps } from '../_shared';
+import { Router, Request, Response } from 'express';
+import { bindDeps, type RouteDeps } from '../_shared';
 import type { BillingPlan } from '../../server-models/userPlan';
-import type { TemplateName } from '../../src/templates';
 
-type RouteDeps = Record<string, any>;
 
 export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash } = bindDeps(deps);
+    const { User, PaymentTransaction, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, recordAdminAuditLog } = bindDeps(deps);
 
     const adminCouponSummary = (coupon: any) => ({
         id: coupon._id?.toString?.() || coupon.id,
@@ -24,7 +22,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.get('/api/admin/billing/config', requireSuperAdmin, async (_req: Request, res: Response) => {
+    router.get('/api/admin/billing/config', requireAdminPermission('billing.read'), async (_req: Request, res: Response) => {
         try {
             const [plans, coupons] = await Promise.all([
                 getPublicBillingPlans(),
@@ -37,7 +35,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.patch('/api/admin/billing/plans/:plan', requireSuperAdmin, async (req: Request, res: Response) => {
+    router.patch('/api/admin/billing/plans/:plan', requireAdminPermission('billing.write'), async (req: Request, res: Response) => {
         try {
             const plan = req.params.plan as BillingPlan;
             if (plan !== 'payg' && plan !== 'monthly') return res.status(400).json({ error: 'Choose a valid paid plan.' });
@@ -46,6 +44,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 return res.status(400).json({ error: 'Enter a valid price in cents.' });
             }
             const label = sanitizeProfileField(req.body.label, 80) || planDisplayName(plan);
+            const previousSetting = await BillingPlanSetting.findOne({ plan });
             const setting = await BillingPlanSetting.findOneAndUpdate(
                 { plan },
                 {
@@ -64,6 +63,20 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 },
                 { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
             );
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'billing.plan.updated',
+                targetType: 'billing_plan',
+                targetId: plan,
+                targetLabel: label,
+                metadata: {
+                    previousAmountCents: previousSetting?.amountCents,
+                    nextAmountCents: setting.amountCents,
+                    promotionActive: setting.promotionActive,
+                },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
             return res.json({ plan: await getPlanPrice(setting.plan) });
         } catch (error) {
             return sendError(res, 500, 'Could not update plan price.', error);
@@ -71,7 +84,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.post('/api/admin/billing/coupons', requireSuperAdmin, async (req: Request, res: Response) => {
+    router.post('/api/admin/billing/coupons', requireAdminPermission('billing.write'), async (req: Request, res: Response) => {
         try {
             const code = normalizeCouponCode(req.body.code);
             if (!code) return res.status(400).json({ error: 'Enter a coupon code.' });
@@ -82,6 +95,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             const appliesTo = Array.isArray(req.body.appliesTo)
                 ? req.body.appliesTo.filter((item: unknown) => item === 'payg' || item === 'monthly')
                 : [];
+            const previousCoupon = await Coupon.findOne({ code });
             const coupon = await Coupon.findOneAndUpdate(
                 { code },
                 {
@@ -98,6 +112,22 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 },
                 { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
             );
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'billing.coupon.saved',
+                targetType: 'coupon',
+                targetId: coupon.code,
+                targetLabel: coupon.label,
+                metadata: {
+                    existed: Boolean(previousCoupon),
+                    active: coupon.active,
+                    discountType: coupon.discountType,
+                    discountValue: coupon.discountValue,
+                    appliesTo: coupon.appliesTo,
+                },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
             return res.status(201).json({ coupon: adminCouponSummary(coupon) });
         } catch (error) {
             return sendError(res, 500, 'Could not save coupon.', error);
@@ -105,11 +135,17 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.patch('/api/admin/billing/coupons/:code', requireSuperAdmin, async (req: Request, res: Response) => {
+    router.patch('/api/admin/billing/coupons/:code', requireAdminPermission('billing.write'), async (req: Request, res: Response) => {
         try {
             const code = normalizeCouponCode(req.params.code);
             const coupon = code ? await Coupon.findOne({ code }) : null;
             if (!coupon) return res.status(404).json({ error: 'Coupon not found.' });
+            const previousCoupon = {
+                active: coupon.active,
+                discountType: coupon.discountType,
+                discountValue: coupon.discountValue,
+                appliesTo: [...(coupon.appliesTo || [])],
+            };
             if (typeof req.body.label === 'string') coupon.label = sanitizeProfileField(req.body.label, 100) || coupon.label;
             if (req.body.discountType === 'fixed' || req.body.discountType === 'percent') coupon.discountType = req.body.discountType;
             if (req.body.discountValue !== undefined) coupon.discountValue = Math.max(1, Math.round(Number(req.body.discountValue)));
@@ -120,6 +156,24 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             coupon.maxRedemptions = req.body.maxRedemptions ? Math.max(1, Math.round(Number(req.body.maxRedemptions))) : undefined;
             coupon.updatedBy = currentUserId(req);
             await coupon.save();
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'billing.coupon.updated',
+                targetType: 'coupon',
+                targetId: coupon.code,
+                targetLabel: coupon.label,
+                metadata: {
+                    previous: previousCoupon,
+                    next: {
+                        active: coupon.active,
+                        discountType: coupon.discountType,
+                        discountValue: coupon.discountValue,
+                        appliesTo: coupon.appliesTo,
+                    },
+                },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
             return res.json({ coupon: adminCouponSummary(coupon) });
         } catch (error) {
             return sendError(res, 500, 'Could not update coupon.', error);
@@ -127,7 +181,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.get('/api/admin/payments', requireSuperAdmin, async (req: Request, res: Response) => {
+    router.get('/api/admin/payments', requireAdminPermission('billing.read'), async (req: Request, res: Response) => {
         try {
             const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
             const plan = typeof req.query.plan === 'string' ? req.query.plan.trim() : '';

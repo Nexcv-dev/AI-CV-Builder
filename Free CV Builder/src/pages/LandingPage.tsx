@@ -1,15 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Crown, Download, FileText, Home, Info, LayoutTemplate, LogIn, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Upload, Wand2, X, Zap } from 'lucide-react';
 import { AuthModal } from '../components/AuthModal';
-import { CV_TEMPLATES } from '../templates';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { apiFetch } from '../utils/api';
 
-const stats = [
+type StatItem = {
+  label: string;
+  value: number;
+  suffix: string;
+  color: string;
+};
+
+const baseStats: StatItem[] = [
   { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
   { label: 'Active Users', value: 4300, suffix: '+', color: 'from-emerald-400 to-emerald-600' },
-  { label: 'Templates Available', value: CV_TEMPLATES.length, suffix: '', color: 'from-violet-400 to-emerald-400' },
 ];
 
 function useCountUp(target: number, duration = 2200, started: boolean) {
@@ -30,7 +35,7 @@ function useCountUp(target: number, duration = 2200, started: boolean) {
   return count;
 }
 
-function StatCard({ label, value, suffix, color }: typeof stats[0]) {
+function StatCard({ label, value, suffix, color }: StatItem) {
   const ref = useRef<HTMLDivElement>(null);
   const [started, setStarted] = useState(false);
   const count = useCountUp(value, 2400, started);
@@ -158,7 +163,24 @@ const faqs = [
 export default function LandingPage() {
   const location = useLocation();
   const { templates } = useTemplateConfig();
-  const featuredTemplates = templates;
+  const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
+  const [centeredTemplateIndex, setCenteredTemplateIndex] = useState(0);
+  const featuredTemplates = useMemo(() => (
+    [...templates].sort((a, b) => {
+      const sourceRank = Number(b.source === 'custom') - Number(a.source === 'custom');
+      if (sourceRank !== 0) return sourceRank;
+      return a.label.localeCompare(b.label);
+    })
+  ), [templates]);
+  const carouselTemplates = useMemo(() => (
+    featuredTemplates.length
+      ? [...featuredTemplates, ...featuredTemplates, ...featuredTemplates]
+      : []
+  ), [featuredTemplates]);
+  const stats = useMemo<StatItem[]>(() => [
+    ...baseStats,
+    { label: 'Templates Available', value: templates.length, suffix: '', color: 'from-violet-400 to-emerald-400' },
+  ], [templates.length]);
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({
     isOpen: false,
     mode: 'signup',
@@ -196,7 +218,22 @@ export default function LandingPage() {
 
   const formatPrice = (cents: number, currency = 'LKR') => `${currency} ${new Intl.NumberFormat().format(Math.round(cents / 100))}`;
 
-  const templateCarouselRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (activeTemplateIndex >= featuredTemplates.length) {
+      setActiveTemplateIndex(Math.max(featuredTemplates.length - 1, 0));
+    }
+  }, [activeTemplateIndex, featuredTemplates.length]);
+  useEffect(() => {
+    if (centeredTemplateIndex >= featuredTemplates.length) {
+      setCenteredTemplateIndex(Math.max(featuredTemplates.length - 1, 0));
+    }
+  }, [centeredTemplateIndex, featuredTemplates.length]);
+
+  const templateScaleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (templateScaleTimerRef.current) clearTimeout(templateScaleTimerRef.current);
+  }, []);
+
   const openAuthModal = (mode: 'login' | 'signup') => {
     setAuthModal({ isOpen: true, mode });
   };
@@ -264,10 +301,19 @@ export default function LandingPage() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
   const shouldCloseBeforeNavigate = (href: string) => href.startsWith('#') || (href === '/' && location.pathname === '/');
   const scrollTemplateCarousel = (direction: 'previous' | 'next') => {
-    const carousel = templateCarouselRef.current;
-    if (!carousel) return;
-    const amount = Math.min(carousel.clientWidth * 0.86, 420);
-    carousel.scrollBy({ left: direction === 'next' ? amount : -amount, behavior: 'smooth' });
+    if (!featuredTemplates.length) return;
+    setActiveTemplateIndex((current) => {
+      const nextIndex = direction === 'next'
+        ? (current + 1) % featuredTemplates.length
+        : (current - 1 + featuredTemplates.length) % featuredTemplates.length;
+
+      if (templateScaleTimerRef.current) clearTimeout(templateScaleTimerRef.current);
+      setCenteredTemplateIndex(-1);
+      templateScaleTimerRef.current = setTimeout(() => {
+        setCenteredTemplateIndex(nextIndex);
+      }, 520);
+      return nextIndex;
+    });
   };
 
   return (
@@ -599,61 +645,97 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="templates" className="bg-slate-900 py-12 text-white sm:py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="landing-scroll-reveal flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-              <div>
-                <p className="text-sm font-black uppercase text-violet-700">Templates</p>
-                <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Pick a look and keep moving</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => scrollTemplateCarousel('previous')}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:bg-white/10 active:scale-95"
-                  aria-label="Previous template"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollTemplateCarousel('next')}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6 text-white transition hover:bg-white/10 active:scale-95"
-                  aria-label="Next template"
-                >
-                  <ChevronRight size={18} />
-                </button>
-                <Link to="/templates" className="inline-flex items-center rounded-xl bg-white px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-slate-100">
-                  View all <ArrowRight size={17} className="ml-1.5" />
-                </Link>
-              </div>
+        <section id="templates" className="relative overflow-hidden bg-slate-50 py-12 text-slate-900 sm:py-18">
+          <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+            <div className="landing-scroll-reveal">
+              <p className="text-sm font-black uppercase tracking-widest text-sky-600">Templates</p>
+              <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Choose your CV template</h2>
+              <p className="mx-auto mt-4 max-w-3xl text-base font-semibold text-slate-500 sm:text-xl">
+                Pick a polished layout, customize it live, and download a clean PDF.
+              </p>
             </div>
+          </div>
+
+          <div
+            className="relative mt-9 overflow-hidden sm:mt-12"
+            style={{
+              '--template-card-width': 'clamp(210px, 20vw, 265px)',
+              '--template-card-gap': '20px',
+            } as React.CSSProperties}
+          >
+            <button
+              type="button"
+              onClick={() => scrollTemplateCarousel('previous')}
+              className="absolute left-3 top-[50%] z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-sky-500 text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600 active:scale-95 sm:left-6 sm:h-12 sm:w-12"
+              aria-label="Previous template"
+            >
+              <ChevronLeft size={21} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollTemplateCarousel('next')}
+              className="absolute right-3 top-[50%] z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-sky-500 text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600 active:scale-95 sm:right-6 sm:h-12 sm:w-12"
+              aria-label="Next template"
+            >
+              <ChevronRight size={21} />
+            </button>
 
             <div
-              ref={templateCarouselRef}
-              className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 sm:mt-10 md:gap-5"
-              style={{ scrollbarWidth: 'none' }}
+              className="flex pb-12 pt-5 transition-transform duration-500 ease-out"
+              style={{
+                gap: 'var(--template-card-gap)',
+                transform: `translateX(calc(50vw - (var(--template-card-width) / 2) - ${activeTemplateIndex + featuredTemplates.length} * (var(--template-card-width) + var(--template-card-gap))))`,
+              }}
+              onWheel={(event) => event.preventDefault()}
+              onTouchMove={(event) => event.preventDefault()}
             >
-              {featuredTemplates.map((template, index) => (
+              {carouselTemplates.map((template, index) => {
+                const originalIndex = featuredTemplates.length ? index % featuredTemplates.length : index;
+                const centerIndex = centeredTemplateIndex >= 0
+                  ? centeredTemplateIndex + featuredTemplates.length
+                  : -1;
+                return (
                 <Link
                   to={`/builder?import=1&template=${template.key}`}
-                  key={template.key}
-                  className="landing-scroll-reveal landing-template-card group min-w-[76%] snap-start overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/20 sm:min-w-[42%] lg:min-w-[28%] xl:min-w-[23%]"
-                  style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}
+                  key={`${template.key}-${index}`}
+                  className={`group grid shrink-0 gap-3 text-center transition-transform duration-500 ${
+                    index === centerIndex
+                      ? 'z-10 scale-105'
+                      : 'scale-100'
+                  }`}
+                  style={{ width: 'var(--template-card-width)' }}
                 >
-                  <div className="aspect-4/5 overflow-hidden bg-slate-800">
+                  <div>
+                    <h3 className="inline-flex min-h-8 items-center justify-center gap-2 font-montserrat text-lg font-black text-slate-800 sm:text-xl">
+                      <span>{template.label}</span>
+                      {template.access === 'paid' && <Crown size={17} className="text-amber-400" aria-label="Premium template" />}
+                    </h3>
+                  </div>
+                  <div className={`relative mx-auto aspect-[210/297] w-full overflow-hidden border bg-white ring-1 transition-shadow duration-300 ${
+                    originalIndex === centeredTemplateIndex && index === centerIndex
+                      ? 'border-sky-200 shadow-2xl shadow-sky-200/70 ring-sky-200'
+                      : 'border-slate-200 shadow-lg shadow-slate-200/60 ring-slate-900/5'
+                  }`}>
                     <img
                       src={template.thumbnail}
                       alt={`${template.label} CV template preview`}
-                      className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.035]"
+                      className="h-full w-full object-cover object-top"
                     />
-                  </div>
-                  <div className="flex items-center justify-between px-5 py-4">
-                    <span className="font-montserrat font-black text-white">{template.label}</span>
-                    <ArrowRight size={18} className="text-violet-300 transition-transform group-hover:translate-x-1" />
+                    <div className="absolute inset-0 grid place-items-center">
+                      <span className="rounded-md bg-sky-500 px-4 py-2.5 text-xs font-black text-white opacity-0 shadow-lg shadow-sky-500/25 group-hover:opacity-100">
+                        Use this template
+                      </span>
+                    </div>
                   </div>
                 </Link>
-              ))}
+                );
+              })}
+            </div>
+
+            <div className="text-center">
+              <Link to="/templates" className="inline-flex items-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-300/40 transition hover:bg-slate-800">
+                View all templates <ArrowRight size={17} className="ml-1.5" />
+              </Link>
             </div>
           </div>
         </section>

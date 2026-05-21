@@ -1,14 +1,11 @@
-﻿import express, { Router, Request, Response, NextFunction } from 'express';
-import { bindDeps } from '../_shared';
-import type { BillingPlan } from '../../server-models/userPlan';
-import type { TemplateName } from '../../src/templates';
+import { Router, Request, Response } from 'express';
+import { bindDeps, type RouteDeps } from '../_shared';
 
-type RouteDeps = Record<string, any>;
 
 export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash } = bindDeps(deps);
+    const { CVDocument, TemplateSetting, CV_TEMPLATES, requireAdminPermission, sendError, adminTemplateJsonParser, clearS3TemplateCache, fetchS3Text, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, currentUserId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, sanitizeProfileField, recordAdminAuditLog } = bindDeps(deps);
 
-    router.get('/api/admin/templates', requireSuperAdmin, async (_req: Request, res: Response) => {
+    router.get('/api/admin/templates', requireAdminPermission('templates.read'), async (_req: Request, res: Response) => {
         try {
             const [settings, usage] = await Promise.all([
                 TemplateSetting.find(),
@@ -42,7 +39,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.post('/api/admin/templates', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    router.post('/api/admin/templates', requireAdminPermission('templates.write'), adminTemplateJsonParser, async (req: Request, res: Response) => {
         try {
             const key = validateCustomTemplateKey(req.body.key);
             if (!key) return res.status(400).json({ error: 'Use a lowercase slug key like creative-2026.' });
@@ -99,6 +96,16 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
             });
 
             clearS3TemplateCache(key);
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'template.created',
+                targetType: 'template',
+                targetId: key,
+                targetLabel: label,
+                metadata: { category, access, status: setting.status, source: 'custom' },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
             return res.status(201).json({ template: customTemplateSummary(setting, 0) });
         } catch (error) {
             return sendError(res, 500, 'Could not create template.', error);
@@ -106,11 +113,12 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.patch('/api/admin/templates/:key', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    router.patch('/api/admin/templates/:key', requireAdminPermission('templates.write'), adminTemplateJsonParser, async (req: Request, res: Response) => {
         try {
             const key = req.params.key;
             const template = CV_TEMPLATES.find((item) => item.key === key);
             const existingCustom = !template ? await TemplateSetting.findOne({ key, source: 'custom' }) : null;
+            const previousTemplate = template ? await TemplateSetting.findOne({ key }) : existingCustom;
             if (!template && !existingCustom) {
                 return res.status(404).json({ error: 'Template not found.' });
             }
@@ -173,6 +181,24 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
             const usageCount = await CVDocument.countDocuments({ template: key });
 
             clearS3TemplateCache(key);
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'template.updated',
+                targetType: 'template',
+                targetId: key,
+                targetLabel: label,
+                metadata: {
+                    previous: previousTemplate ? {
+                        label: previousTemplate.label,
+                        category: previousTemplate.category,
+                        access: previousTemplate.access,
+                        status: previousTemplate.status,
+                    } : null,
+                    next: { label, category, access, status: setting.status, source: setting.source },
+                },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
             return res.json({ template: template ? adminTemplateSummary(template, setting, usageCount) : customTemplateSummary(setting, usageCount) });
         } catch (error) {
             return sendError(res, 500, 'Could not update template.', error);
@@ -180,7 +206,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.post('/api/admin/templates/:key/publish', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    router.post('/api/admin/templates/:key/publish', requireAdminPermission('templates.publish'), adminTemplateJsonParser, async (req: Request, res: Response) => {
         try {
             const key = validateCustomTemplateKey(req.params.key);
             const setting = key ? await TemplateSetting.findOne({ key, source: 'custom' }) : null;
@@ -195,6 +221,16 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
             await setting.save();
             clearS3TemplateCache(key);
             const usageCount = await CVDocument.countDocuments({ template: key });
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'template.published',
+                targetType: 'template',
+                targetId: key,
+                targetLabel: setting.label || key,
+                metadata: { status: setting.status },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
             return res.json({ template: customTemplateSummary(setting, usageCount) });
         } catch (error) {
             return sendError(res, 500, 'Could not publish template.', error);
@@ -202,7 +238,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.post('/api/admin/templates/:key/archive', requireSuperAdmin, adminTemplateJsonParser, async (req: Request, res: Response) => {
+    router.post('/api/admin/templates/:key/archive', requireAdminPermission('templates.publish'), adminTemplateJsonParser, async (req: Request, res: Response) => {
         try {
             const key = validateCustomTemplateKey(req.params.key);
             const setting = key ? await TemplateSetting.findOne({ key, source: 'custom' }) : null;
@@ -212,6 +248,16 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
             await setting.save();
             clearS3TemplateCache(key);
             const usageCount = await CVDocument.countDocuments({ template: key });
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'template.archived',
+                targetType: 'template',
+                targetId: key,
+                targetLabel: setting.label || key,
+                metadata: { status: setting.status },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
             return res.json({ template: customTemplateSummary(setting, usageCount) });
         } catch (error) {
             return sendError(res, 500, 'Could not archive template.', error);

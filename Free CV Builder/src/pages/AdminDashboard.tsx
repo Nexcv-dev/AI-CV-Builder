@@ -11,16 +11,19 @@ import {
   UserCog,
   Users,
 } from 'lucide-react';
-import { ADMIN_ROLE_ACCESS, ADMIN_ROLE_LABELS } from '../adminPermissions';
+import { ADMIN_ROLE_LABELS, getRoleAccess, hasAdminPermission, isAdminRole, type UserRole } from '../adminPermissions';
 import { apiFetch, AuthUser, getCurrentUser } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 
 import type {
   AdminBillingPlan,
   AdminBillingPlanDraft,
+  AdminAuditLogItem,
   AdminCoupon,
   AdminPaymentItem,
   AdminPaymentSummary,
+  AdminRoleConfig,
+  AdminSettingsSummary,
   AdminSummary,
   AdminSupportTicket,
   AdminTemplateItem,
@@ -35,6 +38,9 @@ import TemplateManagementSection from './admin/TemplateManagementSection';
 import BillingManagementSection from './admin/BillingManagementSection';
 import PromotionManagementSection from './admin/PromotionManagementSection';
 import SupportManagementSection from './admin/SupportManagementSection';
+import RoleManagementSection from './admin/RoleManagementSection';
+import SettingsManagementSection from './admin/SettingsManagementSection';
+import AuditLogSection from './admin/AuditLogSection';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -57,6 +63,9 @@ export default function AdminDashboard() {
   const isBillingPage = location.pathname.startsWith('/admin/billing');
   const isPromotionsPage = location.pathname.startsWith('/admin/promotions');
   const isSupportPage = location.pathname.startsWith('/admin/support');
+  const isRolesPage = location.pathname.startsWith('/admin/roles');
+  const isSettingsPage = location.pathname.startsWith('/admin/settings');
+  const isAuditPage = location.pathname.startsWith('/admin/audit');
   const [templates, setTemplates] = useState<AdminTemplateItem[]>([]);
   const [templateCategories, setTemplateCategories] = useState<string[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
@@ -65,6 +74,7 @@ export default function AdminDashboard() {
   const [templateAccessFilter, setTemplateAccessFilter] = useState('all');
   const [selectedTemplate, setSelectedTemplate] = useState<AdminTemplateItem | null>(null);
   const [templateForm, setTemplateForm] = useState({ label: '', category: 'Modern', access: 'paid' as 'free' | 'paid', thumbnail: '', surfaceColorRole: 'none' as 'none' | 'sidebar' | 'header', surfaceColorLabel: '' });
+  const [templateFileForm, setTemplateFileForm] = useState({ indexHtml: '', styleCss: '', thumbnailDataUrl: '' });
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [createTemplateOpen, setCreateTemplateOpen] = useState(false);
   const [customTemplateForm, setCustomTemplateForm] = useState(emptyCustomTemplateForm);
@@ -89,6 +99,19 @@ export default function AdminDashboard() {
   const [selectedTicket, setSelectedTicket] = useState<AdminSupportTicket | null>(null);
   const [ticketForm, setTicketForm] = useState({ status: 'open' as AdminSupportTicket['status'], priority: 'normal' as AdminSupportTicket['priority'], adminNotes: '' });
   const [savingTicket, setSavingTicket] = useState(false);
+  const [roles, setRoles] = useState<AdminRoleConfig[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUserListItem[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [savingRoleUserId, setSavingRoleUserId] = useState<string | null>(null);
+  const [settings, setSettings] = useState<AdminSettingsSummary | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLogItem[]>([]);
+  const [auditActions, setAuditActions] = useState<string[]>([]);
+  const [auditTargetTypes, setAuditTargetTypes] = useState<string[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditActionFilter, setAuditActionFilter] = useState('all');
+  const [auditTargetTypeFilter, setAuditTargetTypeFilter] = useState('all');
 
   useEffect(() => {
     clearPageScrollLock();
@@ -238,12 +261,91 @@ export default function AdminDashboard() {
     };
   }, [isSupportPage, supportSearch, supportStatusFilter, supportTypeFilter]);
 
+  useEffect(() => {
+    if (!isRolesPage) return;
+    let ignore = false;
+    setRolesLoading(true);
+
+    Promise.all([
+      apiFetch<{ roles: AdminRoleConfig[]; admins: AdminUserListItem[] }>('/api/admin/roles'),
+      apiFetch<{ users: AdminUserListItem[] }>('/api/admin/users?limit=20'),
+    ])
+      .then(([roleData, userData]) => {
+        if (ignore) return;
+        setRoles(roleData.roles);
+        setAdminUsers(roleData.admins);
+        setUsers(userData.users);
+      })
+      .catch((error) => {
+        if (!ignore) toast.error(error instanceof Error ? error.message : 'Could not load roles.');
+      })
+      .finally(() => {
+        if (!ignore) setRolesLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [isRolesPage]);
+
+  useEffect(() => {
+    if (!isSettingsPage) return;
+    let ignore = false;
+    setSettingsLoading(true);
+
+    apiFetch<AdminSettingsSummary>('/api/admin/settings')
+      .then((data) => {
+        if (!ignore) setSettings(data);
+      })
+      .catch((error) => {
+        if (!ignore) toast.error(error instanceof Error ? error.message : 'Could not load settings.');
+      })
+      .finally(() => {
+        if (!ignore) setSettingsLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [isSettingsPage]);
+
+  useEffect(() => {
+    if (!isAuditPage) return;
+    let ignore = false;
+    const timer = window.setTimeout(async () => {
+      setAuditLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (auditSearch.trim()) params.set('search', auditSearch.trim());
+        if (auditActionFilter !== 'all') params.set('action', auditActionFilter);
+        if (auditTargetTypeFilter !== 'all') params.set('targetType', auditTargetTypeFilter);
+        const data = await apiFetch<{ logs: AdminAuditLogItem[]; filters: { actions: string[]; targetTypes: string[] } }>(`/api/admin/audit-logs?${params.toString()}`);
+        if (ignore) return;
+        setAuditLogs(data.logs);
+        setAuditActions(data.filters.actions);
+        setAuditTargetTypes(data.filters.targetTypes);
+      } catch (error) {
+        if (!ignore) toast.error(error instanceof Error ? error.message : 'Could not load audit logs.');
+      } finally {
+        if (!ignore) setAuditLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [auditActionFilter, auditSearch, auditTargetTypeFilter, isAuditPage]);
+
   const signOut = async () => {
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
     navigate('/');
   };
 
-  const navAccess = ADMIN_ROLE_ACCESS.super_admin;
+  const navAccess = getRoleAccess(user?.role);
+  const userRoleLabel = isAdminRole(user?.role) ? ADMIN_ROLE_LABELS[user.role] : 'Admin';
+  const canUpdateUserPlans = hasAdminPermission(user, 'users.plan.update');
+  const canUpdateRoles = hasAdminPermission(user, 'users.role.update');
   const activeNav = adminNavItems.find((item) => item.to === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(item.to)) || adminNavItems[0];
   const maxChartValue = useMemo(() => {
     const values = [
@@ -295,6 +397,7 @@ export default function AdminDashboard() {
       surfaceColorRole: template.surfaceColorRole || 'none',
       surfaceColorLabel: template.surfaceColorLabel || '',
     });
+    setTemplateFileForm({ indexHtml: '', styleCss: '', thumbnailDataUrl: '' });
   };
 
   const saveSelectedTemplate = async () => {
@@ -303,7 +406,12 @@ export default function AdminDashboard() {
     try {
       const data = await apiFetch<{ template: AdminTemplateItem }>(`/api/admin/templates/${selectedTemplate.key}`, {
         method: 'PATCH',
-        body: JSON.stringify(templateForm),
+        body: JSON.stringify({
+          ...templateForm,
+          ...(templateFileForm.indexHtml ? { indexHtml: templateFileForm.indexHtml } : {}),
+          ...(templateFileForm.styleCss ? { styleCss: templateFileForm.styleCss } : {}),
+          ...(templateFileForm.thumbnailDataUrl ? { thumbnailDataUrl: templateFileForm.thumbnailDataUrl } : {}),
+        }),
       });
       setTemplates((items) => items.map((item) => item.key === data.template.key ? data.template : item));
       setSelectedTemplate(data.template);
@@ -315,7 +423,8 @@ export default function AdminDashboard() {
         surfaceColorRole: data.template.surfaceColorRole || 'none',
         surfaceColorLabel: data.template.surfaceColorLabel || '',
       });
-      toast.success('Template metadata updated.');
+      setTemplateFileForm({ indexHtml: '', styleCss: '', thumbnailDataUrl: '' });
+      toast.success(templateFileForm.indexHtml || templateFileForm.styleCss || templateFileForm.thumbnailDataUrl ? 'Template files updated.' : 'Template metadata updated.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not update template.');
     } finally {
@@ -414,6 +523,36 @@ export default function AdminDashboard() {
     }
   };
 
+  const setSelectedTemplateFile = async (file: File | undefined, field: 'indexHtml' | 'styleCss' | 'thumbnailDataUrl') => {
+    if (!file) return;
+    try {
+      const value = await readTemplateFile(file, field === 'thumbnailDataUrl' ? 'dataUrl' : 'text');
+      setTemplateFileForm((current) => ({ ...current, [field]: value }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not read file.');
+    }
+  };
+
+  const changeUserRole = async (userId: string, role: UserRole) => {
+    setSavingRoleUserId(userId);
+    try {
+      const data = await apiFetch<{ user: AdminUserListItem }>(`/api/admin/users/${userId}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role }),
+      });
+      setUsers((items) => items.map((item) => item.id === data.user.id ? { ...item, ...data.user } : item));
+      setAdminUsers((items) => {
+        const withoutUser = items.filter((item) => item.id !== data.user.id);
+        return isAdminRole(data.user.role) ? [data.user, ...withoutUser] : withoutUser;
+      });
+      toast.success(role === 'user' ? 'Admin access removed.' : 'User role updated.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not update role.');
+    } finally {
+      setSavingRoleUserId(null);
+    }
+  };
+
   const updateBillingPlanPrice = async (plan: AdminBillingPlan, draft: AdminBillingPlanDraft) => {
     setSavingBilling(true);
     try {
@@ -481,7 +620,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="lg:flex lg:h-dvh lg:overflow-hidden">
-        <aside className="hidden h-dvh w-72 shrink-0 border-r border-white/10 bg-slate-950 px-4 py-5 lg:flex lg:flex-col">
+        <aside className="hidden h-dvh w-72 shrink-0 overflow-hidden border-r border-white/10 bg-slate-950 px-4 py-5 lg:flex lg:flex-col">
           <Link to="/admin" className="flex items-center gap-3 px-2">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/20">
               <img src="/brand/faviconblack.png" alt="" className="h-9 w-9 rounded-xl" />
@@ -489,7 +628,7 @@ export default function AdminDashboard() {
             <span className="font-montserrat text-2xl font-black">NexCV Admin</span>
           </Link>
 
-          <nav className="mt-7 grid gap-1">
+          <nav className="scrollbar-hide mt-7 grid min-h-0 flex-1 gap-1 overflow-y-auto pr-1">
             {adminNavItems.filter((item) => navAccess.includes(item.key)).map((item) => {
               const Icon = item.icon;
               const active = activeNav.key === item.key;
@@ -508,7 +647,7 @@ export default function AdminDashboard() {
             })}
           </nav>
 
-          <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+          <div className="mt-4 shrink-0 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
             <p className="truncate text-sm font-extrabold text-slate-100">{user?.displayName || 'Admin'}</p>
             <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">{user?.email || 'Signed in'}</p>
             <button
@@ -546,10 +685,10 @@ export default function AdminDashboard() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-black uppercase text-violet-300">
                 <Shield size={14} />
-                {ADMIN_ROLE_LABELS.super_admin}
+                {userRoleLabel}
               </div>
               <h1 className="mt-2 font-montserrat text-2xl font-black leading-tight sm:text-4xl">
-                {isUsersPage ? 'User Management' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isPromotionsPage ? 'Promotions & Pricing' : isSupportPage ? 'Support Tickets' : 'Admin Dashboard'}
+                {isUsersPage ? 'User Management' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isPromotionsPage ? 'Promotions & Pricing' : isSupportPage ? 'Support Tickets' : isRolesPage ? 'Roles & Access' : isSettingsPage ? 'Admin Settings' : isAuditPage ? 'Audit Logs' : 'Admin Dashboard'}
               </h1>
               <p className="mt-2 text-sm font-semibold text-slate-400">
                 {isUsersPage
@@ -561,11 +700,17 @@ export default function AdminDashboard() {
                       : isPromotionsPage
                         ? 'Manage plan pricing, promotions, and discount coupons.'
                         : isSupportPage
-                          ? 'Track complaints, bugs, feature requests, and payment issues.'
-                          : 'Operational overview and module foundation.'}
+                        ? 'Track complaints, bugs, feature requests, and payment issues.'
+                        : isRolesPage
+                          ? 'Manage super admin access and review admin permissions.'
+                          : isSettingsPage
+                            ? 'Review runtime, security, and service configuration status.'
+                            : isAuditPage
+                              ? 'Track sensitive admin changes across users, billing, templates, and support.'
+                              : 'Operational overview and module foundation.'}
               </p>
             </div>
-            {!isPromotionsPage && (
+            {!isPromotionsPage && !isRolesPage && !isSettingsPage && !isAuditPage && (
               <div className="relative w-full sm:max-w-xs">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -591,6 +736,7 @@ export default function AdminDashboard() {
               selectedUserDocuments={selectedUserDocuments}
               selectedPlan={selectedPlan}
               savingPlan={savingPlan}
+              canUpdatePlan={canUpdateUserPlans}
               onSelectedPlanChange={setSelectedPlan}
               onSavePlan={updateSelectedUserPlan}
               onCloseDetail={() => setSelectedUser(null)}
@@ -605,6 +751,7 @@ export default function AdminDashboard() {
               accessFilter={templateAccessFilter}
               selectedTemplate={selectedTemplate}
               templateForm={templateForm}
+              templateFileForm={templateFileForm}
               savingTemplate={savingTemplate}
               createTemplateOpen={createTemplateOpen}
               customTemplateForm={customTemplateForm}
@@ -615,6 +762,8 @@ export default function AdminDashboard() {
               onOpenTemplate={openTemplateDetail}
               onCloseDetail={() => setSelectedTemplate(null)}
               onFormChange={setTemplateForm}
+              onTemplateFileFormChange={setTemplateFileForm}
+              onSelectedTemplateFileChange={setSelectedTemplateFile}
               onSaveTemplate={saveSelectedTemplate}
               onOpenCreate={() => setCreateTemplateOpen(true)}
               onCloseCreate={() => setCreateTemplateOpen(false)}
@@ -667,6 +816,34 @@ export default function AdminDashboard() {
               onCloseDetail={() => setSelectedTicket(null)}
               onFormChange={setTicketForm}
               onSaveTicket={saveSelectedTicket}
+            />
+          ) : isRolesPage ? (
+            <RoleManagementSection
+              roles={roles}
+              admins={adminUsers}
+              users={users}
+              loading={rolesLoading}
+              savingUserId={savingRoleUserId}
+              canUpdateRoles={canUpdateRoles}
+              onChangeRole={changeUserRole}
+            />
+          ) : isSettingsPage ? (
+            <SettingsManagementSection
+              settings={settings}
+              loading={settingsLoading}
+            />
+          ) : isAuditPage ? (
+            <AuditLogSection
+              logs={auditLogs}
+              loading={auditLoading}
+              search={auditSearch}
+              actionFilter={auditActionFilter}
+              targetTypeFilter={auditTargetTypeFilter}
+              actions={auditActions}
+              targetTypes={auditTargetTypes}
+              onSearchChange={setAuditSearch}
+              onActionFilterChange={setAuditActionFilter}
+              onTargetTypeFilterChange={setAuditTargetTypeFilter}
             />
           ) : isLoading ? (
             <div className="mt-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-5 text-sm font-bold text-slate-400">

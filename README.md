@@ -44,6 +44,11 @@ Currently in version: `1.1.0` (Stable Production Release)
 - **Robust Quota Management:** Quota models (`CvCreationQuotaModel` and `DownloadQuotaModel`) enforce strict resume creation and export limits on free accounts, seamlessly unlocking unlimited premium operations upon verified subscriptions.
 - **Production-Grade Security:** Enforced via restrictive CORS, secure rate limiters, client-side & server-side JSDOM/DOMPurify XSS filters, and secure PBKDF2 cryptographically salted password hashing.
 
+### 🛡️ Admin & Platform Management
+- **Comprehensive Admin Dashboard:** Dedicated admin portal (`AdminDashboard.tsx`) broken down into modular management sections (Users, Billing, Support, Templates).
+- **Role-Based Access Control:** Secure routes and UI components protected by dedicated admin permissions and middleware.
+- **Optimized Modular Architecture:** Backend logic elegantly separated into `routes`, `services`, and `middlewares` to ensure maintainability and high scalability.
+
 ---
 
 ## 📁 Project Structure
@@ -95,6 +100,7 @@ AI-CV-Builder/
     │   ├── App.tsx           # Router, global state & layout
     │   ├── main.tsx          # Client entry point
     │   ├── index.css         # Styling system, Tailwind & utility layer
+    │   ├── adminPermissions.ts # Role-based access control configurations
     │   ├── templates.ts      # Template definitions & color utilities
     │   ├── htmlBuilder.ts    # Server-side HTML builder for Puppeteer PDF
     │   ├── types.ts          # Core TypeScript typings
@@ -114,6 +120,11 @@ AI-CV-Builder/
     │   │   │   └── ... (awards, courses, projects, references, design)
     │   │   └── ... (ImageCropper, AuthModal, AccountMenu, BrandLogo)
     │   ├── pages/            # Core App Pages
+    │   │   ├── admin/              # Separated Admin Dashboard Modules
+    │   │   │   ├── AdminSharedComponents.tsx
+    │   │   │   ├── UserManagementSection.tsx
+    │   │   │   └── BillingManagementSection.tsx
+    │   │   ├── AdminDashboard.tsx  # Main Admin container
     │   │   ├── LandingPage.tsx     # Marketing landing page
     │   │   ├── Home.tsx            # Builder workspace & template selector
     │   │   ├── Dashboard.tsx       # Cloud document management panel
@@ -125,6 +136,21 @@ AI-CV-Builder/
     │   │   └── ... (AboutUs, ContactUs, PrivacyPolicy, TermsAndConditions)
     │   └── utils/            # Shared helper functions & API handlers
     │       └── api.ts              # Server fetch requests & token handling
+    ├── routes/               # Backend Routes (Express Controllers)
+    │   ├── admin.ts
+    │   ├── auth.ts
+    │   ├── cv.ts
+    │   ├── payment.ts
+    │   └── public.ts
+    ├── services/             # Backend Services (Business Logic)
+    │   ├── emailService.ts
+    │   ├── pdfService.ts
+    │   └── s3Service.ts
+    ├── middlewares/          # Backend Middleware (Security, Auth, Rate Limits)
+    │   ├── passportAuth.ts
+    │   ├── rateLimiters.ts
+    │   ├── security.ts
+    │   └── session.ts
     ├── public/               # Static images & template graphics
     └── tests/                # Server and Integration Tests
         ├── server.test.ts          # Express API route verification tests

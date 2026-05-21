@@ -126,7 +126,51 @@ const esc = (str: string) => (
 );
 
 export function renderCvTemplateString(templateHtml: string, cvData: any, options: { watermark?: boolean } = {}) {
-    const root = { ...cvData, watermark: Boolean(options.watermark) };
+    const headline = cvData?.experience?.[0]?.position || cvData?.education?.[0]?.degree || '';
+    const location = cvData?.personalInfo?.address || '';
+    const profileImageUrl = cvData?.profileImage || '';
+    const personalInfo = cvData?.personalInfo || {};
+    const hasSummary = Boolean(personalInfo.summary);
+    const hasPersonalDetails = Boolean(
+        personalInfo.dob ||
+        personalInfo.nic ||
+        personalInfo.gender ||
+        personalInfo.nationality ||
+        personalInfo.religion ||
+        personalInfo.maritalStatus
+    );
+    const hasContact = Boolean(personalInfo.email || personalInfo.phone || location);
+    const hasExperience = Boolean(cvData?.experience?.length);
+    const hasEducation = Boolean(cvData?.education?.length);
+    const hasSkills = Boolean(cvData?.skills?.length);
+    const hasCourses = Boolean(cvData?.courses?.length);
+    const hasProjects = Boolean(cvData?.projects?.length);
+    const hasAwards = Boolean(cvData?.awards?.length);
+    const hasLanguages = Boolean(cvData?.languages?.length);
+    const hasReferences = Boolean(cvData?.references?.length);
+    const root = {
+        ...cvData,
+        headline,
+        location,
+        profileImageUrl,
+        hasHeader: Boolean(personalInfo.fullName || headline || hasSummary),
+        hasSummary,
+        hasContact,
+        hasProfileCard: Boolean(profileImageUrl || hasContact || hasPersonalDetails),
+        hasPersonalDetails,
+        hasExperience,
+        hasEducation,
+        hasSkills,
+        hasCourses,
+        hasProjects,
+        hasAwards,
+        hasLanguages,
+        hasReferences,
+        hasMainColumn: Boolean(hasExperience || hasEducation || hasCourses || hasAwards),
+        hasSideColumn: Boolean(hasSkills || hasProjects || hasLanguages || hasReferences || hasPersonalDetails),
+        hasBody: Boolean(hasExperience || hasEducation || hasSkills || hasCourses || hasProjects || hasAwards || hasLanguages || hasReferences || hasPersonalDetails),
+        watermark: Boolean(options.watermark),
+    };
 
     const renderBlock = (source: string, context: any): string => {
         let html = source.replace(/{{#\s*([\w.]+)\s*}}([\s\S]*?){{\/\s*\1\s*}}/g, (_match, pathValue, block) => {

@@ -19,6 +19,7 @@ export default function TemplateManagementSection({
   accessFilter,
   selectedTemplate,
   templateForm,
+  templateFileForm,
   savingTemplate,
   createTemplateOpen,
   customTemplateForm,
@@ -29,6 +30,8 @@ export default function TemplateManagementSection({
   onOpenTemplate,
   onCloseDetail,
   onFormChange,
+  onTemplateFileFormChange,
+  onSelectedTemplateFileChange,
   onSaveTemplate,
   onOpenCreate,
   onCloseCreate,
@@ -45,6 +48,7 @@ export default function TemplateManagementSection({
   accessFilter: string;
   selectedTemplate: AdminTemplateItem | null;
   templateForm: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string };
+  templateFileForm: { indexHtml: string; styleCss: string; thumbnailDataUrl: string };
   savingTemplate: boolean;
   createTemplateOpen: boolean;
   customTemplateForm: typeof emptyCustomTemplateForm;
@@ -55,6 +59,8 @@ export default function TemplateManagementSection({
   onOpenTemplate: (template: AdminTemplateItem) => void;
   onCloseDetail: () => void;
   onFormChange: (value: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string }) => void;
+  onTemplateFileFormChange: (value: { indexHtml: string; styleCss: string; thumbnailDataUrl: string }) => void;
+  onSelectedTemplateFileChange: (file: File | undefined, field: 'indexHtml' | 'styleCss' | 'thumbnailDataUrl') => void;
   onSaveTemplate: () => void;
   onOpenCreate: () => void;
   onCloseCreate: () => void;
@@ -384,6 +390,90 @@ export default function TemplateManagementSection({
                 )}
               </div>
             </section>
+
+            {selectedTemplate.source === 'custom' && (
+              <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                <h3 className="font-montserrat text-lg font-black">Replace template files</h3>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Upload only the files you want to overwrite for this key.
+                </p>
+
+                <div className="mt-4 grid gap-3">
+                  <label className="grid cursor-pointer gap-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 transition hover:border-violet-300/50 hover:bg-white/[0.06]">
+                    <span className="text-sm font-black text-slate-100">index.html</span>
+                    <span className={`text-xs font-bold ${templateFileForm.indexHtml ? 'text-emerald-300' : 'text-slate-500'}`}>
+                      {templateFileForm.indexHtml ? 'HTML file selected' : 'Choose the replacement HTML file'}
+                    </span>
+                    <input
+                      type="file"
+                      accept=".html,text/html"
+                      onChange={(event) => void onSelectedTemplateFileChange(event.target.files?.[0], 'indexHtml')}
+                      className="sr-only"
+                    />
+                  </label>
+                  <label className="grid cursor-pointer gap-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 transition hover:border-violet-300/50 hover:bg-white/[0.06]">
+                    <span className="text-sm font-black text-slate-100">style.css</span>
+                    <span className={`text-xs font-bold ${templateFileForm.styleCss ? 'text-emerald-300' : 'text-slate-500'}`}>
+                      {templateFileForm.styleCss ? 'CSS file selected' : 'Choose the replacement CSS file'}
+                    </span>
+                    <input
+                      type="file"
+                      accept=".css,text/css"
+                      onChange={(event) => void onSelectedTemplateFileChange(event.target.files?.[0], 'styleCss')}
+                      className="sr-only"
+                    />
+                  </label>
+                  <label className="grid cursor-pointer gap-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 transition hover:border-violet-300/50 hover:bg-white/[0.06]">
+                    <span className="text-sm font-black text-slate-100">Thumbnail</span>
+                    <span className={`text-xs font-bold ${templateFileForm.thumbnailDataUrl ? 'text-emerald-300' : 'text-slate-500'}`}>
+                      {templateFileForm.thumbnailDataUrl ? 'Thumbnail selected' : 'Choose a PNG, JPG, WebP, or SVG thumbnail'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      onChange={(event) => void onSelectedTemplateFileChange(event.target.files?.[0], 'thumbnailDataUrl')}
+                      className="sr-only"
+                    />
+                  </label>
+                </div>
+
+                {(templateFileForm.indexHtml || templateFileForm.styleCss) && (
+                  <div className="mt-4 grid gap-4">
+                    {templateFileForm.indexHtml && (
+                      <label className="grid gap-2 text-sm font-black text-slate-200">
+                        HTML replacement
+                        <textarea
+                          value={templateFileForm.indexHtml}
+                          onChange={(event) => onTemplateFileFormChange({ ...templateFileForm, indexHtml: event.target.value })}
+                          rows={7}
+                          className="rounded-xl border border-white/10 bg-slate-950 p-3 font-mono text-xs text-white outline-none focus:border-violet-400"
+                        />
+                      </label>
+                    )}
+                    {templateFileForm.styleCss && (
+                      <label className="grid gap-2 text-sm font-black text-slate-200">
+                        CSS replacement
+                        <textarea
+                          value={templateFileForm.styleCss}
+                          onChange={(event) => onTemplateFileFormChange({ ...templateFileForm, styleCss: event.target.value })}
+                          rows={7}
+                          className="rounded-xl border border-white/10 bg-slate-950 p-3 font-mono text-xs text-white outline-none focus:border-violet-400"
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={onSaveTemplate}
+                  disabled={savingTemplate || (!templateFileForm.indexHtml && !templateFileForm.styleCss && !templateFileForm.thumbnailDataUrl)}
+                  className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {savingTemplate ? <Loader2 className="animate-spin" size={16} /> : 'Save file changes'}
+                </button>
+              </section>
+            )}
 
             <section className="mt-6 grid gap-3 sm:grid-cols-2">
               <DetailTile label="Usage Count" value={String(selectedTemplate.usageCount)} />

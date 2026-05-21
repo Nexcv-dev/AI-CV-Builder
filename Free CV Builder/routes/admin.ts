@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import { registerAdminAuditRoutes } from './admin/audit';
 import { registerAdminBillingRoutes } from './admin/billing';
+import { registerAdminSettingsRoutes } from './admin/settings';
 import { registerAdminSummaryRoutes } from './admin/summary';
 import { registerAdminSupportRoutes } from './admin/support';
 import { registerAdminTemplateRoutes } from './admin/templates';
@@ -13,4 +15,6 @@ export function registerAdminRoutes(router: Router, deps: RouteDeps) {
     registerAdminTemplateRoutes(router, deps);
     registerAdminBillingRoutes(router, deps);
     registerAdminSupportRoutes(router, deps);
+    registerAdminSettingsRoutes(router, deps);
+    registerAdminAuditRoutes(router, deps);
 }

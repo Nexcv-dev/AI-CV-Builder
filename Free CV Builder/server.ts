@@ -15,6 +15,7 @@ import Coupon from './server-models/Coupon';
 import CheckoutSession from './server-models/CheckoutSession';
 import TemplateSetting from './server-models/TemplateSetting';
 import SupportTicket from './server-models/SupportTicket';
+import AdminAuditLog, { adminAuditLogSummary, recordAdminAuditLog } from './server-models/AdminAuditLog';
 import { configureSecurityMiddleware, getRequestOrigin, isAllowedOrigin, integrityCheck } from './middlewares/security';
 import { assertSessionSecret, configureSessionMiddleware } from './middlewares/session';
 import { configurePassportAuth, passport } from './middlewares/passportAuth';
@@ -51,6 +52,7 @@ import {
 import { generateCVHTML, generatePdfDocument, sanitizeCvData } from './services/pdfService';
 import { CV_TEMPLATES, DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan, type TemplateName } from './src/templates';
 import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
+import { hasAdminPermission, isUserRole, type AdminPermission } from './src/adminAccess';
 import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildDownloadQuota } from './server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
@@ -477,6 +479,18 @@ const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
     next();
 };
 
+export const requireAdminPermission = (permission: AdminPermission) => (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!hasAdminPermission(req.user as any, permission)) {
+        return res.status(403).json({ error: 'Admin permission required.' });
+    }
+
+    next();
+};
+
 export const getPayHereMerchantConfig = () => ({
     merchantId: (process.env.PAYHERE_MERCHANT_ID || process.env.PAYHERE_SANDBOX_MERCHANT_ID || '').trim(),
     merchantSecret: (process.env.PAYHERE_MERCHANT_SECRET || process.env.PAYHERE_SANDBOX_MERCHANT_SECRET || '').trim(),
@@ -851,13 +865,13 @@ const parseThumbnailUpload = (value: unknown) => {
 // â”€â”€â”€ API Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const routeDeps = {
-    User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket,
+    User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, AdminAuditLog,
     CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan,
-    requireAuth, requireSuperAdmin, sendError, passport,
+    requireAuth, requireSuperAdmin, requireAdminPermission, sendError, passport,
     adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser,
     authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter,
     getRequestOrigin, isAllowedOrigin,
-    clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
+    clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
     generateCVHTML, generatePdfDocument, sanitizeCvData,
     getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey,
     sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail,
@@ -877,9 +891,10 @@ const routeDeps = {
     requireVerifiedEmail, requirePaidPlan,
     startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, adminPaymentSummary,
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,
+    recordAdminAuditLog, adminAuditLogSummary,
     emailGreetingName,
     sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom,
-    roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin,
+    roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, isUserRole,
     mongoose, randomBytes, randomInt, createHash, timingSafeEqual,
 };
 

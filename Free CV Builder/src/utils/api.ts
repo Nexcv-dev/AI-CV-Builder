@@ -1,8 +1,10 @@
+import type { UserRole } from '../adminAccess';
+
 export interface AuthUser {
   id: string;
   email: string;
   displayName: string;
-  role: 'user' | 'super_admin';
+  role: UserRole;
   plan: 'free' | 'payg' | 'monthly' | 'unlimited';
   planExpiresAt?: string;
   emailVerified: boolean;

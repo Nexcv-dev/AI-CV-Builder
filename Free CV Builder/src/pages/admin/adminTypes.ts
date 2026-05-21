@@ -1,3 +1,5 @@
+import type { UserRole } from '../../adminAccess';
+
 export interface AdminSummary {
   widgets: {
     totalUsers: number;
@@ -29,7 +31,7 @@ export interface AdminUserListItem {
   id: string;
   email: string;
   displayName: string;
-  role: 'user' | 'super_admin';
+  role: UserRole;
   plan: 'free' | 'payg' | 'monthly' | 'unlimited';
   rawPlan: 'free' | 'payg' | 'monthly';
   planExpiresAt?: string;
@@ -152,4 +154,41 @@ export interface AdminSupportTicket {
   adminNotes: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AdminRoleConfig {
+  role: UserRole;
+  label: string;
+  access: string[];
+}
+
+export interface AdminSettingsSummary {
+  environment: string;
+  port: string;
+  origins: {
+    frontend: string;
+    api: string;
+  };
+  services: Array<{
+    key: string;
+    label: string;
+    configured: boolean;
+  }>;
+  security: {
+    sessionSecretConfigured: boolean;
+    superAdminAllowlistCount: number;
+  };
+}
+
+export interface AdminAuditLogItem {
+  id: string;
+  actor: { id: string; email: string; displayName: string } | null;
+  action: string;
+  targetType: string;
+  targetId: string;
+  targetLabel: string;
+  metadata: Record<string, unknown>;
+  ip: string;
+  userAgent: string;
+  createdAt: string;
 }
