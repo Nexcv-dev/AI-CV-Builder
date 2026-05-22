@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, LayoutTemplate, Sparkles } from 'lucide-react';
+import { ArrowRight, Crown, LayoutTemplate, Sparkles } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
 
@@ -37,7 +37,8 @@ export default function TemplatesPage() {
                   className="group overflow-hidden rounded-2xl border border-white/10 bg-white/6 shadow-xl shadow-black/10 transition-all hover:-translate-y-1 hover:border-violet-300/30 hover:bg-white/9 hover:shadow-2xl hover:shadow-black/20 active:scale-[0.99]"
                   style={{ animationDelay: `${index * 80}ms` }}
                 >
-                  <div className="aspect-4/5 overflow-hidden bg-slate-900">
+                  <div className="relative aspect-4/5 overflow-hidden bg-slate-900">
+                    <TemplateAccessBadge access={template.access} />
                     <img
                       src={template.thumbnail}
                       alt={`${template.label} CV template preview`}
@@ -46,7 +47,7 @@ export default function TemplatesPage() {
                   </div>
                   <div className="flex items-center justify-between gap-3 px-5 py-4">
                     <div className="min-w-0">
-                      <div className="font-montserrat font-black text-white">{template.label}</div>
+                      <div className="font-montserrat text-sm font-black leading-tight text-white sm:text-base">{template.label}</div>
                       <div className="mt-1 flex items-center gap-1.5 text-xs font-bold text-slate-400">
                         <LayoutTemplate size={13} />
                         {template.category} template
@@ -63,5 +64,21 @@ export default function TemplatesPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+function TemplateAccessBadge({ access }: { access: 'free' | 'paid' }) {
+  if (access === 'free') {
+    return (
+      <span className="absolute right-3 top-3 z-10 rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-lg shadow-emerald-500/25 ring-1 ring-white/60">
+        Free
+      </span>
+    );
+  }
+
+  return (
+    <span className="absolute right-3 top-3 z-10 inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-amber-400 px-2 text-amber-950 shadow-lg shadow-amber-400/30 ring-1 ring-white/60" aria-label="Premium template">
+      <Crown size={15} strokeWidth={2.6} />
+    </span>
   );
 }

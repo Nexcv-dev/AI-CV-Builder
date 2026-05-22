@@ -23,7 +23,7 @@ import { AppSidebar } from '../components/AppSidebar';
 import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
-import { CV_TEMPLATES } from '../templates';
+import { useTemplateConfig, type TemplateConfigItem } from '../hooks/useTemplateConfig';
 
 interface SavedDocument {
   id: string;
@@ -40,8 +40,6 @@ interface CvCreationQuota {
   remaining: number | null;
   reached: boolean;
 }
-
-const templateMeta = new Map(CV_TEMPLATES.map((template) => [template.key, template]));
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
@@ -65,6 +63,7 @@ function latestUpdate(documents: SavedDocument[]) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { templateMap } = useTemplateConfig();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [documents, setDocuments] = useState<SavedDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -330,6 +329,7 @@ export default function Dashboard() {
                 <RecentCvRow
                   key={document.id}
                   document={document}
+                  templateMap={templateMap}
                   deleting={deletingId === document.id}
                   menuOpen={openActionsDocumentId === document.id}
                   onToggleMenu={() => setOpenActionsDocumentId((current) => current === document.id ? null : document.id)}
@@ -493,6 +493,7 @@ function DashboardActionLink({
 
 function RecentCvRow({
   document,
+  templateMap,
   deleting,
   menuOpen,
   onToggleMenu,
@@ -501,6 +502,7 @@ function RecentCvRow({
   onDelete,
 }: {
   document: SavedDocument;
+  templateMap: Map<string, TemplateConfigItem>;
   deleting: boolean;
   menuOpen: boolean;
   onToggleMenu: () => void;
@@ -508,9 +510,9 @@ function RecentCvRow({
   onDownload: () => void;
   onDelete: () => void;
 }) {
-  const meta = templateMeta.get(document.template as any);
+  const meta = templateMap.get(document.template as any);
   const templateLabel = meta?.label || document.template;
-  const image = meta?.image || '/templates/professional.png';
+  const image = meta?.thumbnail || '/templates/professional.png';
 
   return (
     <article className="relative grid gap-3 px-3 py-4 pr-14 transition hover:bg-white/[0.035] sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4 sm:px-5">

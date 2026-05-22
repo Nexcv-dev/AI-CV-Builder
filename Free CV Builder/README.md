@@ -112,6 +112,12 @@ Free CV Builder/
 2. Setup Environment Variables:
    Create a `.env` file in the root directory and add the necessary configuration keys.
 
+   Optional admin hardening:
+   ```bash
+   ADMIN_ALLOWED_IPS=203.0.113.10,198.51.100.25
+   ```
+   When set, `/api/admin/*` and the production `/admin` page are only available from those IP addresses. Leave it empty in local development or when you do not want IP filtering.
+
 3. Start the Development Server (Frontend + Backend concurrently):
    ```bash
    npm run dev

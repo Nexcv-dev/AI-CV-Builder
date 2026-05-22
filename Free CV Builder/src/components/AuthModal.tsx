@@ -147,10 +147,8 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
       notifyAuthUserChanged(user);
     }
     setIsRedirecting(true);
+    onClose();
     navigate(redirectTo);
-    if (redirectTo === '/builder') {
-      onClose();
-    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {

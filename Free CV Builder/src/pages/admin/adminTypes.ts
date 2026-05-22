@@ -163,6 +163,19 @@ export interface AdminRoleConfig {
 }
 
 export interface AdminSettingsSummary {
+  app: {
+    maintenanceMode: boolean;
+    announcementEnabled: boolean;
+    announcementText: string;
+    supportEmail: string;
+    emailVerificationRequired: boolean;
+    payhereEnabled: boolean;
+    payhereModeLabel: 'sandbox' | 'live';
+    freeCvCreationLimit: number;
+    freePdfDownloadLimit: number;
+    defaultTemplateKey: string;
+    updatedAt?: string;
+  };
   environment: string;
   port: string;
   origins: {

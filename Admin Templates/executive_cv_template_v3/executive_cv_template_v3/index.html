@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{{personalInfo.fullName}} CV</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    {{#watermark}}
+      <div class="nexcv-watermark" aria-hidden="true">
+        <div>Created with NexCV Free</div>
+        <div>Upgrade to remove watermark</div>
+      </div>
+    {{/watermark}}
+
+    <main class="resume">
+      {{#hasHeader}}
+        <header class="header">
+          <h1 class="name">{{personalInfo.fullName}}</h1>
+          <div class="role">{{headline}}</div>
+
+          {{#hasContact}}
+            <div class="contact">
+              {{#personalInfo.email}}<span>{{personalInfo.email}}</span>{{/personalInfo.email}}
+              {{#personalInfo.phone}}<span>{{personalInfo.phone}}</span>{{/personalInfo.phone}}
+              {{#personalInfo.address}}<span>{{personalInfo.address}}</span>{{/personalInfo.address}}
+              {{#personalInfo.website}}<span>{{personalInfo.website}}</span>{{/personalInfo.website}}
+              {{#personalInfo.linkedin}}<span>{{personalInfo.linkedin}}</span>{{/personalInfo.linkedin}}
+              {{#personalInfo.github}}<span>{{personalInfo.github}}</span>{{/personalInfo.github}}
+            </div>
+          {{/hasContact}}
+        </header>
+      {{/hasHeader}}
+
+      {{#hasSummary}}
+        <section class="executive-summary">
+          <div class="rich summary">{{{personalInfo.summary}}}</div>
+        </section>
+      {{/hasSummary}}
+
+      {{#hasBody}}
+        <div class="content">
+          <main class="main-column">
+            {{#hasExperience}}
+              <section class="section">
+                <h2 class="section-title">Executive Experience</h2>
+                {{#experience}}
+                  <article class="item">
+                    <div class="item-header">
+                      <h3 class="item-title">{{position}}</h3>
+                      <div class="item-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
+                    </div>
+                    <div class="company">{{company}}{{#location}}, {{location}}{{/location}}</div>
+                    <div class="rich description">{{{description}}}</div>
+                  </article>
+                {{/experience}}
+              </section>
+            {{/hasExperience}}
+
+            {{#hasAwards}}
+              <section class="section">
+                <h2 class="section-title">Key Achievements</h2>
+                {{#awards}}
+                  <article class="achievement">
+                    <h3>{{name}}</h3>
+                    <p>{{issuer}}{{#date}} • {{date}}{{/date}}</p>
+                    {{#description}}<div class="rich achievement-text">{{{description}}}</div>{{/description}}
+                  </article>
+                {{/awards}}
+              </section>
+            {{/hasAwards}}
+
+            {{#hasProjects}}
+              <section class="section">
+                <h2 class="section-title">Selected Projects</h2>
+                {{#projects}}
+                  <article class="item project-item">
+                    <div class="item-header">
+                      <h3 class="item-title">{{name}}</h3>
+                      <div class="item-date">{{#link}}<a href="{{link}}">View</a>{{/link}}</div>
+                    </div>
+                    <div class="rich description">{{{description}}}</div>
+                  </article>
+                {{/projects}}
+              </section>
+            {{/hasProjects}}
+          </main>
+
+          <aside class="sidebar">
+            {{#hasSkills}}
+              <section class="sidebar-box">
+                <h3 class="sidebar-title">Core Expertise</h3>
+                <div class="skill-list">
+                  {{#skills}}
+                    <div class="skill-line">
+                      <span>{{name}}</span>
+                      {{#level}}<span class="skill-level">Level {{level}}</span>{{/level}}
+                    </div>
+                  {{/skills}}
+                </div>
+              </section>
+            {{/hasSkills}}
+
+            {{#hasEducation}}
+              <section class="sidebar-box">
+                <h3 class="sidebar-title">Education</h3>
+                <ul class="side-list">
+                  {{#education}}
+                    <li>
+                      <strong>{{degree}}</strong><br>
+                      {{institution}}<br>
+                      {{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}
+                      {{#description}}<div class="rich side-rich">{{{description}}}</div>{{/description}}
+                    </li>
+                  {{/education}}
+                </ul>
+              </section>
+            {{/hasEducation}}
+
+            {{#hasCourses}}
+              <section class="sidebar-box">
+                <h3 class="sidebar-title">Certifications</h3>
+                <ul class="side-list">
+                  {{#courses}}
+                    <li>
+                      <strong>{{name}}</strong><br>
+                      {{institution}}{{#startDate}}<br>{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}{{/startDate}}
+                    </li>
+                  {{/courses}}
+                </ul>
+              </section>
+            {{/hasCourses}}
+
+            {{#hasLanguages}}
+              <section class="sidebar-box">
+                <h3 class="sidebar-title">Languages</h3>
+                <ul class="side-list compact-list">
+                  {{#languages}}
+                    <li>{{name}} - {{proficiency}}</li>
+                  {{/languages}}
+                </ul>
+              </section>
+            {{/hasLanguages}}
+
+            {{#hasPersonalDetails}}
+              <section class="sidebar-box">
+                <h3 class="sidebar-title">Details</h3>
+                <ul class="side-list compact-list">
+                  {{#personalInfo.dob}}<li><strong>DOB:</strong> {{personalInfo.dob}}</li>{{/personalInfo.dob}}
+                  {{#personalInfo.nic}}<li><strong>NIC:</strong> {{personalInfo.nic}}</li>{{/personalInfo.nic}}
+                  {{#personalInfo.gender}}<li><strong>Gender:</strong> {{personalInfo.gender}}</li>{{/personalInfo.gender}}
+                  {{#personalInfo.nationality}}<li><strong>Nationality:</strong> {{personalInfo.nationality}}</li>{{/personalInfo.nationality}}
+                  {{#personalInfo.religion}}<li><strong>Religion:</strong> {{personalInfo.religion}}</li>{{/personalInfo.religion}}
+                  {{#personalInfo.maritalStatus}}<li><strong>Status:</strong> {{personalInfo.maritalStatus}}</li>{{/personalInfo.maritalStatus}}
+                </ul>
+              </section>
+            {{/hasPersonalDetails}}
+
+            {{#hasReferences}}
+              <section class="sidebar-box">
+                <h3 class="sidebar-title">References</h3>
+                <ul class="side-list">
+                  {{#references}}
+                    <li>
+                      <strong>{{name}}</strong><br>
+                      {{position}}{{#company}}, {{company}}{{/company}}
+                      {{#email}}<br>{{email}}{{/email}}
+                      {{#phone}}<br>{{phone}}{{/phone}}
+                    </li>
+                  {{/references}}
+                </ul>
+              </section>
+            {{/hasReferences}}
+          </aside>
+        </div>
+      {{/hasBody}}
+    </main>
+  </body>
+</html>

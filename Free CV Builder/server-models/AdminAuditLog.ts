@@ -10,7 +10,8 @@ export type AdminAuditAction =
   | 'template.updated'
   | 'template.published'
   | 'template.archived'
-  | 'support.ticket.updated';
+  | 'support.ticket.updated'
+  | 'settings.updated';
 
 export interface IAdminAuditLog extends Document {
   actorId?: mongoose.Types.ObjectId;

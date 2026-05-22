@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{{personalInfo.fullName}} CV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+  </head>
+
+  <body>
+    {{#watermark}}
+      <div class="nexcv-watermark" aria-hidden="true">
+        <div>Created with NexCV Free</div>
+        <div>Upgrade to remove watermark</div>
+      </div>
+    {{/watermark}}
+
+    <main class="page">
+      {{#hasHeader}}
+        <header class="hero">
+          <div class="terminal-bar" aria-hidden="true">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+
+          <div class="hero-glow" aria-hidden="true"></div>
+
+          <div class="hero-content">
+            <div class="intro">
+              <div class="command">$ whoami</div>
+              <h1>{{personalInfo.fullName}}</h1>
+              <p class="role">{{headline}}</p>
+
+              {{#hasContact}}
+                <div class="contact">
+                  {{#personalInfo.email}}<span>{{personalInfo.email}}</span>{{/personalInfo.email}}
+                  {{#personalInfo.phone}}<span>{{personalInfo.phone}}</span>{{/personalInfo.phone}}
+                  {{#personalInfo.address}}<span>{{personalInfo.address}}</span>{{/personalInfo.address}}
+                  {{#personalInfo.website}}<span>{{personalInfo.website}}</span>{{/personalInfo.website}}
+                  {{#personalInfo.linkedin}}<span>{{personalInfo.linkedin}}</span>{{/personalInfo.linkedin}}
+                  {{#personalInfo.github}}<span>{{personalInfo.github}}</span>{{/personalInfo.github}}
+                </div>
+              {{/hasContact}}
+            </div>
+
+            {{#profileImageUrl}}
+              <div class="photo">
+                <img src="{{profileImageUrl}}" alt="">
+              </div>
+            {{/profileImageUrl}}
+          </div>
+        </header>
+      {{/hasHeader}}
+
+      {{#hasBody}}
+        <div class="body">
+          <main class="main-col">
+            {{#hasSummary}}
+              <section class="section profile-section">
+                <h2 class="section-title">Profile</h2>
+                <div class="rich summary">{{{personalInfo.summary}}}</div>
+              </section>
+            {{/hasSummary}}
+
+            {{#hasExperience}}
+              <section class="section">
+                <h2 class="section-title">Experience</h2>
+                <div class="cards">
+                  {{#experience}}
+                    <article class="exp-card">
+                      <h3>{{position}}</h3>
+                      <p class="meta">
+                        {{company}}{{#startDate}} · {{startDate}}{{/startDate}}{{#endDate}} - {{endDate}}{{/endDate}}
+                      </p>
+                      <div class="rich">{{{description}}}</div>
+                    </article>
+                  {{/experience}}
+                </div>
+              </section>
+            {{/hasExperience}}
+
+            {{#hasProjects}}
+              <section class="section">
+                <h2 class="section-title">Projects</h2>
+                <div class="project-grid">
+                  {{#projects}}
+                    <article class="project">
+                      <div class="file-name">{{#link}}<a href="{{link}}">open_project</a>{{/link}}{{^link}}project.case{{/link}}</div>
+                      <h3>{{name}}</h3>
+                      <div class="rich project-copy">{{{description}}}</div>
+                    </article>
+                  {{/projects}}
+                </div>
+              </section>
+            {{/hasProjects}}
+
+            {{#hasAwards}}
+              <section class="section">
+                <h2 class="section-title">Awards</h2>
+                <div class="cards">
+                  {{#awards}}
+                    <article class="small-card">
+                      <h3>{{name}}</h3>
+                      <p class="meta">{{issuer}}{{#date}} · {{date}}{{/date}}</p>
+                    </article>
+                  {{/awards}}
+                </div>
+              </section>
+            {{/hasAwards}}
+
+            {{#hasReferences}}
+              <section class="section">
+                <h2 class="section-title">References</h2>
+                <div class="reference-grid">
+                  {{#references}}
+                    <article class="small-card">
+                      <h3>{{name}}</h3>
+                      <p>{{position}}{{#company}} · {{company}}{{/company}}</p>
+                      {{#email}}<p>{{email}}</p>{{/email}}
+                      {{#phone}}<p>{{phone}}</p>{{/phone}}
+                    </article>
+                  {{/references}}
+                </div>
+              </section>
+            {{/hasReferences}}
+          </main>
+
+          <aside class="side-col">
+            {{#hasSkills}}
+              <section class="side-box">
+                <h2 class="section-title">Tech Stack</h2>
+                <div class="tech-list">
+                  {{#skills}}
+                    <span class="tech">{{name}}</span>
+                  {{/skills}}
+                </div>
+              </section>
+
+              <section class="side-box">
+                <h2 class="section-title">Skill Level</h2>
+                <div class="metrics">
+                  {{#skills}}
+                    <div class="metric">
+                      <div class="metric-row">
+                        <span>{{name}}</span>
+                        <span>Level {{level}}</span>
+                      </div>
+                      <div class="bar"><span class="fill level-{{level}}"></span></div>
+                    </div>
+                  {{/skills}}
+                </div>
+              </section>
+            {{/hasSkills}}
+
+            {{#hasEducation}}
+              <section class="side-box">
+                <h2 class="section-title">Education</h2>
+                <div class="info-list">
+                  {{#education}}
+                    <article class="info-item">
+                      <h3>{{degree}}</h3>
+                      <p>{{institution}}</p>
+                      <p>{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                      {{#description}}<div class="rich tiny-rich">{{{description}}}</div>{{/description}}
+                    </article>
+                  {{/education}}
+                </div>
+              </section>
+            {{/hasEducation}}
+
+            {{#hasCourses}}
+              <section class="side-box">
+                <h2 class="section-title">Certificates</h2>
+                <div class="info-list">
+                  {{#courses}}
+                    <article class="info-item">
+                      <h3>{{name}}</h3>
+                      <p>{{institution}}</p>
+                      <p>{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                    </article>
+                  {{/courses}}
+                </div>
+              </section>
+            {{/hasCourses}}
+
+            {{#hasLanguages}}
+              <section class="side-box">
+                <h2 class="section-title">Languages</h2>
+                <div class="lines">
+                  {{#languages}}
+                    <div class="line"><span>{{name}}</span><span>{{proficiency}}</span></div>
+                  {{/languages}}
+                </div>
+              </section>
+            {{/hasLanguages}}
+
+            {{#hasPersonalDetails}}
+              <section class="side-box">
+                <h2 class="section-title">Details</h2>
+                <div class="lines">
+                  {{#personalInfo.dob}}<div class="line"><span>DOB</span><span>{{personalInfo.dob}}</span></div>{{/personalInfo.dob}}
+                  {{#personalInfo.nic}}<div class="line"><span>NIC</span><span>{{personalInfo.nic}}</span></div>{{/personalInfo.nic}}
+                  {{#personalInfo.gender}}<div class="line"><span>Gender</span><span>{{personalInfo.gender}}</span></div>{{/personalInfo.gender}}
+                  {{#personalInfo.nationality}}<div class="line"><span>Nationality</span><span>{{personalInfo.nationality}}</span></div>{{/personalInfo.nationality}}
+                  {{#personalInfo.religion}}<div class="line"><span>Religion</span><span>{{personalInfo.religion}}</span></div>{{/personalInfo.religion}}
+                  {{#personalInfo.maritalStatus}}<div class="line"><span>Status</span><span>{{personalInfo.maritalStatus}}</span></div>{{/personalInfo.maritalStatus}}
+                </div>
+              </section>
+            {{/hasPersonalDetails}}
+          </aside>
+        </div>
+      {{/hasBody}}
+    </main>
+  </body>
+</html>

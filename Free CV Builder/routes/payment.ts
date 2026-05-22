@@ -182,6 +182,10 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             if (!requireVerifiedEmail(req, res)) {
                 return;
             }
+
+            if ((req as any).appSettings?.payhereEnabled === false) {
+                return res.status(503).json({ error: 'Online checkout is temporarily disabled.' });
+            }
     
             const plan = req.body.plan as BillingPlan;
             if (plan !== 'payg' && plan !== 'monthly') {
