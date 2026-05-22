@@ -191,6 +191,21 @@ export interface AdminSettingsSummary {
     sessionSecretConfigured: boolean;
     superAdminAllowlistCount: number;
   };
+  email: {
+    configured: boolean;
+    provider: string;
+    from: string;
+    supportEmail: string;
+    adminNotificationEmail: string;
+    smtpHost: string;
+    smtpPort: string;
+    checks: Array<{
+      key: string;
+      label: string;
+      configured: boolean;
+    }>;
+    secrets: Record<string, string>;
+  };
 }
 
 export interface AdminAuditLogItem {

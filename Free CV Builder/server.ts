@@ -34,6 +34,7 @@ import {
 } from './middlewares/rateLimiters';
 import {
     buildPasswordResetTransportOptions,
+    getAppEmailFrom,
     isEmailServiceConfigured,
     normalizeEmailFrom,
     sendAppEmail,
@@ -1007,7 +1008,7 @@ const routeDeps = {
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,
     recordAdminAuditLog, adminAuditLogSummary,
     emailGreetingName,
-    sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom,
+    sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, getAppEmailFrom,
     roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, isUserRole, isAdminIpAllowed,
     mongoose, randomBytes, randomInt, createHash, timingSafeEqual,
 };

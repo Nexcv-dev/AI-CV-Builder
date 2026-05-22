@@ -16,7 +16,7 @@ const serviceStatus = (configured: boolean, label: string) => ({
 });
 
 export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
-    const { User, AppSetting, CV_TEMPLATES, requireAdminPermission, sendError, currentUserId, isValidDocumentId, adminUserSummary, recordAdminAuditLog, normalizeEmail, sanitizeProfileField } = bindDeps(deps);
+    const { User, AppSetting, CV_TEMPLATES, requireAdminPermission, sendError, currentUserId, isValidDocumentId, adminUserSummary, recordAdminAuditLog, normalizeEmail, sanitizeProfileField, isEmailServiceConfigured, getAppEmailFrom, sendSystemEmail } = bindDeps(deps);
 
     router.get('/api/admin/roles', requireAdminPermission('roles.read'), async (_req: Request, res: Response) => {
         try {
@@ -84,6 +84,7 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
     router.get('/api/admin/settings', requireAdminPermission('settings.read'), async (_req: Request, res: Response) => {
         try {
             const appSettings = await getAppSettings();
+            const emailConfigured = isEmailServiceConfigured();
             return res.json({
                 app: appSettingsSummary(appSettings),
                 environment: process.env.NODE_ENV || 'development',
@@ -94,7 +95,7 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
                 },
                 services: [
                     serviceStatus(Boolean(process.env.MONGO_URI || process.env.MONGODB_URI), 'MongoDB'),
-                    serviceStatus(Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS), 'Email'),
+                    serviceStatus(emailConfigured, 'Email'),
                     serviceStatus(Boolean(process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME), 'S3 Templates'),
                     serviceStatus(Boolean(
                         (process.env.PAYHERE_MERCHANT_ID && process.env.PAYHERE_MERCHANT_SECRET) ||
@@ -109,6 +110,7 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
                         .map((email) => email.trim())
                         .filter(Boolean).length,
                 },
+                email: emailSettingsSummary(appSettings, { isEmailServiceConfigured, getAppEmailFrom }),
             });
         } catch (error) {
             return sendError(res, 500, 'Could not load admin settings.', error);
@@ -157,6 +159,39 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
             return sendError(res, 500, 'Could not update admin settings.', error);
         }
     });
+
+    router.post('/api/admin/settings/test-email', requireAdminPermission('settings.write'), async (req: Request, res: Response) => {
+        try {
+            const recipient = normalizeEmail(req.body.to || (req.user as any)?.email || '');
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+                return res.status(400).json({ error: 'Enter a valid test email recipient.' });
+            }
+            if (!isEmailServiceConfigured()) {
+                return res.status(400).json({ error: 'Email service is not configured.' });
+            }
+
+            await sendSystemEmail({
+                to: recipient,
+                subject: 'NexCV email service test',
+                text: `This is a NexCV admin test email.\n\nSent at: ${new Date().toISOString()}\n`,
+            });
+
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'settings.updated',
+                targetType: 'email_settings',
+                targetId: 'test-email',
+                targetLabel: recipient,
+                metadata: { testEmailSent: true },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
+
+            return res.json({ message: `Test email sent to ${recipient}.` });
+        } catch (error) {
+            return sendError(res, 500, 'Could not send test email.', error);
+        }
+    });
 }
 
 function appSettingsSummary(settings: any) {
@@ -172,6 +207,44 @@ function appSettingsSummary(settings: any) {
         freePdfDownloadLimit: Number.isFinite(Number(settings?.freePdfDownloadLimit)) ? Number(settings.freePdfDownloadLimit) : DEFAULT_APP_SETTINGS.freePdfDownloadLimit,
         defaultTemplateKey: settings?.defaultTemplateKey || DEFAULT_APP_SETTINGS.defaultTemplateKey,
         updatedAt: settings?.updatedAt,
+    };
+}
+
+function maskedValue(value: unknown) {
+    return typeof value === 'string' && value.trim() ? 'Configured' : 'Missing';
+}
+
+function emailSettingsSummary(settings: any, deps: { isEmailServiceConfigured: () => boolean; getAppEmailFrom: () => string }) {
+    const hasGmailApi = Boolean(
+        (process.env.GMAIL_CLIENT_ID?.trim() || process.env.GOOGLE_CLIENT_ID?.trim()) &&
+        (process.env.GMAIL_CLIENT_SECRET?.trim() || process.env.GOOGLE_CLIENT_SECRET?.trim()) &&
+        process.env.GMAIL_REFRESH_TOKEN?.trim()
+    );
+    const hasResend = Boolean(process.env.RESEND_API_KEY?.trim());
+    const hasSmtp = Boolean(process.env.EMAIL_USER?.trim() && process.env.EMAIL_PASS?.trim());
+    const provider = hasGmailApi ? 'Gmail API' : hasResend ? 'Resend' : hasSmtp ? 'SMTP' : 'Not configured';
+
+    return {
+        configured: deps.isEmailServiceConfigured(),
+        provider,
+        from: deps.getAppEmailFrom() || '',
+        supportEmail: settings?.supportEmail || DEFAULT_APP_SETTINGS.supportEmail,
+        adminNotificationEmail: process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || '',
+        smtpHost: process.env.SMTP_HOST?.trim() || (hasSmtp ? 'smtp.gmail.com' : ''),
+        smtpPort: process.env.SMTP_PORT?.trim() || (hasSmtp ? '587' : ''),
+        checks: [
+            { key: 'gmail_api', label: 'Gmail API', configured: hasGmailApi },
+            { key: 'resend', label: 'Resend API', configured: hasResend },
+            { key: 'smtp_credentials', label: 'SMTP Credentials', configured: hasSmtp },
+            { key: 'email_from', label: 'Sender From', configured: Boolean(deps.getAppEmailFrom()) },
+            { key: 'admin_notification', label: 'Admin Notification Email', configured: Boolean(process.env.ADMIN_NOTIFICATION_EMAIL?.trim()) },
+        ],
+        secrets: {
+            emailUser: maskedValue(process.env.EMAIL_USER),
+            emailPass: maskedValue(process.env.EMAIL_PASS),
+            resendApiKey: maskedValue(process.env.RESEND_API_KEY),
+            gmailRefreshToken: maskedValue(process.env.GMAIL_REFRESH_TOKEN),
+        },
     };
 }
 

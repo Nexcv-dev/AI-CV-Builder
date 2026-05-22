@@ -6,22 +6,32 @@ export default function SettingsManagementSection({
   settings,
   loading,
   saving,
+  sendingTestEmail,
   canUpdateSettings,
   templates,
   onSave,
+  onSendTestEmail,
 }: {
   settings: AdminSettingsSummary | null;
   loading: boolean;
   saving: boolean;
+  sendingTestEmail: boolean;
   canUpdateSettings: boolean;
   templates: AdminTemplateItem[];
   onSave: (settings: AdminSettingsSummary['app']) => void;
+  onSendTestEmail: (recipient: string) => void;
 }) {
   const [draft, setDraft] = useState<AdminSettingsSummary['app'] | null>(settings?.app || null);
+  const [testEmailRecipient, setTestEmailRecipient] = useState('');
 
   useEffect(() => {
     setDraft(settings?.app || null);
   }, [settings]);
+
+  useEffect(() => {
+    if (!settings?.email) return;
+    setTestEmailRecipient(settings.email.adminNotificationEmail || settings.email.supportEmail || '');
+  }, [settings?.email]);
 
   const hasChanges = useMemo(() => JSON.stringify(draft) !== JSON.stringify(settings?.app || null), [draft, settings]);
 
@@ -182,6 +192,67 @@ export default function SettingsManagementSection({
                 </div>
               </div>
             ))}
+          </div>
+        </article>
+
+        <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="font-montserrat text-lg font-black">Email Service</h2>
+              <p className="mt-1 text-sm font-semibold text-slate-400">Environment-based email status and delivery test.</p>
+            </div>
+            <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${
+              settings.email.configured
+                ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/20'
+                : 'bg-red-400/10 text-red-300 ring-red-300/20'
+            }`}>
+              {settings.email.configured ? 'Ready' : 'Not configured'}
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <InfoRow label="Provider" value={settings.email.provider} />
+            <InfoRow label="From" value={settings.email.from || 'Missing'} />
+            <InfoRow label="Support Email" value={settings.email.supportEmail || 'Missing'} />
+            <InfoRow label="Admin Notifications" value={settings.email.adminNotificationEmail || 'Missing'} />
+            <InfoRow label="SMTP Host" value={settings.email.smtpHost || 'Default'} />
+            <InfoRow label="SMTP Port" value={settings.email.smtpPort || 'Default'} />
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {settings.email.checks.map((check) => (
+              <div key={check.key} className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
+                {check.configured ? <CheckCircle2 className="text-emerald-300" size={18} /> : <XCircle className="text-red-300" size={18} />}
+                <div>
+                  <p className="text-sm font-black text-slate-100">{check.label}</p>
+                  <p className={`mt-0.5 text-xs font-bold ${check.configured ? 'text-emerald-300' : 'text-red-300'}`}>
+                    {check.configured ? 'Configured' : 'Missing'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 grid gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3 sm:grid-cols-[1fr_auto]">
+            <label className="grid gap-2">
+              <span className="text-xs font-black uppercase text-slate-500">Test recipient</span>
+              <input
+                type="email"
+                value={testEmailRecipient}
+                onChange={(event) => setTestEmailRecipient(event.target.value)}
+                className={inputClass}
+                placeholder="you@example.com"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => onSendTestEmail(testEmailRecipient)}
+              disabled={!canUpdateSettings || sendingTestEmail || !settings.email.configured}
+              className="inline-flex min-h-11 items-center justify-center gap-2 self-end rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+            >
+              {sendingTestEmail ? <Loader2 className="animate-spin" size={17} /> : null}
+              Send test
+            </button>
           </div>
         </article>
       </div>

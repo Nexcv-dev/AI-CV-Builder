@@ -106,6 +106,7 @@ export default function AdminDashboard() {
   const [settings, setSettings] = useState<AdminSettingsSummary | null>(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AdminAuditLogItem[]>([]);
   const [auditActions, setAuditActions] = useState<string[]>([]);
   const [auditTargetTypes, setAuditTargetTypes] = useState<string[]>([]);
@@ -356,6 +357,21 @@ export default function AdminDashboard() {
       toast.error(error instanceof Error ? error.message : 'Could not update settings.');
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const sendTestEmail = async (recipient: string) => {
+    setSendingTestEmail(true);
+    try {
+      const data = await apiFetch<{ message: string }>('/api/admin/settings/test-email', {
+        method: 'POST',
+        body: JSON.stringify({ to: recipient }),
+      });
+      toast.success(data.message || 'Test email sent.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send test email.');
+    } finally {
+      setSendingTestEmail(false);
     }
   };
 
@@ -850,9 +866,11 @@ export default function AdminDashboard() {
               settings={settings}
               loading={settingsLoading}
               saving={savingSettings}
+              sendingTestEmail={sendingTestEmail}
               canUpdateSettings={canUpdateSettings}
               templates={templates}
               onSave={saveSettings}
+              onSendTestEmail={sendTestEmail}
             />
           ) : isAuditPage ? (
             <AuditLogSection
