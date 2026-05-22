@@ -163,6 +163,19 @@ export interface AdminRoleConfig {
 }
 
 export interface AdminSettingsSummary {
+  app: {
+    maintenanceMode: boolean;
+    announcementEnabled: boolean;
+    announcementText: string;
+    supportEmail: string;
+    emailVerificationRequired: boolean;
+    payhereEnabled: boolean;
+    payhereModeLabel: 'sandbox' | 'live';
+    freeCvCreationLimit: number;
+    freePdfDownloadLimit: number;
+    defaultTemplateKey: string;
+    updatedAt?: string;
+  };
   environment: string;
   port: string;
   origins: {
@@ -177,6 +190,21 @@ export interface AdminSettingsSummary {
   security: {
     sessionSecretConfigured: boolean;
     superAdminAllowlistCount: number;
+  };
+  email: {
+    configured: boolean;
+    provider: string;
+    from: string;
+    supportEmail: string;
+    adminNotificationEmail: string;
+    smtpHost: string;
+    smtpPort: string;
+    checks: Array<{
+      key: string;
+      label: string;
+      configured: boolean;
+    }>;
+    secrets: Record<string, string>;
   };
 }
 

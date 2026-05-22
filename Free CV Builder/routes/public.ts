@@ -12,6 +12,17 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         res.json({ status: 'ok', timestamp: new Date().toISOString() });
     });
 
+    router.get('/api/public/app-settings', (req: Request, res: Response) => {
+        const settings = (req as any).appSettings;
+        return res.json({
+            maintenanceMode: Boolean(settings?.maintenanceMode),
+            announcementEnabled: Boolean(settings?.announcementEnabled),
+            announcementText: settings?.announcementText || '',
+            supportEmail: settings?.supportEmail || 'support@nexcv.com',
+            adminAccessAllowed: typeof deps.isAdminIpAllowed === 'function' ? deps.isAdminIpAllowed(req) : true,
+        });
+    });
+
 
     router.get('/api/templates/config', async (_req: Request, res: Response) => {
         try {

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="594" viewBox="0 0 420 594">
+  <defs>
+    <linearGradient id="accent" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset=".55" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity=".22"/>
+    </filter>
+  </defs>
+
+  <rect width="420" height="594" fill="#eef2f7"/>
+  <rect x="34" y="20" width="352" height="554" rx="0" fill="#f8fafc" filter="url(#shadow)"/>
+
+  <rect x="34" y="20" width="352" height="126" fill="#020617"/>
+  <circle cx="350" cy="48" r="58" fill="#22d3ee" opacity=".16"/>
+  <rect x="34" y="142" width="352" height="4" fill="url(#accent)"/>
+
+  <circle cx="64" cy="48" r="5" fill="#ef4444"/>
+  <circle cx="79" cy="48" r="5" fill="#facc15"/>
+  <circle cx="94" cy="48" r="5" fill="#22c55e"/>
+
+  <text x="58" y="80" font-family="Courier New, monospace" font-size="10" font-weight="700" fill="#22d3ee">$ whoami</text>
+  <rect x="58" y="90" width="178" height="13" rx="3" fill="#ffffff"/>
+  <rect x="58" y="111" width="118" height="8" rx="3" fill="#cbd5e1"/>
+  <rect x="58" y="128" width="58" height="5" rx="2.5" fill="#94a3b8"/>
+  <rect x="124" y="128" width="70" height="5" rx="2.5" fill="#94a3b8"/>
+  <rect x="202" y="128" width="82" height="5" rx="2.5" fill="#94a3b8"/>
+
+  <rect x="300" y="68" width="58" height="58" rx="13" fill="#cbd5e1" stroke="#22d3ee" stroke-width="3"/>
+
+  <g transform="translate(58 178)">
+    <text x="0" y="0" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="900" letter-spacing="1.5" fill="#020617"># PROFILE</text>
+    <rect x="0" y="15" width="200" height="5" rx="2.5" fill="#94a3b8"/>
+    <rect x="0" y="27" width="188" height="5" rx="2.5" fill="#cbd5e1"/>
+    <rect x="0" y="39" width="162" height="5" rx="2.5" fill="#cbd5e1"/>
+  </g>
+
+  <g transform="translate(58 252)">
+    <text x="0" y="0" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="900" letter-spacing="1.5" fill="#020617"># EXPERIENCE</text>
+
+    <rect x="0" y="18" width="202" height="68" rx="11" fill="#ffffff" stroke="#dbeafe"/>
+    <rect x="0" y="32" width="4" height="32" rx="2" fill="url(#accent)"/>
+    <rect x="16" y="34" width="128" height="7" rx="3.5" fill="#020617"/>
+    <rect x="16" y="49" width="84" height="5" rx="2.5" fill="#0891b2"/>
+    <rect x="16" y="63" width="156" height="4" rx="2" fill="#cbd5e1"/>
+    <rect x="16" y="74" width="135" height="4" rx="2" fill="#cbd5e1"/>
+
+    <rect x="0" y="102" width="202" height="68" rx="11" fill="#ffffff" stroke="#dbeafe"/>
+    <rect x="0" y="116" width="4" height="32" rx="2" fill="url(#accent)"/>
+    <rect x="16" y="118" width="138" height="7" rx="3.5" fill="#020617"/>
+    <rect x="16" y="133" width="72" height="5" rx="2.5" fill="#0891b2"/>
+    <rect x="16" y="147" width="150" height="4" rx="2" fill="#cbd5e1"/>
+    <rect x="16" y="158" width="126" height="4" rx="2" fill="#cbd5e1"/>
+  </g>
+
+  <g transform="translate(278 178)">
+    <rect x="0" y="0" width="80" height="96" rx="13" fill="#ffffff" stroke="#e2e8f0"/>
+    <text x="13" y="24" font-family="Inter, Arial, sans-serif" font-size="8" font-weight="900" fill="#020617"># STACK</text>
+    <rect x="13" y="38" width="22" height="12" rx="4" fill="#ecfeff" stroke="#a5f3fc"/>
+    <rect x="40" y="38" width="25" height="12" rx="4" fill="#ecfeff" stroke="#a5f3fc"/>
+    <rect x="13" y="57" width="32" height="12" rx="4" fill="#ecfeff" stroke="#a5f3fc"/>
+    <rect x="50" y="57" width="18" height="12" rx="4" fill="#ecfeff" stroke="#a5f3fc"/>
+  </g>
+
+  <g transform="translate(278 292)">
+    <rect x="0" y="0" width="80" height="110" rx="13" fill="#ffffff" stroke="#e2e8f0"/>
+    <text x="13" y="24" font-family="Inter, Arial, sans-serif" font-size="8" font-weight="900" fill="#020617"># SKILLS</text>
+    <rect x="13" y="42" width="54" height="5" rx="2.5" fill="#e2e8f0"/>
+    <rect x="13" y="42" width="47" height="5" rx="2.5" fill="url(#accent)"/>
+    <rect x="13" y="63" width="54" height="5" rx="2.5" fill="#e2e8f0"/>
+    <rect x="13" y="63" width="42" height="5" rx="2.5" fill="url(#accent)"/>
+    <rect x="13" y="84" width="54" height="5" rx="2.5" fill="#e2e8f0"/>
+    <rect x="13" y="84" width="35" height="5" rx="2.5" fill="url(#accent)"/>
+  </g>
+
+  <g transform="translate(58 448)">
+    <text x="0" y="0" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="900" letter-spacing="1.5" fill="#020617"># PROJECTS</text>
+    <rect x="0" y="18" width="202" height="56" rx="11" fill="#020617"/>
+    <rect x="15" y="34" width="70" height="5" rx="2.5" fill="#22d3ee"/>
+    <rect x="15" y="48" width="120" height="6" rx="3" fill="#ffffff"/>
+    <rect x="15" y="62" width="148" height="4" rx="2" fill="#94a3b8"/>
+  </g>
+</svg>

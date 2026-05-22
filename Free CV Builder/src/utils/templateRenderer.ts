@@ -18,10 +18,41 @@ const escapeHtml = (str: string) => (
   (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 );
 
+const profileImageCss = (cvData: any) => {
+  const imageZoom = Number.isFinite(Number(cvData?.imageZoom)) ? Math.min(Math.max(Number(cvData.imageZoom), 0.5), 3) : 1;
+  const imageX = Number.isFinite(Number(cvData?.imageX)) ? Math.min(Math.max(Number(cvData.imageX), -120), 120) : 0;
+  const imageY = Number.isFinite(Number(cvData?.imageY)) ? Math.min(Math.max(Number(cvData.imageY), -120), 120) : 0;
+  const transform = `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)`;
+  return {
+    imageZoom,
+    imageX,
+    imageY,
+    transform,
+    style: `width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:${transform};`,
+  };
+};
+
+const applyProfileImageAdjustments = (html: string, profileImageUrl: string, style: string) => {
+  if (!profileImageUrl || typeof DOMParser === 'undefined') return html;
+
+  const parser = new DOMParser();
+  const document = parser.parseFromString(html, 'text/html');
+  document.querySelectorAll('img').forEach((image) => {
+    if (image.getAttribute('src') !== profileImageUrl) return;
+    const existingStyle = image.getAttribute('style') || '';
+    const nextStyle = `${existingStyle}${existingStyle && !existingStyle.trim().endsWith(';') ? ';' : ''}${style}`;
+    image.setAttribute('style', nextStyle);
+    if (!image.getAttribute('alt')) image.setAttribute('alt', 'Profile');
+  });
+
+  return document.documentElement.outerHTML;
+};
+
 export function renderCvTemplateString(templateHtml: string, cvData: any, options: { watermark?: boolean } = {}) {
   const headline = cvData?.experience?.[0]?.position || cvData?.education?.[0]?.degree || '';
   const location = cvData?.personalInfo?.address || '';
   const profileImageUrl = cvData?.profileImage || '';
+  const imageCss = profileImageCss(cvData);
   const personalInfo = cvData?.personalInfo || {};
   const hasSummary = Boolean(personalInfo.summary);
   const hasPersonalDetails = Boolean(
@@ -46,6 +77,11 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
     headline,
     location,
     profileImageUrl,
+    profileImageTransform: imageCss.transform,
+    profileImageStyle: imageCss.style,
+    imageZoom: imageCss.imageZoom,
+    imageX: imageCss.imageX,
+    imageY: imageCss.imageY,
     hasHeader: Boolean(personalInfo.fullName || headline || hasSummary),
     hasSummary,
     hasContact,
@@ -94,5 +130,5 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
     ));
   };
 
-  return renderBlock(templateHtml, root);
+  return applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style);
 }

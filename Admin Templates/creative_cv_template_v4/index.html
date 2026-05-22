@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{{personalInfo.fullName}} CV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&family=Roboto:wght@400;500;700;900&family=Montserrat:wght@400;500;600;700;800&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    {{#watermark}}
+      <div class="nexcv-watermark" aria-hidden="true">
+        <div>Created with NexCV Free</div>
+        <div>Upgrade to remove watermark</div>
+      </div>
+    {{/watermark}}
+
+    <main class="resume">
+      {{#hasHeader}}
+        <header class="header">
+          <div class="header-text">
+            <div class="badge">Creative Portfolio CV</div>
+            <h1 class="name">{{personalInfo.fullName}}</h1>
+            <p class="role">{{headline}}</p>
+
+            {{#hasContact}}
+              <div class="contact">
+                {{#personalInfo.email}}<span>{{personalInfo.email}}</span>{{/personalInfo.email}}
+                {{#personalInfo.phone}}<span>{{personalInfo.phone}}</span>{{/personalInfo.phone}}
+                {{#personalInfo.address}}<span>{{personalInfo.address}}</span>{{/personalInfo.address}}
+                {{#personalInfo.website}}<span>{{personalInfo.website}}</span>{{/personalInfo.website}}
+                {{#personalInfo.linkedin}}<span>{{personalInfo.linkedin}}</span>{{/personalInfo.linkedin}}
+              </div>
+            {{/hasContact}}
+          </div>
+
+          {{#profileImageUrl}}
+            <div class="photo-frame">
+              <div class="photo">
+                <img src="{{profileImageUrl}}" alt="">
+              </div>
+            </div>
+          {{/profileImageUrl}}
+        </header>
+      {{/hasHeader}}
+
+      {{#hasBody}}
+        <div class="content">
+          <main class="main-col">
+            {{#hasSummary}}
+              <section class="section intro-card">
+                <h2 class="section-title">Profile</h2>
+                <div class="rich summary">{{{personalInfo.summary}}}</div>
+              </section>
+            {{/hasSummary}}
+
+            {{#hasExperience}}
+              <section class="section">
+                <h2 class="section-title">Experience</h2>
+                <div class="stack">
+                  {{#experience}}
+                    <article class="experience-card">
+                      <div class="item-head">
+                        <h3>{{position}}</h3>
+                        <span>{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</span>
+                      </div>
+                      <p class="sub">{{company}}</p>
+                      <div class="rich">{{{description}}}</div>
+                    </article>
+                  {{/experience}}
+                </div>
+              </section>
+            {{/hasExperience}}
+
+            {{#hasProjects}}
+              <section class="section">
+                <h2 class="section-title">Projects</h2>
+                <div class="stack">
+                  {{#projects}}
+                    <article class="project">
+                      <div class="project-dot"></div>
+                      <h3>{{name}}</h3>
+                      <div class="rich">{{{description}}}</div>
+                      {{#link}}<a class="project-link" href="{{link}}">View Project</a>{{/link}}
+                    </article>
+                  {{/projects}}
+                </div>
+              </section>
+            {{/hasProjects}}
+
+            {{#hasAwards}}
+              <section class="section">
+                <h2 class="section-title">Awards</h2>
+                <div class="stack">
+                  {{#awards}}
+                    <article class="project award-card">
+                      <h3>{{name}}</h3>
+                      <p class="sub">{{issuer}}{{#date}} · {{date}}{{/date}}</p>
+                    </article>
+                  {{/awards}}
+                </div>
+              </section>
+            {{/hasAwards}}
+          </main>
+
+          <aside class="side-col">
+            {{#hasSkills}}
+              <section class="side-card">
+                <h2 class="section-title">Skills</h2>
+                <div class="skills">
+                  {{#skills}}
+                    <span class="skill">{{name}}</span>
+                  {{/skills}}
+                </div>
+              </section>
+            {{/hasSkills}}
+
+            {{#hasEducation}}
+              <section class="side-card yellow">
+                <h2 class="section-title">Education</h2>
+                <div class="mini-stack">
+                  {{#education}}
+                    <article class="mini">
+                      <h3>{{degree}}</h3>
+                      <p>{{institution}}<br>{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                      {{#description}}<div class="rich tiny-rich">{{{description}}}</div>{{/description}}
+                    </article>
+                  {{/education}}
+                </div>
+              </section>
+            {{/hasEducation}}
+
+            {{#hasCourses}}
+              <section class="side-card pink">
+                <h2 class="section-title">Courses</h2>
+                <div class="mini-stack">
+                  {{#courses}}
+                    <article class="mini">
+                      <h3>{{name}}</h3>
+                      <p>{{institution}}<br>{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                    </article>
+                  {{/courses}}
+                </div>
+              </section>
+            {{/hasCourses}}
+
+            {{#hasLanguages}}
+              <section class="side-card">
+                <h2 class="section-title">Languages</h2>
+                <div class="lines">
+                  {{#languages}}
+                    <div class="line"><span>{{name}}</span><span>{{proficiency}}</span></div>
+                  {{/languages}}
+                </div>
+              </section>
+            {{/hasLanguages}}
+
+            {{#hasPersonalDetails}}
+              <section class="side-card yellow">
+                <h2 class="section-title">Details</h2>
+                <div class="lines">
+                  {{#personalInfo.dob}}<div class="line"><span>DOB</span><span>{{personalInfo.dob}}</span></div>{{/personalInfo.dob}}
+                  {{#personalInfo.nic}}<div class="line"><span>NIC</span><span>{{personalInfo.nic}}</span></div>{{/personalInfo.nic}}
+                  {{#personalInfo.gender}}<div class="line"><span>Gender</span><span>{{personalInfo.gender}}</span></div>{{/personalInfo.gender}}
+                  {{#personalInfo.nationality}}<div class="line"><span>Nationality</span><span>{{personalInfo.nationality}}</span></div>{{/personalInfo.nationality}}
+                  {{#personalInfo.religion}}<div class="line"><span>Religion</span><span>{{personalInfo.religion}}</span></div>{{/personalInfo.religion}}
+                  {{#personalInfo.maritalStatus}}<div class="line"><span>Status</span><span>{{personalInfo.maritalStatus}}</span></div>{{/personalInfo.maritalStatus}}
+                </div>
+              </section>
+            {{/hasPersonalDetails}}
+
+            {{#hasReferences}}
+              <section class="side-card pink">
+                <h2 class="section-title">References</h2>
+                <div class="mini-stack">
+                  {{#references}}
+                    <article class="mini">
+                      <h3>{{name}}</h3>
+                      <p>{{position}}{{#company}}, {{company}}{{/company}}</p>
+                      {{#email}}<p>{{email}}</p>{{/email}}
+                      {{#phone}}<p>{{phone}}</p>{{/phone}}
+                    </article>
+                  {{/references}}
+                </div>
+              </section>
+            {{/hasReferences}}
+          </aside>
+        </div>
+      {{/hasBody}}
+    </main>
+  </body>
+</html>

@@ -21,6 +21,7 @@ export type AdminPermission =
   | 'support.read'
   | 'support.write'
   | 'settings.read'
+  | 'settings.write'
   | 'roles.read'
   | 'audit.read';
 
@@ -58,6 +59,7 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     'support.read',
     'support.write',
     'settings.read',
+    'settings.write',
     'roles.read',
     'audit.read',
   ],

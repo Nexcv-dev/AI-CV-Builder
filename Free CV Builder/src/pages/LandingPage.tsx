@@ -61,6 +61,22 @@ function StatCard({ label, value, suffix, color }: StatItem) {
   );
 }
 
+function TemplateAccessBadge({ access }: { access: 'free' | 'paid' }) {
+  if (access === 'free') {
+    return (
+      <span className="absolute right-3 top-3 z-10 rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-lg shadow-emerald-500/25 ring-1 ring-white/70">
+        Free
+      </span>
+    );
+  }
+
+  return (
+    <span className="absolute right-3 top-3 z-10 inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-amber-400 px-2 text-amber-950 shadow-lg shadow-amber-400/30 ring-1 ring-white/70" aria-label="Premium template">
+      <Crown size={15} strokeWidth={2.6} />
+    </span>
+  );
+}
+
 const pricingPlans = [
   {
     key: 'free',
@@ -706,9 +722,8 @@ export default function LandingPage() {
                   style={{ width: 'var(--template-card-width)' }}
                 >
                   <div>
-                    <h3 className="inline-flex min-h-8 items-center justify-center gap-2 font-montserrat text-lg font-black text-slate-800 sm:text-xl">
+                    <h3 className="inline-flex min-h-7 max-w-full items-center justify-center font-montserrat text-base font-black leading-tight text-slate-800 sm:text-lg">
                       <span>{template.label}</span>
-                      {template.access === 'paid' && <Crown size={17} className="text-amber-400" aria-label="Premium template" />}
                     </h3>
                   </div>
                   <div className={`relative mx-auto aspect-[210/297] w-full overflow-hidden border bg-white ring-1 transition-shadow duration-300 ${
@@ -716,6 +731,7 @@ export default function LandingPage() {
                       ? 'border-sky-200 shadow-2xl shadow-sky-200/70 ring-sky-200'
                       : 'border-slate-200 shadow-lg shadow-slate-200/60 ring-slate-900/5'
                   }`}>
+                    <TemplateAccessBadge access={template.access} />
                     <img
                       src={template.thumbnail}
                       alt={`${template.label} CV template preview`}

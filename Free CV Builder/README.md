@@ -1,125 +1,130 @@
-# NexCV - Free AI CV Builder
+# NexCV App
 
-NexCV is a modern, full-stack AI-powered CV builder application. It features a robust backend for handling user authentication, payments, document generation (PDFs), and AI integrations, alongside a dynamic, responsive frontend built with React.
+This folder contains the main NexCV application: a React 18 frontend, Express backend, MongoDB models, admin platform, PDF rendering services, email delivery, PayHere payment integration, and S3-backed CV template pipeline.
 
-## 🚀 Tech Stack
+## Stack
 
-### Frontend
-- **React 18**
-- **TypeScript**
-- **Vite** (Build Tool)
-- **Tailwind CSS** (Styling)
-- **React Router** (Navigation)
-- **Lucide React** (Icons)
+- React 18, TypeScript, Vite, Tailwind CSS
+- Node.js, Express, TypeScript
+- MongoDB and Mongoose
+- Passport local auth and Google OAuth
+- PayHere payments
+- Nodemailer email delivery
+- AWS S3 templates
+- AWS Lambda PDF renderer
+- Vitest and Testing Library
 
-### Backend
-- **Node.js & Express**
-- **MongoDB & Mongoose** (Database)
-- **Passport.js** (Authentication)
-- **AWS S3** (Storage for CV Templates)
-- **Puppeteer** (PDF Generation)
-- **PayHere** (Payment Gateway)
-- **Google Gemini AI** (AI Services)
-
----
-
-## 📂 Project Structure (Optimized Architecture)
-
-The codebase has been refactored and optimized for scalability, separating concerns between the frontend and backend, as well as breaking down large monolithic files into manageable modules.
+## Main Areas
 
 ```text
 Free CV Builder/
-│
-├── public/                 # Static assets (images, icons, etc.)
-│
-├── src/                    # 🎨 FRONTEND CODE (React App)
-│   ├── components/         # Reusable UI components (Modals, Headers, Footers)
-│   │   ├── cv-preview/     # CV Preview logic and styling components
-│   │   └── form/           # CV form input components (Education, Experience, etc.)
-│   │
-│   ├── pages/              # Main application pages
-│   │   ├── AdminDashboard.tsx   # Main Admin container
-│   │   ├── admin/          # 🧩 Separated Admin Dashboard Modules
-│   │   │   ├── AdminSharedComponents.tsx  # Reusable admin UI widgets
-│   │   │   ├── BillingManagementSection.tsx
-│   │   │   ├── SupportManagementSection.tsx
-│   │   │   ├── TemplateManagementSection.tsx
-│   │   │   ├── UserManagementSection.tsx
-│   │   │   ├── adminTypes.ts      # TypeScript interfaces for admin
-│   │   │   └── adminUtils.ts      # Helper functions for admin
-│   │   │
-│   │   ├── Home.tsx
-│   │   ├── LandingPage.tsx
-│   │   ├── Dashboard.tsx
-│   │   └── ...other pages
-│   │
-│   ├── utils/              # Frontend utilities (API fetch wrappers, etc.)
-│   ├── adminPermissions.ts # Role-based access control configurations
-│   ├── App.tsx             # Main React Router setup
-│   ├── main.tsx            # React application entry point
-│   └── index.css           # Global Tailwind CSS and custom styles
-│
-├── routes/                 # ⚙️ BACKEND ROUTES (Express Controllers)
-│   ├── admin.ts            # Admin-specific API endpoints
-│   ├── auth.ts             # Authentication endpoints (Login, Signup, OAuth)
-│   ├── cv.ts               # CV CRUD operations and PDF generation endpoints
-│   ├── payment.ts          # Payment processing and PayHere IPN logic
-│   ├── public.ts           # Publicly accessible endpoints
-│   └── _shared.ts          # Shared route utilities
-│
-├── services/               # 🛠️ BACKEND SERVICES (Business Logic)
-│   ├── emailService.ts     # Nodemailer logic for sending system/auth emails
-│   ├── pdfService.ts       # Puppeteer logic for generating PDFs
-│   └── s3Service.ts        # AWS S3 integration for template management
-│
-├── middlewares/            # 🛡️ BACKEND MIDDLEWARE
-│   ├── passportAuth.ts     # Passport strategies and authentication checks
-│   ├── rateLimiters.ts     # Express-rate-limit configurations to prevent abuse
-│   ├── security.ts         # Helmet, CORS, and origin checking logic
-│   └── session.ts          # Express-session configurations
-│
-├── server-models/          # 🗄️ DATABASE MODELS (Mongoose Schemas)
-│   ├── User.ts
-│   ├── CVDocument.ts
-│   ├── PaymentTransaction.ts
-│   └── ...other models
-│
-├── server.ts               # 🚀 BACKEND ENTRY POINT (Express Server Setup)
-├── vite.config.ts          # Vite build and proxy configuration
-└── package.json            # Project dependencies and scripts
+  src/
+    components/               # Shared frontend components
+    pages/                    # App pages and admin dashboard
+    pages/admin/              # Admin modules
+    utils/                    # Frontend helpers and API wrapper
+  routes/                     # Express route modules
+  services/                   # Email, S3, PDF, and business services
+  middlewares/                # Security, auth, session, rate limits
+  server-models/              # MongoDB models
+  tests/                      # Server and integration tests
+  lambda-pdf/                 # Lambda PDF renderer package
+  scripts/                    # Build helpers
+  server.ts                   # Express entry point
 ```
 
-## 🏗️ Architectural Highlights
+## Admin Features
 
-1. **Modular Backend**: The Express server (`server.ts`) acts solely as the entry point. All business logic is abstracted into `services/`, request handling into `routes/`, and security into `middlewares/`. This makes it extremely easy to deploy the backend separately from the frontend in the future.
-2. **Componentized Frontend**: Large pages like the `AdminDashboard` have been broken down into smaller, focused sections (e.g., `UserManagementSection`, `BillingManagementSection`). Shared logic and types are extracted to utility files.
-3. **Type Safety**: TypeScript is used extensively across both the frontend (`src/`) and the backend (`routes/`, `services/`, `server-models/`) to ensure data consistency and reduce runtime errors.
+- Users and plan management
+- Template CMS
+- Billing plans and coupons
+- Promotions
+- Support tickets
+- Admin roles and permissions
+- Global settings
+- Maintenance mode
+- Email service readiness and test email
+- Audit log
+- Admin IP allowlist via `ADMIN_ALLOWED_IPS`
 
-## 💻 Getting Started
+## Environment Setup
 
-### Prerequisites
-- Node.js (v18 or higher recommended)
-- MongoDB instance (local or Atlas)
-- Required API Keys (AWS, PayHere, Gemini, Google OAuth, etc.) set in `.env`
+Create `.env` in this folder.
 
-### Installation
+```env
+PORT=3002
+ALLOWED_ORIGIN=http://localhost:3000
+MONGODB_URI=your_mongodb_connection_string
+SESSION_SECRET=your_session_secret
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+GEMINI_API_KEY=your_gemini_key
 
-2. Setup Environment Variables:
-   Create a `.env` file in the root directory and add the necessary configuration keys.
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 
-3. Start the Development Server (Frontend + Backend concurrently):
-   ```bash
-   npm run dev
-   ```
+EMAIL_USER=your_smtp_user
+EMAIL_PASS=your_smtp_password
+EMAIL_FROM="NexCV <support@nexcv.com>"
+ADMIN_NOTIFICATION_EMAIL=admin@nexcv.com
 
-### Building for Production
-To build the frontend assets:
+PAYHERE_MERCHANT_ID=your_payhere_merchant_id
+PAYHERE_MERCHANT_SECRET=your_payhere_secret
+
+S3_TEMPLATE_BUCKET_NAME=your_template_bucket
+S3_TEMPLATE_PREFIX=templates
+S3_TEMPLATE_CACHE_TTL_MS=300000
+
+PDF_LAMBDA_URL=your_lambda_pdf_url
+PDF_LAMBDA_TIMEOUT_MS=45000
+
+SUPER_ADMIN_EMAILS=owner@example.com
+ADMIN_ALLOWED_IPS=
+```
+
+### Admin IP Allowlist
+
+`ADMIN_ALLOWED_IPS` accepts comma-separated IP addresses.
+
+```env
+ADMIN_ALLOWED_IPS=203.0.113.10,198.51.100.25
+```
+
+When enabled:
+- `/api/admin/*` is blocked for non-allowed IPs.
+- Production `/admin` pages are hidden from non-allowed IPs.
+- Local development loopback access remains available.
+
+## Commands
+
 ```bash
+npm install
+npm run dev:all
+npm run lint
+npm run test:run
 npm run build
+npm run build:pdf-lambda
 ```
-The compiled static files will be placed in the `dist/` directory, which can then be served by the Express backend or a dedicated static file server.
+
+## Local URLs
+
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:3002`
+- Admin: `http://localhost:3000/admin`
+
+## Current Operational Notes
+
+- Global app settings are stored in MongoDB through `AppSetting`.
+- Maintenance mode should be managed from Admin Settings.
+- Email secrets stay in environment variables; admin UI only shows readiness state and supports sending a test email.
+- CMS-created templates should include thumbnail metadata and profile image placeholders when profile photo support is needed.
+- Free templates show a Free badge; premium templates show a crown badge.
+
+## Recommended Next Work
+
+1. Build CMS pages for landing page content, FAQs, legal copy, and announcement banners.
+2. Add email template settings for branded transactional emails.
+3. Add draft, preview, publish, and rollback states for custom templates.
+4. Add admin analytics for user growth, downloads, payments, and template usage.
+5. Optimize frontend chunks with lazy routes and admin module code splitting.
+6. Complete final launch QA across admin IP rules, maintenance mode, emails, payments, and PDF rendering.
+

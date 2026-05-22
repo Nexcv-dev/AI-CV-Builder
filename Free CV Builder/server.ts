@@ -15,6 +15,7 @@ import Coupon from './server-models/Coupon';
 import CheckoutSession from './server-models/CheckoutSession';
 import TemplateSetting from './server-models/TemplateSetting';
 import SupportTicket from './server-models/SupportTicket';
+import AppSetting, { getAppSettings } from './server-models/AppSetting';
 import AdminAuditLog, { adminAuditLogSummary, recordAdminAuditLog } from './server-models/AdminAuditLog';
 import { configureSecurityMiddleware, getRequestOrigin, isAllowedOrigin, integrityCheck } from './middlewares/security';
 import { assertSessionSecret, configureSessionMiddleware } from './middlewares/session';
@@ -33,6 +34,7 @@ import {
 } from './middlewares/rateLimiters';
 import {
     buildPasswordResetTransportOptions,
+    getAppEmailFrom,
     isEmailServiceConfigured,
     normalizeEmailFrom,
     sendAppEmail,
@@ -52,7 +54,7 @@ import {
 import { generateCVHTML, generatePdfDocument, sanitizeCvData } from './services/pdfService';
 import { CV_TEMPLATES, DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan, type TemplateName } from './src/templates';
 import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
-import { hasAdminPermission, isUserRole, type AdminPermission } from './src/adminAccess';
+import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from './src/adminAccess';
 import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildDownloadQuota } from './server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
@@ -110,6 +112,96 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     }
     return defaultJsonParser(req, res, next);
 });
+
+app.use(async (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.path.startsWith('/api')) return next();
+    try {
+        (req as any).appSettings = await getAppSettings();
+    } catch {
+        (req as any).appSettings = null;
+    }
+    next();
+});
+
+const isMaintenanceBypassRoute = (req: Request) => {
+    if (req.path === '/api/health' || req.path === '/api/public/app-settings') return true;
+    if (req.path.startsWith('/api/admin')) return true;
+    if (req.path === '/api/auth/current-user' || req.path === '/api/auth/login' || req.path === '/api/auth/logout') return true;
+    if (req.path === '/api/auth/forgot-password' || req.path === '/api/auth/validate-reset-token' || req.path === '/api/auth/reset-password') return true;
+    if (req.path === '/api/auth/google' || req.path === '/api/auth/google/callback') return true;
+    return false;
+};
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const settings = (req as any).appSettings;
+    if (!req.path.startsWith('/api') || !settings?.maintenanceMode) return next();
+    if (req.user && isAdminRole((req.user as any).role)) return next();
+    if (isMaintenanceBypassRoute(req)) return next();
+
+    return res.status(503).json({
+        error: 'NexCV is temporarily down for maintenance.',
+        maintenanceMode: true,
+        supportEmail: settings.supportEmail || 'support@nexcv.com',
+    });
+});
+
+const normalizeClientIp = (value: unknown) => {
+    if (typeof value !== 'string') return '';
+    let trimmed = value.trim();
+    if (!trimmed) return '';
+    trimmed = trimmed.replace(/^\[/, '').replace(/\]$/, '');
+    if (/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(trimmed)) {
+        trimmed = trimmed.slice(0, trimmed.lastIndexOf(':'));
+    }
+    if (trimmed === '::1') return '127.0.0.1';
+    return trimmed.replace(/^::ffff:/, '');
+};
+
+const getAllowedAdminIps = () => (
+    (process.env.ADMIN_ALLOWED_IPS || '')
+        .split(',')
+        .map(normalizeClientIp)
+        .filter(Boolean)
+);
+
+const getRequestIpCandidates = (req: Request) => {
+    const forwardedFor = (req.header('x-forwarded-for') || '')
+        .split(',')
+        .map(normalizeClientIp)
+        .filter(Boolean);
+
+    return new Set([
+        normalizeClientIp(req.ip),
+        normalizeClientIp(req.socket?.remoteAddress),
+        normalizeClientIp(req.header('x-real-ip')),
+        normalizeClientIp(req.header('cf-connecting-ip')),
+        normalizeClientIp(req.header('true-client-ip')),
+        normalizeClientIp(req.header('fly-client-ip')),
+        normalizeClientIp(req.header('x-client-ip')),
+        ...((req.ips || []).map(normalizeClientIp)),
+        ...forwardedFor,
+    ].filter(Boolean));
+};
+
+const isAdminIpAllowed = (req: Request) => {
+    const allowedIps = getAllowedAdminIps();
+    if (!allowedIps.length) return true;
+    const candidates = getRequestIpCandidates(req);
+    if (process.env.NODE_ENV !== 'production' && (candidates.has('127.0.0.1') || candidates.has('localhost'))) {
+        return true;
+    }
+    return allowedIps.some((ip) => candidates.has(ip));
+};
+
+const requireAdminAllowedIp = (req: Request, res: Response, next: NextFunction) => {
+    if (isAdminIpAllowed(req)) return next();
+    return res.status(403).json({ error: 'Admin access is not allowed from this network.' });
+};
+
+const requireAdminPageAllowedIp = (req: Request, res: Response, next: NextFunction) => {
+    if (isAdminIpAllowed(req)) return next();
+    return res.status(404).send('Not found');
+};
 
 // Helper to provide private error responses
 export const sendError = (res: express.Response, status: number, clientMessage: string, internalError?: any) => {
@@ -318,6 +410,10 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const requireVerifiedEmail = (req: Request, res: Response) => {
+    if ((req as any).appSettings?.emailVerificationRequired === false) {
+        return true;
+    }
+
     if (!isEmailVerified(req.user)) {
         res.status(403).json({ error: 'Verify your email to save CVs.' });
         return false;
@@ -342,7 +438,16 @@ const requirePaidPlan = (req: Request, res: Response) => {
 
 const getCvCreationQuota = async (user: any) => {
     const used = await CVDocument.countDocuments({ userId: user._id || user.id });
-    return buildCvCreationQuota(user, used);
+    const quota = buildCvCreationQuota(user, used);
+    const settings = await getAppSettings().catch(() => null);
+    if (quota.plan !== 'free' || !settings) return quota;
+    const limit = Math.max(0, Math.floor(settings.freeCvCreationLimit));
+    return {
+        ...quota,
+        limit,
+        remaining: Math.max(limit - used, 0),
+        reached: limit - used <= 0,
+    };
 };
 
 const incrementCvCreationQuota = async (user: any) => {
@@ -352,7 +457,17 @@ const incrementCvCreationQuota = async (user: any) => {
 const getDownloadQuota = async (user: any) => {
     const day = 'free-lifetime';
     const record = await DownloadQuota.findOne({ userId: user._id || user.id, day });
-    return buildDownloadQuota(user, record?.count || 0);
+    const used = record?.count || 0;
+    const quota = buildDownloadQuota(user, used);
+    const settings = await getAppSettings().catch(() => null);
+    if (quota.plan !== 'free' || !settings) return quota;
+    const limit = Math.max(0, Math.floor(settings.freePdfDownloadLimit));
+    return {
+        ...quota,
+        limit,
+        remaining: Math.max(limit - used, 0),
+        reached: limit - used <= 0,
+    };
 };
 
 const incrementDownloadQuota = async (user: any) => {
@@ -362,7 +477,7 @@ const incrementDownloadQuota = async (user: any) => {
         { $inc: { count: 1 } },
         { new: true, upsert: true, setDefaultsOnInsert: true }
     );
-    return buildDownloadQuota(user, record.count);
+    return getDownloadQuota(user);
 };
 
 const isValidDocumentId = (id: unknown) => (
@@ -865,7 +980,7 @@ const parseThumbnailUpload = (value: unknown) => {
 // â”€â”€â”€ API Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const routeDeps = {
-    User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, AdminAuditLog,
+    User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, AppSetting, AdminAuditLog,
     CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan,
     requireAuth, requireSuperAdmin, requireAdminPermission, sendError, passport,
     adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser,
@@ -893,8 +1008,8 @@ const routeDeps = {
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,
     recordAdminAuditLog, adminAuditLogSummary,
     emailGreetingName,
-    sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom,
-    roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, isUserRole,
+    sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, getAppEmailFrom,
+    roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, isUserRole, isAdminIpAllowed,
     mongoose, randomBytes, randomInt, createHash, timingSafeEqual,
 };
 
@@ -904,6 +1019,7 @@ app.use(publicRouter);
 
 const adminRouter = express.Router();
 registerAdminRoutes(adminRouter, routeDeps);
+app.use('/api/admin', requireAdminAllowedIp);
 app.use(adminRouter);
 
 const paymentRouter = express.Router();
@@ -924,6 +1040,8 @@ const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, 'dist');
 
 app.use(express.static(distPath));
+
+app.use('/admin', requireAdminPageAllowedIp);
 
 // Catch-all: serve index.html for any non-API route (React Router support)
 app.get('*', (_req: Request, res: Response) => {

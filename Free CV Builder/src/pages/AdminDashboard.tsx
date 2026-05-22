@@ -105,6 +105,8 @@ export default function AdminDashboard() {
   const [savingRoleUserId, setSavingRoleUserId] = useState<string | null>(null);
   const [settings, setSettings] = useState<AdminSettingsSummary | null>(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AdminAuditLogItem[]>([]);
   const [auditActions, setAuditActions] = useState<string[]>([]);
   const [auditTargetTypes, setAuditTargetTypes] = useState<string[]>([]);
@@ -168,7 +170,7 @@ export default function AdminDashboard() {
   }, [isUsersPage, planFilter, roleFilter, userSearch]);
 
   useEffect(() => {
-    if (!isTemplatesPage) return;
+    if (!isTemplatesPage && !isSettingsPage) return;
     let ignore = false;
     setTemplatesLoading(true);
 
@@ -188,7 +190,7 @@ export default function AdminDashboard() {
     return () => {
       ignore = true;
     };
-  }, [isTemplatesPage]);
+  }, [isSettingsPage, isTemplatesPage]);
 
   useEffect(() => {
     if (!isBillingPage) return;
@@ -342,10 +344,42 @@ export default function AdminDashboard() {
     navigate('/');
   };
 
+  const saveSettings = async (appSettings: AdminSettingsSummary['app']) => {
+    setSavingSettings(true);
+    try {
+      const data = await apiFetch<{ app: AdminSettingsSummary['app'] }>('/api/admin/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({ app: appSettings }),
+      });
+      setSettings((current) => current ? { ...current, app: data.app } : current);
+      toast.success('Settings updated.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not update settings.');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const sendTestEmail = async (recipient: string) => {
+    setSendingTestEmail(true);
+    try {
+      const data = await apiFetch<{ message: string }>('/api/admin/settings/test-email', {
+        method: 'POST',
+        body: JSON.stringify({ to: recipient }),
+      });
+      toast.success(data.message || 'Test email sent.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send test email.');
+    } finally {
+      setSendingTestEmail(false);
+    }
+  };
+
   const navAccess = getRoleAccess(user?.role);
   const userRoleLabel = isAdminRole(user?.role) ? ADMIN_ROLE_LABELS[user.role] : 'Admin';
   const canUpdateUserPlans = hasAdminPermission(user, 'users.plan.update');
   const canUpdateRoles = hasAdminPermission(user, 'users.role.update');
+  const canUpdateSettings = hasAdminPermission(user, 'settings.write');
   const activeNav = adminNavItems.find((item) => item.to === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(item.to)) || adminNavItems[0];
   const maxChartValue = useMemo(() => {
     const values = [
@@ -831,6 +865,12 @@ export default function AdminDashboard() {
             <SettingsManagementSection
               settings={settings}
               loading={settingsLoading}
+              saving={savingSettings}
+              sendingTestEmail={sendingTestEmail}
+              canUpdateSettings={canUpdateSettings}
+              templates={templates}
+              onSave={saveSettings}
+              onSendTestEmail={sendTestEmail}
             />
           ) : isAuditPage ? (
             <AuditLogSection

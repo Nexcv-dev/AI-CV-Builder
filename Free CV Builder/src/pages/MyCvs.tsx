@@ -23,7 +23,7 @@ import { AppShellHeader } from '../components/AppShellHeader';
 import { AppSidebar } from '../components/AppSidebar';
 import { apiFetch, setDashboardNotification } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
-import { CV_TEMPLATES } from '../templates';
+import { useTemplateConfig, type TemplateConfigItem } from '../hooks/useTemplateConfig';
 
 interface SavedDocument {
   id: string;
@@ -43,8 +43,6 @@ interface CvCreationQuota {
 
 type FilterTab = 'all' | 'recent' | 'drafts' | 'archived';
 
-const templateMeta = new Map(CV_TEMPLATES.map((template) => [template.key, template]));
-
 function formatRelativeTime(value: string) {
   const diffMs = Date.now() - new Date(value).getTime();
   const minutes = Math.max(1, Math.round(diffMs / 60000));
@@ -58,6 +56,7 @@ function formatRelativeTime(value: string) {
 
 export default function MyCvs() {
   const navigate = useNavigate();
+  const { templateMap } = useTemplateConfig();
   const [documents, setDocuments] = useState<SavedDocument[]>([]);
   const [quota, setQuota] = useState<CvCreationQuota | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,10 +108,10 @@ export default function MyCvs() {
     }
 
     return term ? base.filter((document) => {
-      const templateLabel = templateMeta.get(document.template as any)?.label || document.template;
+      const templateLabel = templateMap.get(document.template as any)?.label || document.template;
       return `${document.title} ${templateLabel}`.toLowerCase().includes(term);
     }) : base;
-  }, [activeTab, documents, search]);
+  }, [activeTab, documents, search, templateMap]);
 
   const deleteDocument = async (id: string) => {
     setDeletingId(id);
@@ -227,9 +226,10 @@ export default function MyCvs() {
                   <div className="dark-scrollbar min-h-[420px] divide-y divide-white/10 overflow-y-auto sm:max-h-[calc(100dvh-320px)]">
                     {searchedDocuments.map((document) => (
                       <CvListItem
-                        key={document.id}
-                        document={document}
-                        deleting={deletingId === document.id}
+                  key={document.id}
+                  document={document}
+                  templateMap={templateMap}
+                  deleting={deletingId === document.id}
                         menuOpen={openActionsDocumentId === document.id}
                         onToggleMenu={() => setOpenActionsDocumentId((current) => current === document.id ? null : document.id)}
                         onEdit={() => navigate(`/builder?document=${document.id}`)}
@@ -357,9 +357,9 @@ function FilterButton({ active, onClick, label, count }: { active: boolean; onCl
   );
 }
 
-function CvListItem({ document, deleting, menuOpen, onToggleMenu, onEdit, onDownload, onDelete }: { document: SavedDocument; deleting: boolean; menuOpen: boolean; onToggleMenu: () => void; onEdit: () => void; onDownload: () => void; onDelete: () => void }) {
-  const meta = templateMeta.get(document.template as any);
-  const image = meta?.image || '/templates/professional.png';
+function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, onEdit, onDownload, onDelete }: { document: SavedDocument; templateMap: Map<string, TemplateConfigItem>; deleting: boolean; menuOpen: boolean; onToggleMenu: () => void; onEdit: () => void; onDownload: () => void; onDelete: () => void }) {
+  const meta = templateMap.get(document.template as any);
+  const image = meta?.thumbnail || '/templates/professional.png';
   const templateLabel = meta?.label || document.template;
 
   return (
