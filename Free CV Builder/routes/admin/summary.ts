@@ -1,6 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { bindDeps, type RouteDeps } from '../_shared';
 
+type DailyCount = {
+    _id: string;
+    count: number;
+};
+
+type DailyCheckoutCount = {
+    _id: string;
+    started: number;
+    paid: number;
+};
 
 export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
     const { User, CVDocument, DownloadQuota, PaymentTransaction, CheckoutSession, SupportTicket, requireAdminPermission, sendError, getEffectivePlan, startOfUtcDay, formatUtcDay, parsePaymentAmountCents } = bindDeps(deps);
@@ -76,11 +86,13 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
                 revenueByDay.set(day, (revenueByDay.get(day) || 0) + parsePaymentAmountCents(payment.amount));
             });
     
-            const growthByDay = new Map(userGrowth.map((item: any) => [item._id, item.count]));
-            const savesByDay = new Map(cvSaves.map((item: any) => [item._id, item.count]));
-            const downloadsByDay = new Map(cvDownloads.map((item: any) => [item._id, item.count]));
-            const checkoutByDay = new Map(checkoutSessions.map((item: any) => [item._id, { started: item.started, paid: item.paid }]));
-            const supportCounts = new Map(supportStatusCounts.map((item: any) => [item._id, item.count]));
+            const growthByDay = new Map<string, number>(userGrowth.map((item: DailyCount) => [item._id, item.count]));
+            const savesByDay = new Map<string, number>(cvSaves.map((item: DailyCount) => [item._id, item.count]));
+            const downloadsByDay = new Map<string, number>(cvDownloads.map((item: DailyCount) => [item._id, item.count]));
+            const checkoutByDay = new Map<string, { started: number; paid: number }>(
+                checkoutSessions.map((item: DailyCheckoutCount) => [item._id, { started: item.started, paid: item.paid }])
+            );
+            const supportCounts = new Map<string, number>(supportStatusCounts.map((item: DailyCount) => [item._id, item.count]));
             const dailySeries = Array.from({ length: 7 }, (_, index) => {
                 const date = new Date(sevenDaysAgo);
                 date.setUTCDate(sevenDaysAgo.getUTCDate() + index);

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FileText, Palette, Check, LayoutTemplate, Crown } from 'lucide-react';
 import { DndContext, closestCorners, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -14,18 +14,6 @@ import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
 
 import {
-  PersonalDetailsSection,
-  SummarySection,
-  ExperienceSection,
-  EducationSection,
-  SkillsSection,
-  CoursesSection,
-  LanguagesSection,
-  ProjectsSection,
-  AwardsSection,
-  ReferencesSection,
-  DesignPanel,
-  ImportModals,
   ALL_STEPS,
   FINALIZE_SECTION_KEYS,
   WIZARD_STEPS,
@@ -38,7 +26,20 @@ import {
   getPersonalInfoLimit,
   getSectionFieldLimit,
   truncateText
-} from './form';
+} from './form/constants';
+
+const PersonalDetailsSection = lazy(() => import('./form/PersonalDetailsSection').then((module) => ({ default: module.PersonalDetailsSection })));
+const SummarySection = lazy(() => import('./form/SummarySection').then((module) => ({ default: module.SummarySection })));
+const ExperienceSection = lazy(() => import('./form/ExperienceSection').then((module) => ({ default: module.ExperienceSection })));
+const EducationSection = lazy(() => import('./form/EducationSection').then((module) => ({ default: module.EducationSection })));
+const SkillsSection = lazy(() => import('./form/SkillsSection').then((module) => ({ default: module.SkillsSection })));
+const CoursesSection = lazy(() => import('./form/CoursesSection').then((module) => ({ default: module.CoursesSection })));
+const LanguagesSection = lazy(() => import('./form/LanguagesSection').then((module) => ({ default: module.LanguagesSection })));
+const ProjectsSection = lazy(() => import('./form/ProjectsSection').then((module) => ({ default: module.ProjectsSection })));
+const AwardsSection = lazy(() => import('./form/AwardsSection').then((module) => ({ default: module.AwardsSection })));
+const ReferencesSection = lazy(() => import('./form/ReferencesSection').then((module) => ({ default: module.ReferencesSection })));
+const DesignPanel = lazy(() => import('./form/DesignPanel').then((module) => ({ default: module.DesignPanel })));
+const ImportModals = lazy(() => import('./form/ImportModals').then((module) => ({ default: module.ImportModals })));
 
 interface CVFormProps {
   cvData: CVData;
@@ -52,6 +53,14 @@ interface CVFormProps {
   showTemplatesOnMount?: boolean;
   isFreePlan?: boolean;
   onUpgradeRequired?: (source: 'save' | 'download' | 'ai') => void;
+}
+
+function FormChunkFallback({ isDarkMode = false }: { isDarkMode?: boolean }) {
+  return (
+    <div className={`flex min-h-48 items-center justify-center rounded-2xl border text-sm font-bold ${isDarkMode ? 'border-slate-700 bg-slate-800/45 text-slate-400' : 'border-gray-200 bg-gray-50 text-gray-500'}`}>
+      Loading editor...
+    </div>
+  );
 }
 
 export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, isFreePlan = false, onUpgradeRequired }: CVFormProps) {
@@ -143,7 +152,6 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [refiningIds, setRefiningIds] = useState<Record<string, boolean>>({});
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const importAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -559,10 +567,6 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const removeAward = useCallback((id: string) => removeSectionItem('awards', id), [removeSectionItem]);
   const removeReference = useCallback((id: string) => removeSectionItem('references', id), [removeSectionItem]);
 
-  // Stable DatePicker callbacks
-  const openDatePicker = useCallback(() => setIsDatePickerOpen(true), []);
-  const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), []);
-
   // Stable summary change callback
   const handleSummaryChange = useCallback((val: string) => {
     handlePersonalInfoChange({ target: { name: 'summary', value: val } });
@@ -578,9 +582,6 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             onToggle={() => toggleSection('personalDetails')}
             onChange={handlePersonalInfoChange}
             isDarkMode={isDarkMode}
-            isDatePickerOpen={isDatePickerOpen}
-            onDatePickerOpen={openDatePicker}
-            onDatePickerClose={closeDatePicker}
           />
         );
       case 'summary':
@@ -769,27 +770,29 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                     exit={{ opacity: 0, y: -16, scale: 0.98 }}
                     transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    {(() => {
-                      const isFinalize = ALL_STEPS[wizardStep] === 'finalize';
-                      const currentSectionKeys = isFinalize
-                        ? cvData.sectionOrder.filter(key => (FINALIZE_SECTION_KEYS as readonly string[]).includes(key))
-                        : [ALL_STEPS[wizardStep]];
+                    <Suspense fallback={<FormChunkFallback isDarkMode={isDarkMode} />}>
+                      {(() => {
+                        const isFinalize = ALL_STEPS[wizardStep] === 'finalize';
+                        const currentSectionKeys = isFinalize
+                          ? cvData.sectionOrder.filter(key => (FINALIZE_SECTION_KEYS as readonly string[]).includes(key))
+                          : [ALL_STEPS[wizardStep]];
 
-                      return (
-                        <SortableContext
-                          items={currentSectionKeys}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {currentSectionKeys
-                            .filter(Boolean)
-                            .map((key) => (
-                              <React.Fragment key={key}>
-                                {renderSection(key as string)}
-                              </React.Fragment>
-                            ))}
-                        </SortableContext>
-                      );
-                    })()}
+                        return (
+                          <SortableContext
+                            items={currentSectionKeys}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {currentSectionKeys
+                              .filter(Boolean)
+                              .map((key) => (
+                                <React.Fragment key={key}>
+                                  {renderSection(key as string)}
+                                </React.Fragment>
+                              ))}
+                          </SortableContext>
+                        );
+                      })()}
+                    </Suspense>
                   </motion.div>
                 </AnimatePresence>
               </DndContext>
@@ -805,14 +808,16 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             <div className="h-8 w-full shrink-0"></div>
           </div>
         ) : activeMainTab === 'design' ? (
-          <DesignPanel
-            cvData={cvData}
-            setCvData={setCvData}
-            template={template}
-            isDarkMode={isDarkMode}
-            fileInputRef={fileInputRef}
-            onImageUpload={handleImageUpload}
-          />
+          <Suspense fallback={<FormChunkFallback isDarkMode={isDarkMode} />}>
+            <DesignPanel
+              cvData={cvData}
+              setCvData={setCvData}
+              template={template}
+              isDarkMode={isDarkMode}
+              fileInputRef={fileInputRef}
+              onImageUpload={handleImageUpload}
+            />
+          </Suspense>
         ) : (
           <div className="animate-in fade-in duration-300 space-y-5 pb-8">
             <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-gray-200 bg-gray-50'}`}>
@@ -915,17 +920,19 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
         </div>
       </div>
 
-      <ImportModals
-        showInitialPrompt={showInitialPrompt}
-        setShowInitialPrompt={setShowInitialPrompt}
-        showUploadModal={showUploadModal}
-        setShowUploadModal={setShowUploadModal}
-        isImporting={isImporting}
-        importMessage={importMessage}
-        handleCVImport={handleCVImport}
-        isDarkMode={isDarkMode}
-        onImportSkipped={completeLoginImportStep}
-      />
+      <Suspense fallback={null}>
+        <ImportModals
+          showInitialPrompt={showInitialPrompt}
+          setShowInitialPrompt={setShowInitialPrompt}
+          showUploadModal={showUploadModal}
+          setShowUploadModal={setShowUploadModal}
+          isImporting={isImporting}
+          importMessage={importMessage}
+          handleCVImport={handleCVImport}
+          isDarkMode={isDarkMode}
+          onImportSkipped={completeLoginImportStep}
+        />
+      </Suspense>
     </div>
   );
 }

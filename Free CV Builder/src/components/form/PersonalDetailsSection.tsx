@@ -1,7 +1,5 @@
 import React from 'react';
-import DatePicker from 'react-datepicker';
-import { offset } from '@floating-ui/dom';
-import { User, Calendar } from 'lucide-react';
+import { User } from 'lucide-react';
 import { CVData } from '../../types';
 import { SortableAccordionSection } from './SortableAccordionSection';
 import { PremiumSelect } from './PremiumSelect';
@@ -13,9 +11,6 @@ interface PersonalDetailsSectionProps {
   onToggle: () => void;
   onChange: (e: { target: { name: string; value: string } }) => void;
   isDarkMode?: boolean;
-  isDatePickerOpen: boolean;
-  onDatePickerOpen: () => void;
-  onDatePickerClose: () => void;
 }
 
 const GENDER_OPTIONS = [
@@ -29,15 +24,33 @@ const MARITAL_OPTIONS = [
   { value: 'Married', label: 'Married' },
 ];
 
+function DateOfBirthField({
+  personalInfo,
+  onChange,
+}: Pick<PersonalDetailsSectionProps, 'personalInfo' | 'onChange'>) {
+  return (
+    <div>
+      <label htmlFor="dob" className={LABEL_CLASS_SM}>Date of Birth</label>
+      <div>
+        <input
+          id="dob"
+          type="date"
+          name="dob"
+          value={personalInfo.dob}
+          onChange={onChange}
+          className={INPUT_CLASS}
+        />
+      </div>
+    </div>
+  );
+}
+
 export const PersonalDetailsSection = React.memo(({
   personalInfo,
   isOpen,
   onToggle,
   onChange,
   isDarkMode,
-  isDatePickerOpen,
-  onDatePickerOpen,
-  onDatePickerClose,
 }: PersonalDetailsSectionProps) => (
   <SortableAccordionSection
     key="personalDetails"
@@ -105,41 +118,10 @@ export const PersonalDetailsSection = React.memo(({
         />
       </div>
       <div>
-        <label htmlFor="dob" className={LABEL_CLASS_SM}>Date of Birth</label>
-        <div className="relative date-picker-wrapper">
-          <DatePicker
-            id="dob"
-            name="dob"
-            selected={personalInfo.dob ? new Date(personalInfo.dob) : null}
-            onChange={(date) => {
-              const newValue = date ? date.toISOString().split('T')[0] : '';
-              const isSameDate = personalInfo.dob === newValue;
-              onChange({
-                target: {
-                  name: 'dob',
-                  value: isSameDate ? '' : newValue
-                }
-              } as any);
-              onDatePickerClose();
-            }}
-            dateFormat="yyyy-MM-dd"
-            placeholderText="Select Date of Birth"
-            className={INPUT_CLASS}
-            popperClassName={`premium-datepicker-popper ${isDarkMode ? 'dark-cv' : ''}`}
-            calendarClassName="premium-datepicker-calendar"
-            showMonthDropdown
-            showYearDropdown
-            dropdownMode="select"
-            open={isDatePickerOpen}
-            onInputClick={onDatePickerOpen}
-            onClickOutside={onDatePickerClose}
-            popperPlacement="top"
-            popperProps={{ middleware: [offset(10)] } as any}
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-            <Calendar size={18} />
-          </div>
-        </div>
+        <DateOfBirthField
+          personalInfo={personalInfo}
+          onChange={onChange}
+        />
       </div>
       <div>
         <label htmlFor="nic" className={LABEL_CLASS_SM}>NIC Number</label>

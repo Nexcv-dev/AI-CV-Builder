@@ -1,29 +1,30 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Link, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import Home from './pages/Home';
-import LandingPage from './pages/LandingPage';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsAndConditions from './pages/TermsAndConditions';
-import AboutUs from './pages/AboutUs';
-import ContactUs from './pages/ContactUs';
-import TemplatesPage from './pages/TemplatesPage';
-import PrintView from './pages/PrintView';
-import Dashboard from './pages/Dashboard';
-import MyCvs from './pages/MyCvs';
-import Profile from './pages/Profile';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import TipsAndResources from './pages/TipsAndResources';
-import PricingPage from './pages/PricingPage';
-import CheckoutPage from './pages/CheckoutPage';
-import RefundPolicy from './pages/RefundPolicy';
-import AdminDashboard from './pages/AdminDashboard';
 import { Toaster } from 'react-hot-toast';
 import { Footer } from './components/Footer';
-import { AuthModal } from './components/AuthModal';
 import { getCurrentUser } from './utils/api';
 import { isAdminUser } from './adminPermissions';
+
+const AuthModal = lazy(() => import('./components/AuthModal').then((module) => ({ default: module.AuthModal })));
+const Home = lazy(() => import('./pages/Home'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions'));
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const ContactUs = lazy(() => import('./pages/ContactUs'));
+const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
+const PrintView = lazy(() => import('./pages/PrintView'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const MyCvs = lazy(() => import('./pages/MyCvs'));
+const Profile = lazy(() => import('./pages/Profile'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const TipsAndResources = lazy(() => import('./pages/TipsAndResources'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 interface PublicAppSettings {
   maintenanceMode: boolean;
@@ -107,6 +108,14 @@ function PageLoadingOverlay() {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function RouteLoadingFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm font-bold text-slate-400">
+      Loading NexCV...
+    </div>
   );
 }
 
@@ -199,16 +208,18 @@ function AdminProtectedRoute({ children }: { children: React.ReactElement }) {
         >
           Sign in
         </button>
-        <AuthModal
-          isOpen={loginOpen}
-          initialMode="login"
-          redirectTo={location.pathname}
-          onClose={() => setLoginOpen(false)}
-          onAuthenticated={(user) => {
-            setStatus(isAdminUser(user) ? 'authed' : 'forbidden');
-            setLoginOpen(false);
-          }}
-        />
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={loginOpen}
+            initialMode="login"
+            redirectTo={location.pathname}
+            onClose={() => setLoginOpen(false)}
+            onAuthenticated={(user) => {
+              setStatus(isAdminUser(user) ? 'authed' : 'forbidden');
+              setLoginOpen(false);
+            }}
+          />
+        </Suspense>
       </div>
     );
   }
@@ -370,35 +381,37 @@ function AppRoutes() {
           )}
         </div>
       )}
-      <Routes>
-        {/* Headless print route - no layout */}
-        <Route path="/print" element={<PrintView />} />
-        
-        {/* Standard layout routes */}
-        <Route element={<Layout />}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-          <Route path="/admin/*" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-          <Route path="/my-cvs" element={<ProtectedRoute><MyCvs /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/settings" element={<Navigate to="/profile" replace />} />
-          <Route path="/templates" element={<TemplatesPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/builder" element={<Home />} />
-          <Route path="/tips" element={<TipsAndResources />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/refund-policy" element={<RefundPolicy />} />
-          <Route path="/terms" element={<TermsAndConditions />} />
-          <Route path="/about" element={<AboutUs />} />
-          <Route path="/contact" element={<ContactUs />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verify-email" element={<Navigate to="/builder" replace />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
+          {/* Headless print route - no layout */}
+          <Route path="/print" element={<PrintView />} />
+
+          {/* Standard layout routes */}
+          <Route element={<Layout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+            <Route path="/admin/*" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+            <Route path="/my-cvs" element={<ProtectedRoute><MyCvs /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/settings" element={<Navigate to="/profile" replace />} />
+            <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/builder" element={<Home />} />
+            <Route path="/tips" element={<TipsAndResources />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email" element={<Navigate to="/builder" replace />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </>
   );
 }

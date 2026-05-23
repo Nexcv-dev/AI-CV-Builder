@@ -122,6 +122,31 @@ npm run build:pdf-lambda
 - CMS-created templates should include thumbnail metadata and profile image placeholders when profile photo support is needed.
 - Free templates show a Free badge; premium templates show a crown badge.
 
+## Current Codebase Status
+
+Recent cleanup and verification:
+- `npm run lint` passes.
+- `npm run build` passes.
+- Main routes are lazy-loaded from `src/App.tsx`.
+- Builder-heavy components are split: `Home` lazy-loads `CVForm` and `CVPreview`, while `CVForm` lazy-loads form sections, design controls, and import modals.
+- Personal details now uses the native browser date input, so the duplicate date-picker icon and unused date-picker dependencies are removed.
+- Admin sections are lazy-loaded.
+- `AdminDashboard` has been split into shell components, overview/analytics components, and first-pass hooks:
+  - `src/pages/admin/AdminShellComponents.tsx`
+  - `src/pages/admin/AdminOverviewSections.tsx`
+  - `src/pages/admin/hooks/useAdminBootstrap.ts`
+  - `src/pages/admin/hooks/useAdminUsers.ts`
+- Custom template print/page-break CSS has safeguards to reduce broken print/export layout when new templates are added.
+- Builder session restore waits for auth loading before showing login-only UI.
+
+Next cleanup plan:
+1. Extract `useAdminTemplates` for template list loading, filters, file reads, create, update, publish, and archive actions.
+2. Extract `useAdminBilling` for payments, plans, coupon creation, and coupon toggles.
+3. Extract `useAdminSupport` for support ticket filters, selected ticket state, ticket updates, and replies.
+4. Move settings/email, roles, and audit log data loading into focused hooks.
+5. Audit `Dashboard` and `MyCvs` load performance, then split user dashboard data hooks and lazy-load heavy panels.
+6. Clean the CV preview/template rendering layer before adding many more templates.
+
 ## Production Readiness Gaps
 
 This list is based on the current app code: Express route modules, MongoDB models, PayHere checkout/IPN, S3 template storage, Lambda/local PDF generation, email delivery, admin modules, and the existing Vitest/security/PDF coverage.
@@ -139,17 +164,17 @@ This list is based on the current app code: Express route modules, MongoDB model
 1. Analytics improvements: 7/30/90 day filters, exportable reports, checkout funnel by plan, template conversion tracking, retention metrics, and revenue by coupon/promotion.
 2. Template operations: visual preview before publish, version history, rollback to previous template versions, PDF/mobile validation previews, thumbnail regeneration, and safer HTML/CSS validation reports.
 3. Support workflow: ticket assignment, reply history, internal notes timeline, canned replies, SLA state, email thread correlation, and support analytics.
-4. Performance polish: route-level code splitting, lazy admin modules, bundle chunk tuning, image optimization, cache headers/CDN strategy, and Core Web Vitals review.
+4. Performance polish: continue route/component splitting already started, tune bundles, optimize images/thumbnails, review cache headers/CDN strategy, and measure Core Web Vitals.
 5. Launch operations: environment checklist, secret rotation process, production smoke tests, release/rollback plan, incident response notes, and post-launch monitoring dashboard.
 
 ### Code Optimization Plan
 
 Optimization should be done in two passes: first after the launch-critical features are stable, then again after real production metrics show the slowest pages, APIs, and PDF/payment/email paths.
 
-1. Split large frontend routes: lazy-load admin modules, builder-only components, checkout, profile, and public content/legal pages.
-2. Break down oversized components: split `AdminDashboard`, `Home`, and large admin sections into page containers, data hooks, and smaller presentational components.
+1. Split large frontend routes: keep admin modules, builder-only components, checkout, profile, and public content/legal pages lazy-loaded outside the first bundle.
+2. Break down oversized components: continue splitting `AdminDashboard`, `Home`, user dashboard, and large admin sections into page containers, data hooks, and smaller presentational components.
 3. Extract repeated admin UI patterns: cards, filters, status badges, loading states, empty states, headers, tables, detail drawers, and save bars.
-4. Reduce duplicate API loading logic: create reusable hooks for settings, templates, billing, support, audit logs, analytics, and summary data.
+4. Reduce duplicate API loading logic: continue extracting hooks for templates, billing, support, settings, audit logs, analytics, summary data, and user dashboard data.
 5. Keep backend route handlers thin: move billing, template, audit, settings, email, and analytics business logic into service modules with focused tests.
 6. Review database indexes and aggregation costs: user search, payments, audit logs, template usage, analytics, checkout sessions, and support tickets need bounded queries and intentional indexes.
 7. Optimize PDF and template paths: cache custom template HTML/CSS safely, reduce repeated S3 fetches, monitor Lambda fallback, and surface slow PDF failures in logs.

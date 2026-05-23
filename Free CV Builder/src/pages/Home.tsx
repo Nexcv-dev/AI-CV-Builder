@@ -3,17 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
 import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { ApiError, AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
-import CVForm from '../components/CVForm';
-import CVPreview from '../components/CVPreview';
 import { AccountMenu } from '../components/AccountMenu';
-import { AuthModal } from '../components/AuthModal';
 import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import toast from 'react-hot-toast';
 import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Moon, Sun, X, Crown, Zap } from 'lucide-react';
@@ -21,7 +18,11 @@ import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, Rotate
 const THEME_STORAGE_KEY = 'cv-builder-theme';
 const LOCAL_STORAGE_DRAFT_KEY = 'nexcv-draft-data';
 const VERIFY_BANNER_DISMISSED_KEY = 'nexcv-verify-banner-dismissed';
+const BUILDER_LOADING_MIN_MS = 350;
 const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
+const AuthModal = lazy(() => import('../components/AuthModal').then((module) => ({ default: module.AuthModal })));
+const CVForm = lazy(() => import('../components/CVForm'));
+const CVPreview = lazy(() => import('../components/CVPreview'));
 
 interface CvCreationQuota {
   limit: number | null;
@@ -100,6 +101,7 @@ export default function Home() {
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const lastSavedDataRef = useRef<string>(JSON.stringify({ cvData: initialData, template: DEFAULT_TEMPLATE, title: 'Untitled CV' }));
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [creationQuota, setCreationQuota] = useState<CvCreationQuota | null>(null);
   const [downloadQuota, setDownloadQuota] = useState<DownloadQuota | null>(null);
@@ -154,10 +156,16 @@ export default function Home() {
     let ignore = false;
     getCurrentUser()
       .then((user) => {
-        if (!ignore) setCurrentUser(user);
+        if (!ignore) {
+          setCurrentUser(user);
+          setAuthLoaded(true);
+        }
       })
       .catch(() => {
-        if (!ignore) setCurrentUser(null);
+        if (!ignore) {
+          setCurrentUser(null);
+          setAuthLoaded(true);
+        }
       });
 
     return () => {
@@ -169,6 +177,7 @@ export default function Home() {
     const handleAuthUserChanged = (event: Event) => {
       const user = (event as CustomEvent<AuthUser | undefined>).detail;
       setCurrentUser(user || null);
+      setAuthLoaded(true);
     };
 
     window.addEventListener('auth-user-changed', handleAuthUserChanged);
@@ -311,10 +320,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Simulate initial loading sequence
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
-    }, 1500); // 1.5 seconds loading animation
+    }, BUILDER_LOADING_MIN_MS);
     return () => clearTimeout(timer);
   }, []);
 
@@ -745,7 +753,12 @@ export default function Home() {
                 </div>
               </h1>
               <div className="lg:hidden flex items-center gap-2">
-                {currentUser ? (
+                {!authLoaded ? (
+                  <div
+                    className={`h-10 w-10 rounded-full border shadow-lg ${isDarkMode ? 'border-slate-700 bg-slate-800 shadow-black/20' : 'border-gray-200 bg-white shadow-slate-900/10'}`}
+                    aria-hidden="true"
+                  />
+                ) : currentUser ? (
                   <AccountMenu isDarkMode={isDarkMode} size="sm" displayName={currentUser.displayName} profileImage={currentUser.profileImage} />
                 ) : (
                   <button
@@ -803,7 +816,12 @@ export default function Home() {
                   )}
                 </button>
               )}
-              {currentUser ? (
+              {!authLoaded ? (
+                <div
+                  className={`h-12 w-12 rounded-full border shadow-lg ${isDarkMode ? 'border-slate-700 bg-slate-800 shadow-black/20' : 'border-gray-200 bg-white shadow-slate-900/10'}`}
+                  aria-hidden="true"
+                />
+              ) : currentUser ? (
                 <AccountMenu isDarkMode={isDarkMode} displayName={currentUser.displayName} profileImage={currentUser.profileImage} showName />
               ) : (
                 <button
@@ -874,24 +892,32 @@ export default function Home() {
             style={{ width: `${formWidth}%`, minWidth: 'min(420px, 100%)' }}
           >
             <div ref={formScrollRef} className="h-full min-h-0 w-full overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-              <CVForm
-                cvData={cvData}
-                setCvData={setCvData}
-                template={template}
-                setTemplate={setTemplate}
-                isDarkMode={isDarkMode}
-                onPopupVisibleChange={setIsPopupVisible}
-                onFinish={requestDownload}
-                showImportPromptOnMount={showImportPromptOnLoad.current}
-                showTemplatesOnMount={showTemplatesOnLoad.current}
-                isFreePlan={isFreePlan}
-                onUpgradeRequired={(source) => openUpgradePrompt(
-                  source,
-                  source === 'ai'
-                    ? 'AI import, summary generation, and text refinement are available on Pay As You Go and Monthly plans.'
-                    : 'Free plan includes the Classic template. Upgrade to use any template with your CV.'
-                )}
-              />
+              <Suspense
+                fallback={
+                  <div className={`flex min-h-full items-center justify-center px-4 text-sm font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Loading editor...
+                  </div>
+                }
+              >
+                <CVForm
+                  cvData={cvData}
+                  setCvData={setCvData}
+                  template={template}
+                  setTemplate={setTemplate}
+                  isDarkMode={isDarkMode}
+                  onPopupVisibleChange={setIsPopupVisible}
+                  onFinish={requestDownload}
+                  showImportPromptOnMount={showImportPromptOnLoad.current}
+                  showTemplatesOnMount={showTemplatesOnLoad.current}
+                  isFreePlan={isFreePlan}
+                  onUpgradeRequired={(source) => openUpgradePrompt(
+                    source,
+                    source === 'ai'
+                      ? 'AI import, summary generation, and text refinement are available on Pay As You Go and Monthly plans.'
+                      : 'Free plan includes the Classic template. Upgrade to use any template with your CV.'
+                  )}
+                />
+              </Suspense>
             </div>
           </div>
 
@@ -922,7 +948,15 @@ export default function Home() {
                   marginBottom: scale < 1 ? `-${previewHeight * (1 - scale)}px` : '0'
                 }}
               >
-                <CVPreview ref={contentRef} cvData={debouncedCvData} template={template} />
+                <Suspense
+                  fallback={
+                    <div className={`flex h-[1122px] w-[794px] items-center justify-center rounded-sm border text-sm font-bold shadow-2xl ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-400' : 'border-slate-200 bg-white text-slate-500'}`}>
+                      Loading preview...
+                    </div>
+                  }
+                >
+                  <CVPreview ref={contentRef} cvData={debouncedCvData} template={template} />
+                </Suspense>
               </div>
             </div>
 
@@ -1261,22 +1295,24 @@ export default function Home() {
         </AnimatePresence>
 
       </div>
-      <AuthModal
-        isOpen={authModalOpen}
-        initialMode="login"
-        onClose={() => setAuthModalOpen(false)}
-        redirectTo={authRedirectTo}
-        onAuthenticated={(user) => {
-          setCurrentUser(user);
-          if (authRedirectTo.includes('download=1') && user.emailVerified) {
-            if (user.plan === 'free' && isTemplatePaid(template)) {
-              openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
-            } else {
-              setShowDownloadConfirm(true);
+      <Suspense fallback={null}>
+        <AuthModal
+          isOpen={authModalOpen}
+          initialMode="login"
+          onClose={() => setAuthModalOpen(false)}
+          redirectTo={authRedirectTo}
+          onAuthenticated={(user) => {
+            setCurrentUser(user);
+            if (authRedirectTo.includes('download=1') && user.emailVerified) {
+              if (user.plan === 'free' && isTemplatePaid(template)) {
+                openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
+              } else {
+                setShowDownloadConfirm(true);
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
+      </Suspense>
       <EmailVerificationModal
         isOpen={verificationModalOpen}
         user={currentUser}

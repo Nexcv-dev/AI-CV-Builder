@@ -125,8 +125,23 @@ npm run build:pdf-lambda
 
 Recent verification:
 - TypeScript check passes.
-- Vitest suite passes.
-- Production build passes with the known large chunk warning.
+- Production build passes.
+
+Recent codebase cleanup:
+- Fixed admin summary TypeScript lint failures.
+- Added template print/page-break safeguards for custom template layout stability.
+- Prevented the builder auth-loading state from briefly showing the login CTA while an existing user session is being restored.
+- Added route-level lazy loading for the main frontend pages.
+- Split heavy builder surfaces so `CVForm`, `CVPreview`, form sections, design controls, and import modals load in smaller chunks.
+- Replaced the third-party date picker with a native date input, removing duplicate date icons and unused date-picker dependencies.
+- Split the admin dashboard into shell, overview/analytics sections, lazy admin modules, and first-pass data hooks.
+- Added `useAdminBootstrap` and `useAdminUsers` to move auth/summary and user-management data logic out of the dashboard page.
+
+Recommended next implementation plan:
+1. Continue admin dashboard decomposition with `useAdminTemplates`, then `useAdminBilling`, `useAdminSupport`, settings/email, roles, and audit hooks.
+2. Audit the user dashboard load path, then split dashboard data into hooks and lazy-load heavy panels.
+3. Clean the CV preview/template-rendering layer next, because print/export and page-break issues usually start there.
+4. Keep `npm run lint` and `npm run build` passing after each structural step.
 
 ## Production Readiness Gaps
 
@@ -145,17 +160,17 @@ This list is based on the current app structure: React/Vite frontend, Express ro
 1. Analytics improvements: date filters for 7/30/90 days, exportable reports, checkout funnel by plan, template conversion tracking, retention metrics, and revenue by coupon/promotion.
 2. Template operations: visual preview before publish, version history, rollback to previous template versions, PDF/mobile validation previews, and thumbnail regeneration tooling.
 3. Support workflow: ticket assignment, reply history, internal notes timeline, canned replies, SLA state, email thread correlation, and support analytics.
-4. Performance polish: route-level code splitting, lazy admin modules, bundle chunk tuning, image optimization, cache headers/CDN strategy, and Core Web Vitals review.
+4. Performance polish: continue route/component splitting already started, tune bundles, optimize images/thumbnails, review cache headers/CDN strategy, and measure Core Web Vitals.
 5. Launch operations: environment checklist, secret rotation process, production smoke tests, release checklist, rollback plan, incident response notes, and post-launch monitoring dashboard.
 
 ### Code Optimization Plan
 
 Optimization should happen in two passes: keep the current feature work stable first, then optimize before launch, and repeat after real production metrics are available.
 
-1. Split large frontend routes: lazy-load admin modules, builder-only components, checkout, profile, and legal/content pages so the first bundle is smaller.
-2. Break down oversized components: split `AdminDashboard`, `Home`, and large admin sections into route-level containers, data hooks, and focused presentational components.
+1. Split large frontend routes: keep lazy-loaded admin, builder, checkout, profile, and public content/legal pages out of the first bundle.
+2. Break down oversized components: continue splitting `AdminDashboard`, `Home`, user dashboard, and large admin sections into route-level containers, data hooks, and focused presentational components.
 3. Move repeated admin UI patterns into shared components: cards, filters, status badges, empty states, loading states, section headers, and save bars.
-4. Reduce duplicate API loading logic: create reusable hooks for admin summary, settings, templates, billing, support, audit logs, and analytics.
+4. Reduce duplicate API loading logic: continue extracting reusable hooks for admin templates, billing, support, settings, audit logs, analytics, and user dashboard data.
 5. Optimize backend route modules: move large shared dependency binding into smaller service helpers, keep route handlers thin, and isolate billing, templates, audit, and settings business logic.
 6. Review database indexes and query shapes: admin lists, analytics aggregations, audit logs, payments, templates, and user search should have intentional indexes and bounded result sizes.
 7. Improve PDF/template performance: cache custom template HTML/CSS safely, warm Lambda PDF generation where useful, and keep local fallback observable.
