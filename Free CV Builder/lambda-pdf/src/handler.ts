@@ -65,7 +65,7 @@ const sanitizePdfImageSource = (value: unknown) => {
 
 const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
 const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\/+|\/+$/g, '');
-const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 5 * 60 * 1000);
+const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 0);
 let s3Client: S3Client | null = null;
 const s3TemplateCache = new Map<string, { html: string; expiresAt: number }>();
 let lastS3TemplateDebug = 'not-attempted';
@@ -294,6 +294,8 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     formattedDate: dateInline(item.startDate, item.endDate),
     formattedDateStacked: dateStacked(item.startDate, item.endDate),
   }));
+  const experienceLeadItems = processedExperience.slice(0, 2);
+  const experienceContinuationItems = processedExperience.slice(2);
 
   const processedEducation = education.map((item: any) => ({
     ...item,
@@ -388,6 +390,9 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     personalInfo,
     contactItems: [personalInfo.email, personalInfo.phone, personalInfo.address].filter(Boolean).map((value: string) => ({ value })),
     experience: processedExperience,
+    experienceLeadItems,
+    experienceContinuationItems,
+    hasExperienceContinuation: experienceContinuationItems.length > 0,
     education: processedEducation,
     skills: processedSkills,
     groupedSkills,

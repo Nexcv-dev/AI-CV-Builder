@@ -133,21 +133,67 @@
             {{/hasSummary}}
 
             {{#hasExperience}}
-              <section class="section">
+              {{^hasExperienceContinuation}}
+              <section class="section experience-section experience-keep-together">
                 <h2 class="section-title">Professional Experience</h2>
                 <div class="item-stack">
-                  {{#experience}}
-                    <article class="item">
-                      <div class="item-header">
-                        <h3 class="item-title">{{position}}</h3>
-                        <span class="item-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</span>
-                      </div>
-                      <p class="company">{{company}}</p>
-                      <div class="rich">{{{description}}}</div>
-                    </article>
-                  {{/experience}}
+                  
+
+                    {{#experience}}
+                      <article class="item">
+                        <div class="item-header">
+                          <h3 class="item-title">{{position}}</h3>
+                          <span class="item-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</span>
+                        </div>
+                        <p class="company">{{company}}</p>
+                        <div class="rich">{{{description}}}</div>
+                      </article>
+                    {{/experience}}
+                  
+
                 </div>
               </section>
+              {{/hasExperienceContinuation}}
+              {{#hasExperienceContinuation}}
+              <section class="section experience-section experience-lead-section">
+                <h2 class="section-title">Professional Experience</h2>
+                <div class="item-stack">
+                  
+
+                    {{#experienceLeadItems}}
+                      <article class="item">
+                        <div class="item-header">
+                          <h3 class="item-title">{{position}}</h3>
+                          <span class="item-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</span>
+                        </div>
+                        <p class="company">{{company}}</p>
+                        <div class="rich">{{{description}}}</div>
+                      </article>
+                    {{/experienceLeadItems}}
+                  
+
+                </div>
+              </section>
+              <section class="section experience-section experience-continuation-section">
+                <div class="item-stack">
+                  
+
+                    {{#experienceContinuationItems}}
+                      <article class="item">
+                        <div class="item-header">
+                          <h3 class="item-title">{{position}}</h3>
+                          <span class="item-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</span>
+                        </div>
+                        <p class="company">{{company}}</p>
+                        <div class="rich">{{{description}}}</div>
+                      </article>
+                    {{/experienceContinuationItems}}
+                  
+
+                </div>
+              </section>
+              {{/hasExperienceContinuation}}
+
             {{/hasExperience}}
 
             {{#hasProjects}}

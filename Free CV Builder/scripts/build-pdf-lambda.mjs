@@ -444,7 +444,7 @@ const sanitizePdfImageSource = (value: unknown) => {
 
 const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
 const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\\/+|\\/+$/g, '');
-const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 5 * 60 * 1000);
+const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 0);
 let s3Client: S3Client | null = null;
 const s3TemplateCache = new Map<string, { html: string; expiresAt: number }>();
 let lastS3TemplateDebug = 'not-attempted';

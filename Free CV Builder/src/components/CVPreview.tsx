@@ -13,7 +13,8 @@ interface CVPreviewProps {
 }
 
 const CVPreview = React.memo(forwardRef<HTMLDivElement, CVPreviewProps>(({ cvData, template }, ref) => {
-  if (!TEMPLATE_KEYS.includes(template as any)) {
+  const useS3TemplatePreview = true;
+  if (useS3TemplatePreview || !TEMPLATE_KEYS.includes(template as any)) {
     return <CustomPreview key={template} ref={ref} cvData={cvData} template={template} />;
   }
 

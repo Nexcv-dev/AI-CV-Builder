@@ -716,7 +716,7 @@ export default function Home() {
   return (
     <>
       <AnimatePresence>
-        {isInitialLoading && (
+        {(isInitialLoading || isLoadingSavedDocument) && (
           <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
