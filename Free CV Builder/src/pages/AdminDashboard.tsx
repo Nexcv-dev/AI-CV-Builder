@@ -40,6 +40,7 @@ import PromotionManagementSection from './admin/PromotionManagementSection';
 import SupportManagementSection from './admin/SupportManagementSection';
 import RoleManagementSection from './admin/RoleManagementSection';
 import SettingsManagementSection from './admin/SettingsManagementSection';
+import EmailManagementSection from './admin/EmailManagementSection';
 import AuditLogSection from './admin/AuditLogSection';
 
 export default function AdminDashboard() {
@@ -59,12 +60,15 @@ export default function AdminDashboard() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
   const isUsersPage = location.pathname.startsWith('/admin/users');
+  const isAnalyticsPage = location.pathname.startsWith('/admin/analytics');
   const isTemplatesPage = location.pathname.startsWith('/admin/templates');
   const isBillingPage = location.pathname.startsWith('/admin/billing');
   const isPromotionsPage = location.pathname.startsWith('/admin/promotions');
+  const isCmsPage = location.pathname.startsWith('/admin/cms');
   const isSupportPage = location.pathname.startsWith('/admin/support');
   const isRolesPage = location.pathname.startsWith('/admin/roles');
   const isSettingsPage = location.pathname.startsWith('/admin/settings');
+  const isEmailPage = location.pathname.startsWith('/admin/notifications');
   const isAuditPage = location.pathname.startsWith('/admin/audit');
   const [templates, setTemplates] = useState<AdminTemplateItem[]>([]);
   const [templateCategories, setTemplateCategories] = useState<string[]>([]);
@@ -98,7 +102,9 @@ export default function AdminDashboard() {
   const [supportTypeFilter, setSupportTypeFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState<AdminSupportTicket | null>(null);
   const [ticketForm, setTicketForm] = useState({ status: 'open' as AdminSupportTicket['status'], priority: 'normal' as AdminSupportTicket['priority'], adminNotes: '' });
+  const [supportReplyMessage, setSupportReplyMessage] = useState('');
   const [savingTicket, setSavingTicket] = useState(false);
+  const [sendingSupportReply, setSendingSupportReply] = useState(false);
   const [roles, setRoles] = useState<AdminRoleConfig[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUserListItem[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -291,7 +297,7 @@ export default function AdminDashboard() {
   }, [isRolesPage]);
 
   useEffect(() => {
-    if (!isSettingsPage) return;
+    if (!isSettingsPage && !isEmailPage && !isCmsPage) return;
     let ignore = false;
     setSettingsLoading(true);
 
@@ -309,7 +315,7 @@ export default function AdminDashboard() {
     return () => {
       ignore = true;
     };
-  }, [isSettingsPage]);
+  }, [isCmsPage, isEmailPage, isSettingsPage]);
 
   useEffect(() => {
     if (!isAuditPage) return;
@@ -380,10 +386,12 @@ export default function AdminDashboard() {
   const canUpdateUserPlans = hasAdminPermission(user, 'users.plan.update');
   const canUpdateRoles = hasAdminPermission(user, 'users.role.update');
   const canUpdateSettings = hasAdminPermission(user, 'settings.write');
+  const canUpdateEmail = hasAdminPermission(user, 'email.write');
   const activeNav = adminNavItems.find((item) => item.to === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(item.to)) || adminNavItems[0];
   const maxChartValue = useMemo(() => {
     const values = [
       ...(summary?.charts.userGrowth.map((item) => item.count) || []),
+      ...(summary?.charts.cvSavesPerDay.map((item) => item.count) || []),
       ...(summary?.charts.cvDownloadsPerDay.map((item) => item.count) || []),
     ];
     return Math.max(1, ...values);
@@ -536,6 +544,7 @@ export default function AdminDashboard() {
   const openTicketDetail = (ticket: AdminSupportTicket) => {
     setSelectedTicket(ticket);
     setTicketForm({ status: ticket.status, priority: ticket.priority, adminNotes: ticket.adminNotes || '' });
+    setSupportReplyMessage('');
   };
 
   const saveSelectedTicket = async () => {
@@ -554,6 +563,26 @@ export default function AdminDashboard() {
       toast.error(error instanceof Error ? error.message : 'Could not update support ticket.');
     } finally {
       setSavingTicket(false);
+    }
+  };
+
+  const sendSupportReply = async () => {
+    if (!selectedTicket) return;
+    setSendingSupportReply(true);
+    try {
+      const data = await apiFetch<{ ticket: AdminSupportTicket; message: string }>(`/api/admin/support/tickets/${selectedTicket.id}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ replyMessage: supportReplyMessage }),
+      });
+      setSupportTickets((items) => items.map((item) => item.id === data.ticket.id ? data.ticket : item));
+      setSelectedTicket(data.ticket);
+      setTicketForm({ status: data.ticket.status, priority: data.ticket.priority, adminNotes: data.ticket.adminNotes || '' });
+      setSupportReplyMessage('');
+      toast.success(data.message || 'Support reply sent.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send support reply.');
+    } finally {
+      setSendingSupportReply(false);
     }
   };
 
@@ -722,29 +751,35 @@ export default function AdminDashboard() {
                 {userRoleLabel}
               </div>
               <h1 className="mt-2 font-montserrat text-2xl font-black leading-tight sm:text-4xl">
-                {isUsersPage ? 'User Management' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isPromotionsPage ? 'Promotions & Pricing' : isSupportPage ? 'Support Tickets' : isRolesPage ? 'Roles & Access' : isSettingsPage ? 'Admin Settings' : isAuditPage ? 'Audit Logs' : 'Admin Dashboard'}
+                {isUsersPage ? 'User Management' : isAnalyticsPage ? 'Analytics Dashboard' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isPromotionsPage ? 'Promotions & Pricing' : isCmsPage ? 'CMS Management' : isSupportPage ? 'Support Tickets' : isRolesPage ? 'Roles & Access' : isSettingsPage ? 'Admin Settings' : isEmailPage ? 'Email Notifications' : isAuditPage ? 'Audit Logs' : 'Admin Dashboard'}
               </h1>
               <p className="mt-2 text-sm font-semibold text-slate-400">
                 {isUsersPage
                   ? 'Search users, inspect accounts, and update plan access.'
-                  : isTemplatesPage
-                    ? 'Manage template metadata, access, categories, and usage stats.'
-                    : isBillingPage
-                      ? 'Review payment history, revenue, and transaction status.'
-                      : isPromotionsPage
-                        ? 'Manage plan pricing, promotions, and discount coupons.'
-                        : isSupportPage
-                        ? 'Track complaints, bugs, feature requests, and payment issues.'
-                        : isRolesPage
-                          ? 'Manage super admin access and review admin permissions.'
-                          : isSettingsPage
-                            ? 'Review runtime, security, and service configuration status.'
-                            : isAuditPage
-                              ? 'Track sensitive admin changes across users, billing, templates, and support.'
-                              : 'Operational overview and module foundation.'}
+                  : isAnalyticsPage
+                    ? 'Track signups, CV saves, downloads, checkout conversion, and template usage.'
+                    : isTemplatesPage
+                      ? 'Manage template metadata, access, categories, and usage stats.'
+                      : isBillingPage
+                        ? 'Review payment history, revenue, and transaction status.'
+                        : isPromotionsPage
+                          ? 'Manage plan pricing, promotions, and discount coupons.'
+                          : isCmsPage
+                            ? 'Manage landing page content, FAQs, pricing copy, legal pages, and announcements.'
+                            : isSupportPage
+                            ? 'Track complaints, bugs, feature requests, and payment issues.'
+                            : isRolesPage
+                              ? 'Manage super admin access and review admin permissions.'
+                              : isSettingsPage
+                                ? 'Review runtime, security, and app configuration status.'
+                                : isEmailPage
+                                  ? 'Manage transactional email templates and service delivery status.'
+                                  : isAuditPage
+                                  ? 'Track sensitive admin changes across users, billing, templates, and support.'
+                                  : 'Operational overview and module foundation.'}
               </p>
             </div>
-            {!isPromotionsPage && !isRolesPage && !isSettingsPage && !isAuditPage && (
+            {!isAnalyticsPage && !isPromotionsPage && !isCmsPage && !isRolesPage && !isSettingsPage && !isEmailPage && !isAuditPage && (
               <div className="relative w-full sm:max-w-xs">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -775,6 +810,19 @@ export default function AdminDashboard() {
               onSavePlan={updateSelectedUserPlan}
               onCloseDetail={() => setSelectedUser(null)}
             />
+          ) : isAnalyticsPage ? (
+            isLoading ? (
+              <div className="mt-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-5 text-sm font-bold text-slate-400">
+                <Loader2 className="animate-spin text-violet-300" size={18} />
+                Loading analytics...
+              </div>
+            ) : !summary ? (
+              <div className="mt-10 rounded-2xl border border-red-400/20 bg-red-500/10 p-5 text-sm font-bold text-red-100">
+                Analytics could not be loaded.
+              </div>
+            ) : (
+              <AnalyticsDashboardSection summary={summary} maxChartValue={maxChartValue} />
+            )
           ) : isTemplatesPage ? (
             <TemplateManagementSection
               templates={visibleTemplates}
@@ -832,6 +880,16 @@ export default function AdminDashboard() {
               onSaveCoupon={saveCoupon}
               onToggleCoupon={toggleCoupon}
             />
+          ) : isCmsPage ? (
+            <SettingsManagementSection
+              settings={settings}
+              loading={settingsLoading}
+              saving={savingSettings}
+              canUpdateSettings={canUpdateSettings}
+              templates={templates}
+              onSave={saveSettings}
+              mode="cms"
+            />
           ) : isSupportPage ? (
             <SupportManagementSection
               tickets={supportTickets}
@@ -842,7 +900,9 @@ export default function AdminDashboard() {
               typeFilter={supportTypeFilter}
               selectedTicket={selectedTicket}
               ticketForm={ticketForm}
+              replyMessage={supportReplyMessage}
               savingTicket={savingTicket}
+              sendingReply={sendingSupportReply}
               onSearchChange={setSupportSearch}
               onStatusFilterChange={setSupportStatusFilter}
               onTypeFilterChange={setSupportTypeFilter}
@@ -850,6 +910,8 @@ export default function AdminDashboard() {
               onCloseDetail={() => setSelectedTicket(null)}
               onFormChange={setTicketForm}
               onSaveTicket={saveSelectedTicket}
+              onReplyMessageChange={setSupportReplyMessage}
+              onSendReply={sendSupportReply}
             />
           ) : isRolesPage ? (
             <RoleManagementSection
@@ -866,9 +928,17 @@ export default function AdminDashboard() {
               settings={settings}
               loading={settingsLoading}
               saving={savingSettings}
-              sendingTestEmail={sendingTestEmail}
               canUpdateSettings={canUpdateSettings}
               templates={templates}
+              onSave={saveSettings}
+            />
+          ) : isEmailPage ? (
+            <EmailManagementSection
+              settings={settings}
+              loading={settingsLoading}
+              saving={savingSettings}
+              sendingTestEmail={sendingTestEmail}
+              canUpdateEmail={canUpdateEmail}
               onSave={saveSettings}
               onSendTestEmail={sendTestEmail}
             />
@@ -969,21 +1039,113 @@ export default function AdminDashboard() {
                 </article>
               </section>
 
-              <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-                <h2 className="font-montserrat text-lg font-black">Module Structure</h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {summary.modules.map((module) => (
-                    <div key={module.key} className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
-                      <p className="text-sm font-black text-slate-100">{module.label}</p>
-                      <p className="mt-2 text-xs font-bold uppercase text-amber-300">{module.status}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
             </>
           )}
         </main>
       </div>
+    </div>
+  );
+}
+
+function AnalyticsDashboardSection({ summary, maxChartValue }: { summary: AdminSummary; maxChartValue: number }) {
+  return (
+    <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="font-montserrat text-lg font-black">Analytics Dashboard</h2>
+          <p className="mt-1 text-sm font-semibold text-slate-400">Last 7 days across acquisition, CV activity, downloads, checkout, and templates.</p>
+        </div>
+        <span className="w-fit rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-black text-emerald-300 ring-1 ring-emerald-300/20">
+          Live metrics
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <AnalyticsTile label="Signups" value={formatNumber(summary.analytics.signups)} />
+        <AnalyticsTile label="CV Saves" value={formatNumber(summary.analytics.cvSaves)} />
+        <AnalyticsTile label="Downloads" value={formatNumber(summary.analytics.downloads)} />
+        <AnalyticsTile label="Checkout Started" value={formatNumber(summary.analytics.checkoutStarted)} />
+        <AnalyticsTile label="Conversion" value={`${summary.analytics.checkoutConversionRate}%`} />
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[1.3fr_1fr]">
+        <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-montserrat text-sm font-black text-slate-100">Daily Activity</h3>
+              <p className="mt-1 text-xs font-semibold text-slate-500">Signups, saves, and downloads</p>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2 text-[11px] font-black text-slate-400">
+              <span className="text-violet-300">Signups</span>
+              <span className="text-emerald-300">Saves</span>
+              <span className="text-sky-300">Downloads</span>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3">
+            {summary.charts.userGrowth.map((item, index) => {
+              const saves = summary.charts.cvSavesPerDay[index]?.count || 0;
+              const downloads = summary.charts.cvDownloadsPerDay[index]?.count || 0;
+              return (
+                <div key={item.day} className="grid grid-cols-[56px_1fr] items-center gap-3">
+                  <span className="text-xs font-black text-slate-500">{item.day.slice(5)}</span>
+                  <div className="grid h-8 grid-cols-3 items-end gap-1.5">
+                    <ActivityBar value={item.count} max={maxChartValue} className="bg-violet-500" />
+                    <ActivityBar value={saves} max={maxChartValue} className="bg-emerald-400" />
+                    <ActivityBar value={downloads} max={maxChartValue} className="bg-sky-400" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid gap-4">
+          <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
+            <h3 className="font-montserrat text-sm font-black text-slate-100">Checkout Conversion</h3>
+            <div className="mt-4 grid gap-2">
+              {summary.charts.checkoutConversion.map((item) => (
+                <div key={item.day} className="grid grid-cols-[56px_1fr_auto] items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2">
+                  <span className="text-xs font-black text-slate-500">{item.day.slice(5)}</span>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-900">
+                    <div
+                      className="h-full rounded-full bg-emerald-400"
+                      style={{ width: `${item.started > 0 ? Math.max(6, Math.round((item.paid / item.started) * 100)) : 0}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-black text-slate-200">{item.paid}/{item.started}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
+            <h3 className="font-montserrat text-sm font-black text-slate-100">Template Usage</h3>
+            <div className="mt-4 grid gap-2">
+              {summary.charts.templateUsage.length ? summary.charts.templateUsage.slice(0, 5).map((item) => (
+                <MiniRow key={item.template} label={item.template} value={formatNumber(item.count)} />
+              )) : <p className="text-sm font-semibold text-slate-500">No template usage yet.</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AnalyticsTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
+      <p className="text-xs font-black uppercase text-slate-500">{label}</p>
+      <p className="mt-2 text-2xl font-black text-slate-100">{value}</p>
+    </div>
+  );
+}
+
+function ActivityBar({ value, max, className }: { value: number; max: number; className: string }) {
+  const width = value > 0 ? Math.max(6, Math.round((value / max) * 100)) : 0;
+  return (
+    <div className="h-2 overflow-hidden rounded-full bg-slate-900">
+      <div className={`h-full rounded-full ${className}`} style={{ width: `${width}%` }} />
     </div>
   );
 }

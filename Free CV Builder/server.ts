@@ -55,6 +55,7 @@ import { generateCVHTML, generatePdfDocument, sanitizeCvData } from './services/
 import { CV_TEMPLATES, DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan, type TemplateName } from './src/templates';
 import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from './src/adminAccess';
+import { mergeEmailTemplates, renderEmailTemplate } from './src/emailTemplateDefaults';
 import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildDownloadQuota } from './server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
@@ -164,6 +165,8 @@ const getAllowedAdminIps = () => (
         .filter(Boolean)
 );
 
+const hasConfiguredAdminIpAllowlist = () => getAllowedAdminIps().length > 0;
+
 const getRequestIpCandidates = (req: Request) => {
     const forwardedFor = (req.header('x-forwarded-for') || '')
         .split(',')
@@ -185,7 +188,7 @@ const getRequestIpCandidates = (req: Request) => {
 
 const isAdminIpAllowed = (req: Request) => {
     const allowedIps = getAllowedAdminIps();
-    if (!allowedIps.length) return true;
+    if (!allowedIps.length) return false;
     const candidates = getRequestIpCandidates(req);
     if (process.env.NODE_ENV !== 'production' && (candidates.has('127.0.0.1') || candidates.has('localhost'))) {
         return true;
@@ -194,11 +197,17 @@ const isAdminIpAllowed = (req: Request) => {
 };
 
 const requireAdminAllowedIp = (req: Request, res: Response, next: NextFunction) => {
+    if (!hasConfiguredAdminIpAllowlist()) {
+        return res.status(403).json({ error: 'Admin IP allowlist is not configured.' });
+    }
     if (isAdminIpAllowed(req)) return next();
     return res.status(403).json({ error: 'Admin access is not allowed from this network.' });
 };
 
 const requireAdminPageAllowedIp = (req: Request, res: Response, next: NextFunction) => {
+    if (!hasConfiguredAdminIpAllowlist()) {
+        return res.status(404).send('Not found');
+    }
     if (isAdminIpAllowed(req)) return next();
     return res.status(404).send('Not found');
 };
@@ -354,16 +363,22 @@ const generateEmailVerificationOtp = () => {
 const isEmailVerified = (user: any) => user?.authProvider === 'google' || user?.emailVerified !== false;
 const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || 'www.bimanthaperera@gmail.com';
 
+const getEmailTemplates = async () => {
+    const settings = await getAppSettings().catch(() => null);
+    return mergeEmailTemplates(settings?.emailTemplates);
+};
+
 const sendEmailVerification = async (user: any, code: string) => {
+    const templates = await getEmailTemplates();
+    const email = renderEmailTemplate(templates.verification, {
+        name: emailGreetingName(user.displayName),
+        code,
+        expiresIn: '10 minutes',
+    });
     await sendSystemEmail({
         to: user.email,
-        subject: 'Your NexCV verification code',
-        text: `Hi ${emailGreetingName(user.displayName)},\n\n` +
-            `Welcome to NexCV. Use this one-time code to verify your email address:\n\n` +
-            `${code}\n\n` +
-            `This verification code will expire in 10 minutes.\n\n` +
-            `If you did not create a NexCV account, you can safely ignore this email.\n\n` +
-            `Thanks,\nThe NexCV Team\n`,
+        subject: email.subject,
+        text: email.text,
     });
 };
 
@@ -745,16 +760,18 @@ const sendBillingSuccessNotifications = async (details: {
             `Plan expires at: ${expiresAt}\n`,
     });
 
+    const templates = await getEmailTemplates();
+    const receiptEmail = renderEmailTemplate(templates.paymentReceipt, {
+        name: emailGreetingName(details.user.displayName),
+        planName,
+        transactionId: details.transactionId,
+        expiresAt,
+    });
+
     await sendNotificationEmail({
         to: details.user.email,
-        subject: `Your NexCV transaction is successful - ${details.transactionId}`,
-        text: `Hi ${emailGreetingName(details.user.displayName)},\n\n` +
-            `Your NexCV ${planName} upgrade is active.\n\n` +
-            `Transaction ID: ${details.transactionId}\n` +
-            `Plan: ${planName}\n` +
-            `Access expires at: ${expiresAt}\n\n` +
-            `Keep this transaction ID for support or refund requests.\n\n` +
-            `Thanks,\nThe NexCV Team\n`,
+        subject: receiptEmail.subject,
+        text: receiptEmail.text,
     });
 };
 
@@ -1007,7 +1024,7 @@ const routeDeps = {
     startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, adminPaymentSummary,
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,
     recordAdminAuditLog, adminAuditLogSummary,
-    emailGreetingName,
+    emailGreetingName, mergeEmailTemplates, renderEmailTemplate,
     sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, getAppEmailFrom,
     roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, isUserRole, isAdminIpAllowed,
     mongoose, randomBytes, randomInt, createHash, timingSafeEqual,

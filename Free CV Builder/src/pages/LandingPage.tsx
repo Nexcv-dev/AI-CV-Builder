@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Crown, Download, FileText, Home, Info, LayoutTemplate, LogIn, Mail, Menu, Palette, Quote, Shield, Sparkles, Star, Upload, Wand2, X, Zap } from 'lucide-react';
 import { AuthModal } from '../components/AuthModal';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
+import { usePublicContent } from '../hooks/usePublicContent';
 import { apiFetch } from '../utils/api';
 
 type StatItem = {
@@ -87,6 +88,7 @@ const pricingPlans = [
     icon: FileText,
     href: '/builder?import=1',
     cta: 'Start free',
+    badge: '',
     highlighted: false,
     features: ['1 saved CV', 'Classic template', '1 watermarked PDF download', 'Manual editing tools'],
   },
@@ -99,6 +101,7 @@ const pricingPlans = [
     icon: Zap,
     href: '/pricing',
     cta: 'Choose PAYG',
+    badge: 'Popular',
     highlighted: true,
     features: ['1 extra saved CV per purchase', 'Any template', 'Unlimited edits for 7 days', 'Unlimited downloads for 7 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
   },
@@ -111,6 +114,7 @@ const pricingPlans = [
     icon: Crown,
     href: '/pricing',
     cta: 'Go monthly',
+    badge: '',
     highlighted: false,
     features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 30 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
   },
@@ -178,6 +182,7 @@ const faqs = [
 
 export default function LandingPage() {
   const location = useLocation();
+  const cmsContent = usePublicContent();
   const { templates } = useTemplateConfig();
   const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
   const [centeredTemplateIndex, setCenteredTemplateIndex] = useState(0);
@@ -197,6 +202,15 @@ export default function LandingPage() {
     ...baseStats,
     { label: 'Templates Available', value: templates.length, suffix: '', color: 'from-violet-400 to-emerald-400' },
   ], [templates.length]);
+  const landing = cmsContent.landing;
+  const cmsPricingPlans = useMemo(() => pricingPlans.map((plan) => {
+    const copy = cmsContent.pricingPlans.find((item) => item.key === plan.key);
+    return copy ? { ...plan, ...copy } : plan;
+  }), [cmsContent.pricingPlans]);
+  const cmsFeatureTiles = useMemo(() => featureTiles.map((tile, index) => ({
+    ...tile,
+    ...(cmsContent.featureTiles[index] || {}),
+  })), [cmsContent.featureTiles]);
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({
     isOpen: false,
     mode: 'signup',
@@ -555,15 +569,15 @@ export default function LandingPage() {
             <div className="max-w-2xl">
               <div className="landing-reveal mb-5 inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-400/10 px-3 py-1.5 text-xs font-extrabold text-violet-200 shadow-sm backdrop-blur sm:mb-6 sm:text-sm">
                 <Sparkles size={16} className="text-violet-300" />
-                Free AI resume builder
+                {landing.heroEyebrow}
               </div>
 
               <h1 className="landing-reveal max-w-2xl font-montserrat text-4xl font-black leading-[0.98] text-white min-[390px]:text-5xl sm:text-6xl sm:leading-[0.94] lg:text-7xl">
-                AI CV Builder <span className="text-violet-300">that pops</span>
+                {landing.heroTitle} {landing.heroAccent && <span className="text-violet-300">{landing.heroAccent}</span>}
               </h1>
 
               <p className="landing-reveal mt-5 max-w-xl text-base font-semibold leading-7 text-slate-300 sm:mt-6 sm:text-lg sm:leading-8">
-                Write, style, preview, and download a polished resume without starting from a blank page.
+                {landing.heroDescription}
               </p>
 
               <div className="landing-reveal mt-7 grid gap-3 sm:mt-8 sm:flex sm:flex-row">
@@ -571,7 +585,7 @@ export default function LandingPage() {
                   to="/builder?import=1"
                   className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-violet-600/30 transition-all hover:bg-violet-500 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
-                  Get Started
+                  {landing.primaryCta}
                   <ArrowRight size={20} className="ml-2" />
                 </Link>
                 <Link
@@ -579,7 +593,7 @@ export default function LandingPage() {
                   className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/6 px-5 py-3.5 text-sm font-extrabold text-white backdrop-blur transition-all hover:bg-white/10 active:scale-[0.98] sm:px-6 sm:py-4 sm:text-base"
                 >
                   <Upload size={19} className="mr-2" />
-                  Import CV
+                  {landing.secondaryCta}
                 </Link>
               </div>
 
@@ -610,9 +624,9 @@ export default function LandingPage() {
           <div className="absolute bottom-0 right-0 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl" />
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mb-10 text-center landing-scroll-reveal">
-              <p className="text-sm font-black uppercase tracking-widest text-violet-400">By the Numbers</p>
+              <p className="text-sm font-black uppercase tracking-widest text-violet-400">{landing.statsEyebrow}</p>
               <h2 className="mt-3 font-montserrat text-2xl font-black text-white sm:text-4xl">
-                Trusted by resume builders
+                {landing.statsTitle}
               </h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-3 sm:gap-6">
@@ -629,18 +643,18 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid gap-7 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
               <div className="landing-scroll-reveal">
-                <p className="text-sm font-black uppercase text-emerald-300">Features</p>
+                <p className="text-sm font-black uppercase text-emerald-300">{landing.featuresEyebrow}</p>
                 <h2 className="mt-3 max-w-xl font-montserrat text-2xl font-black leading-tight min-[390px]:text-3xl sm:text-5xl">
-                  Less typing. More finished resume.
+                  {landing.featuresTitle}
                 </h2>
                 <div className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-bold text-slate-200 sm:mt-7">
                   <Zap size={18} className="text-emerald-300" />
-                  Smart tools, clean controls, fast export
+                  {landing.featuresBadge}
                 </div>
               </div>
 
               <div className="landing-feature-orbit grid gap-4 sm:grid-cols-2">
-                {featureTiles.map(({ icon: Icon, title, text, tone }, index) => (
+                {cmsFeatureTiles.map(({ icon: Icon, title, text, tone }, index) => (
                   <article
                     key={title}
                     className={`landing-scroll-reveal landing-feature-tile landing-tone-${tone} group rounded-2xl border border-white/10 bg-white/7 p-4 backdrop-blur transition-all hover:-translate-y-1 hover:bg-white/11 sm:p-5`}
@@ -664,10 +678,10 @@ export default function LandingPage() {
         <section id="templates" className="relative overflow-hidden bg-slate-50 py-12 text-slate-900 sm:py-18">
           <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
             <div className="landing-scroll-reveal">
-              <p className="text-sm font-black uppercase tracking-widest text-sky-600">Templates</p>
-              <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Choose your CV template</h2>
+              <p className="text-sm font-black uppercase tracking-widest text-sky-600">{landing.templatesEyebrow}</p>
+              <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">{landing.templatesTitle}</h2>
               <p className="mx-auto mt-4 max-w-3xl text-base font-semibold text-slate-500 sm:text-xl">
-                Pick a polished layout, customize it live, and download a clean PDF.
+                {landing.templatesDescription}
               </p>
             </div>
           </div>
@@ -762,8 +776,8 @@ export default function LandingPage() {
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="landing-scroll-reveal flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
               <div>
-                <p className="text-sm font-black uppercase text-emerald-300">Pricing</p>
-                <h2 className="mt-3 max-w-3xl font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Start free. Upgrade only when you need more.</h2>
+                <p className="text-sm font-black uppercase text-emerald-300">{landing.pricingEyebrow}</p>
+                <h2 className="mt-3 max-w-3xl font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">{landing.pricingTitle}</h2>
               </div>
               <Link to="/pricing" className="inline-flex w-fit items-center rounded-xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-600/25 transition hover:bg-violet-500 active:scale-[0.98]">
                 Compare plans <ArrowRight size={17} className="ml-1.5" />
@@ -771,7 +785,7 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-8 grid gap-4 sm:mt-10 lg:grid-cols-3">
-              {pricingPlans.map((plan, index) => {
+              {cmsPricingPlans.map((plan, index) => {
                 const Icon = plan.icon;
                 return (
                   <article
@@ -787,7 +801,7 @@ export default function LandingPage() {
                         <Icon size={22} />
                       </span>
                       {plan.highlighted && (
-                        <span className="rounded-full bg-violet-400 px-3 py-1 text-[11px] font-black uppercase text-slate-950">Popular</span>
+                        <span className="rounded-full bg-violet-400 px-3 py-1 text-[11px] font-black uppercase text-slate-950">{plan.badge || 'Popular'}</span>
                       )}
                     </div>
                     <h3 className="mt-5 font-montserrat text-2xl font-black">{plan.name}</h3>
@@ -837,15 +851,15 @@ export default function LandingPage() {
           <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-emerald-400/12 blur-3xl" />
           <div id="faq" className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <div className="landing-scroll-reveal text-center">
-              <p className="text-sm font-black uppercase text-violet-300">FAQ</p>
-              <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Questions before you start?</h2>
+              <p className="text-sm font-black uppercase text-violet-300">{landing.faqEyebrow}</p>
+              <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">{landing.faqTitle}</h2>
               <p className="mx-auto mt-4 max-w-2xl text-sm font-semibold leading-6 text-slate-300 sm:text-base sm:leading-7">
-                Quick answers about creating, styling, and exporting your CV with NexCV.
+                {landing.faqDescription}
               </p>
             </div>
 
             <div className="mt-8 grid gap-3 sm:mt-10">
-              {faqs.map((faq, index) => (
+              {cmsContent.faqs.map((faq, index) => (
                 <details
                   key={faq.question}
                   className="landing-scroll-reveal landing-faq-item group rounded-2xl border border-white/10 bg-white/6 p-4 backdrop-blur transition-all open:border-violet-300/30 open:bg-white/9 sm:p-5"
@@ -870,8 +884,8 @@ export default function LandingPage() {
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="landing-scroll-reveal flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
               <div>
-                <p className="text-sm font-black uppercase text-emerald-700">Testimonials</p>
-                <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">Loved by resume builders</h2>
+                <p className="text-sm font-black uppercase text-emerald-700">{landing.testimonialsEyebrow}</p>
+                <h2 className="mt-3 font-montserrat text-2xl font-black min-[390px]:text-3xl sm:text-5xl">{landing.testimonialsTitle}</h2>
               </div>
               <div className="inline-flex w-fit items-center gap-1 rounded-full border border-violet-300/20 bg-violet-400/10 px-4 py-2 text-sm font-black text-violet-200">
                 {[...Array(5)].map((_, index) => (

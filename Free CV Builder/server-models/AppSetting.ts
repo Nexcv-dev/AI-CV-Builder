@@ -1,4 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { DEFAULT_CMS_CONTENT, mergeCmsContent, type CmsContent } from '../src/contentDefaults';
+import { DEFAULT_EMAIL_TEMPLATES, mergeEmailTemplates, type EmailTemplateMap } from '../src/emailTemplateDefaults';
 
 export interface IAppSetting extends Document {
   singletonKey: 'global';
@@ -12,6 +14,8 @@ export interface IAppSetting extends Document {
   freeCvCreationLimit: number;
   freePdfDownloadLimit: number;
   defaultTemplateKey: string;
+  cmsContent: CmsContent;
+  emailTemplates: EmailTemplateMap;
   updatedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +33,8 @@ export const DEFAULT_APP_SETTINGS = {
   freeCvCreationLimit: 1,
   freePdfDownloadLimit: 1,
   defaultTemplateKey: 'professional',
+  cmsContent: DEFAULT_CMS_CONTENT,
+  emailTemplates: DEFAULT_EMAIL_TEMPLATES,
 };
 
 const AppSettingSchema = new Schema<IAppSetting>(
@@ -44,6 +50,8 @@ const AppSettingSchema = new Schema<IAppSetting>(
     freeCvCreationLimit: { type: Number, min: 0, max: 100, default: DEFAULT_APP_SETTINGS.freeCvCreationLimit },
     freePdfDownloadLimit: { type: Number, min: 0, max: 100, default: DEFAULT_APP_SETTINGS.freePdfDownloadLimit },
     defaultTemplateKey: { type: String, trim: true, maxlength: 80, default: DEFAULT_APP_SETTINGS.defaultTemplateKey },
+    cmsContent: { type: Schema.Types.Mixed, default: DEFAULT_APP_SETTINGS.cmsContent },
+    emailTemplates: { type: Schema.Types.Mixed, default: DEFAULT_APP_SETTINGS.emailTemplates },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
@@ -65,5 +73,17 @@ export async function getAppSettings() {
     { $setOnInsert: DEFAULT_APP_SETTINGS },
     { new: true, upsert: true, setDefaultsOnInsert: true }
   );
+  if (!setting.cmsContent) {
+    setting.cmsContent = DEFAULT_CMS_CONTENT;
+    await setting.save();
+  } else {
+    setting.cmsContent = mergeCmsContent(setting.cmsContent);
+  }
+  if (!setting.emailTemplates) {
+    setting.emailTemplates = DEFAULT_EMAIL_TEMPLATES;
+    await setting.save();
+  } else {
+    setting.emailTemplates = mergeEmailTemplates(setting.emailTemplates);
+  }
   return setting;
 }

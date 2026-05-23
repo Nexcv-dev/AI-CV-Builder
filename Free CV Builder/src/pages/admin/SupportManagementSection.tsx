@@ -3,6 +3,7 @@ import {
   Eye,
   Loader2,
   Search,
+  Send,
   X,
 } from 'lucide-react';
 import type { AdminSupportTicket } from './adminTypes';
@@ -18,7 +19,9 @@ export default function SupportManagementSection({
   typeFilter,
   selectedTicket,
   ticketForm,
+  replyMessage,
   savingTicket,
+  sendingReply,
   onSearchChange,
   onStatusFilterChange,
   onTypeFilterChange,
@@ -26,6 +29,8 @@ export default function SupportManagementSection({
   onCloseDetail,
   onFormChange,
   onSaveTicket,
+  onReplyMessageChange,
+  onSendReply,
 }: {
   tickets: AdminSupportTicket[];
   summary: Record<'open' | 'pending' | 'resolved' | 'closed', number> | null;
@@ -35,7 +40,9 @@ export default function SupportManagementSection({
   typeFilter: string;
   selectedTicket: AdminSupportTicket | null;
   ticketForm: { status: AdminSupportTicket['status']; priority: AdminSupportTicket['priority']; adminNotes: string };
+  replyMessage: string;
   savingTicket: boolean;
+  sendingReply: boolean;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
   onTypeFilterChange: (value: string) => void;
@@ -43,6 +50,8 @@ export default function SupportManagementSection({
   onCloseDetail: () => void;
   onFormChange: (value: { status: AdminSupportTicket['status']; priority: AdminSupportTicket['priority']; adminNotes: string }) => void;
   onSaveTicket: () => void;
+  onReplyMessageChange: (value: string) => void;
+  onSendReply: () => void;
 }) {
   return (
     <section className="mt-6">
@@ -144,6 +153,24 @@ export default function SupportManagementSection({
             <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
               <h3 className="font-montserrat text-lg font-black">Message</h3>
               <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-300">{selectedTicket.message}</p>
+            </section>
+
+            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+              <h3 className="font-montserrat text-lg font-black">Reply</h3>
+              <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Uses the managed Support Reply email template from Notifications.</p>
+              <div className="mt-4 grid gap-4">
+                <textarea
+                  value={replyMessage}
+                  onChange={(event) => onReplyMessageChange(event.target.value)}
+                  rows={5}
+                  className="rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm font-bold text-white outline-none focus:border-violet-400"
+                  placeholder="Write the message that will replace {{replyMessage}}"
+                />
+                <button type="button" onClick={onSendReply} disabled={sendingReply || !replyMessage.trim()} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-60">
+                  {sendingReply ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
+                  Send reply
+                </button>
+              </div>
             </section>
 
             <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">

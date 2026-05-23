@@ -2,6 +2,7 @@
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
 import type { TemplateName } from '../src/templates';
+import { mergeCmsContent } from '../src/contentDefaults';
 
 type RouteDeps = Record<string, any>;
 
@@ -14,10 +15,13 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
 
     router.get('/api/public/app-settings', (req: Request, res: Response) => {
         const settings = (req as any).appSettings;
+        const cmsContent = mergeCmsContent(settings?.cmsContent);
         return res.json({
             maintenanceMode: Boolean(settings?.maintenanceMode),
-            announcementEnabled: Boolean(settings?.announcementEnabled),
-            announcementText: settings?.announcementText || '',
+            announcementEnabled: Boolean(settings?.announcementEnabled || cmsContent.announcement.enabled),
+            announcementText: settings?.announcementText || cmsContent.announcement.text || '',
+            announcement: cmsContent.announcement,
+            cmsContent,
             supportEmail: settings?.supportEmail || 'support@nexcv.com',
             adminAccessAllowed: typeof deps.isAdminIpAllowed === 'function' ? deps.isAdminIpAllowed(req) : true,
         });

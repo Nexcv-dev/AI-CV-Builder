@@ -29,6 +29,12 @@ interface PublicAppSettings {
   maintenanceMode: boolean;
   announcementEnabled: boolean;
   announcementText: string;
+  announcement?: {
+    enabled: boolean;
+    text: string;
+    linkLabel: string;
+    linkHref: string;
+  };
   supportEmail: string;
   adminAccessAllowed: boolean;
 }
@@ -348,6 +354,22 @@ function AppRoutes() {
   return (
     <>
       <PageLoadingOverlay />
+      {publicSettings?.announcementEnabled && (publicSettings.announcementText || publicSettings.announcement?.text) && !location.pathname.startsWith('/admin') && location.pathname !== '/builder' && (
+        <div className="fixed inset-x-0 top-16 z-60 border-b border-violet-300/20 bg-violet-950/95 px-4 py-2 text-center text-xs font-black text-white shadow-lg shadow-black/20 backdrop-blur">
+          <span>{publicSettings.announcementText || publicSettings.announcement?.text}</span>
+          {publicSettings.announcement?.linkLabel && publicSettings.announcement?.linkHref && (
+            publicSettings.announcement.linkHref.startsWith('http') ? (
+              <a href={publicSettings.announcement.linkHref} className="ml-2 text-emerald-200 underline underline-offset-4">
+                {publicSettings.announcement.linkLabel}
+              </a>
+            ) : (
+              <Link to={publicSettings.announcement.linkHref} className="ml-2 text-emerald-200 underline underline-offset-4">
+                {publicSettings.announcement.linkLabel}
+              </Link>
+            )
+          )}
+        </div>
+      )}
       <Routes>
         {/* Headless print route - no layout */}
         <Route path="/print" element={<PrintView />} />
