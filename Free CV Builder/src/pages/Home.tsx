@@ -38,6 +38,29 @@ interface DownloadQuota {
   remaining: number | null;
   reached: boolean;
   plan?: 'free' | 'payg' | 'monthly' | 'unlimited';
+  resetAt?: string;
+}
+
+function formatDownloadResetTime(resetAt?: string) {
+  if (!resetAt) return 'tomorrow';
+  const date = new Date(resetAt);
+  if (Number.isNaN(date.getTime())) return 'tomorrow';
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function downloadLimitMessage(quota?: DownloadQuota | null) {
+  if (quota?.plan === 'payg') {
+    return `Daily download limit reached. You have already used your ${quota.limit ?? 15} PAYG PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)} while your plan is active.`;
+  }
+  if (quota?.plan === 'monthly') {
+    return `Daily download limit reached. You have already used your ${quota.limit ?? 25} Monthly plan PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)}.`;
+  }
+  return 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.';
 }
 
 const initialData: CVData = {
@@ -575,7 +598,7 @@ export default function Home() {
 
     if (currentUser && downloadQuota?.reached) {
       setShowDownloadConfirm(false);
-      openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
+      openUpgradePrompt('download', downloadLimitMessage(downloadQuota));
       return;
     }
 
@@ -603,7 +626,7 @@ export default function Home() {
             'download',
             errorData.reason === 'premium_template'
               ? 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.'
-              : 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.',
+              : downloadLimitMessage(errorData.quota || downloadQuota),
             errorData.reason === 'premium_template' ? 'Premium template download' : undefined
           );
           return;
@@ -662,7 +685,7 @@ export default function Home() {
               'download',
               parsed.reason === 'premium_template'
                 ? 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.'
-                : 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.',
+                : downloadLimitMessage(parsed.quota || downloadQuota),
               parsed.reason === 'premium_template' ? 'Premium template download' : undefined
             );
             setShowDownloadConfirm(false);
@@ -697,7 +720,7 @@ export default function Home() {
       return;
     }
     if (downloadQuota?.reached) {
-      openUpgradePrompt('download', 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.');
+      openUpgradePrompt('download', downloadLimitMessage(downloadQuota));
       return;
     }
     setShowDownloadConfirm(true);

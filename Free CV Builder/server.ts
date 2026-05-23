@@ -57,7 +57,7 @@ import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-
 import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from './src/adminAccess';
 import { mergeEmailTemplates, renderEmailTemplate } from './src/emailTemplateDefaults';
 import { buildCvCreationQuota } from './server-models/cvQuota';
-import { buildDownloadQuota } from './server-models/downloadQuotaUtils';
+import { buildDownloadQuota, getNextUtcDayResetAt, getUtcDayKey } from './server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
 import type { BillingPlan } from './server-models/userPlan';
 import { registerAdminRoutes } from './routes/admin';
@@ -470,10 +470,15 @@ const incrementCvCreationQuota = async (user: any) => {
 };
 
 const getDownloadQuota = async (user: any) => {
-    const day = 'free-lifetime';
+    const plan = getEffectivePlan(user);
+    const usesDailyDownloadQuota = plan === 'payg' || plan === 'monthly';
+    const day = usesDailyDownloadQuota ? getUtcDayKey() : 'free-lifetime';
     const record = await DownloadQuota.findOne({ userId: user._id || user.id, day });
     const used = record?.count || 0;
-    const quota = buildDownloadQuota(user, used);
+    const quota = {
+        ...buildDownloadQuota(user, used),
+        ...(usesDailyDownloadQuota ? { resetAt: getNextUtcDayResetAt() } : {}),
+    };
     const settings = await getAppSettings().catch(() => null);
     if (quota.plan !== 'free' || !settings) return quota;
     const limit = Math.max(0, Math.floor(settings.freePdfDownloadLimit));
@@ -486,7 +491,8 @@ const getDownloadQuota = async (user: any) => {
 };
 
 const incrementDownloadQuota = async (user: any) => {
-    const day = 'free-lifetime';
+    const plan = getEffectivePlan(user);
+    const day = plan === 'payg' || plan === 'monthly' ? getUtcDayKey() : 'free-lifetime';
     const record = await DownloadQuota.findOneAndUpdate(
         { userId: user._id || user.id, day },
         { $inc: { count: 1 } },

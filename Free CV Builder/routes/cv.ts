@@ -485,7 +485,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             const downloadQuota = await getDownloadQuota(req.user);
             if (downloadQuota.reached) {
                 return res.status(403).json({
-                    error: 'Free plan download limit reached.',
+                    error: 'PDF download limit reached.',
                     quota: downloadQuota,
                     upgradeRequired: true,
                 });
