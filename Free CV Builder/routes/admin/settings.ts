@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { bindDeps, type RouteDeps } from '../_shared';
 import { ADMIN_ROLE_ACCESS, ADMIN_ROLE_LABELS, ALL_USER_ROLES, isUserRole, type UserRole } from '../../src/adminAccess';
 import { DEFAULT_APP_SETTINGS, getAppSettings } from '../../server-models/AppSetting';
+import { DEFAULT_CMS_CONTENT, mergeCmsContent, type CmsContent, type CmsFaqItem, type CmsLegalPage, type CmsPlanCopy } from '../../src/contentDefaults';
+import { DEFAULT_EMAIL_TEMPLATES, mergeEmailTemplates, type EmailTemplateMap, type EmailTemplateKey } from '../../src/emailTemplateDefaults';
 
 const roleSummary = (role: UserRole) => ({
     role,
@@ -160,7 +162,7 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
         }
     });
 
-    router.post('/api/admin/settings/test-email', requireAdminPermission('settings.write'), async (req: Request, res: Response) => {
+    router.post('/api/admin/settings/test-email', requireAdminPermission('email.write'), async (req: Request, res: Response) => {
         try {
             const recipient = normalizeEmail(req.body.to || (req.user as any)?.email || '');
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
@@ -206,6 +208,8 @@ function appSettingsSummary(settings: any) {
         freeCvCreationLimit: Number.isFinite(Number(settings?.freeCvCreationLimit)) ? Number(settings.freeCvCreationLimit) : DEFAULT_APP_SETTINGS.freeCvCreationLimit,
         freePdfDownloadLimit: Number.isFinite(Number(settings?.freePdfDownloadLimit)) ? Number(settings.freePdfDownloadLimit) : DEFAULT_APP_SETTINGS.freePdfDownloadLimit,
         defaultTemplateKey: settings?.defaultTemplateKey || DEFAULT_APP_SETTINGS.defaultTemplateKey,
+        cmsContent: mergeCmsContent(settings?.cmsContent),
+        emailTemplates: mergeEmailTemplates(settings?.emailTemplates),
         updatedAt: settings?.updatedAt,
     };
 }
@@ -293,5 +297,115 @@ function sanitizeSettingsPatch(input: any, deps: { CV_TEMPLATES: Array<{ key: st
         values.defaultTemplateKey = key;
     }
 
+    if ('cmsContent' in input) {
+        values.cmsContent = sanitizeCmsContent(input.cmsContent, deps.sanitizeProfileField);
+    }
+
+    if ('emailTemplates' in input) {
+        values.emailTemplates = sanitizeEmailTemplates(input.emailTemplates, deps.sanitizeProfileField);
+    }
+
     return { values };
+}
+
+function sanitizeEmailTemplates(input: unknown, sanitizeProfileField: (value: unknown, maxLength?: number) => string): EmailTemplateMap {
+    const merged = mergeEmailTemplates(input);
+    const cleanSubject = (value: unknown) => sanitizeProfileField(value, 180);
+    const cleanBody = (value: unknown) => sanitizeProfileField(value, 5000);
+    return (Object.keys(DEFAULT_EMAIL_TEMPLATES) as EmailTemplateKey[]).reduce((templates, key) => {
+        templates[key] = {
+            ...DEFAULT_EMAIL_TEMPLATES[key],
+            subject: cleanSubject(merged[key].subject) || DEFAULT_EMAIL_TEMPLATES[key].subject,
+            body: cleanBody(merged[key].body) || DEFAULT_EMAIL_TEMPLATES[key].body,
+        };
+        return templates;
+    }, {} as EmailTemplateMap);
+}
+
+function sanitizeCmsContent(input: unknown, sanitizeProfileField: (value: unknown, maxLength?: number) => string): CmsContent {
+    const merged = mergeCmsContent(input);
+    const cleanText = (value: unknown, max = 260) => sanitizeProfileField(value, max);
+    const cleanParagraph = (value: unknown, max = 1600) => sanitizeProfileField(value, max);
+
+    return {
+        announcement: {
+            enabled: merged.announcement.enabled === true,
+            text: cleanText(merged.announcement.text, 180) || DEFAULT_CMS_CONTENT.announcement.text,
+            linkLabel: cleanText(merged.announcement.linkLabel, 40),
+            linkHref: sanitizeLink(merged.announcement.linkHref),
+        },
+        landing: {
+            heroEyebrow: cleanText(merged.landing.heroEyebrow, 80) || DEFAULT_CMS_CONTENT.landing.heroEyebrow,
+            heroTitle: cleanText(merged.landing.heroTitle, 90) || DEFAULT_CMS_CONTENT.landing.heroTitle,
+            heroAccent: cleanText(merged.landing.heroAccent, 70),
+            heroDescription: cleanParagraph(merged.landing.heroDescription, 300) || DEFAULT_CMS_CONTENT.landing.heroDescription,
+            primaryCta: cleanText(merged.landing.primaryCta, 40) || DEFAULT_CMS_CONTENT.landing.primaryCta,
+            secondaryCta: cleanText(merged.landing.secondaryCta, 40) || DEFAULT_CMS_CONTENT.landing.secondaryCta,
+            statsEyebrow: cleanText(merged.landing.statsEyebrow, 70),
+            statsTitle: cleanText(merged.landing.statsTitle, 120),
+            featuresEyebrow: cleanText(merged.landing.featuresEyebrow, 70),
+            featuresTitle: cleanText(merged.landing.featuresTitle, 140),
+            featuresBadge: cleanText(merged.landing.featuresBadge, 120),
+            templatesEyebrow: cleanText(merged.landing.templatesEyebrow, 70),
+            templatesTitle: cleanText(merged.landing.templatesTitle, 140),
+            templatesDescription: cleanParagraph(merged.landing.templatesDescription, 260),
+            pricingEyebrow: cleanText(merged.landing.pricingEyebrow, 70),
+            pricingTitle: cleanText(merged.landing.pricingTitle, 140),
+            faqEyebrow: cleanText(merged.landing.faqEyebrow, 70),
+            faqTitle: cleanText(merged.landing.faqTitle, 140),
+            faqDescription: cleanParagraph(merged.landing.faqDescription, 260),
+            testimonialsEyebrow: cleanText(merged.landing.testimonialsEyebrow, 70),
+            testimonialsTitle: cleanText(merged.landing.testimonialsTitle, 140),
+        },
+        featureTiles: merged.featureTiles.slice(0, 8).map((tile) => ({
+            title: cleanText(tile.title, 70) || DEFAULT_CMS_CONTENT.featureTiles[0].title,
+            text: cleanParagraph(tile.text, 180) || DEFAULT_CMS_CONTENT.featureTiles[0].text,
+        })),
+        pricingPlans: merged.pricingPlans.map((plan): CmsPlanCopy => ({
+            key: plan.key,
+            name: cleanText(plan.name, 60) || plan.key,
+            price: cleanText(plan.price, 40),
+            duration: cleanText(plan.duration, 80),
+            description: cleanParagraph(plan.description, 240),
+            cta: cleanText(plan.cta, 40),
+            badge: cleanText(plan.badge, 40),
+            features: sanitizeList(plan.features, cleanText, 10, 120),
+        })),
+        faqs: merged.faqs.slice(0, 12).map((faq): CmsFaqItem => ({
+            question: cleanText(faq.question, 160),
+            answer: cleanParagraph(faq.answer, 700),
+        })).filter((faq) => faq.question && faq.answer),
+        legal: {
+            privacy: sanitizeLegalPage(merged.legal.privacy, cleanText, cleanParagraph),
+            terms: sanitizeLegalPage(merged.legal.terms, cleanText, cleanParagraph),
+            refund: sanitizeLegalPage(merged.legal.refund, cleanText, cleanParagraph),
+        },
+    };
+}
+
+function sanitizeLegalPage(page: CmsLegalPage, cleanText: (value: unknown, max?: number) => string, cleanParagraph: (value: unknown, max?: number) => string): CmsLegalPage {
+    return {
+        title: cleanText(page.title, 100),
+        lastUpdated: cleanText(page.lastUpdated, 40),
+        sections: page.sections.slice(0, 12).map((section) => ({
+            heading: cleanText(section.heading, 120),
+            body: cleanParagraph(section.body, 1800),
+            bullets: sanitizeList(section.bullets || [], cleanText, 8, 180),
+        })).filter((section) => section.heading && section.body),
+    };
+}
+
+function sanitizeList(values: unknown[], cleanText: (value: unknown, max?: number) => string, maxItems: number, maxLength: number) {
+    return values
+        .slice(0, maxItems)
+        .map((value) => cleanText(value, maxLength))
+        .filter(Boolean);
+}
+
+function sanitizeLink(value: unknown) {
+    const link = typeof value === 'string' ? value.trim() : '';
+    if (!link) return '';
+    if (link.startsWith('/') || link.startsWith('#')) return link.slice(0, 200);
+    if (/^https?:\/\//i.test(link)) return link.slice(0, 200);
+    return '';
 }

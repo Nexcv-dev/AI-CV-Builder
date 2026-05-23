@@ -1,5 +1,6 @@
 import {
   Bell,
+  BarChart3,
   CreditCard,
   History,
   LayoutDashboard,
@@ -15,6 +16,7 @@ import type { AdminBillingPlan, AdminBillingPlanDraft } from './adminTypes';
 
 export const adminNavItems = [
   { key: 'dashboard', label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
+  { key: 'analytics', label: 'Analytics', to: '/admin/analytics', icon: BarChart3 },
   { key: 'users', label: 'Users', to: '/admin/users', icon: Users },
   { key: 'templates', label: 'Templates', to: '/admin/templates', icon: LayoutTemplate },
   { key: 'billing', label: 'Billing', to: '/admin/billing', icon: CreditCard },

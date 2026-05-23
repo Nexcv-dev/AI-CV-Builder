@@ -1,19 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import {
-  CreditCard,
-  FileText,
-  Loader2,
-  LogOut,
-  Search,
-  Shield,
-  UserCog,
-  Users,
-} from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { ADMIN_ROLE_LABELS, getRoleAccess, hasAdminPermission, isAdminRole, type UserRole } from '../adminPermissions';
-import { apiFetch, AuthUser, getCurrentUser } from '../utils/api';
-import { clearPageScrollLock } from '../utils/scrollLock';
+import { apiFetch } from '../utils/api';
 
 import type {
   AdminBillingPlan,
@@ -24,48 +14,70 @@ import type {
   AdminPaymentSummary,
   AdminRoleConfig,
   AdminSettingsSummary,
-  AdminSummary,
   AdminSupportTicket,
   AdminTemplateItem,
-  AdminUserDetail,
-  AdminUserDocument,
   AdminUserListItem,
 } from './admin/adminTypes';
-import { adminNavItems, emptyCustomTemplateForm, formatCurrency, formatDate, formatNumber } from './admin/adminUtils';
-import { AdminStat, ChartBar, MiniRow } from './admin/AdminSharedComponents';
-import UserManagementSection from './admin/UserManagementSection';
-import TemplateManagementSection from './admin/TemplateManagementSection';
-import BillingManagementSection from './admin/BillingManagementSection';
-import PromotionManagementSection from './admin/PromotionManagementSection';
-import SupportManagementSection from './admin/SupportManagementSection';
-import RoleManagementSection from './admin/RoleManagementSection';
-import SettingsManagementSection from './admin/SettingsManagementSection';
-import AuditLogSection from './admin/AuditLogSection';
+import { adminNavItems, emptyCustomTemplateForm } from './admin/adminUtils';
+import { AdminMobileNav, AdminPageHeader, AdminSidebar } from './admin/AdminShellComponents';
+import { AdminOverviewSection, AnalyticsDashboardSection } from './admin/AdminOverviewSections';
+import { useAdminBootstrap } from './admin/hooks/useAdminBootstrap';
+import { useAdminUsers } from './admin/hooks/useAdminUsers';
+
+const UserManagementSection = lazy(() => import('./admin/UserManagementSection'));
+const TemplateManagementSection = lazy(() => import('./admin/TemplateManagementSection'));
+const BillingManagementSection = lazy(() => import('./admin/BillingManagementSection'));
+const PromotionManagementSection = lazy(() => import('./admin/PromotionManagementSection'));
+const SupportManagementSection = lazy(() => import('./admin/SupportManagementSection'));
+const RoleManagementSection = lazy(() => import('./admin/RoleManagementSection'));
+const SettingsManagementSection = lazy(() => import('./admin/SettingsManagementSection'));
+const EmailManagementSection = lazy(() => import('./admin/EmailManagementSection'));
+const AuditLogSection = lazy(() => import('./admin/AuditLogSection'));
+
+function AdminSectionFallback() {
+  return (
+    <div className="mt-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-5 text-sm font-bold text-slate-400">
+      <Loader2 className="animate-spin text-violet-300" size={18} />
+      Loading admin section...
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [summary, setSummary] = useState<AdminSummary | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [users, setUsers] = useState<AdminUserListItem[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [userSearch, setUserSearch] = useState('');
-  const [planFilter, setPlanFilter] = useState('all');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
-  const [selectedUserDocuments, setSelectedUserDocuments] = useState<AdminUserDocument[]>([]);
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'payg' | 'monthly'>('free');
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [savingPlan, setSavingPlan] = useState(false);
+  const { isLoading, summary, user } = useAdminBootstrap();
   const isUsersPage = location.pathname.startsWith('/admin/users');
+  const isAnalyticsPage = location.pathname.startsWith('/admin/analytics');
   const isTemplatesPage = location.pathname.startsWith('/admin/templates');
   const isBillingPage = location.pathname.startsWith('/admin/billing');
   const isPromotionsPage = location.pathname.startsWith('/admin/promotions');
+  const isCmsPage = location.pathname.startsWith('/admin/cms');
   const isSupportPage = location.pathname.startsWith('/admin/support');
   const isRolesPage = location.pathname.startsWith('/admin/roles');
   const isSettingsPage = location.pathname.startsWith('/admin/settings');
+  const isEmailPage = location.pathname.startsWith('/admin/notifications');
   const isAuditPage = location.pathname.startsWith('/admin/audit');
+  const {
+    detailLoading,
+    openUserDetail,
+    planFilter,
+    roleFilter,
+    savingPlan,
+    selectedPlan,
+    selectedUser,
+    selectedUserDocuments,
+    setPlanFilter,
+    setRoleFilter,
+    setSelectedPlan,
+    setSelectedUser,
+    setUsers,
+    setUserSearch,
+    updateSelectedUserPlan,
+    userSearch,
+    users,
+    usersLoading,
+  } = useAdminUsers({ enabled: isUsersPage });
   const [templates, setTemplates] = useState<AdminTemplateItem[]>([]);
   const [templateCategories, setTemplateCategories] = useState<string[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
@@ -98,7 +110,9 @@ export default function AdminDashboard() {
   const [supportTypeFilter, setSupportTypeFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState<AdminSupportTicket | null>(null);
   const [ticketForm, setTicketForm] = useState({ status: 'open' as AdminSupportTicket['status'], priority: 'normal' as AdminSupportTicket['priority'], adminNotes: '' });
+  const [supportReplyMessage, setSupportReplyMessage] = useState('');
   const [savingTicket, setSavingTicket] = useState(false);
+  const [sendingSupportReply, setSendingSupportReply] = useState(false);
   const [roles, setRoles] = useState<AdminRoleConfig[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUserListItem[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -114,60 +128,6 @@ export default function AdminDashboard() {
   const [auditSearch, setAuditSearch] = useState('');
   const [auditActionFilter, setAuditActionFilter] = useState('all');
   const [auditTargetTypeFilter, setAuditTargetTypeFilter] = useState('all');
-
-  useEffect(() => {
-    clearPageScrollLock();
-    let ignore = false;
-
-    async function loadAdmin() {
-      try {
-        const [currentUser, adminSummary] = await Promise.all([
-          getCurrentUser(),
-          apiFetch<AdminSummary>('/api/admin/summary'),
-        ]);
-
-        if (ignore) return;
-        setUser(currentUser);
-        setSummary(adminSummary);
-      } catch (error) {
-        if (!ignore) {
-          toast.error(error instanceof Error ? error.message : 'Could not load admin panel.');
-        }
-      } finally {
-        if (!ignore) setIsLoading(false);
-      }
-    }
-
-    void loadAdmin();
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isUsersPage) return;
-    let ignore = false;
-    const timer = window.setTimeout(async () => {
-      setUsersLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (userSearch.trim()) params.set('search', userSearch.trim());
-        if (planFilter !== 'all') params.set('plan', planFilter);
-        if (roleFilter !== 'all') params.set('role', roleFilter);
-        const data = await apiFetch<{ users: AdminUserListItem[] }>(`/api/admin/users?${params.toString()}`);
-        if (!ignore) setUsers(data.users);
-      } catch (error) {
-        if (!ignore) toast.error(error instanceof Error ? error.message : 'Could not load users.');
-      } finally {
-        if (!ignore) setUsersLoading(false);
-      }
-    }, 250);
-
-    return () => {
-      ignore = true;
-      window.clearTimeout(timer);
-    };
-  }, [isUsersPage, planFilter, roleFilter, userSearch]);
 
   useEffect(() => {
     if (!isTemplatesPage && !isSettingsPage) return;
@@ -291,7 +251,7 @@ export default function AdminDashboard() {
   }, [isRolesPage]);
 
   useEffect(() => {
-    if (!isSettingsPage) return;
+    if (!isSettingsPage && !isEmailPage && !isCmsPage) return;
     let ignore = false;
     setSettingsLoading(true);
 
@@ -309,7 +269,7 @@ export default function AdminDashboard() {
     return () => {
       ignore = true;
     };
-  }, [isSettingsPage]);
+  }, [isCmsPage, isEmailPage, isSettingsPage]);
 
   useEffect(() => {
     if (!isAuditPage) return;
@@ -380,46 +340,42 @@ export default function AdminDashboard() {
   const canUpdateUserPlans = hasAdminPermission(user, 'users.plan.update');
   const canUpdateRoles = hasAdminPermission(user, 'users.role.update');
   const canUpdateSettings = hasAdminPermission(user, 'settings.write');
+  const canUpdateEmail = hasAdminPermission(user, 'email.write');
   const activeNav = adminNavItems.find((item) => item.to === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(item.to)) || adminNavItems[0];
+  const pageTitle = isUsersPage ? 'User Management' : isAnalyticsPage ? 'Analytics Dashboard' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isPromotionsPage ? 'Promotions & Pricing' : isCmsPage ? 'CMS Management' : isSupportPage ? 'Support Tickets' : isRolesPage ? 'Roles & Access' : isSettingsPage ? 'Admin Settings' : isEmailPage ? 'Email Notifications' : isAuditPage ? 'Audit Logs' : 'Admin Dashboard';
+  const pageDescription = isUsersPage
+    ? 'Search users, inspect accounts, and update plan access.'
+    : isAnalyticsPage
+      ? 'Track signups, CV saves, downloads, checkout conversion, and template usage.'
+      : isTemplatesPage
+        ? 'Manage template metadata, access, categories, and usage stats.'
+        : isBillingPage
+          ? 'Review payment history, revenue, and transaction status.'
+          : isPromotionsPage
+            ? 'Manage plan pricing, promotions, and discount coupons.'
+            : isCmsPage
+              ? 'Manage landing page content, FAQs, pricing copy, legal pages, and announcements.'
+              : isSupportPage
+                ? 'Track complaints, bugs, feature requests, and payment issues.'
+                : isRolesPage
+                  ? 'Manage super admin access and review admin permissions.'
+                  : isSettingsPage
+                    ? 'Review runtime, security, and app configuration status.'
+                    : isEmailPage
+                      ? 'Manage transactional email templates and service delivery status.'
+                      : isAuditPage
+                        ? 'Track sensitive admin changes across users, billing, templates, and support.'
+                        : 'Operational overview and module foundation.';
+  const showHeaderSearch = !isAnalyticsPage && !isPromotionsPage && !isCmsPage && !isRolesPage && !isSettingsPage && !isEmailPage && !isAuditPage;
+  const searchPlaceholder = isUsersPage ? 'Search users' : isTemplatesPage ? 'Search templates' : isBillingPage ? 'Search payments' : isSupportPage ? 'Search tickets' : 'Search admin modules';
   const maxChartValue = useMemo(() => {
     const values = [
       ...(summary?.charts.userGrowth.map((item) => item.count) || []),
+      ...(summary?.charts.cvSavesPerDay.map((item) => item.count) || []),
       ...(summary?.charts.cvDownloadsPerDay.map((item) => item.count) || []),
     ];
     return Math.max(1, ...values);
   }, [summary]);
-
-  const openUserDetail = async (id: string) => {
-    setDetailLoading(true);
-    try {
-      const data = await apiFetch<{ user: AdminUserDetail; documents: AdminUserDocument[] }>(`/api/admin/users/${id}`);
-      setSelectedUser(data.user);
-      setSelectedPlan(data.user.rawPlan);
-      setSelectedUserDocuments(data.documents);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not load user details.');
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
-  const updateSelectedUserPlan = async () => {
-    if (!selectedUser) return;
-    setSavingPlan(true);
-    try {
-      const data = await apiFetch<{ user: AdminUserListItem }>(`/api/admin/users/${selectedUser.id}/plan`, {
-        method: 'PATCH',
-        body: JSON.stringify({ plan: selectedPlan }),
-      });
-      setUsers((items) => items.map((item) => item.id === data.user.id ? { ...item, ...data.user } : item));
-      setSelectedUser((current) => current ? { ...current, ...data.user } : current);
-      toast.success('User plan updated.');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not update plan.');
-    } finally {
-      setSavingPlan(false);
-    }
-  };
 
   const openTemplateDetail = (template: AdminTemplateItem) => {
     setSelectedTemplate(template);
@@ -536,6 +492,7 @@ export default function AdminDashboard() {
   const openTicketDetail = (ticket: AdminSupportTicket) => {
     setSelectedTicket(ticket);
     setTicketForm({ status: ticket.status, priority: ticket.priority, adminNotes: ticket.adminNotes || '' });
+    setSupportReplyMessage('');
   };
 
   const saveSelectedTicket = async () => {
@@ -554,6 +511,26 @@ export default function AdminDashboard() {
       toast.error(error instanceof Error ? error.message : 'Could not update support ticket.');
     } finally {
       setSavingTicket(false);
+    }
+  };
+
+  const sendSupportReply = async () => {
+    if (!selectedTicket) return;
+    setSendingSupportReply(true);
+    try {
+      const data = await apiFetch<{ ticket: AdminSupportTicket; message: string }>(`/api/admin/support/tickets/${selectedTicket.id}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ replyMessage: supportReplyMessage }),
+      });
+      setSupportTickets((items) => items.map((item) => item.id === data.ticket.id ? data.ticket : item));
+      setSelectedTicket(data.ticket);
+      setTicketForm({ status: data.ticket.status, priority: data.ticket.priority, adminNotes: data.ticket.adminNotes || '' });
+      setSupportReplyMessage('');
+      toast.success(data.message || 'Support reply sent.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send support reply.');
+    } finally {
+      setSendingSupportReply(false);
     }
   };
 
@@ -654,107 +631,25 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="lg:flex lg:h-dvh lg:overflow-hidden">
-        <aside className="hidden h-dvh w-72 shrink-0 overflow-hidden border-r border-white/10 bg-slate-950 px-4 py-5 lg:flex lg:flex-col">
-          <Link to="/admin" className="flex items-center gap-3 px-2">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/20">
-              <img src="/brand/faviconblack.png" alt="" className="h-9 w-9 rounded-xl" />
-            </span>
-            <span className="font-montserrat text-2xl font-black">NexCV Admin</span>
-          </Link>
-
-          <nav className="scrollbar-hide mt-7 grid min-h-0 flex-1 gap-1 overflow-y-auto pr-1">
-            {adminNavItems.filter((item) => navAccess.includes(item.key)).map((item) => {
-              const Icon = item.icon;
-              const active = activeNav.key === item.key;
-              return (
-                <Link
-                  key={item.key}
-                  to={item.to}
-                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-extrabold transition ${
-                    active ? 'bg-violet-500/15 text-violet-200 ring-1 ring-violet-300/15' : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100'
-                  }`}
-                >
-                  <Icon size={18} className={active ? 'text-violet-300' : 'text-slate-500'} />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="mt-4 shrink-0 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-            <p className="truncate text-sm font-extrabold text-slate-100">{user?.displayName || 'Admin'}</p>
-            <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">{user?.email || 'Signed in'}</p>
-            <button
-              type="button"
-              onClick={signOut}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2.5 text-sm font-extrabold text-red-200 transition hover:bg-red-500/20 active:scale-[0.98]"
-            >
-              <LogOut size={16} />
-              Sign out
-            </button>
-          </div>
-        </aside>
+        <AdminSidebar
+          items={adminNavItems}
+          activeKey={activeNav.key}
+          navAccess={navAccess}
+          user={user}
+          onSignOut={signOut}
+        />
 
         <main className="scrollbar-hide mx-auto min-w-0 max-w-7xl flex-1 px-3 pb-10 pt-5 sm:px-6 lg:h-dvh lg:overflow-y-auto lg:px-8 lg:pt-8">
-          <nav className="mb-5 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.035] p-2 lg:hidden" aria-label="Admin navigation">
-            {adminNavItems.filter((item) => navAccess.includes(item.key)).map((item) => {
-              const Icon = item.icon;
-              const active = activeNav.key === item.key;
-              return (
-                <Link
-                  key={item.key}
-                  to={item.to}
-                  className={`inline-flex min-w-max items-center gap-2 rounded-xl px-3 py-2 text-xs font-black transition ${
-                    active ? 'bg-violet-500/15 text-violet-200 ring-1 ring-violet-300/15' : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100'
-                  }`}
-                >
-                  <Icon size={15} />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <AdminMobileNav items={adminNavItems} activeKey={activeNav.key} navAccess={navAccess} />
+          <AdminPageHeader
+            title={pageTitle}
+            description={pageDescription}
+            userRoleLabel={userRoleLabel}
+            showSearch={showHeaderSearch}
+            searchPlaceholder={searchPlaceholder}
+          />
 
-          <header className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs font-black uppercase text-violet-300">
-                <Shield size={14} />
-                {userRoleLabel}
-              </div>
-              <h1 className="mt-2 font-montserrat text-2xl font-black leading-tight sm:text-4xl">
-                {isUsersPage ? 'User Management' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isPromotionsPage ? 'Promotions & Pricing' : isSupportPage ? 'Support Tickets' : isRolesPage ? 'Roles & Access' : isSettingsPage ? 'Admin Settings' : isAuditPage ? 'Audit Logs' : 'Admin Dashboard'}
-              </h1>
-              <p className="mt-2 text-sm font-semibold text-slate-400">
-                {isUsersPage
-                  ? 'Search users, inspect accounts, and update plan access.'
-                  : isTemplatesPage
-                    ? 'Manage template metadata, access, categories, and usage stats.'
-                    : isBillingPage
-                      ? 'Review payment history, revenue, and transaction status.'
-                      : isPromotionsPage
-                        ? 'Manage plan pricing, promotions, and discount coupons.'
-                        : isSupportPage
-                        ? 'Track complaints, bugs, feature requests, and payment issues.'
-                        : isRolesPage
-                          ? 'Manage super admin access and review admin permissions.'
-                          : isSettingsPage
-                            ? 'Review runtime, security, and service configuration status.'
-                            : isAuditPage
-                              ? 'Track sensitive admin changes across users, billing, templates, and support.'
-                              : 'Operational overview and module foundation.'}
-              </p>
-            </div>
-            {!isPromotionsPage && !isRolesPage && !isSettingsPage && !isAuditPage && (
-              <div className="relative w-full sm:max-w-xs">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.035] pl-10 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
-                  placeholder={isUsersPage ? 'Search users' : isTemplatesPage ? 'Search templates' : isBillingPage ? 'Search payments' : isSupportPage ? 'Search tickets' : 'Search admin modules'}
-                />
-              </div>
-            )}
-          </header>
-
+          <Suspense fallback={<AdminSectionFallback />}>
           {isUsersPage ? (
             <UserManagementSection
               users={users}
@@ -775,6 +670,19 @@ export default function AdminDashboard() {
               onSavePlan={updateSelectedUserPlan}
               onCloseDetail={() => setSelectedUser(null)}
             />
+          ) : isAnalyticsPage ? (
+            isLoading ? (
+              <div className="mt-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-5 text-sm font-bold text-slate-400">
+                <Loader2 className="animate-spin text-violet-300" size={18} />
+                Loading analytics...
+              </div>
+            ) : !summary ? (
+              <div className="mt-10 rounded-2xl border border-red-400/20 bg-red-500/10 p-5 text-sm font-bold text-red-100">
+                Analytics could not be loaded.
+              </div>
+            ) : (
+              <AnalyticsDashboardSection summary={summary} maxChartValue={maxChartValue} />
+            )
           ) : isTemplatesPage ? (
             <TemplateManagementSection
               templates={visibleTemplates}
@@ -832,6 +740,16 @@ export default function AdminDashboard() {
               onSaveCoupon={saveCoupon}
               onToggleCoupon={toggleCoupon}
             />
+          ) : isCmsPage ? (
+            <SettingsManagementSection
+              settings={settings}
+              loading={settingsLoading}
+              saving={savingSettings}
+              canUpdateSettings={canUpdateSettings}
+              templates={templates}
+              onSave={saveSettings}
+              mode="cms"
+            />
           ) : isSupportPage ? (
             <SupportManagementSection
               tickets={supportTickets}
@@ -842,7 +760,9 @@ export default function AdminDashboard() {
               typeFilter={supportTypeFilter}
               selectedTicket={selectedTicket}
               ticketForm={ticketForm}
+              replyMessage={supportReplyMessage}
               savingTicket={savingTicket}
+              sendingReply={sendingSupportReply}
               onSearchChange={setSupportSearch}
               onStatusFilterChange={setSupportStatusFilter}
               onTypeFilterChange={setSupportTypeFilter}
@@ -850,6 +770,8 @@ export default function AdminDashboard() {
               onCloseDetail={() => setSelectedTicket(null)}
               onFormChange={setTicketForm}
               onSaveTicket={saveSelectedTicket}
+              onReplyMessageChange={setSupportReplyMessage}
+              onSendReply={sendSupportReply}
             />
           ) : isRolesPage ? (
             <RoleManagementSection
@@ -866,9 +788,17 @@ export default function AdminDashboard() {
               settings={settings}
               loading={settingsLoading}
               saving={savingSettings}
-              sendingTestEmail={sendingTestEmail}
               canUpdateSettings={canUpdateSettings}
               templates={templates}
+              onSave={saveSettings}
+            />
+          ) : isEmailPage ? (
+            <EmailManagementSection
+              settings={settings}
+              loading={settingsLoading}
+              saving={savingSettings}
+              sendingTestEmail={sendingTestEmail}
+              canUpdateEmail={canUpdateEmail}
               onSave={saveSettings}
               onSendTestEmail={sendTestEmail}
             />
@@ -895,93 +825,9 @@ export default function AdminDashboard() {
               Admin summary could not be loaded.
             </div>
           ) : (
-            <>
-              <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <AdminStat icon={<Users size={19} />} label="Total Users" value={formatNumber(summary.widgets.totalUsers)} />
-                <AdminStat icon={<UserCog size={19} />} label="Active Users Today" value={formatNumber(summary.widgets.activeUsersToday)} />
-                <AdminStat icon={<CreditCard size={19} />} label="Premium Subscribers" value={formatNumber(summary.widgets.premiumSubscribers)} />
-                <AdminStat icon={<FileText size={19} />} label="Total CVs Created" value={formatNumber(summary.widgets.totalCvsCreated)} />
-              </section>
-
-              <section className="mt-4 grid gap-4 lg:grid-cols-[1fr_360px]">
-                <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h2 className="font-montserrat text-lg font-black">User Growth</h2>
-                      <p className="mt-1 text-sm font-semibold text-slate-400">Last 7 days</p>
-                    </div>
-                    <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-black text-emerald-300 ring-1 ring-emerald-300/15">
-                      Live data
-                    </span>
-                  </div>
-                  <div className="mt-5 grid h-52 grid-cols-7 items-end gap-2">
-                    {summary.charts.userGrowth.map((item) => (
-                      <ChartBar key={item.day} label={item.day.slice(5)} value={item.count} max={maxChartValue} />
-                    ))}
-                  </div>
-                </article>
-
-                <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-                  <h2 className="font-montserrat text-lg font-black">Revenue Overview</h2>
-                  <div className="mt-4 text-3xl font-black">{formatCurrency(summary.widgets.revenue.cents, summary.widgets.revenue.currency)}</div>
-                  <p className="mt-1 text-sm font-semibold text-slate-400">Processed payment sample</p>
-                  <div className="mt-5 grid gap-2">
-                    {summary.charts.subscriptionRevenue.map((item) => (
-                      <MiniRow key={item.day} label={item.day.slice(5)} value={formatCurrency(item.cents, summary.widgets.revenue.currency)} />
-                    ))}
-                  </div>
-                </article>
-              </section>
-
-              <section className="mt-4 grid gap-4 lg:grid-cols-3">
-                <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-                  <h2 className="font-montserrat text-lg font-black">Most Used Templates</h2>
-                  <div className="mt-4 grid gap-3">
-                    {summary.templateUsage.length ? summary.templateUsage.map((item) => (
-                      <MiniRow key={item.template} label={item.template} value={formatNumber(item.count)} />
-                    )) : <p className="text-sm font-semibold text-slate-500">No template usage yet.</p>}
-                  </div>
-                </article>
-
-                <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-                  <h2 className="font-montserrat text-lg font-black">Recent Registrations</h2>
-                  <div className="mt-4 grid gap-3">
-                    {summary.recentRegistrations.map((item) => (
-                      <div key={item.id} className="min-w-0 border-b border-white/10 pb-3 last:border-b-0 last:pb-0">
-                        <p className="truncate text-sm font-black text-slate-100">{item.displayName || item.email}</p>
-                        <p className="mt-1 truncate text-xs font-semibold text-slate-500">{item.email}</p>
-                        <p className="mt-1 text-xs font-bold text-violet-300">{item.plan} - {formatDate(item.createdAt)}</p>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-
-                <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-                  <h2 className="font-montserrat text-lg font-black">Support Tickets</h2>
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    {Object.entries(summary.widgets.supportTickets).map(([status, count]) => (
-                      <div key={status} className="rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                        <p className="text-xs font-black uppercase text-slate-500">{status}</p>
-                        <p className="mt-2 text-2xl font-black">{count}</p>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              </section>
-
-              <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-                <h2 className="font-montserrat text-lg font-black">Module Structure</h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {summary.modules.map((module) => (
-                    <div key={module.key} className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
-                      <p className="text-sm font-black text-slate-100">{module.label}</p>
-                      <p className="mt-2 text-xs font-bold uppercase text-amber-300">{module.status}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </>
+            <AdminOverviewSection summary={summary} maxChartValue={maxChartValue} />
           )}
+          </Suspense>
         </main>
       </div>
     </div>

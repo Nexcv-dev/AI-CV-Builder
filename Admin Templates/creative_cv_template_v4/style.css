@@ -2,6 +2,36 @@
   box-sizing: border-box;
 }
 
+.experience-section.experience-keep-together {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.experience-section.experience-lead-section {
+  margin-bottom: 0 !important;
+  page-break-inside: auto !important;
+  break-inside: auto !important;
+}
+
+.experience-section.experience-continuation-section {
+  margin-top: 4mm !important;
+}
+
+.experience-section.experience-lead-section h2 {
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+.experience-section article {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.experience-continuation-section {
+  page-break-before: always;
+  break-before: page;
+  }
+
 html,
 body {
   margin: 0;
@@ -47,7 +77,7 @@ img {
   width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
-  overflow: hidden;
+  overflow: visible;
   background: #ffffff;
 }
 
@@ -168,8 +198,8 @@ img {
 
 .section {
   margin-bottom: 8.5mm;
-  page-break-inside: avoid;
-  break-inside: avoid;
+  page-break-inside: auto;
+  break-inside: auto;
 }
 
 .section-title {
@@ -182,6 +212,8 @@ img {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  page-break-after: avoid;
+  break-after: avoid;
 }
 
 .section-title::before {
@@ -430,5 +462,37 @@ img {
 
   .resume {
     margin: 0;
+    min-height: auto;
+    overflow: visible;
+    box-shadow: none;
+  }
+
+  .resume::before,
+  .resume::after {
+    display: none;
+  }
+}
+
+.content:has(.experience-continuation-section),
+.main-col:has(.experience-continuation-section) {
+  page-break-inside: auto !important;
+  break-inside: auto !important;
+}
+@media print {
+  .experience-section.experience-keep-together {
+    padding-top: 8mm;
+  }
+
+  .experience-continuation-section {
+    margin-top: 0 !important;
+    padding-top: 8mm;
+  }
+
+  .content:has(.experience-continuation-section) > .main-col,
+.content:has(.experience-continuation-section) > .side-col {
+    margin-top: -8mm;
+    padding-top: 8mm;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
 }

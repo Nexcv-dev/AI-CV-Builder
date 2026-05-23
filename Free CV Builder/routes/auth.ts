@@ -234,16 +234,20 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
             const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
     
+            const templates = (req as any).appSettings?.emailTemplates;
+            const passwordResetTemplate = deps.renderEmailTemplate(
+                deps.mergeEmailTemplates(templates).passwordReset,
+                {
+                    name: emailGreetingName(user.displayName),
+                    resetUrl,
+                    expiresIn: '1 hour',
+                }
+            );
             const mailOptions = {
                 to: user.email,
                 from: emailFrom,
-                subject: 'Reset your NexCV password',
-                text: `Hi ${emailGreetingName(user.displayName)},\n\n` +
-                    `We received a request to reset the password for your NexCV account.\n\n` +
-                    `Reset your password:\n${resetUrl}\n\n` +
-                    `This reset link will expire in 1 hour.\n\n` +
-                    `If you did not request a password reset, you can safely ignore this email. Your password will stay unchanged.\n\n` +
-                    `Thanks,\nThe NexCV Team\n`,
+                subject: passwordResetTemplate.subject,
+                text: passwordResetTemplate.text,
             };
     
             try {

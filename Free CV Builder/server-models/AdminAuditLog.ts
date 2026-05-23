@@ -40,7 +40,7 @@ const AdminAuditLogSchema = new Schema<IAdminAuditLog>(
   { timestamps: true }
 );
 
-AdminAuditLogSchema.index({ createdAt: -1 });
+AdminAuditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
 AdminAuditLogSchema.index({ targetType: 1, createdAt: -1 });
 
 const AdminAuditLog =

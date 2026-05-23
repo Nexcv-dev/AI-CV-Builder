@@ -2,6 +2,7 @@
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
 import type { TemplateName } from '../src/templates';
+import { mergeCmsContent } from '../src/contentDefaults';
 
 type RouteDeps = Record<string, any>;
 
@@ -14,10 +15,13 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
 
     router.get('/api/public/app-settings', (req: Request, res: Response) => {
         const settings = (req as any).appSettings;
+        const cmsContent = mergeCmsContent(settings?.cmsContent);
         return res.json({
             maintenanceMode: Boolean(settings?.maintenanceMode),
-            announcementEnabled: Boolean(settings?.announcementEnabled),
-            announcementText: settings?.announcementText || '',
+            announcementEnabled: Boolean(settings?.announcementEnabled || cmsContent.announcement.enabled),
+            announcementText: settings?.announcementText || cmsContent.announcement.text || '',
+            announcement: cmsContent.announcement,
+            cmsContent,
             supportEmail: settings?.supportEmail || 'support@nexcv.com',
             adminAccessAllowed: typeof deps.isAdminIpAllowed === 'function' ? deps.isAdminIpAllowed(req) : true,
         });
@@ -50,12 +54,20 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             if (!key) return res.status(400).json({ error: 'Invalid template key.' });
 
             const setting = await TemplateSetting.findOne({ key, source: 'custom', status: 'active' }).select('indexS3Key styleS3Key');
-            if (!setting?.indexS3Key) return res.status(404).json({ error: 'Template HTML not found.' });
+            const builtInTemplate = CV_TEMPLATES.find((template: any) => template.key === key);
+            const s3Prefix = setting?.indexS3Key
+                ? ''
+                : builtInTemplate
+                    ? (S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key)
+                    : '';
+            const indexS3Key = setting?.indexS3Key || (s3Prefix ? `${s3Prefix}/index.html` : '');
+            const styleS3Key = setting?.styleS3Key || (s3Prefix ? `${s3Prefix}/style.css` : '');
+            if (!indexS3Key) return res.status(404).json({ error: 'Template HTML not found.' });
 
-            const indexHtml = await fetchS3Text(setting.indexS3Key);
+            const indexHtml = await fetchS3Text(indexS3Key);
             if (!indexHtml) return res.status(404).json({ error: 'Template HTML not found.' });
 
-            const css = setting.styleS3Key ? await fetchS3Text(setting.styleS3Key) : '';
+            const css = styleS3Key ? await fetchS3Text(styleS3Key) : '';
             const html = css
                 ? indexHtml.includes('</head>')
                     ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
@@ -63,7 +75,9 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
                 : indexHtml;
 
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.setHeader('Cache-Control', 'public, max-age=300');
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
             return res.send(html);
         } catch (error) {
             return sendError(res, 500, 'Could not load template HTML.', error);

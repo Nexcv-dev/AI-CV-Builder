@@ -1,9 +1,19 @@
 import { Router, Request, Response } from 'express';
 import { bindDeps, type RouteDeps } from '../_shared';
 
+type DailyCount = {
+    _id: string;
+    count: number;
+};
+
+type DailyCheckoutCount = {
+    _id: string;
+    started: number;
+    paid: number;
+};
 
 export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, SupportTicket, requireAdminPermission, sendError, getEffectivePlan, startOfUtcDay, formatUtcDay, parsePaymentAmountCents } = bindDeps(deps);
+    const { User, CVDocument, DownloadQuota, PaymentTransaction, CheckoutSession, SupportTicket, requireAdminPermission, sendError, getEffectivePlan, startOfUtcDay, formatUtcDay, parsePaymentAmountCents } = bindDeps(deps);
 
     router.get('/api/admin/summary', requireAdminPermission('dashboard.read'), async (_req: Request, res: Response) => {
         try {
@@ -20,7 +30,9 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
                 recentUsers,
                 templateUsage,
                 userGrowth,
+                cvSaves,
                 cvDownloads,
+                checkoutSessions,
                 payments,
                 supportStatusCounts,
             ] = await Promise.all([
@@ -39,9 +51,25 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
                     { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
                     { $sort: { _id: 1 } },
                 ]),
+                CVDocument.aggregate([
+                    { $match: { createdAt: { $gte: sevenDaysAgo } } },
+                    { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+                    { $sort: { _id: 1 } },
+                ]),
                 DownloadQuota.aggregate([
                     { $match: { updatedAt: { $gte: sevenDaysAgo } } },
                     { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$updatedAt' } }, count: { $sum: '$count' } } },
+                    { $sort: { _id: 1 } },
+                ]),
+                CheckoutSession.aggregate([
+                    { $match: { createdAt: { $gte: sevenDaysAgo } } },
+                    {
+                        $group: {
+                            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                            started: { $sum: 1 },
+                            paid: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, 1, 0] } },
+                        },
+                    },
                     { $sort: { _id: 1 } },
                 ]),
                 PaymentTransaction.find({ processed: true }).sort({ createdAt: -1 }).limit(200).select('amount currency plan createdAt'),
@@ -58,20 +86,41 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
                 revenueByDay.set(day, (revenueByDay.get(day) || 0) + parsePaymentAmountCents(payment.amount));
             });
     
-            const growthByDay = new Map(userGrowth.map((item: any) => [item._id, item.count]));
-            const downloadsByDay = new Map(cvDownloads.map((item: any) => [item._id, item.count]));
-            const supportCounts = new Map(supportStatusCounts.map((item: any) => [item._id, item.count]));
+            const growthByDay = new Map<string, number>(userGrowth.map((item: DailyCount) => [item._id, item.count]));
+            const savesByDay = new Map<string, number>(cvSaves.map((item: DailyCount) => [item._id, item.count]));
+            const downloadsByDay = new Map<string, number>(cvDownloads.map((item: DailyCount) => [item._id, item.count]));
+            const checkoutByDay = new Map<string, { started: number; paid: number }>(
+                checkoutSessions.map((item: DailyCheckoutCount) => [item._id, { started: item.started, paid: item.paid }])
+            );
+            const supportCounts = new Map<string, number>(supportStatusCounts.map((item: DailyCount) => [item._id, item.count]));
             const dailySeries = Array.from({ length: 7 }, (_, index) => {
                 const date = new Date(sevenDaysAgo);
                 date.setUTCDate(sevenDaysAgo.getUTCDate() + index);
                 const day = formatUtcDay(date);
+                const checkout = checkoutByDay.get(day) || { started: 0, paid: 0 };
                 return {
                     day,
                     users: growthByDay.get(day) || 0,
+                    saves: savesByDay.get(day) || 0,
                     revenue: revenueByDay.get(day) || 0,
                     downloads: downloadsByDay.get(day) || 0,
+                    checkoutStarted: checkout.started || 0,
+                    checkoutPaid: checkout.paid || 0,
                 };
             });
+            const analyticsTotals = dailySeries.reduce(
+                (totals, item) => ({
+                    signups: totals.signups + item.users,
+                    cvSaves: totals.cvSaves + item.saves,
+                    downloads: totals.downloads + item.downloads,
+                    checkoutStarted: totals.checkoutStarted + item.checkoutStarted,
+                    checkoutPaid: totals.checkoutPaid + item.checkoutPaid,
+                }),
+                { signups: 0, cvSaves: 0, downloads: 0, checkoutStarted: 0, checkoutPaid: 0 }
+            );
+            const checkoutConversionRate = analyticsTotals.checkoutStarted > 0
+                ? Math.round((analyticsTotals.checkoutPaid / analyticsTotals.checkoutStarted) * 1000) / 10
+                : 0;
     
             return res.json({
                 widgets: {
@@ -104,20 +153,20 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
                 })),
                 charts: {
                     userGrowth: dailySeries.map(({ day, users }) => ({ day, count: users })),
+                    cvSavesPerDay: dailySeries.map(({ day, saves }) => ({ day, count: saves })),
                     subscriptionRevenue: dailySeries.map(({ day, revenue }) => ({ day, cents: revenue })),
                     cvDownloadsPerDay: dailySeries.map(({ day, downloads }) => ({ day, count: downloads })),
+                    checkoutConversion: dailySeries.map(({ day, checkoutStarted, checkoutPaid }) => ({ day, started: checkoutStarted, paid: checkoutPaid })),
                     templateUsage: templateUsage.map((item: any) => ({ template: item._id || 'unknown', count: item.count })),
                 },
-                modules: [
-                    { key: 'users', label: 'User Management', status: 'planned' },
-                    { key: 'templates', label: 'Template Management', status: 'planned' },
-                    { key: 'billing', label: 'Subscription & Payments', status: 'planned' },
-                    { key: 'cms', label: 'Content Management', status: 'planned' },
-                    { key: 'notifications', label: 'Notifications', status: 'planned' },
-                    { key: 'support', label: 'Support Tickets', status: 'planned' },
-                    { key: 'audit', label: 'Audit Logs', status: 'active' },
-                    { key: 'settings', label: 'Settings & Roles', status: 'planned' },
-                ],
+                analytics: {
+                    signups: analyticsTotals.signups,
+                    cvSaves: analyticsTotals.cvSaves,
+                    downloads: analyticsTotals.downloads,
+                    checkoutStarted: analyticsTotals.checkoutStarted,
+                    checkoutPaid: analyticsTotals.checkoutPaid,
+                    checkoutConversionRate,
+                },
             });
         } catch (error) {
             return sendError(res, 500, 'Could not load admin summary.', error);

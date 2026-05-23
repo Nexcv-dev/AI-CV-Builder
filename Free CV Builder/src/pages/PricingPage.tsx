@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Crown, Download, FileText, Sparkles, Zap, type LucideIcon } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
+import { usePublicContent } from '../hooks/usePublicContent';
 import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
 
 type PlanKey = 'free' | 'payg' | 'monthly';
@@ -12,6 +13,8 @@ const plans: Array<{
   price: string;
   duration: string;
   description: string;
+  cta?: string;
+  badge?: string;
   features: string[];
   icon: LucideIcon;
   highlighted?: boolean;
@@ -66,6 +69,7 @@ const plans: Array<{
 ];
 
 export default function PricingPage() {
+  const cmsContent = usePublicContent();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [planPrices, setPlanPrices] = useState<Record<string, {
@@ -123,6 +127,10 @@ export default function PricingPage() {
     if (user.plan === 'unlimited') return 'Admin';
     return 'Free';
   }, [user]);
+  const cmsPlans = useMemo(() => plans.map((plan) => {
+    const copy = cmsContent.pricingPlans.find((item) => item.key === plan.key);
+    return copy ? { ...plan, ...copy } : plan;
+  }), [cmsContent.pricingPlans]);
 
   const formatPrice = (cents: number, currency = 'LKR') => `${currency} ${new Intl.NumberFormat().format(Math.round(cents / 100))}`;
 
@@ -136,13 +144,13 @@ export default function PricingPage() {
               <div>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-black text-emerald-200">
                   <Sparkles size={15} />
-                  Pricing Plans
+                  {cmsContent.landing.pricingEyebrow} Plans
                 </div>
                 <h1 className="max-w-3xl font-montserrat text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
-                  Choose the CV access that fits your job hunt.
+                  {cmsContent.landing.pricingTitle}
                 </h1>
                 <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-slate-300 sm:text-lg">
-                  Start free, unlock one CV for 7 days, or go monthly when you need multiple versions and AI help.
+                  Start free, unlock one CV for a short application push, or go monthly when you need multiple versions and AI help.
                 </p>
               </div>
 
@@ -160,7 +168,7 @@ export default function PricingPage() {
 
         <section className="bg-slate-900 py-10 sm:py-14">
           <div className="mx-auto grid max-w-7xl gap-4 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
-            {plans.map((plan) => {
+            {cmsPlans.map((plan) => {
               const Icon = plan.icon;
               const isCurrentPlan = user?.plan === plan.key || (plan.key === 'free' && (!user || user.plan === 'free'));
               return (
@@ -178,7 +186,7 @@ export default function PricingPage() {
                     </div>
                     {plan.highlighted && (
                       <span className="rounded-full bg-violet-400 px-3 py-1 text-[11px] font-black uppercase text-slate-950">
-                        Best for one CV
+                        {plan.badge || 'Best for one CV'}
                       </span>
                     )}
                   </div>
@@ -219,7 +227,7 @@ export default function PricingPage() {
                         to="/builder?import=1"
                         className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-white/10 bg-white/6 px-4 text-sm font-black text-white transition hover:bg-white/10 active:scale-[0.98]"
                       >
-                        Start free
+                        {plan.cta || 'Start free'}
                         <ArrowRight size={17} className="ml-2" />
                       </Link>
                     ) : (
@@ -230,7 +238,7 @@ export default function PricingPage() {
                         }`}
                       >
                         <Download size={17} className="mr-2" />
-                        {isCurrentPlan ? 'Active plan' : user ? 'Go to checkout' : 'Sign in to checkout'}
+                        {isCurrentPlan ? 'Active plan' : user ? (plan.cta || 'Go to checkout') : 'Sign in to checkout'}
                       </Link>
                     )}
                   </div>

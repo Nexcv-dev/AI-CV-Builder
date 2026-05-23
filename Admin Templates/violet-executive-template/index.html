@@ -68,24 +68,76 @@
             {{/hasSummary}}
 
             {{#hasExperience}}
-              <section class="section">
+              {{^hasExperienceContinuation}}
+              <section class="section experience-section experience-keep-together">
                 <h2>Experience</h2>
                 <div class="timeline">
-                  {{#experience}}
-                    <article class="timeline-item">
-                      <div class="timeline-dot"></div>
-                      <div class="timeline-head">
-                        <div>
-                          <h3>{{position}}</h3>
-                          <p class="sub">{{company}}</p>
+                  
+
+                    {{#experience}}
+                      <article class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-head">
+                          <div>
+                            <h3>{{position}}</h3>
+                            <p class="sub">{{company}}</p>
+                          </div>
+                          <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
                         </div>
-                        <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
-                      </div>
-                      <div class="rich compact">{{{description}}}</div>
-                    </article>
-                  {{/experience}}
+                        <div class="rich compact">{{{description}}}</div>
+                      </article>
+                    {{/experience}}
+                  
+
                 </div>
               </section>
+              {{/hasExperienceContinuation}}
+              {{#hasExperienceContinuation}}
+              <section class="section experience-section experience-lead-section">
+                <h2>Experience</h2>
+                <div class="timeline">
+                  
+
+                    {{#experienceLeadItems}}
+                      <article class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-head">
+                          <div>
+                            <h3>{{position}}</h3>
+                            <p class="sub">{{company}}</p>
+                          </div>
+                          <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                        </div>
+                        <div class="rich compact">{{{description}}}</div>
+                      </article>
+                    {{/experienceLeadItems}}
+                  
+
+                </div>
+              </section>
+              <section class="section experience-section experience-continuation-section">
+                <div class="timeline">
+                  
+
+                    {{#experienceContinuationItems}}
+                      <article class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-head">
+                          <div>
+                            <h3>{{position}}</h3>
+                            <p class="sub">{{company}}</p>
+                          </div>
+                          <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                        </div>
+                        <div class="rich compact">{{{description}}}</div>
+                      </article>
+                    {{/experienceContinuationItems}}
+                  
+
+                </div>
+              </section>
+              {{/hasExperienceContinuation}}
+
             {{/hasExperience}}
 
             {{#hasProjects}}

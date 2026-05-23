@@ -21,7 +21,7 @@ import {
 import { isSuperAdminEmail, roleForEmail, syncUserRoleFromAllowlist } from '../server-models/userRole';
 import { hasAdminPermission } from '../src/adminAccess';
 import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
-import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getUtcDayKey } from '../server-models/downloadQuotaUtils';
+import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getNextUtcDayResetAt, getUtcDayKey } from '../server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
 
 describe('Server Utils', () => {
@@ -320,19 +320,48 @@ describe('Server Utils', () => {
       });
     });
 
-    it('should not limit paid plan downloads while active', () => {
+    it('should limit PAYG downloads to 15 per UTC day while active', () => {
       const future = new Date(Date.now() + 100000);
-      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user', plan: 'payg', planExpiresAt: future } as any, 42)).toEqual({
-        limit: null,
-        used: 42,
-        remaining: null,
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user', plan: 'payg', planExpiresAt: future } as any, 14)).toEqual({
+        limit: 15,
+        used: 14,
+        remaining: 1,
         reached: false,
         plan: 'payg',
+      });
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user', plan: 'payg', planExpiresAt: future } as any, 15)).toEqual({
+        limit: 15,
+        used: 15,
+        remaining: 0,
+        reached: true,
+        plan: 'payg',
+      });
+    });
+
+    it('should limit monthly downloads to 25 per UTC day while active', () => {
+      const future = new Date(Date.now() + 100000);
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user', plan: 'monthly', planExpiresAt: future } as any, 24)).toEqual({
+        limit: 25,
+        used: 24,
+        remaining: 1,
+        reached: false,
+        plan: 'monthly',
+      });
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user', plan: 'monthly', planExpiresAt: future } as any, 25)).toEqual({
+        limit: 25,
+        used: 25,
+        remaining: 0,
+        reached: true,
+        plan: 'monthly',
       });
     });
 
     it('should build a UTC day key', () => {
       expect(getUtcDayKey(new Date('2026-05-13T18:30:00.000Z'))).toBe('2026-05-13');
+    });
+
+    it('should calculate the next UTC download reset time', () => {
+      expect(getNextUtcDayResetAt(new Date('2026-05-13T18:30:00.000Z'))).toBe('2026-05-14T00:00:00.000Z');
     });
   });
 

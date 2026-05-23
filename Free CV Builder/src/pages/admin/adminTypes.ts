@@ -1,4 +1,6 @@
 import type { UserRole } from '../../adminAccess';
+import type { CmsContent } from '../../contentDefaults';
+import type { EmailTemplateMap } from '../../emailTemplateDefaults';
 
 export interface AdminSummary {
   widgets: {
@@ -20,11 +22,20 @@ export interface AdminSummary {
   templateUsage: Array<{ template: string; count: number }>;
   charts: {
     userGrowth: Array<{ day: string; count: number }>;
+    cvSavesPerDay: Array<{ day: string; count: number }>;
     subscriptionRevenue: Array<{ day: string; cents: number }>;
     cvDownloadsPerDay: Array<{ day: string; count: number }>;
+    checkoutConversion: Array<{ day: string; started: number; paid: number }>;
     templateUsage: Array<{ template: string; count: number }>;
   };
-  modules: Array<{ key: string; label: string; status: string }>;
+  analytics: {
+    signups: number;
+    cvSaves: number;
+    downloads: number;
+    checkoutStarted: number;
+    checkoutPaid: number;
+    checkoutConversionRate: number;
+  };
 }
 
 export interface AdminUserListItem {
@@ -174,6 +185,8 @@ export interface AdminSettingsSummary {
     freeCvCreationLimit: number;
     freePdfDownloadLimit: number;
     defaultTemplateKey: string;
+    cmsContent: CmsContent;
+    emailTemplates: EmailTemplateMap;
     updatedAt?: string;
   };
   environment: string;

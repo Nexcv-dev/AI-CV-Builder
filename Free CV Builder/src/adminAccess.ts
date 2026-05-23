@@ -22,6 +22,8 @@ export type AdminPermission =
   | 'support.write'
   | 'settings.read'
   | 'settings.write'
+  | 'email.read'
+  | 'email.write'
   | 'roles.read'
   | 'audit.read';
 
@@ -60,6 +62,8 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     'support.write',
     'settings.read',
     'settings.write',
+    'email.read',
+    'email.write',
     'roles.read',
     'audit.read',
   ],
@@ -71,12 +75,12 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
 };
 
 export const ADMIN_ROLE_ACCESS: Record<AdminRole, string[]> = {
-  super_admin: ['dashboard', 'users', 'templates', 'billing', 'promotions', 'support', 'settings', 'roles', 'audit'],
+  super_admin: ['dashboard', 'analytics', 'users', 'templates', 'billing', 'promotions', 'cms', 'notifications', 'support', 'settings', 'roles', 'audit'],
   admin_manager: ['dashboard', 'users'],
   billing_manager: ['dashboard', 'billing', 'promotions'],
   template_manager: ['dashboard', 'templates'],
   support_agent: ['dashboard', 'support'],
-  analyst: ['dashboard'],
+  analyst: ['dashboard', 'analytics'],
 };
 
 export function isAdminRole(role: unknown): role is AdminRole {

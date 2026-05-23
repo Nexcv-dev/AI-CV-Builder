@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{{personalInfo.fullName}} CV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Montserrat:wght@400;500;600;700;800&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    {{#watermark}}
+      <div class="nexcv-watermark" aria-hidden="true">
+        <div>Created with NexCV Free</div>
+        <div>Upgrade to remove watermark</div>
+      </div>
+    {{/watermark}}
+
+    <main class="cv">
+      {{#hasHeader}}
+        <header class="header">
+          <div class="header-text">
+            <h1 class="name">{{personalInfo.fullName}}</h1>
+            <p class="role">{{headline}}</p>
+
+            {{#hasContact}}
+              <div class="contact">
+                {{#personalInfo.email}}<span>{{personalInfo.email}}</span>{{/personalInfo.email}}
+                {{#personalInfo.phone}}<span>{{personalInfo.phone}}</span>{{/personalInfo.phone}}
+                {{#personalInfo.address}}<span>{{personalInfo.address}}</span>{{/personalInfo.address}}
+                {{#personalInfo.website}}<span>{{personalInfo.website}}</span>{{/personalInfo.website}}
+                {{#personalInfo.linkedin}}<span>{{personalInfo.linkedin}}</span>{{/personalInfo.linkedin}}
+              </div>
+            {{/hasContact}}
+          </div>
+
+          {{#profileImageUrl}}
+            <div class="photo">
+              <img src="{{profileImageUrl}}" alt="">
+            </div>
+          {{/profileImageUrl}}
+        </header>
+      {{/hasHeader}}
+
+      {{#hasBody}}
+        <div class="content">
+          <aside class="sidebar">
+            {{#hasContact}}
+              <section class="section contact-card">
+                <h2 class="section-title">Contact</h2>
+                <ul class="side-list">
+                  {{#personalInfo.email}}<li><strong>Email</strong><br>{{personalInfo.email}}</li>{{/personalInfo.email}}
+                  {{#personalInfo.phone}}<li><strong>Phone</strong><br>{{personalInfo.phone}}</li>{{/personalInfo.phone}}
+                  {{#personalInfo.address}}<li><strong>Location</strong><br>{{personalInfo.address}}</li>{{/personalInfo.address}}
+                  {{#personalInfo.website}}<li><strong>Website</strong><br>{{personalInfo.website}}</li>{{/personalInfo.website}}
+                  {{#personalInfo.linkedin}}<li><strong>LinkedIn</strong><br>{{personalInfo.linkedin}}</li>{{/personalInfo.linkedin}}
+                </ul>
+              </section>
+            {{/hasContact}}
+
+            {{#hasSkills}}
+              <section class="section">
+                <h2 class="section-title">Skills</h2>
+                <div class="skill-list">
+                  {{#skills}}
+                    <span class="skill">{{name}}</span>
+                  {{/skills}}
+                </div>
+              </section>
+            {{/hasSkills}}
+
+            {{#hasEducation}}
+              <section class="section">
+                <h2 class="section-title">Education</h2>
+                <div class="mini-stack">
+                  {{#education}}
+                    <article class="mini">
+                      <h3>{{degree}}</h3>
+                      <p>{{institution}}<br>{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                      {{#description}}<div class="rich tiny-rich">{{{description}}}</div>{{/description}}
+                    </article>
+                  {{/education}}
+                </div>
+              </section>
+            {{/hasEducation}}
+
+            {{#hasCourses}}
+              <section class="section">
+                <h2 class="section-title">Courses</h2>
+                <div class="mini-stack">
+                  {{#courses}}
+                    <article class="mini">
+                      <h3>{{name}}</h3>
+                      <p>{{institution}}<br>{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                    </article>
+                  {{/courses}}
+                </div>
+              </section>
+            {{/hasCourses}}
+
+            {{#hasLanguages}}
+              <section class="section">
+                <h2 class="section-title">Languages</h2>
+                <div class="lines">
+                  {{#languages}}
+                    <div class="line"><span>{{name}}</span><span>{{proficiency}}</span></div>
+                  {{/languages}}
+                </div>
+              </section>
+            {{/hasLanguages}}
+
+            {{#hasPersonalDetails}}
+              <section class="section">
+                <h2 class="section-title">Details</h2>
+                <div class="lines">
+                  {{#personalInfo.dob}}<div class="line"><span>DOB</span><span>{{personalInfo.dob}}</span></div>{{/personalInfo.dob}}
+                  {{#personalInfo.nic}}<div class="line"><span>NIC</span><span>{{personalInfo.nic}}</span></div>{{/personalInfo.nic}}
+                  {{#personalInfo.gender}}<div class="line"><span>Gender</span><span>{{personalInfo.gender}}</span></div>{{/personalInfo.gender}}
+                  {{#personalInfo.nationality}}<div class="line"><span>Nationality</span><span>{{personalInfo.nationality}}</span></div>{{/personalInfo.nationality}}
+                  {{#personalInfo.religion}}<div class="line"><span>Religion</span><span>{{personalInfo.religion}}</span></div>{{/personalInfo.religion}}
+                  {{#personalInfo.maritalStatus}}<div class="line"><span>Status</span><span>{{personalInfo.maritalStatus}}</span></div>{{/personalInfo.maritalStatus}}
+                </div>
+              </section>
+            {{/hasPersonalDetails}}
+          </aside>
+
+          <main class="main">
+            {{#hasSummary}}
+              <section class="section summary-section">
+                <h2 class="section-title">Professional Summary</h2>
+                <div class="rich summary">{{{personalInfo.summary}}}</div>
+              </section>
+            {{/hasSummary}}
+
+            {{#hasExperience}}
+              {{^hasExperienceContinuation}}
+              <section class="section experience-section experience-keep-together">
+                <h2 class="section-title">Professional Experience</h2>
+                <div class="item-stack">
+                  
+
+                    {{#experience}}
+                      <article class="item">
+                        <div class="item-header">
+                          <h3 class="item-title">{{position}}</h3>
+                          <span class="item-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</span>
+                        </div>
+                        <p class="company">{{company}}</p>
+                        <div class="rich">{{{description}}}</div>
+                      </article>
+                    {{/experience}}
+                  
+
+                </div>
+              </section>
+              {{/hasExperienceContinuation}}
+              {{#hasExperienceContinuation}}
+              <section class="section experience-section experience-lead-section">
+                <h2 class="section-title">Professional Experience</h2>
+                <div class="item-stack">
+                  
+
+                    {{#experienceLeadItems}}
+                      <article class="item">
+                        <div class="item-header">
+                          <h3 class="item-title">{{position}}</h3>
+                          <span class="item-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</span>
+                        </div>
+                        <p class="company">{{company}}</p>
+                        <div class="rich">{{{description}}}</div>
+                      </article>
+                    {{/experienceLeadItems}}
+                  
+
+                </div>
+              </section>
+              <section class="section experience-section experience-continuation-section">
+                <div class="item-stack">
+                  
+
+                    {{#experienceContinuationItems}}
+                      <article class="item">
+                        <div class="item-header">
+                          <h3 class="item-title">{{position}}</h3>
+                          <span class="item-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</span>
+                        </div>
+                        <p class="company">{{company}}</p>
+                        <div class="rich">{{{description}}}</div>
+                      </article>
+                    {{/experienceContinuationItems}}
+                  
+
+                </div>
+              </section>
+              {{/hasExperienceContinuation}}
+
+            {{/hasExperience}}
+
+            {{#hasProjects}}
+              <section class="section">
+                <h2 class="section-title">Projects</h2>
+                <div class="highlight-stack">
+                  {{#projects}}
+                    <article class="highlight-box">
+                      <h3>{{name}}</h3>
+                      <div class="rich">{{{description}}}</div>
+                      {{#link}}<a href="{{link}}">View Project</a>{{/link}}
+                    </article>
+                  {{/projects}}
+                </div>
+              </section>
+            {{/hasProjects}}
+
+            {{#hasAwards}}
+              <section class="section">
+                <h2 class="section-title">Awards</h2>
+                <div class="highlight-stack">
+                  {{#awards}}
+                    <article class="highlight-box">
+                      <h3>{{name}}</h3>
+                      <p class="company">{{issuer}}{{#date}} · {{date}}{{/date}}</p>
+                    </article>
+                  {{/awards}}
+                </div>
+              </section>
+            {{/hasAwards}}
+
+            {{#hasReferences}}
+              <section class="section">
+                <h2 class="section-title">References</h2>
+                <div class="reference-grid">
+                  {{#references}}
+                    <article class="reference-card">
+                      <h3>{{name}}</h3>
+                      <p>{{position}}{{#company}} · {{company}}{{/company}}</p>
+                      {{#email}}<p>{{email}}</p>{{/email}}
+                      {{#phone}}<p>{{phone}}</p>{{/phone}}
+                    </article>
+                  {{/references}}
+                </div>
+              </section>
+            {{/hasReferences}}
+          </main>
+        </div>
+      {{/hasBody}}
+    </main>
+  </body>
+</html>
