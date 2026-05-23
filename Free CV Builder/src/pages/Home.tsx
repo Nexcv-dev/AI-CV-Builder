@@ -85,7 +85,7 @@ const initialData: CVData = {
   projects: [],
   awards: [],
   references: [],
-  themeColor: '#7c3aed', // Default violet-600
+  themeColor: '#000000',
   fontFamily: 'Inter',
   profileImage: '',
   imageZoom: 1,

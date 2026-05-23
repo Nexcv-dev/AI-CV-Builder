@@ -178,7 +178,7 @@ export default function TemplateManagementSection({
                   <input
                     value={customTemplateForm.key}
                     onChange={(event) => onCustomFormChange({ ...customTemplateForm, key: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
-                    placeholder="creative-2026"
+                    placeholder="modern-2026"
                     className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
                   />
                 </label>

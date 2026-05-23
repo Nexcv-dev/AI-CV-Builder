@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { bindDeps, type RouteDeps } from '../_shared';
 
-
 export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
     const { CVDocument, TemplateSetting, CV_TEMPLATES, requireAdminPermission, sendError, adminTemplateJsonParser, clearS3TemplateCache, fetchS3Text, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, currentUserId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, sanitizeProfileField, recordAdminAuditLog } = bindDeps(deps);
 
@@ -26,9 +25,9 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 surfaceColorRoles: TEMPLATE_SURFACE_COLOR_ROLES,
                 templates: [
                     ...CV_TEMPLATES.map((template) => adminTemplateSummary(
-                    template,
-                    settingMap.get(template.key),
-                    usageMap.get(template.key) || 0
+                        template,
+                        settingMap.get(template.key),
+                        usageMap.get(template.key) || 0
                     )),
                     ...customTemplates,
                 ],
@@ -42,7 +41,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
     router.post('/api/admin/templates', requireAdminPermission('templates.write'), adminTemplateJsonParser, async (req: Request, res: Response) => {
         try {
             const key = validateCustomTemplateKey(req.body.key);
-            if (!key) return res.status(400).json({ error: 'Use a lowercase slug key like creative-2026.' });
+            if (!key) return res.status(400).json({ error: 'Use a lowercase slug key like modern-2026.' });
             if (CV_TEMPLATES.some((template) => template.key === key) || await TemplateSetting.exists({ key })) {
                 return res.status(409).json({ error: 'A template with this key already exists.' });
             }

@@ -370,3 +370,101 @@ a {
     box-decoration-break: clone;
   }
 }
+
+
+/* NexCV pagination safety overrides */
+.experience-section,
+.experience-section.experience-keep-together,
+.experience-section.experience-lead-section,
+.experience-section.experience-continuation-section,
+.experience-section .cards,
+.experience-section .stack,
+.experience-section .timeline,
+.experience-section .timeline-list,
+.experience-section .experience-list,
+.experience-section .items,
+.experience-section .rich {
+  page-break-inside: auto !important;
+  break-inside: auto !important;
+}
+
+.experience-section article,
+.experience-section .item,
+.experience-section .experience-card,
+.experience-section .timeline-item,
+.experience-section .exp-card,
+.experience-section .exp,
+.experience-section .card-line {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.experience-section h2,
+.experience-section h3,
+.experience-section .sub,
+.experience-section .date {
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+.experience-continuation-section {
+  page-break-before: auto !important;
+  break-before: auto !important;
+}
+
+@media print {
+  .page,
+  .cv,
+  .resume {
+    overflow: visible !important;
+  }
+
+  .experience-section,
+  .experience-section.experience-keep-together,
+  .experience-section.experience-lead-section,
+  .experience-section.experience-continuation-section,
+  .experience-section .cards,
+  .experience-section .stack,
+  .experience-section .timeline,
+  .experience-section .timeline-list,
+  .experience-section .experience-list,
+  .experience-section .items,
+  .experience-section .rich {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  .experience-section article,
+  .experience-section .item,
+  .experience-section .experience-card,
+  .experience-section .timeline-item,
+  .experience-section .exp-card,
+  .experience-section .exp,
+  .experience-section .card-line {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+/* NexCV print page gap */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .page,
+  .cv,
+  .resume {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .experience-section.experience-keep-together,
+  .experience-continuation-section {
+    padding-top: 8mm !important;
+  }
+}

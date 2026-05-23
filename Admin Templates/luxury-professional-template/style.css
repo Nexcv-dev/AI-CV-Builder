@@ -385,6 +385,59 @@ h3 {
   break-inside: auto !important;
 }
 @media print {
+  html,
+  body {
+    width: auto;
+    min-height: auto;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: #fffdf8;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .inner {
+    padding: 14mm 12mm 12mm;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .layout,
+  .main,
+  .side,
+  .timeline,
+  .experience-section,
+  .experience-section .timeline {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  section {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
   .experience-section.experience-keep-together {
     padding-top: 8mm;
   }
@@ -400,5 +453,103 @@ h3 {
     padding-top: 8mm;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
+  }
+}
+
+
+/* NexCV pagination safety overrides */
+.experience-section,
+.experience-section.experience-keep-together,
+.experience-section.experience-lead-section,
+.experience-section.experience-continuation-section,
+.experience-section .cards,
+.experience-section .stack,
+.experience-section .timeline,
+.experience-section .timeline-list,
+.experience-section .experience-list,
+.experience-section .items,
+.experience-section .rich {
+  page-break-inside: auto !important;
+  break-inside: auto !important;
+}
+
+.experience-section article,
+.experience-section .item,
+.experience-section .experience-card,
+.experience-section .timeline-item,
+.experience-section .exp-card,
+.experience-section .exp,
+.experience-section .card-line {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.experience-section h2,
+.experience-section h3,
+.experience-section .sub,
+.experience-section .date {
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+.experience-continuation-section {
+  page-break-before: auto !important;
+  break-before: auto !important;
+}
+
+@media print {
+  .page,
+  .cv,
+  .resume {
+    overflow: visible !important;
+  }
+
+  .experience-section,
+  .experience-section.experience-keep-together,
+  .experience-section.experience-lead-section,
+  .experience-section.experience-continuation-section,
+  .experience-section .cards,
+  .experience-section .stack,
+  .experience-section .timeline,
+  .experience-section .timeline-list,
+  .experience-section .experience-list,
+  .experience-section .items,
+  .experience-section .rich {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  .experience-section article,
+  .experience-section .item,
+  .experience-section .experience-card,
+  .experience-section .timeline-item,
+  .experience-section .exp-card,
+  .experience-section .exp,
+  .experience-section .card-line {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+/* NexCV print page gap */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .page,
+  .cv,
+  .resume {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .experience-section.experience-keep-together,
+  .experience-continuation-section {
+    padding-top: 8mm !important;
   }
 }

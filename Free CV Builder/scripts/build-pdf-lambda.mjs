@@ -410,7 +410,6 @@ const CV_TEMPLATES = [
   { key: 'timeline', label: 'Timeline', image: '/templates/timeline.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'minimalist', label: 'Minimalist', image: '/templates/minimalist.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'startup', label: 'Startup', image: '/templates/startup.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Header Background' },
-  { key: 'creative', label: 'Creative', image: '/templates/creative.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Accent Background' },
 ] as const;
 
 type TemplateName = (typeof CV_TEMPLATES)[number]['key'];

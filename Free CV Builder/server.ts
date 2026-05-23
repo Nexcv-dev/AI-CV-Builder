@@ -838,7 +838,7 @@ const defaultTemplateCategory = (key: string) => {
     if (key === 'classic') return 'ATS Friendly';
     if (key === 'minimalist') return 'Minimal';
     if (key === 'professional') return 'Corporate';
-    if (key === 'startup' || key === 'creative') return 'Creative';
+    if (key === 'startup') return 'Creative';
     if (key === 'timeline') return 'Executive';
     return 'Modern';
 };

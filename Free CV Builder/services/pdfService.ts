@@ -43,7 +43,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
     };
 
     const safeTemplate = isTemplateName(template) ? template : DEFAULT_TEMPLATE;
-    const themeColor = safeHexColor(cvData.themeColor, '#2563eb');
+    const themeColor = safeHexColor(cvData.themeColor, '#000000');
     const sidebarColor = safeHexColor(cvData.sidebarColor, '#111827');
     const templateSurfaceColor = safeHexColor(
         cvData.templateSurfaceColor,

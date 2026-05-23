@@ -31,7 +31,6 @@ const CV_TEMPLATES = [
   { key: 'timeline', label: 'Timeline', image: '/templates/timeline.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'minimalist', label: 'Minimalist', image: '/templates/minimalist.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'startup', label: 'Startup', image: '/templates/startup.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Header Background' },
-  { key: 'creative', label: 'Creative', image: '/templates/creative.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Accent Background' },
 ] as const;
 
 type TemplateName = (typeof CV_TEMPLATES)[number]['key'];
@@ -248,7 +247,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     : ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const hiddenSections = Array.isArray(cvData.hiddenSections) ? cvData.hiddenSections : [];
 
-  const themeColor = safeHexColorForTemplate(cvData.themeColor, '#2563eb');
+  const themeColor = safeHexColorForTemplate(cvData.themeColor, '#000000');
   const sidebarColor = safeHexColorForTemplate(cvData.sidebarColor, '#111827');
   const templateSurfaceColor = safeHexColorForTemplate(
     cvData.templateSurfaceColor,
@@ -294,8 +293,6 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     formattedDate: dateInline(item.startDate, item.endDate),
     formattedDateStacked: dateStacked(item.startDate, item.endDate),
   }));
-  const experienceLeadItems = processedExperience.slice(0, 2);
-  const experienceContinuationItems = processedExperience.slice(2);
 
   const processedEducation = education.map((item: any) => ({
     ...item,
@@ -390,9 +387,6 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     personalInfo,
     contactItems: [personalInfo.email, personalInfo.phone, personalInfo.address].filter(Boolean).map((value: string) => ({ value })),
     experience: processedExperience,
-    experienceLeadItems,
-    experienceContinuationItems,
-    hasExperienceContinuation: experienceContinuationItems.length > 0,
     education: processedEducation,
     skills: processedSkills,
     groupedSkills,
@@ -471,7 +465,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
     };
 
     const safeTemplate = isTemplateName(template) ? template : DEFAULT_TEMPLATE;
-    const themeColor = safeHexColor(cvData.themeColor, '#2563eb');
+    const themeColor = safeHexColor(cvData.themeColor, '#000000');
     const sidebarColor = safeHexColor(cvData.sidebarColor, '#111827');
     const templateSurfaceColor = safeHexColor(
         cvData.templateSurfaceColor,
