@@ -77,27 +77,10 @@ img {
   width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
-  overflow: hidden;
-  background: #fffdf8;
-}
-
-.page::before {
-  content: "";
-  position: absolute;
-  inset: 0;
+  overflow: visible;
   border: 14px solid #172033;
-  pointer-events: none;
-}
-
-.page::after {
-  content: "";
-  position: absolute;
-  left: 46px;
-  right: 46px;
-  top: 46px;
-  bottom: 46px;
-  border: 1px solid rgba(184, 134, 11, 0.38);
-  pointer-events: none;
+  background: #fffdf8;
+  box-shadow: inset 0 0 0 32px #fffdf8, inset 0 0 0 33px rgba(184, 134, 11, 0.38);
 }
 
 .inner {

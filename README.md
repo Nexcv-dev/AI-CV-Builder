@@ -49,7 +49,6 @@ Current release focus: production hardening, admin operations, CMS-driven templa
 ```text
 AI-CV-Builder/
   README.md
-  templates/                  # Template source assets and notes
   Free CV Builder/            # Main React + Express application
     src/                      # React frontend
     routes/                   # Express route modules
