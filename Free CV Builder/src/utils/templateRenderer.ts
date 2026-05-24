@@ -93,6 +93,11 @@ const prepareS3TemplateData = (cvData: any, options: { watermark?: boolean } = {
   const sidebarColor = safeHexColor(cvData?.sidebarColor, '#1e293b');
   const templateSurfaceColor = safeHexColor(cvData?.templateSurfaceColor, themeColor);
   const sidebarTextColor = getContrastColor(templateSurfaceColor);
+  const startupHeaderTextColor = getContrastColor(templateSurfaceColor);
+  const startupHeaderMutedColor = startupHeaderTextColor === '#ffffff' ? 'rgba(236, 253, 245, 0.92)' : 'rgba(15, 23, 42, 0.72)';
+  const startupHeaderBackground = cvData?.templateSurfaceColor
+    ? templateSurfaceColor
+    : `linear-gradient(135deg, ${themeColor} 0%, #047857 100%)`;
   const fontFamily = cvData?.fontFamily || 'Inter';
   const imageCss = profileImageCss(cvData);
   const profileImage = cvData?.profileImage || '';
@@ -192,6 +197,9 @@ const prepareS3TemplateData = (cvData: any, options: { watermark?: boolean } = {
       templateSurfaceColor,
       sidebarTextColor,
       sidebarMutedColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+      startupHeaderTextColor,
+      startupHeaderMutedColor,
+      startupHeaderBackground,
       fontFamily,
       fontFamilyCSS: templateFontMap[fontFamily] || "'Inter', sans-serif",
       googleFontName: String(fontFamily || 'Inter').replace(/\s+/g, '+'),
@@ -201,6 +209,7 @@ const prepareS3TemplateData = (cvData: any, options: { watermark?: boolean } = {
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: imageCss.transform,
+      startupHeadlineTitle: processedExperience[0]?.position || 'Professional Title',
     },
     flags: {
       isProfessional,

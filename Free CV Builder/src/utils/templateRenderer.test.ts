@@ -56,4 +56,25 @@ describe('renderCvTemplateString', () => {
     expect(html).toContain('.line');
     expect(html).toContain('padding-top: 0 !important');
   });
+
+  it('renders Startup header surface colors for S3 preview CSS placeholders', () => {
+    const html = renderCvTemplateString(`
+      <style>
+        .hero {
+          background: {{{computed.startupHeaderBackground}}};
+          color: {{{computed.startupHeaderTextColor}}};
+        }
+        .title { color: {{{computed.startupHeaderMutedColor}}}; }
+      </style>
+      <header class="hero"><div class="title">{{computed.startupHeadlineTitle}}</div></header>
+    `, {
+      ...cvData,
+      templateSurfaceColor: '#123456',
+    });
+
+    expect(html).toContain('background: #123456;');
+    expect(html).toContain('color: #ffffff;');
+    expect(html).toContain('rgba(236, 253, 245, 0.92)');
+    expect(html).toContain('<div class="title">One</div>');
+  });
 });
