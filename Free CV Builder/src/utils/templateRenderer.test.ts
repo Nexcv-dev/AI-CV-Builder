@@ -36,4 +36,24 @@ describe('renderCvTemplateString', () => {
     expect(html).toContain('keep');
     expect(html).not.toContain('split');
   });
+
+  it('injects shared pagination rules into admin template HTML', () => {
+    const html = renderCvTemplateString(`
+      <html>
+        <head><style>@page { margin: 0; }</style></head>
+        <body><section class="experience-section"><article class="item">Work</article></section></body>
+      </html>
+    `, cvData);
+
+    expect(html).toContain('id="nexcv-pagination-rules"');
+    expect(html).toContain('@page');
+    expect(html).toContain('margin: 8mm 0 0 0');
+    expect(html).toContain('.experience-section.experience-keep-together');
+    expect(html).toContain('page-break-inside: avoid !important');
+    expect(html).toContain('.side-card');
+    expect(html).toContain('.side-box');
+    expect(html).toContain('.code-card');
+    expect(html).toContain('.line');
+    expect(html).toContain('padding-top: 0 !important');
+  });
 });

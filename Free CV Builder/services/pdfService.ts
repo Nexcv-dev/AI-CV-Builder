@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName } from '../src/templates';
+import { CV_TEMPLATE_PAGINATION_RULES } from '../src/utils/cvTemplateRules';
 
 dotenv.config();
 
@@ -661,9 +662,6 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
 
     const cssInjections = template === 'modern' ? `
     @media print {
-      @page {
-        margin: 0 !important;
-      }
       body::before {
         content: "";
         position: fixed;
@@ -715,6 +713,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
     .cv-preview-rich-text p { margin-top: 0; margin-bottom: 0.25rem; }
     .cv-preview-rich-text p:last-child { margin-bottom: 0; }
     h1, h2, h3 { margin: 0; }
+    ${CV_TEMPLATE_PAGINATION_RULES}
     .nexcv-watermark {
       position: fixed;
       inset: 0;
@@ -742,8 +741,6 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
       page-break-inside: auto !important;
       break-inside: auto !important;
     }
-    @page { margin: 0.5in 0 0 0; }
-    @page :first { margin-top: 0; }
     ${cssInjections}
   </style>
 </head>

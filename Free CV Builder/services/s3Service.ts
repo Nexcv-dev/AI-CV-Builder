@@ -2,6 +2,7 @@ import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import * as dotenv from 'dotenv';
+import { injectCvTemplatePaginationRules } from '../src/utils/cvTemplateRules';
 
 dotenv.config();
 
@@ -234,7 +235,7 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
         ));
     };
 
-    return applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style);
+    return injectCvTemplatePaginationRules(applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style));
 }
 
 export async function generateS3CVHTML(cvData: any, template: string, options: { watermark?: boolean } = {}) {

@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { injectCvTemplatePaginationRules } from './cvTemplateRules';
 
 const getTemplateValue = (pathValue: string, context: any, root: any) => {
   const pathParts = pathValue.trim().split('.').filter(Boolean);
@@ -312,5 +313,5 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
     ));
   };
 
-  return applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style);
+  return injectCvTemplatePaginationRules(applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style));
 }
