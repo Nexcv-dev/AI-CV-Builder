@@ -15,13 +15,13 @@ import type {
   AdminRoleConfig,
   AdminSettingsSummary,
   AdminSupportTicket,
-  AdminTemplateItem,
   AdminUserListItem,
 } from './admin/adminTypes';
-import { adminNavItems, emptyCustomTemplateForm } from './admin/adminUtils';
+import { adminNavItems } from './admin/adminUtils';
 import { AdminMobileNav, AdminPageHeader, AdminSidebar } from './admin/AdminShellComponents';
 import { AdminOverviewSection, AnalyticsDashboardSection } from './admin/AdminOverviewSections';
 import { useAdminBootstrap } from './admin/hooks/useAdminBootstrap';
+import { useAdminTemplates } from './admin/hooks/useAdminTemplates';
 import { useAdminUsers } from './admin/hooks/useAdminUsers';
 
 const UserManagementSection = lazy(() => import('./admin/UserManagementSection'));
@@ -78,19 +78,36 @@ export default function AdminDashboard() {
     users,
     usersLoading,
   } = useAdminUsers({ enabled: isUsersPage });
-  const [templates, setTemplates] = useState<AdminTemplateItem[]>([]);
-  const [templateCategories, setTemplateCategories] = useState<string[]>([]);
-  const [templatesLoading, setTemplatesLoading] = useState(false);
-  const [templateSearch, setTemplateSearch] = useState('');
-  const [templateCategoryFilter, setTemplateCategoryFilter] = useState('all');
-  const [templateAccessFilter, setTemplateAccessFilter] = useState('all');
-  const [selectedTemplate, setSelectedTemplate] = useState<AdminTemplateItem | null>(null);
-  const [templateForm, setTemplateForm] = useState({ label: '', category: 'Modern', access: 'paid' as 'free' | 'paid', thumbnail: '', surfaceColorRole: 'none' as 'none' | 'sidebar' | 'header', surfaceColorLabel: '' });
-  const [templateFileForm, setTemplateFileForm] = useState({ indexHtml: '', styleCss: '', thumbnailDataUrl: '' });
-  const [savingTemplate, setSavingTemplate] = useState(false);
-  const [createTemplateOpen, setCreateTemplateOpen] = useState(false);
-  const [customTemplateForm, setCustomTemplateForm] = useState(emptyCustomTemplateForm);
-  const [creatingTemplate, setCreatingTemplate] = useState(false);
+  const {
+    changeCustomTemplateStatus,
+    createCustomTemplate,
+    createTemplateOpen,
+    creatingTemplate,
+    customTemplateForm,
+    openTemplateDetail,
+    saveSelectedTemplate,
+    savingTemplate,
+    selectedTemplate,
+    setCreateTemplateOpen,
+    setCustomTemplateFile,
+    setCustomTemplateForm,
+    setSelectedTemplate,
+    setSelectedTemplateFile,
+    setTemplateAccessFilter,
+    setTemplateCategoryFilter,
+    setTemplateFileForm,
+    setTemplateForm,
+    setTemplateSearch,
+    templateAccessFilter,
+    templateCategories,
+    templateCategoryFilter,
+    templateFileForm,
+    templateForm,
+    templates,
+    templatesLoading,
+    templateSearch,
+    visibleTemplates,
+  } = useAdminTemplates({ enabled: isTemplatesPage || isSettingsPage });
   const [payments, setPayments] = useState<AdminPaymentItem[]>([]);
   const [paymentSummary, setPaymentSummary] = useState<AdminPaymentSummary | null>(null);
   const [billingPlans, setBillingPlans] = useState<AdminBillingPlan[]>([]);
@@ -128,29 +145,6 @@ export default function AdminDashboard() {
   const [auditSearch, setAuditSearch] = useState('');
   const [auditActionFilter, setAuditActionFilter] = useState('all');
   const [auditTargetTypeFilter, setAuditTargetTypeFilter] = useState('all');
-
-  useEffect(() => {
-    if (!isTemplatesPage && !isSettingsPage) return;
-    let ignore = false;
-    setTemplatesLoading(true);
-
-    apiFetch<{ templates: AdminTemplateItem[]; categories: string[] }>('/api/admin/templates')
-      .then((data) => {
-        if (ignore) return;
-        setTemplates(data.templates);
-        setTemplateCategories(data.categories);
-      })
-      .catch((error) => {
-        if (!ignore) toast.error(error instanceof Error ? error.message : 'Could not load templates.');
-      })
-      .finally(() => {
-        if (!ignore) setTemplatesLoading(false);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [isSettingsPage, isTemplatesPage]);
 
   useEffect(() => {
     if (!isBillingPage) return;
@@ -377,118 +371,6 @@ export default function AdminDashboard() {
     return Math.max(1, ...values);
   }, [summary]);
 
-  const openTemplateDetail = (template: AdminTemplateItem) => {
-    setSelectedTemplate(template);
-    setTemplateForm({
-      label: template.label,
-      category: template.category,
-      access: template.access,
-      thumbnail: template.thumbnail,
-      surfaceColorRole: template.surfaceColorRole || 'none',
-      surfaceColorLabel: template.surfaceColorLabel || '',
-    });
-    setTemplateFileForm({ indexHtml: '', styleCss: '', thumbnailDataUrl: '' });
-  };
-
-  const saveSelectedTemplate = async () => {
-    if (!selectedTemplate) return;
-    setSavingTemplate(true);
-    try {
-      const data = await apiFetch<{ template: AdminTemplateItem }>(`/api/admin/templates/${selectedTemplate.key}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          ...templateForm,
-          ...(templateFileForm.indexHtml ? { indexHtml: templateFileForm.indexHtml } : {}),
-          ...(templateFileForm.styleCss ? { styleCss: templateFileForm.styleCss } : {}),
-          ...(templateFileForm.thumbnailDataUrl ? { thumbnailDataUrl: templateFileForm.thumbnailDataUrl } : {}),
-        }),
-      });
-      setTemplates((items) => items.map((item) => item.key === data.template.key ? data.template : item));
-      setSelectedTemplate(data.template);
-      setTemplateForm({
-        label: data.template.label,
-        category: data.template.category,
-        access: data.template.access,
-        thumbnail: data.template.thumbnail,
-        surfaceColorRole: data.template.surfaceColorRole || 'none',
-        surfaceColorLabel: data.template.surfaceColorLabel || '',
-      });
-      setTemplateFileForm({ indexHtml: '', styleCss: '', thumbnailDataUrl: '' });
-      toast.success(templateFileForm.indexHtml || templateFileForm.styleCss || templateFileForm.thumbnailDataUrl ? 'Template files updated.' : 'Template metadata updated.');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not update template.');
-    } finally {
-      setSavingTemplate(false);
-    }
-  };
-
-  const visibleTemplates = useMemo(() => templates.filter((template) => {
-    const query = templateSearch.trim().toLowerCase();
-    const matchesSearch = !query || template.label.toLowerCase().includes(query) || template.key.toLowerCase().includes(query);
-    const matchesCategory = templateCategoryFilter === 'all' || template.category === templateCategoryFilter;
-    const matchesAccess = templateAccessFilter === 'all' || template.access === templateAccessFilter;
-    return matchesSearch && matchesCategory && matchesAccess;
-  }), [templateAccessFilter, templateCategoryFilter, templateSearch, templates]);
-
-  const readTemplateFile = (file: File, mode: 'text' | 'dataUrl') => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Could not read file.'));
-    reader.onload = () => resolve(String(reader.result || ''));
-    if (mode === 'dataUrl') reader.readAsDataURL(file);
-    else reader.readAsText(file);
-  });
-
-  const createCustomTemplate = async () => {
-    setCreatingTemplate(true);
-    try {
-      const data = await apiFetch<{ template: AdminTemplateItem }>('/api/admin/templates', {
-        method: 'POST',
-        body: JSON.stringify(customTemplateForm),
-      });
-      setTemplates((items) => [...items, data.template]);
-      setSelectedTemplate(data.template);
-      setTemplateForm({
-        label: data.template.label,
-        category: data.template.category,
-        access: data.template.access,
-        thumbnail: data.template.thumbnail,
-        surfaceColorRole: data.template.surfaceColorRole || 'none',
-        surfaceColorLabel: data.template.surfaceColorLabel || '',
-      });
-      setCustomTemplateForm(emptyCustomTemplateForm);
-      setCreateTemplateOpen(false);
-      toast.success(data.template.status === 'active' ? 'Template created and published.' : 'Template draft created.');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not create template.');
-    } finally {
-      setCreatingTemplate(false);
-    }
-  };
-
-  const changeCustomTemplateStatus = async (template: AdminTemplateItem, action: 'publish' | 'archive') => {
-    setSavingTemplate(true);
-    try {
-      const data = await apiFetch<{ template: AdminTemplateItem }>(`/api/admin/templates/${template.key}/${action}`, { method: 'POST' });
-      setTemplates((items) => items.map((item) => item.key === data.template.key ? data.template : item));
-      setSelectedTemplate(data.template);
-      toast.success(action === 'publish' ? 'Template published.' : 'Template archived.');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : `Could not ${action} template.`);
-    } finally {
-      setSavingTemplate(false);
-    }
-  };
-
-  const setCustomTemplateFile = async (file: File | undefined, field: 'indexHtml' | 'styleCss' | 'thumbnailDataUrl') => {
-    if (!file) return;
-    try {
-      const value = await readTemplateFile(file, field === 'thumbnailDataUrl' ? 'dataUrl' : 'text');
-      setCustomTemplateForm((current) => ({ ...current, [field]: value }));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not read file.');
-    }
-  };
-
   const openTicketDetail = (ticket: AdminSupportTicket) => {
     setSelectedTicket(ticket);
     setTicketForm({ status: ticket.status, priority: ticket.priority, adminNotes: ticket.adminNotes || '' });
@@ -531,16 +413,6 @@ export default function AdminDashboard() {
       toast.error(error instanceof Error ? error.message : 'Could not send support reply.');
     } finally {
       setSendingSupportReply(false);
-    }
-  };
-
-  const setSelectedTemplateFile = async (file: File | undefined, field: 'indexHtml' | 'styleCss' | 'thumbnailDataUrl') => {
-    if (!file) return;
-    try {
-      const value = await readTemplateFile(file, field === 'thumbnailDataUrl' ? 'dataUrl' : 'text');
-      setTemplateFileForm((current) => ({ ...current, [field]: value }));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not read file.');
     }
   };
 

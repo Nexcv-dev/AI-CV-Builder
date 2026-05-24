@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const projectRoot = path.resolve(path.dirname(__filename), '..');
 const repoRoot = path.resolve(projectRoot, '..');
 const pdfServicePath = path.join(projectRoot, 'services', 'pdfService.ts');
+const cvTemplateRulesPath = path.join(projectRoot, 'src', 'utils', 'cvTemplateRules.ts');
 const outRoot = path.join(projectRoot, 'lambda-pdf');
 const buildDir = path.join(outRoot, 'build');
 const distDir = path.join(outRoot, 'dist');
@@ -120,6 +121,17 @@ function extractBetween(source, startNeedle, endNeedle) {
   return source.slice(start, end).trim();
 }
 
+function extractConstStatement(source, constName) {
+  const startNeedle = `export const ${constName}`;
+  const start = source.indexOf(startNeedle);
+  if (start === -1) throw new Error(`Could not find ${startNeedle}`);
+  const valueStart = source.indexOf('`', start);
+  if (valueStart === -1) throw new Error(`Could not find template literal for ${constName}`);
+  const valueEnd = source.indexOf('`;', valueStart + 1);
+  if (valueEnd === -1) throw new Error(`Could not find end of template literal for ${constName}`);
+  return source.slice(start, valueEnd + 2).replace('export const', 'const');
+}
+
 function extractConstObject(source, constName) {
   const startNeedle = `const ${constName}`;
   const block = extractBalanced(source, startNeedle);
@@ -137,6 +149,8 @@ function copyDirIfExists(src, dest) {
 }
 
 const pdfServiceSource = fs.readFileSync(pdfServicePath, 'utf8');
+const cvTemplateRulesSource = fs.readFileSync(cvTemplateRulesPath, 'utf8');
+const cvTemplatePaginationRulesTs = extractConstStatement(cvTemplateRulesSource, 'CV_TEMPLATE_PAGINATION_RULES');
 const pdfIcons = extractConstObject(pdfServiceSource, 'PDF_ICONS');
 const generateCvHtmlTs = extractBetween(pdfServiceSource, 'export function generateCVHTML', '// AI Generate PDF via Puppeteer').replace('export function', 'function');
 const sanitizeCvDataTs = extractFunction(pdfServiceSource, 'export function sanitizeCvData').replace('export function', 'function');
@@ -187,7 +201,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     : ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const hiddenSections = Array.isArray(cvData.hiddenSections) ? cvData.hiddenSections : [];
 
-  const themeColor = safeHexColorForTemplate(cvData.themeColor, '#2563eb');
+  const themeColor = safeHexColorForTemplate(cvData.themeColor, '#000000');
   const sidebarColor = safeHexColorForTemplate(cvData.sidebarColor, '#111827');
   const templateSurfaceColor = safeHexColorForTemplate(
     cvData.templateSurfaceColor,
@@ -410,7 +424,6 @@ const CV_TEMPLATES = [
   { key: 'timeline', label: 'Timeline', image: '/templates/timeline.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'minimalist', label: 'Minimalist', image: '/templates/minimalist.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'startup', label: 'Startup', image: '/templates/startup.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Header Background' },
-  { key: 'creative', label: 'Creative', image: '/templates/creative.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Accent Background' },
 ] as const;
 
 type TemplateName = (typeof CV_TEMPLATES)[number]['key'];
@@ -582,6 +595,8 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
 }
 
 ${s3TemplatePreprocessorTs}
+
+${cvTemplatePaginationRulesTs}
 
 async function generateS3CVHTML(cvData: any, template: TemplateName, options: { watermark?: boolean } = {}) {
   lastS3TemplateDebug = 'attempting';

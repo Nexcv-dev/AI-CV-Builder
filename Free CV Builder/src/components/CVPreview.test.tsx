@@ -62,10 +62,8 @@ describe('CVPreview Component', () => {
 
     expect(mockUseTemplateHtml).toHaveBeenCalledWith('classic');
     expect(container.querySelector('.cv-preview-surface')).toBeInTheDocument();
-    expect(iframe).toHaveAttribute(
-      'srcDoc',
-      '<main><h1>Jane Doe</h1><div><p>Experienced developer</p></div></main>'
-    );
+    expect(iframe).toHaveAttribute('srcDoc', expect.stringContaining('<main><h1>Jane Doe</h1><div><p>Experienced developer</p></div></main>'));
+    expect(iframe).toHaveAttribute('srcDoc', expect.stringContaining('id="nexcv-pagination-rules"'));
   });
 
   it('shows the custom template loading state', () => {

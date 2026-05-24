@@ -43,14 +43,6 @@ export const CV_TEMPLATES = [
     surfaceColorRole: 'header',
     surfaceColorLabel: 'Header Background',
   },
-  {
-    key: 'creative',
-    label: 'Creative',
-    image: '/templates/creative.svg',
-    access: 'paid',
-    surfaceColorRole: 'header',
-    surfaceColorLabel: 'Accent Background',
-  },
 ] as const;
 
 export type BuiltInTemplateName = (typeof CV_TEMPLATES)[number]['key'];

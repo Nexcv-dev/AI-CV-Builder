@@ -11,26 +11,49 @@ const cvData = {
 };
 
 describe('renderCvTemplateString', () => {
-  it('exposes experience groups for admin template page-break control', () => {
+  it('keeps experience in normal flow for admin template pagination', () => {
     const html = renderCvTemplateString(`
       {{#hasExperienceContinuation}}
         <div class="lead">{{#experienceLeadItems}}<span>{{position}}</span>{{/experienceLeadItems}}</div>
         <div class="rest">{{#experienceContinuationItems}}<span>{{position}}</span>{{/experienceContinuationItems}}</div>
       {{/hasExperienceContinuation}}
+      {{^hasExperienceContinuation}}
+        <div class="all">{{#experienceLeadItems}}<span>{{position}}</span>{{/experienceLeadItems}}</div>
+      {{/hasExperienceContinuation}}
     `, cvData);
 
-    expect(html).toContain('<div class="lead"><span>One</span><span>Two</span></div>');
-    expect(html).toContain('<div class="rest"><span>Three</span></div>');
-    expect(html.indexOf('<div class="lead">')).toBeLessThan(html.indexOf('<div class="rest">'));
+    expect(html).toContain('<div class="all"><span>One</span><span>Two</span><span>Three</span></div>');
+    expect(html).not.toContain('<div class="lead">');
+    expect(html).not.toContain('<div class="rest">');
   });
 
-  it('does not enable continuation groups for two experience items', () => {
+  it('does not enable continuation groups', () => {
     const html = renderCvTemplateString(`
       {{#hasExperienceContinuation}}split{{/hasExperienceContinuation}}
       {{^hasExperienceContinuation}}keep{{/hasExperienceContinuation}}
-    `, { ...cvData, experience: cvData.experience.slice(0, 2) });
+    `, cvData);
 
     expect(html).toContain('keep');
     expect(html).not.toContain('split');
+  });
+
+  it('injects shared pagination rules into admin template HTML', () => {
+    const html = renderCvTemplateString(`
+      <html>
+        <head><style>@page { margin: 0; }</style></head>
+        <body><section class="experience-section"><article class="item">Work</article></section></body>
+      </html>
+    `, cvData);
+
+    expect(html).toContain('id="nexcv-pagination-rules"');
+    expect(html).toContain('@page');
+    expect(html).toContain('margin: 8mm 0 0 0');
+    expect(html).toContain('.experience-section.experience-keep-together');
+    expect(html).toContain('page-break-inside: avoid !important');
+    expect(html).toContain('.side-card');
+    expect(html).toContain('.side-box');
+    expect(html).toContain('.code-card');
+    expect(html).toContain('.line');
+    expect(html).toContain('padding-top: 0 !important');
   });
 });

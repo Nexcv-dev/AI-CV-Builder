@@ -100,7 +100,7 @@ describe('PDF HTML Generation', () => {
     }, 'minimalist');
 
     expect(html).not.toContain('color:red');
-    expect(html).toContain('color:#2563eb');
+    expect(html).toContain('color:#000000');
     expect(html).toContain('line-height:2.5');
     expect(html).toContain('margin-bottom:0.5rem');
   });

@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { injectCvTemplatePaginationRules } from './cvTemplateRules';
 
 const getTemplateValue = (pathValue: string, context: any, root: any) => {
   const pathParts = pathValue.trim().split('.').filter(Boolean);
@@ -34,13 +35,11 @@ const profileImageCss = (cvData: any) => {
 
 const withExperiencePageBreakGroups = (cvData: any) => {
   const experience = Array.isArray(cvData?.experience) ? cvData.experience : [];
-  const experienceLeadItems = experience.slice(0, 2);
-  const experienceContinuationItems = experience.slice(2);
 
   return {
-    experienceLeadItems,
-    experienceContinuationItems,
-    hasExperienceContinuation: experienceContinuationItems.length > 0,
+    experienceLeadItems: experience,
+    experienceContinuationItems: [],
+    hasExperienceContinuation: false,
   };
 };
 
@@ -90,7 +89,7 @@ const prepareS3TemplateData = (cvData: any, options: { watermark?: boolean } = {
     ? cvData.sectionOrder
     : ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const hiddenSections = Array.isArray(cvData?.hiddenSections) ? cvData.hiddenSections : [];
-  const themeColor = safeHexColor(cvData?.themeColor, '#7c3aed');
+  const themeColor = safeHexColor(cvData?.themeColor, '#000000');
   const sidebarColor = safeHexColor(cvData?.sidebarColor, '#1e293b');
   const templateSurfaceColor = safeHexColor(cvData?.templateSurfaceColor, themeColor);
   const sidebarTextColor = getContrastColor(templateSurfaceColor);
@@ -314,5 +313,5 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
     ));
   };
 
-  return applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style);
+  return injectCvTemplatePaginationRules(applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style));
 }

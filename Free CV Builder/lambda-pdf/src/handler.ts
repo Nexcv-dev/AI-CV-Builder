@@ -31,7 +31,6 @@ const CV_TEMPLATES = [
   { key: 'timeline', label: 'Timeline', image: '/templates/timeline.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'minimalist', label: 'Minimalist', image: '/templates/minimalist.svg', access: 'paid', surfaceColorRole: 'none' },
   { key: 'startup', label: 'Startup', image: '/templates/startup.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Header Background' },
-  { key: 'creative', label: 'Creative', image: '/templates/creative.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Accent Background' },
 ] as const;
 
 type TemplateName = (typeof CV_TEMPLATES)[number]['key'];
@@ -248,7 +247,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     : ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const hiddenSections = Array.isArray(cvData.hiddenSections) ? cvData.hiddenSections : [];
 
-  const themeColor = safeHexColorForTemplate(cvData.themeColor, '#2563eb');
+  const themeColor = safeHexColorForTemplate(cvData.themeColor, '#000000');
   const sidebarColor = safeHexColorForTemplate(cvData.sidebarColor, '#111827');
   const templateSurfaceColor = safeHexColorForTemplate(
     cvData.templateSurfaceColor,
@@ -294,8 +293,6 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     formattedDate: dateInline(item.startDate, item.endDate),
     formattedDateStacked: dateStacked(item.startDate, item.endDate),
   }));
-  const experienceLeadItems = processedExperience.slice(0, 2);
-  const experienceContinuationItems = processedExperience.slice(2);
 
   const processedEducation = education.map((item: any) => ({
     ...item,
@@ -390,9 +387,6 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     personalInfo,
     contactItems: [personalInfo.email, personalInfo.phone, personalInfo.address].filter(Boolean).map((value: string) => ({ value })),
     experience: processedExperience,
-    experienceLeadItems,
-    experienceContinuationItems,
-    hasExperienceContinuation: experienceContinuationItems.length > 0,
     education: processedEducation,
     skills: processedSkills,
     groupedSkills,
@@ -443,6 +437,126 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
 }
 
 
+const CV_TEMPLATE_PAGINATION_RULES = `
+    @page {
+      size: A4;
+      margin: 8mm 0 0 0;
+    }
+
+    @page :first {
+      margin-top: 0;
+    }
+
+    html,
+    body {
+      overflow: visible !important;
+    }
+
+    .page,
+    .cv,
+    .resume,
+    .sheet,
+    .document,
+    .wrapper,
+    .container,
+    .content,
+    .body,
+    .body-grid,
+    .main,
+    .main-column,
+    .main-col {
+      height: auto !important;
+      overflow: visible !important;
+    }
+
+    .sidebar,
+    .side-column,
+    .side-col {
+      overflow: visible !important;
+      page-break-inside: auto !important;
+      break-inside: auto !important;
+      -webkit-box-decoration-break: clone;
+      box-decoration-break: clone;
+    }
+
+    section,
+    .section,
+    .sidebar-box,
+    .experience-section,
+    .experience-section.experience-keep-together,
+    .experience-section.experience-lead-section,
+    .experience-section.experience-continuation-section,
+    .item-stack,
+    .stack,
+    .cards,
+    .timeline,
+    .timeline-list,
+    .experience-list,
+    .items {
+      page-break-inside: auto !important;
+      break-inside: auto !important;
+    }
+
+    article,
+    .item,
+    .experience-item,
+    .experience-card,
+    .side-card,
+    .side-box,
+    .sidebar-box,
+    .code-card,
+    .list-item,
+    .line,
+    .metric,
+    .project,
+    .timeline-item,
+    .exp-card,
+    .exp,
+    .card-line {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .item,
+    .experience-item,
+    .experience-card,
+    .side-card,
+    .side-box,
+    .sidebar-box,
+    .code-card,
+    .list-item,
+    .project,
+    .timeline-item,
+    .exp-card,
+    .exp,
+    .card-line {
+      display: inline-block !important;
+      width: 100% !important;
+      vertical-align: top;
+    }
+
+    h1,
+    h2,
+    h3,
+    .section-title,
+    .item-header {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .experience-continuation-section {
+      page-break-before: auto !important;
+      break-before: auto !important;
+      margin-top: 0 !important;
+    }
+
+    .experience-section.experience-keep-together,
+    .experience-section.experience-lead-section,
+    .experience-section.experience-continuation-section {
+      padding-top: 0 !important;
+    }
+`;
+
 async function generateS3CVHTML(cvData: any, template: TemplateName, options: { watermark?: boolean } = {}) {
   lastS3TemplateDebug = 'attempting';
   const templateHtml = await loadS3TemplateHtml(template);
@@ -471,7 +585,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
     };
 
     const safeTemplate = isTemplateName(template) ? template : DEFAULT_TEMPLATE;
-    const themeColor = safeHexColor(cvData.themeColor, '#2563eb');
+    const themeColor = safeHexColor(cvData.themeColor, '#000000');
     const sidebarColor = safeHexColor(cvData.sidebarColor, '#111827');
     const templateSurfaceColor = safeHexColor(
         cvData.templateSurfaceColor,
@@ -1089,9 +1203,6 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
 
     const cssInjections = template === 'modern' ? `
     @media print {
-      @page {
-        margin: 0 !important;
-      }
       body::before {
         content: "";
         position: fixed;
@@ -1143,6 +1254,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
     .cv-preview-rich-text p { margin-top: 0; margin-bottom: 0.25rem; }
     .cv-preview-rich-text p:last-child { margin-bottom: 0; }
     h1, h2, h3 { margin: 0; }
+    ${CV_TEMPLATE_PAGINATION_RULES}
     .nexcv-watermark {
       position: fixed;
       inset: 0;
@@ -1170,8 +1282,6 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
       page-break-inside: auto !important;
       break-inside: auto !important;
     }
-    @page { margin: 0.5in 0 0 0; }
-    @page :first { margin-top: 0; }
     ${cssInjections}
   </style>
 </head>
