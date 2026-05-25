@@ -3,20 +3,24 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #177 from bimanthaperera-lab/test/overview (f52109e) - Bimantha Perera, 9 seconds ago
-* fix default color bug in design panel (eb0b089) - Bimantha Perera, 44 minutes ago
-* add script to validate new templates (dcb9e7b) - Bimantha Perera, 62 minutes ago
-* Improve Template Rendering (b2408d6) - Bimantha Perera, 2 hours ago
-* fix template issues (e165f72) - Bimantha Perera, 4 hours ago
-* fix mobile preview bug (2f68c3d) - Bimantha Perera, 4 hours ago
-* Create cv_templates_mobile_preview_safe.zip (e0842f5) - Bimantha Perera, 21 hours ago
-* Update MyCvs.tsx (bf9e59c) - Bimantha Perera, 21 hours ago
-* fix landing page carousel bug (dc27d02) - Bimantha Perera, 25 hours ago
-* fix startup template bug (7e78fd1) - Bimantha Perera, 25 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (8812e6c) - bimanthaperera-lab, 26 hours ago
-* Merge pull request #175 from bimanthaperera-lab/test/overview (0935cd8) - Bimantha Perera, 26 hours ago
-* Update CVPreview.test.tsx (e6db45e) - Bimantha Perera, 26 hours ago
-* fix template render issue (831163d) - Bimantha Perera, 26 hours ago
+* Merge pull request #178 from bimanthaperera-lab/test/overview (e183a9c) - Bimantha Perera, 9 seconds ago
+* add release automation (bbd4835) - Bimantha Perera, 6 minutes ago
+* Add admin template validation gate (4d59037) - Bimantha Perera, 15 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (1efa7c6) - bimanthaperera-lab, 2 hours ago
+* Merge pull request #177 from bimanthaperera-lab/test/overview (f52109e) - Bimantha Perera, 2 hours ago
+* fix default color bug in design panel (eb0b089) - Bimantha Perera, 2 hours ago
+* add script to validate new templates (dcb9e7b) - Bimantha Perera, 3 hours ago
+* Improve Template Rendering (b2408d6) - Bimantha Perera, 3 hours ago
+* fix template issues (e165f72) - Bimantha Perera, 5 hours ago
+* fix mobile preview bug (2f68c3d) - Bimantha Perera, 6 hours ago
+* Create cv_templates_mobile_preview_safe.zip (e0842f5) - Bimantha Perera, 22 hours ago
+* Update MyCvs.tsx (bf9e59c) - Bimantha Perera, 22 hours ago
+* fix landing page carousel bug (dc27d02) - Bimantha Perera, 27 hours ago
+* fix startup template bug (7e78fd1) - Bimantha Perera, 27 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (8812e6c) - bimanthaperera-lab, 28 hours ago
+* Merge pull request #175 from bimanthaperera-lab/test/overview (0935cd8) - Bimantha Perera, 28 hours ago
+* Update CVPreview.test.tsx (e6db45e) - Bimantha Perera, 28 hours ago
+* fix template render issue (831163d) - Bimantha Perera, 28 hours ago
 * remove templates (c916ca0) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (b6c1248) - bimanthaperera-lab, 2 days ago
 * Merge pull request #171 from bimanthaperera-lab/test/overview (333ee89) - Bimantha Perera, 2 days ago
