@@ -79,7 +79,7 @@
                         <div class="timeline-dot"></div>
                         <div class="timeline-head">
                           <div>
-                            <h3>{{position}}</h3>
+                            {{#position}}<h3>{{position}}</h3>{{/position}}
                             <p class="sub">{{company}}</p>
                           </div>
                           <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
@@ -103,7 +103,7 @@
                         <div class="timeline-dot"></div>
                         <div class="timeline-head">
                           <div>
-                            <h3>{{position}}</h3>
+                            {{#position}}<h3>{{position}}</h3>{{/position}}
                             <p class="sub">{{company}}</p>
                           </div>
                           <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
@@ -124,7 +124,7 @@
                         <div class="timeline-dot"></div>
                         <div class="timeline-head">
                           <div>
-                            <h3>{{position}}</h3>
+                            {{#position}}<h3>{{position}}</h3>{{/position}}
                             <p class="sub">{{company}}</p>
                           </div>
                           <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
@@ -259,7 +259,7 @@
                   {{#references}}
                     <article>
                       <h3>{{name}}</h3>
-                      <p class="sub">{{position}}{{#company}}, {{company}}{{/company}}</p>
+                      {{#sub}}<p class="sub">{{sub}}</p>{{/sub}}
                       <p class="tiny">{{email}}</p>
                       <p class="tiny">{{phone}}</p>
                     </article>

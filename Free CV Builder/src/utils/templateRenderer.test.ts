@@ -77,4 +77,35 @@ describe('renderCvTemplateString', () => {
     expect(html).toContain('rgba(236, 253, 245, 0.92)');
     expect(html).toContain('<div class="title">One</div>');
   });
+
+  it('uses the template accent when the saved theme color is still default black', () => {
+    const html = renderCvTemplateString('<style>a { color: {{themeColor}}; }</style>', {
+      ...cvData,
+      template: 'compact-timeline',
+      themeColor: '#000000',
+    });
+
+    expect(html).toContain('color: #fca311;');
+  });
+
+  it('respects user-selected colors over template default accents', () => {
+    const html = renderCvTemplateString('<style>a { color: {{themeColor}}; }</style>', {
+      ...cvData,
+      template: 'compact-timeline',
+      themeColor: '#2563eb',
+    });
+
+    expect(html).toContain('color: #2563eb;');
+    expect(html).not.toContain('#fca311');
+  });
+
+  it('does not render ghost position text for empty experience titles', () => {
+    const html = renderCvTemplateString('{{#experience}}<h3>{{position}}</h3>{{/experience}}', {
+      ...cvData,
+      experience: [{ id: '1', position: '' }],
+    });
+
+    expect(html).toContain('<h3></h3>');
+    expect(html).not.toContain('Position');
+  });
 });

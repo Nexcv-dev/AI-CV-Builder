@@ -74,7 +74,7 @@
 
                     {{#experience}}
                       <article class="exp-card">
-                        <h3>{{position}}</h3>
+                        {{#position}}<h3>{{position}}</h3>{{/position}}
                         <p class="meta">
                           {{company}}{{#startDate}} · {{startDate}}{{/startDate}}{{#endDate}} - {{endDate}}{{/endDate}}
                         </p>
@@ -94,7 +94,7 @@
 
                     {{#experienceLeadItems}}
                       <article class="exp-card">
-                        <h3>{{position}}</h3>
+                        {{#position}}<h3>{{position}}</h3>{{/position}}
                         <p class="meta">
                           {{company}}{{#startDate}} · {{startDate}}{{/startDate}}{{#endDate}} - {{endDate}}{{/endDate}}
                         </p>
@@ -111,7 +111,7 @@
 
                     {{#experienceContinuationItems}}
                       <article class="exp-card">
-                        <h3>{{position}}</h3>
+                        {{#position}}<h3>{{position}}</h3>{{/position}}
                         <p class="meta">
                           {{company}}{{#startDate}} · {{startDate}}{{/startDate}}{{#endDate}} - {{endDate}}{{/endDate}}
                         </p>
@@ -162,7 +162,7 @@
                   {{#references}}
                     <article class="small-card">
                       <h3>{{name}}</h3>
-                      <p>{{position}}{{#company}} · {{company}}{{/company}}</p>
+                      {{#sub}}<p>{{sub}}</p>{{/sub}}
                       {{#email}}<p>{{email}}</p>{{/email}}
                       {{#phone}}<p>{{phone}}</p>{{/phone}}
                     </article>
