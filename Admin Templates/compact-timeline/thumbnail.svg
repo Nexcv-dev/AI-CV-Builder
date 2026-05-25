@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="594" viewBox="0 0 420 594" fill="none">
+  <rect width="420" height="594" rx="24" fill="#FFFFFF"/>
+  <rect width="420" height="22" fill="url(#topAccent)"/>
+
+  <rect x="28" y="54" width="68" height="20" rx="10" fill="#E6FFFB" stroke="#B5F5EC"/>
+  <rect x="28" y="94" width="152" height="18" rx="9" fill="#14213D"/>
+  <rect x="28" y="126" width="116" height="8" rx="4" fill="#64748B"/>
+  <rect x="310" y="58" width="58" height="58" rx="18" fill="#EDF2F7" stroke="#EDF2F7" stroke-width="4"/>
+  <rect x="318" y="66" width="58" height="58" rx="18" fill="#00A6A6" opacity=".45"/>
+  <circle cx="339" cy="84" r="10" fill="#14213D" opacity=".55"/>
+  <path d="M320 111c7-15 31-15 38 0" stroke="#14213D" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+  <line x1="28" y1="162" x2="392" y2="162" stroke="#EDF2F7" stroke-width="2"/>
+
+  <rect x="28" y="185" width="364" height="52" rx="18" fill="#F8FAFC" stroke="#EDF2F7"/>
+  <line x1="119" y1="185" x2="119" y2="237" stroke="#EDF2F7"/>
+  <line x1="210" y1="185" x2="210" y2="237" stroke="#EDF2F7"/>
+  <line x1="301" y1="185" x2="301" y2="237" stroke="#EDF2F7"/>
+  <rect x="44" y="202" width="42" height="6" rx="3" fill="#00A6A6"/>
+  <rect x="44" y="216" width="58" height="7" rx="3.5" fill="#334155"/>
+  <rect x="135" y="202" width="42" height="6" rx="3" fill="#00A6A6"/>
+  <rect x="135" y="216" width="58" height="7" rx="3.5" fill="#334155"/>
+  <rect x="226" y="202" width="42" height="6" rx="3" fill="#00A6A6"/>
+  <rect x="226" y="216" width="58" height="7" rx="3.5" fill="#334155"/>
+  <rect x="317" y="202" width="42" height="6" rx="3" fill="#00A6A6"/>
+  <rect x="317" y="216" width="58" height="7" rx="3.5" fill="#334155"/>
+
+  <rect x="28" y="272" width="88" height="9" rx="4.5" fill="#14213D"/>
+  <rect x="28" y="302" width="220" height="74" rx="20" fill="url(#summary)" stroke="#DBEAFE"/>
+  <rect x="50" y="326" width="150" height="7" rx="3.5" fill="#475569" opacity=".55"/>
+  <rect x="50" y="344" width="128" height="7" rx="3.5" fill="#475569" opacity=".38"/>
+
+  <rect x="28" y="416" width="108" height="9" rx="4.5" fill="#14213D"/>
+  <line x1="38" y1="448" x2="38" y2="540" stroke="#DBEAFE" stroke-width="2"/>
+  <circle cx="38" cy="462" r="6" fill="#00A6A6" stroke="#FFFFFF" stroke-width="3"/>
+  <rect x="60" y="454" width="92" height="9" rx="4.5" fill="#14213D"/>
+  <rect x="60" y="474" width="76" height="7" rx="3.5" fill="#00A6A6"/>
+  <rect x="60" y="492" width="124" height="6" rx="3" fill="#475569" opacity=".45"/>
+  <circle cx="38" cy="524" r="6" fill="#00A6A6" stroke="#FFFFFF" stroke-width="3"/>
+  <rect x="60" y="516" width="84" height="9" rx="4.5" fill="#14213D"/>
+  <rect x="60" y="536" width="88" height="7" rx="3.5" fill="#00A6A6"/>
+
+  <rect x="280" y="272" width="112" height="128" rx="20" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <rect x="300" y="296" width="54" height="8" rx="4" fill="#14213D"/>
+  <rect x="300" y="326" width="68" height="7" rx="3.5" fill="#E2E8F0"/>
+  <rect x="300" y="326" width="56" height="7" rx="3.5" fill="url(#bar)"/>
+  <rect x="300" y="354" width="68" height="7" rx="3.5" fill="#E2E8F0"/>
+  <rect x="300" y="354" width="61" height="7" rx="3.5" fill="url(#bar)"/>
+
+  <rect x="280" y="426" width="112" height="86" rx="20" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <rect x="300" y="450" width="72" height="8" rx="4" fill="#14213D"/>
+  <rect x="300" y="478" width="48" height="6" rx="3" fill="#14213D"/>
+  <rect x="358" y="478" width="26" height="6" rx="3" fill="#64748B"/>
+  <rect x="300" y="496" width="48" height="6" rx="3" fill="#14213D"/>
+  <rect x="358" y="496" width="26" height="6" rx="3" fill="#64748B"/>
+
+  <text x="210" y="570" text-anchor="middle" fill="#14213D" font-family="Arial, sans-serif" font-size="21" font-weight="800">Compact Timeline</text>
+
+  <defs>
+    <linearGradient id="topAccent" x1="0" y1="0" x2="420" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14213D"/>
+      <stop offset=".5" stop-color="#00A6A6"/>
+      <stop offset="1" stop-color="#FCA311"/>
+    </linearGradient>
+    <linearGradient id="summary" x1="28" y1="302" x2="248" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#ECFEFF"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="300" y1="326" x2="368" y2="326" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00A6A6"/>
+      <stop offset="1" stop-color="#FCA311"/>
+    </linearGradient>
+  </defs>
+</svg>

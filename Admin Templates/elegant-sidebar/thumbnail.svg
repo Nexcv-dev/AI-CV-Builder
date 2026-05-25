@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="594" viewBox="0 0 420 594" fill="none">
+  <rect width="420" height="594" rx="24" fill="#FFFAF3"/>
+  <rect width="143" height="594" fill="#2F2A26"/>
+  <rect x="137" width="6" height="594" fill="#C99A5B"/>
+
+  <circle cx="72" cy="74" r="35" fill="#544A42" stroke="#C99A5B" stroke-width="4"/>
+  <circle cx="72" cy="64" r="12" fill="#C99A5B" opacity=".75"/>
+  <path d="M47 99c8-18 42-18 50 0" stroke="#C99A5B" stroke-width="6" stroke-linecap="round" opacity=".75"/>
+
+  <rect x="32" y="130" width="80" height="11" rx="5.5" fill="#FFFFFF"/>
+  <rect x="42" y="150" width="60" height="7" rx="3.5" fill="#C99A5B"/>
+
+  <rect x="25" y="205" width="66" height="8" rx="4" fill="#C99A5B"/>
+  <line x1="25" y1="228" x2="118" y2="228" stroke="#FFFFFF" stroke-opacity=".18"/>
+  <circle cx="34" cy="249" r="8" fill="#C99A5B" opacity=".22"/>
+  <path d="M29 246h10v7H29z M29 247l5 4 5-4" stroke="#C99A5B" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="50" y="246" width="64" height="6" rx="3" fill="#EBE4DA" opacity=".8"/>
+  <circle cx="34" cy="271" r="8" fill="#C99A5B" opacity=".22"/>
+  <path d="M39 273v3a1.5 1.5 0 0 1-1.6 1.5c-6-.8-10-4.8-10.9-10.9A1.5 1.5 0 0 1 28 265h3l1 4-1.5 1.5c1.4 2.5 3 4.1 5.5 5.5l1.5-1.5 4 1z" stroke="#C99A5B" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="50" y="268" width="58" height="6" rx="3" fill="#EBE4DA" opacity=".8"/>
+  <circle cx="34" cy="293" r="8" fill="#C99A5B" opacity=".22"/>
+  <path d="M34 299s5-4 5-8a5 5 0 0 0-10 0c0 4 5 8 5 8z M34 291.5h.01" stroke="#C99A5B" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="50" y="290" width="50" height="6" rx="3" fill="#EBE4DA" opacity=".8"/>
+
+  <rect x="25" y="318" width="44" height="8" rx="4" fill="#C99A5B"/>
+  <line x1="25" y1="341" x2="118" y2="341" stroke="#FFFFFF" stroke-opacity=".18"/>
+  <rect x="25" y="360" width="92" height="6" rx="3" fill="#FFFFFF" opacity=".16"/>
+  <rect x="25" y="360" width="78" height="6" rx="3" fill="#C99A5B"/>
+  <rect x="25" y="387" width="92" height="6" rx="3" fill="#FFFFFF" opacity=".16"/>
+  <rect x="25" y="387" width="69" height="6" rx="3" fill="#C99A5B"/>
+  <rect x="25" y="414" width="92" height="6" rx="3" fill="#FFFFFF" opacity=".16"/>
+  <rect x="25" y="414" width="82" height="6" rx="3" fill="#C99A5B"/>
+
+  <rect x="178" y="56" width="92" height="8" rx="4" fill="#C99A5B"/>
+  <rect x="178" y="82" width="148" height="17" rx="8.5" fill="#26211D"/>
+  <rect x="178" y="114" width="112" height="8" rx="4" fill="#796B5F"/>
+  <line x1="178" y1="156" x2="374" y2="156" stroke="#E2D6C8" stroke-width="2"/>
+
+  <rect x="178" y="192" width="90" height="9" rx="4.5" fill="#26211D"/>
+  <rect x="178" y="220" width="196" height="64" rx="16" fill="#F4EADC" stroke="#E2D6C8"/>
+  <rect x="178" y="220" width="5" height="64" rx="2.5" fill="#C99A5B"/>
+  <rect x="202" y="242" width="136" height="6" rx="3" fill="#51483F" opacity=".55"/>
+  <rect x="202" y="257" width="112" height="6" rx="3" fill="#51483F" opacity=".42"/>
+
+  <rect x="178" y="326" width="106" height="9" rx="4.5" fill="#26211D"/>
+  <rect x="178" y="362" width="52" height="7" rx="3.5" fill="#C99A5B"/>
+  <line x1="246" y1="356" x2="246" y2="420" stroke="#E2D6C8" stroke-width="2"/>
+  <circle cx="246" cy="364" r="5" fill="#C99A5B"/>
+  <rect x="264" y="358" width="96" height="9" rx="4.5" fill="#26211D"/>
+  <rect x="264" y="378" width="78" height="7" rx="3.5" fill="#796B5F"/>
+  <rect x="264" y="396" width="104" height="6" rx="3" fill="#51483F" opacity=".42"/>
+
+  <rect x="178" y="456" width="74" height="9" rx="4.5" fill="#26211D"/>
+  <rect x="178" y="486" width="94" height="50" rx="15" fill="#FFFFFF" stroke="#E2D6C8"/>
+  <rect x="194" y="505" width="54" height="8" rx="4" fill="#26211D"/>
+  <rect x="194" y="523" width="62" height="6" rx="3" fill="#51483F" opacity=".42"/>
+  <rect x="284" y="486" width="94" height="50" rx="15" fill="#FFFFFF" stroke="#E2D6C8"/>
+  <rect x="300" y="505" width="54" height="8" rx="4" fill="#26211D"/>
+  <rect x="300" y="523" width="62" height="6" rx="3" fill="#51483F" opacity=".42"/>
+
+  <text x="210" y="570" text-anchor="middle" fill="#2F2A26" font-family="Arial, sans-serif" font-size="21" font-weight="800">Elegant Sidebar</text>
+</svg>

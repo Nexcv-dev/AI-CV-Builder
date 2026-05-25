@@ -19,6 +19,8 @@ const THEME_STORAGE_KEY = 'cv-builder-theme';
 const LOCAL_STORAGE_DRAFT_KEY = 'nexcv-draft-data';
 const VERIFY_BANNER_DISMISSED_KEY = 'nexcv-verify-banner-dismissed';
 const BUILDER_LOADING_MIN_MS = 350;
+const DEFAULT_A4_PREVIEW_WIDTH_PX = 794;
+const DEFAULT_A4_PREVIEW_HEIGHT_PX = 1122;
 const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
 const AuthModal = lazy(() => import('../components/AuthModal').then((module) => ({ default: module.AuthModal })));
 const CVForm = lazy(() => import('../components/CVForm'));
@@ -133,7 +135,8 @@ export default function Home() {
   const [isLoadingSavedDocument, setIsLoadingSavedDocument] = useState(Boolean(initialDocumentId.current));
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [scale, setScale] = useState(1);
-  const [previewHeight, setPreviewHeight] = useState(1122); // Default A4 height in px
+  const [previewWidth, setPreviewWidth] = useState(DEFAULT_A4_PREVIEW_WIDTH_PX);
+  const [previewHeight, setPreviewHeight] = useState(DEFAULT_A4_PREVIEW_HEIGHT_PX);
   const [formWidth, setFormWidth] = useState(45);
   const [isDraggingResizer, setIsDraggingResizer] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -521,6 +524,11 @@ export default function Home() {
   const contentRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const formScrollRef = useRef<HTMLDivElement>(null);
+  const [previewNode, setPreviewNode] = useState<HTMLDivElement | null>(null);
+  const setPreviewContentRef = useCallback((node: HTMLDivElement | null) => {
+    contentRef.current = node;
+    setPreviewNode(node);
+  }, []);
 
   useEffect(() => {
     if (!shouldScrollTopOnLoad.current) return;
@@ -544,48 +552,55 @@ export default function Home() {
     };
   }, []);
 
-  // Use ResizeObserver to track preview container width changes reliably
-  // This fires AFTER CSS layout is complete, so clientWidth is always accurate
+  // Keep the visual preview fitted to the visible pane while preserving the
+  // underlying A4/template dimensions for PDF output.
   useEffect(() => {
     if (!previewContainerRef.current) return;
 
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const containerWidth = entry.contentRect.width;
-        const padding = 32; // 16px padding on each side
-        const availableWidth = containerWidth - padding;
-        const a4WidthPx = 794; // approximate width of 210mm in pixels
+    const syncPreviewScale = () => {
+      const container = previewContainerRef.current;
+      if (!container) return;
 
-        if (availableWidth < a4WidthPx) {
-          setScale(availableWidth / a4WidthPx);
-        } else {
-          setScale(1);
-        }
-      }
-    });
+      const containerStyles = window.getComputedStyle(container);
+      const horizontalPadding =
+        parseFloat(containerStyles.paddingLeft || '0') +
+        parseFloat(containerStyles.paddingRight || '0');
+      const availableWidth = Math.max(container.clientWidth - horizontalPadding, 0);
+      const contentWidth = previewNode?.scrollWidth || previewWidth || DEFAULT_A4_PREVIEW_WIDTH_PX;
+      const nextScale = availableWidth > 0 ? Math.min(1, availableWidth / contentWidth) : 1;
+
+      setScale(Number.isFinite(nextScale) ? nextScale : 1);
+    };
+
+    const observer = new ResizeObserver(syncPreviewScale);
 
     observer.observe(previewContainerRef.current);
+    if (previewNode) observer.observe(previewNode);
+    syncPreviewScale();
 
     return () => {
       observer.disconnect();
     };
-  }, [mobileView]);
+  }, [mobileView, previewNode, previewWidth, template]);
 
   useEffect(() => {
-    if (!contentRef.current) return;
+    if (!previewNode) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
-        setPreviewHeight(entry.contentRect.height);
+        const nextWidth = entry.target.scrollWidth || entry.contentRect.width || DEFAULT_A4_PREVIEW_WIDTH_PX;
+        const nextHeight = entry.target.scrollHeight || entry.contentRect.height || DEFAULT_A4_PREVIEW_HEIGHT_PX;
+        setPreviewWidth(nextWidth);
+        setPreviewHeight(nextHeight);
       }
     });
 
-    resizeObserver.observe(contentRef.current);
+    resizeObserver.observe(previewNode);
 
     return () => {
       resizeObserver.disconnect();
     };
-  }, [mobileView, template]);
+  }, [mobileView, previewNode, template]);
 
   const isFreePlan = currentUser ? (creationQuota?.plan || currentUser.plan) === 'free' : true;
 
@@ -965,21 +980,29 @@ export default function Home() {
             >
               <div
                 id="cv-preview-wrapper"
-                className={`preview-scale-wrapper transform origin-top print:transform-none! ${isDraggingResizer ? '' : 'transition-transform'}`}
+                className="preview-scale-shell relative shrink-0 print:h-auto! print:w-auto!"
                 style={{
-                  transform: `scale(${scale})`,
-                  marginBottom: scale < 1 ? `-${previewHeight * (1 - scale)}px` : '0'
+                  width: `${previewWidth * scale}px`,
+                  height: `${previewHeight * scale}px`,
                 }}
               >
-                <Suspense
-                  fallback={
-                    <div className={`flex h-[1122px] w-[794px] items-center justify-center rounded-sm border text-sm font-bold shadow-2xl ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-400' : 'border-slate-200 bg-white text-slate-500'}`}>
-                      Loading preview...
-                    </div>
-                  }
+                <div
+                  className={`preview-scale-wrapper absolute left-0 top-0 origin-top-left print:static! print:transform-none! ${isDraggingResizer ? '' : 'transition-transform'}`}
+                  style={{
+                    width: `${previewWidth}px`,
+                    transform: `scale(${scale})`,
+                  }}
                 >
-                  <CVPreview ref={contentRef} cvData={debouncedCvData} template={template} />
-                </Suspense>
+                  <Suspense
+                    fallback={
+                      <div className={`flex h-[1122px] w-[794px] items-center justify-center rounded-sm border text-sm font-bold shadow-2xl ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-400' : 'border-slate-200 bg-white text-slate-500'}`}>
+                        Loading preview...
+                      </div>
+                    }
+                  >
+                    <CVPreview ref={setPreviewContentRef} cvData={debouncedCvData} template={template} />
+                  </Suspense>
+                </div>
               </div>
             </div>
 
