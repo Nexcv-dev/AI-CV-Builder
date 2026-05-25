@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Palette, Upload, ChevronDown, Check, Image as ImageIcon, MoveHorizontal, MoveVertical, Layout, Type } from 'lucide-react';
+import { Palette, Upload, ChevronDown, Check, Image as ImageIcon, MoveHorizontal, MoveVertical, Layout, Type, RotateCcw } from 'lucide-react';
 import { CVData } from '../../types';
 import { getTemplateSurfaceColorFallback, getTemplateSurfaceColorLabel, TemplateName } from '../../templates';
 import { resolveTemplateThemeColor } from '../../utils/templateData';
@@ -19,7 +19,9 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
   const templateSurfaceColorLabel = getTemplateSurfaceColorLabel(template);
+  const templateDefaultThemeColor = resolveTemplateThemeColor(template, '#000000');
   const themeColor = resolveTemplateThemeColor(template, cvData.themeColor);
+  const canResetThemeColor = themeColor.toLowerCase() !== templateDefaultThemeColor.toLowerCase() || Boolean(cvData.templateSurfaceColor);
   const templateSurfaceColor = cvData.templateSurfaceColor || getTemplateSurfaceColorFallback(template, {
     themeColor,
     sidebarColor: cvData.sidebarColor,
@@ -49,6 +51,14 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode
       ...prev,
       templateSurfaceColor: value,
       sidebarColor: template === 'modern' ? value : prev.sidebarColor,
+    }));
+  };
+
+  const handleResetTemplateColors = () => {
+    setCvData((prev) => ({
+      ...prev,
+      themeColor: templateDefaultThemeColor,
+      templateSurfaceColor: undefined,
     }));
   };
 
@@ -110,6 +120,16 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode
             <div className="flex items-center space-x-4">
               <div className="relative"><input id="themeColor" name="themeColor" type="color" value={themeColor} onChange={(e) => handleThemeChange('themeColor', e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
               <span className={`text-sm font-mono px-3 py-1.5 border rounded-md uppercase ${isDarkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>{themeColor}</span>
+              <button
+                type="button"
+                onClick={handleResetTemplateColors}
+                disabled={!canResetThemeColor}
+                title="Reset to template color"
+                aria-label="Reset to template color"
+                className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${isDarkMode ? 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                <RotateCcw size={16} />
+              </button>
             </div>
           </div>
           {templateSurfaceColorLabel && (
