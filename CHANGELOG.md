@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added / Fixed (Codebase Cleanup & Verification)
+- Verification: TypeScript check and Production build pass successfully.
+- Fixed admin summary TypeScript lint failures.
+- Added template print/page-break safeguards for custom template layout stability.
+- Prevented the builder auth-loading state from briefly showing the login CTA while an existing user session is being restored.
+- Added route-level lazy loading for the main frontend pages.
+- Split heavy builder surfaces so `CVForm`, `CVPreview`, form sections, design controls, and import modals load in smaller chunks.
+- Replaced the third-party date picker with a native date input, removing duplicate date icons and unused date-picker dependencies.
+- Split the admin dashboard into shell, overview/analytics sections, lazy admin modules, and first-pass data hooks.
+- Added `useAdminBootstrap` and `useAdminUsers` to move auth/summary and user-management data logic out of the dashboard page.
+
 ## [1.1.0] - 2026-05-17
 
 ### Added
