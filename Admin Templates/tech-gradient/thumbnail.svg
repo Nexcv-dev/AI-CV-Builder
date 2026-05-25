@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="594" viewBox="0 0 420 594" fill="none">
+  <rect width="420" height="594" rx="24" fill="#F8FAFC"/>
+  <circle cx="382" cy="38" r="118" fill="#0EA5E9" opacity=".18"/>
+  <circle cx="38" cy="560" r="98" fill="#A855F7" opacity=".16"/>
+  <rect x="28" y="28" width="364" height="142" rx="30" fill="url(#headerGradient)"/>
+  <circle cx="356" cy="26" r="74" fill="#38BDF8" opacity=".15"/>
+  <circle cx="64" cy="62" r="5" fill="#22C55E"/>
+  <text x="80" y="66" fill="#67E8F9" font-family="Arial, sans-serif" font-size="10" font-weight="800" letter-spacing="2.4"></text>
+  <rect x="58" y="86" width="150" height="16" rx="8" fill="#FFFFFF"/>
+  <rect x="58" y="112" width="126" height="9" rx="4.5" fill="#C4B5FD"/>
+  <rect x="58" y="136" width="84" height="14" rx="7" fill="#FFFFFF" opacity=".10"/>
+  <rect x="150" y="136" width="76" height="14" rx="7" fill="#FFFFFF" opacity=".10"/>
+  <rect x="234" y="136" width="82" height="14" rx="7" fill="#FFFFFF" opacity=".10"/>
+  <circle cx="328" cy="92" r="32" fill="#0F172A" stroke="#67E8F9" stroke-width="4"/>
+  <circle cx="328" cy="84" r="10" fill="#67E8F9" opacity=".6"/>
+  <path d="M307 116c7-16 35-16 42 0" stroke="#67E8F9" stroke-width="5" stroke-linecap="round" opacity=".6"/>
+  <rect x="28" y="196" width="228" height="96" rx="26" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <rect x="28" y="196" width="4" height="96" fill="url(#stripeGradient)"/>
+  <rect x="56" y="220" width="72" height="8" rx="4" fill="#312E81"/>
+  <rect x="56" y="244" width="158" height="6" rx="3" fill="#334155" opacity=".55"/>
+  <rect x="56" y="258" width="132" height="6" rx="3" fill="#334155" opacity=".42"/>
+  <rect x="56" y="272" width="104" height="6" rx="3" fill="#334155" opacity=".32"/>
+  <rect x="276" y="196" width="116" height="140" rx="26" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <rect x="276" y="196" width="4" height="140" fill="url(#stripeGradient)"/>
+  <rect x="302" y="220" width="54" height="8" rx="4" fill="#312E81"/>
+  <rect x="302" y="250" width="66" height="7" rx="3.5" fill="#E2E8F0"/>
+  <rect x="302" y="250" width="56" height="7" rx="3.5" fill="url(#barGradient)"/>
+  <rect x="302" y="280" width="66" height="7" rx="3.5" fill="#E2E8F0"/>
+  <rect x="302" y="280" width="50" height="7" rx="3.5" fill="url(#barGradient)"/>
+  <rect x="302" y="310" width="66" height="7" rx="3.5" fill="#E2E8F0"/>
+  <rect x="302" y="310" width="58" height="7" rx="3.5" fill="url(#barGradient)"/>
+  <rect x="28" y="316" width="228" height="172" rx="26" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <rect x="28" y="316" width="4" height="172" fill="url(#stripeGradient)"/>
+  <rect x="56" y="340" width="88" height="8" rx="4" fill="#312E81"/>
+  <circle cx="62" cy="376" r="5" fill="#06B6D4"/>
+  <rect x="80" y="370" width="104" height="9" rx="4.5" fill="#0F172A"/>
+  <rect x="80" y="388" width="138" height="6" rx="3" fill="#64748B" opacity=".55"/>
+  <circle cx="62" cy="428" r="5" fill="#06B6D4"/>
+  <rect x="80" y="422" width="92" height="9" rx="4.5" fill="#0F172A"/>
+  <rect x="80" y="440" width="124" height="6" rx="3" fill="#64748B" opacity=".55"/>
+  <rect x="276" y="360" width="116" height="128" rx="26" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <rect x="276" y="360" width="4" height="128" fill="url(#stripeGradient)"/>
+  <rect x="302" y="384" width="48" height="8" rx="4" fill="#312E81"/>
+  <rect x="302" y="414" width="54" height="18" rx="9" fill="#EDE9FE"/>
+  <rect x="302" y="442" width="68" height="18" rx="9" fill="#EDE9FE"/>
+  <text x="210" y="542" text-anchor="middle" fill="#312E81" font-family="Arial, sans-serif" font-size="22" font-weight="800">Tech Gradient</text>
+  <text x="210" y="566" text-anchor="middle" fill="#0EA5E9" font-family="Arial, sans-serif" font-size="13" font-weight="700">Crop Fixed</text>
+  <defs>
+    <linearGradient id="headerGradient" x1="28" y1="28" x2="392" y2="170" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset=".55" stop-color="#1E1B4B"/>
+      <stop offset="1" stop-color="#312E81"/>
+    </linearGradient>
+    <linearGradient id="stripeGradient" x1="30" y1="196" x2="30" y2="488" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="barGradient" x1="302" y1="250" x2="370" y2="250" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+  </defs>
+</svg>

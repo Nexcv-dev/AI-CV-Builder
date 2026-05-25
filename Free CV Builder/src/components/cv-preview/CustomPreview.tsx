@@ -13,7 +13,7 @@ interface CustomPreviewProps {
 
 const CustomPreview = forwardRef<HTMLDivElement, CustomPreviewProps>(({ cvData, template, fallback }, ref) => {
   const { html, loading, error } = useTemplateHtml(template);
-  const renderedHtml = useMemo(() => html ? renderCvTemplateString(html, cvData) : '', [cvData, html]);
+  const renderedHtml = useMemo(() => html ? renderCvTemplateString(html, { ...cvData, template }) : '', [cvData, html, template]);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [iframeHeight, setIframeHeight] = useState('297mm');
 

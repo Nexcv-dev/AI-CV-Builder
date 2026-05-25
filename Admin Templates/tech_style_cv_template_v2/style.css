@@ -90,7 +90,7 @@ img {
   right: 0;
   width: 260px;
   height: 260px;
-  background: linear-gradient(135deg, #38bdf8, #7c3aed);
+  background: linear-gradient(135deg, {{themeColor}}, #7c3aed);
   opacity: 0.18;
   border-radius: 0 0 0 100%;
   pointer-events: none;
@@ -142,7 +142,7 @@ img {
 
 .role {
   margin-top: 8px;
-  color: #2563eb;
+  color: {{themeColor}};
   font-size: 16px;
   font-weight: 700;
 }
@@ -211,7 +211,7 @@ img {
 
 .title::before {
   content: "</>";
-  color: #2563eb;
+  color: {{themeColor}};
   font-size: 13px;
   font-weight: 900;
 }
@@ -252,7 +252,7 @@ img {
   position: relative;
   padding: 17px;
   border: 1px solid #dbeafe;
-  border-left: 5px solid #2563eb;
+  border-left: 5px solid {{themeColor}};
   border-radius: 16px;
   background: #ffffff;
   page-break-inside: avoid;
@@ -269,7 +269,7 @@ img {
 
 .meta {
   margin-bottom: 9px;
-  color: #2563eb;
+  color: {{themeColor}};
   font-size: 12px;
   font-weight: 800;
 }

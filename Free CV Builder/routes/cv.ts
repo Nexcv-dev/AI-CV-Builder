@@ -535,7 +535,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                         ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
                         : `<style>\n${css}\n</style>\n${indexHtml}`
                     : indexHtml;
-                s3Html = renderCvTemplateString(templateHtml, safeCvData, { watermark });
+                s3Html = renderCvTemplateString(templateHtml, { ...safeCvData, template: requestedTemplate }, { watermark });
             } else {
                 s3Html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark }).catch(() => null);
             }

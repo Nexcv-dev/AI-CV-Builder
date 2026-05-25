@@ -223,7 +223,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
 
         if (key === 'experience' && experience.length > 0) {
             const items = experience.map((exp: any) => {
-                const t = title3(exp.position || 'Position');
+                const t = exp.position ? title3(exp.position) : '';
                 const d = desc(exp.description);
                 if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${t}
@@ -518,7 +518,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
             <div style="position:absolute;inset:0;opacity:0.1;background-image:radial-gradient(#ffffff 2px,transparent 2px);background-size:24px 24px"></div>
             <div style="position:relative;z-index:2;padding-right:${profileImage ? '170px' : '0'}">
               <h1 style="font-size:3rem;line-height:1.05;font-weight:800;letter-spacing:-0.025em;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
-              <div style="margin-top:8px;font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${startupHeaderMutedColor}">${esc(experience[0]?.position || 'Professional Title')}</div>
+              ${experience[0]?.position ? `<div style="margin-top:8px;font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${startupHeaderMutedColor}">${esc(experience[0].position)}</div>` : ''}
               <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px;font-size:0.875rem;font-weight:500;color:${startupHeaderMutedColor}">${contactItems}</div>
             </div>
           </header>

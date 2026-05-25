@@ -5,8 +5,9 @@
     <title>{{personalInfo.fullName}} CV</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700;900&family=Montserrat:wght@300;400;500;600;700;800&family=Lora:wght@400;500;600;700&family=Merriweather:wght@300;400;700;900&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700;900&family=Montserrat:wght@300;400;500;600;700;800&family=Lora:wght@400;500;600;700&family=Merriweather:wght@300;400;700;900&family=Playfair+Display:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
+
   <body>
     {{#watermark}}
       <div class="nexcv-watermark" aria-hidden="true">
@@ -15,53 +16,34 @@
       </div>
     {{/watermark}}
 
-    <main class="page">
+    <main class="page tech-gradient">
       {{#hasHeader}}
         <header class="hero">
-          <div class="identity">
-            <p class="eyebrow">{{headline}}</p>
+          <div class="hero-content">
             <h1>{{personalInfo.fullName}}</h1>
 
             {{#hasContact}}
-              <div class="contact-list">
-                {{#personalInfo.email}}
-                  <div class="contact-item">
-                    <span class="contact-icon">Email</span>
-                    <span>{{personalInfo.email}}</span>
-                  </div>
-                {{/personalInfo.email}}
-                {{#personalInfo.phone}}
-                  <div class="contact-item">
-                    <span class="contact-icon">Phone</span>
-                    <span>{{personalInfo.phone}}</span>
-                  </div>
-                {{/personalInfo.phone}}
-                {{#personalInfo.address}}
-                  <div class="contact-item">
-                    <span class="contact-icon">Place</span>
-                    <span>{{personalInfo.address}}</span>
-                  </div>
-                {{/personalInfo.address}}
+              <div class="contact-cloud">
+                {{#personalInfo.email}}<span>{{personalInfo.email}}</span>{{/personalInfo.email}}
+                {{#personalInfo.phone}}<span>{{personalInfo.phone}}</span>{{/personalInfo.phone}}
+                {{#personalInfo.address}}<span>{{personalInfo.address}}</span>{{/personalInfo.address}}
               </div>
             {{/hasContact}}
           </div>
 
           {{#profileImageUrl}}
-            <div class="portrait-wrap">
-              <div class="portrait">
-                <img src="{{profileImageUrl}}" alt="">
-              </div>
-              <span class="portrait-accent"></span>
+            <div class="avatar">
+              <img src="{{profileImageUrl}}" alt="">
             </div>
           {{/profileImageUrl}}
         </header>
       {{/hasHeader}}
 
       {{#hasBody}}
-        <div class="body-grid">
-          <div class="main-column">
+        <div class="layout">
+          <section class="main-column">
             {{#hasSummary}}
-              <section class="section">
+              <section class="card profile-card">
                 <h2>Profile</h2>
                 <div class="rich">{{{personalInfo.summary}}}</div>
               </section>
@@ -69,14 +51,12 @@
 
             {{#hasExperience}}
               {{^hasExperienceContinuation}}
-              <section class="section experience-section experience-keep-together">
-                <h2>Experience</h2>
-                <div class="timeline">
-                  
-
+                <section class="card section experience-section experience-keep-together">
+                  <h2>Experience</h2>
+                  <div class="timeline">
                     {{#experience}}
                       <article class="timeline-item">
-                        <div class="timeline-dot"></div>
+                        <div class="dot"></div>
                         <div class="timeline-head">
                           <div>
                             {{#position}}<h3>{{position}}</h3>{{/position}}
@@ -87,20 +67,17 @@
                         <div class="rich compact">{{{description}}}</div>
                       </article>
                     {{/experience}}
-                  
-
-                </div>
-              </section>
+                  </div>
+                </section>
               {{/hasExperienceContinuation}}
-              {{#hasExperienceContinuation}}
-              <section class="section experience-section experience-lead-section">
-                <h2>Experience</h2>
-                <div class="timeline">
-                  
 
+              {{#hasExperienceContinuation}}
+                <section class="card section experience-section experience-lead-section">
+                  <h2>Experience</h2>
+                  <div class="timeline">
                     {{#experienceLeadItems}}
                       <article class="timeline-item">
-                        <div class="timeline-dot"></div>
+                        <div class="dot"></div>
                         <div class="timeline-head">
                           <div>
                             {{#position}}<h3>{{position}}</h3>{{/position}}
@@ -111,17 +88,14 @@
                         <div class="rich compact">{{{description}}}</div>
                       </article>
                     {{/experienceLeadItems}}
-                  
+                  </div>
+                </section>
 
-                </div>
-              </section>
-              <section class="section experience-section experience-continuation-section">
-                <div class="timeline">
-                  
-
+                <section class="card section experience-section experience-continuation-section">
+                  <div class="timeline">
                     {{#experienceContinuationItems}}
                       <article class="timeline-item">
-                        <div class="timeline-dot"></div>
+                        <div class="dot"></div>
                         <div class="timeline-head">
                           <div>
                             {{#position}}<h3>{{position}}</h3>{{/position}}
@@ -132,20 +106,17 @@
                         <div class="rich compact">{{{description}}}</div>
                       </article>
                     {{/experienceContinuationItems}}
-                  
-
-                </div>
-              </section>
+                  </div>
+                </section>
               {{/hasExperienceContinuation}}
-
             {{/hasExperience}}
 
             {{#hasProjects}}
-              <section class="section">
+              <section class="card section">
                 <h2>Projects</h2>
-                <div class="stack">
+                <div class="project-grid">
                   {{#projects}}
-                    <article class="card-line">
+                    <article class="project-card">
                       <div class="line-head">
                         <h3>{{name}}</h3>
                         {{#link}}<a href="{{link}}">View</a>{{/link}}
@@ -157,8 +128,46 @@
               </section>
             {{/hasProjects}}
 
+            {{#hasEducation}}
+              <section class="card section">
+                <h2>Education</h2>
+                <div class="timeline compact-timeline">
+                  {{#education}}
+                    <article class="timeline-item">
+                      <div class="dot"></div>
+                      <div class="timeline-head">
+                        <div>
+                          <h3>{{degree}}</h3>
+                          <p class="sub">{{institution}}</p>
+                        </div>
+                        <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                      </div>
+                      {{#description}}<div class="rich compact">{{{description}}}</div>{{/description}}
+                    </article>
+                  {{/education}}
+                </div>
+              </section>
+            {{/hasEducation}}
+
+            {{#hasCourses}}
+              <section class="card section">
+                <h2>Courses</h2>
+                <div class="stack">
+                  {{#courses}}
+                    <article class="card-line">
+                      <div class="line-head">
+                        <h3>{{name}}</h3>
+                        <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
+                      </div>
+                      <p class="sub">{{institution}}</p>
+                    </article>
+                  {{/courses}}
+                </div>
+              </section>
+            {{/hasCourses}}
+
             {{#hasAwards}}
-              <section class="section">
+              <section class="card section">
                 <h2>Awards</h2>
                 <div class="stack">
                   {{#awards}}
@@ -173,28 +182,12 @@
                 </div>
               </section>
             {{/hasAwards}}
-          </div>
+          </section>
 
           <aside class="side-column">
-            {{#hasEducation}}
-              <section class="section">
-                <h2>Education</h2>
-                <div class="stack small-stack">
-                  {{#education}}
-                    <article>
-                      <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
-                      <h3>{{degree}}</h3>
-                      <p class="sub">{{institution}}</p>
-                      {{#description}}<div class="rich compact">{{{description}}}</div>{{/description}}
-                    </article>
-                  {{/education}}
-                </div>
-              </section>
-            {{/hasEducation}}
-
             {{#hasSkills}}
-              <section class="section">
-                <h2>Expertise</h2>
+              <section class="card section">
+                <h2>Tech Skills</h2>
                 <div class="skills">
                   {{#skills}}
                     <div class="skill">
@@ -202,30 +195,17 @@
                         <span>{{name}}</span>
                         <span class="skill-level">Level {{level}}</span>
                       </div>
-                      <div class="skill-track"><span class="skill-bar skill-level-{{level}}"></span></div>
+                      <div class="skill-track">
+                        <span class="skill-bar skill-level-{{level}}"></span>
+                      </div>
                     </div>
                   {{/skills}}
                 </div>
               </section>
             {{/hasSkills}}
 
-            {{#hasCourses}}
-              <section class="section">
-                <h2>Courses</h2>
-                <div class="stack small-stack">
-                  {{#courses}}
-                    <article>
-                      <p class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</p>
-                      <h3>{{name}}</h3>
-                      <p class="sub">{{institution}}</p>
-                    </article>
-                  {{/courses}}
-                </div>
-              </section>
-            {{/hasCourses}}
-
             {{#hasLanguages}}
-              <section class="section">
+              <section class="card section">
                 <h2>Languages</h2>
                 <div class="language-list">
                   {{#languages}}
@@ -239,7 +219,7 @@
             {{/hasLanguages}}
 
             {{#hasPersonalDetails}}
-              <section class="section">
+              <section class="card section">
                 <h2>Personal</h2>
                 <div class="detail-list">
                   {{#personalInfo.dob}}<div><span>DOB</span><strong>{{personalInfo.dob}}</strong></div>{{/personalInfo.dob}}
@@ -253,11 +233,11 @@
             {{/hasPersonalDetails}}
 
             {{#hasReferences}}
-              <section class="section">
+              <section class="card section">
                 <h2>References</h2>
                 <div class="stack small-stack">
                   {{#references}}
-                    <article>
+                    <article class="reference-card">
                       <h3>{{name}}</h3>
                       {{#sub}}<p class="sub">{{sub}}</p>{{/sub}}
                       <p class="tiny">{{email}}</p>

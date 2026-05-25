@@ -104,9 +104,12 @@ npm install
 npm run dev:all
 npm run lint
 npm run test:run
+npm run validate:templates
 npm run build
 npm run build:pdf-lambda
 ```
+
+Template creation and S3 upload rules are documented in `docs/template-authoring-guide.md`.
 
 ## Local URLs
 

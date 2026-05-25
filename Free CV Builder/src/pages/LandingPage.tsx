@@ -186,6 +186,7 @@ export default function LandingPage() {
   const { templates } = useTemplateConfig();
   const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
   const [centeredTemplateIndex, setCenteredTemplateIndex] = useState(0);
+  const [isTemplateCarouselJumping, setIsTemplateCarouselJumping] = useState(false);
   const featuredTemplates = useMemo(() => (
     [...templates].sort((a, b) => {
       const sourceRank = Number(b.source === 'custom') - Number(a.source === 'custom');
@@ -248,16 +249,28 @@ export default function LandingPage() {
 
   const formatPrice = (cents: number, currency = 'LKR') => `${currency} ${new Intl.NumberFormat().format(Math.round(cents / 100))}`;
 
-  useEffect(() => {
-    if (activeTemplateIndex >= featuredTemplates.length) {
-      setActiveTemplateIndex(Math.max(featuredTemplates.length - 1, 0));
-    }
-  }, [activeTemplateIndex, featuredTemplates.length]);
+  const normalizeTemplateIndex = (index: number) => (
+    featuredTemplates.length ? ((index % featuredTemplates.length) + featuredTemplates.length) % featuredTemplates.length : 0
+  );
+
   useEffect(() => {
     if (centeredTemplateIndex >= featuredTemplates.length) {
       setCenteredTemplateIndex(Math.max(featuredTemplates.length - 1, 0));
     }
   }, [centeredTemplateIndex, featuredTemplates.length]);
+
+  useEffect(() => {
+    if (!featuredTemplates.length) {
+      setActiveTemplateIndex(0);
+      setCenteredTemplateIndex(0);
+      return;
+    }
+    setIsTemplateCarouselJumping(true);
+    setActiveTemplateIndex(featuredTemplates.length);
+    setCenteredTemplateIndex(0);
+    const frame = requestAnimationFrame(() => setIsTemplateCarouselJumping(false));
+    return () => cancelAnimationFrame(frame);
+  }, [featuredTemplates.length]);
 
   const templateScaleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
@@ -333,14 +346,20 @@ export default function LandingPage() {
   const scrollTemplateCarousel = (direction: 'previous' | 'next') => {
     if (!featuredTemplates.length) return;
     setActiveTemplateIndex((current) => {
-      const nextIndex = direction === 'next'
-        ? (current + 1) % featuredTemplates.length
-        : (current - 1 + featuredTemplates.length) % featuredTemplates.length;
+      const nextIndex = direction === 'next' ? current + 1 : current - 1;
+      const nextCenteredIndex = normalizeTemplateIndex(nextIndex);
 
       if (templateScaleTimerRef.current) clearTimeout(templateScaleTimerRef.current);
       setCenteredTemplateIndex(-1);
       templateScaleTimerRef.current = setTimeout(() => {
-        setCenteredTemplateIndex(nextIndex);
+        const resetIndex = featuredTemplates.length + nextCenteredIndex;
+        const shouldReset = nextIndex < featuredTemplates.length || nextIndex >= featuredTemplates.length * 2;
+        if (shouldReset) {
+          setIsTemplateCarouselJumping(true);
+          setActiveTemplateIndex(resetIndex);
+          requestAnimationFrame(() => setIsTemplateCarouselJumping(false));
+        }
+        setCenteredTemplateIndex(nextCenteredIndex);
       }, 520);
       return nextIndex;
     });
@@ -711,10 +730,10 @@ export default function LandingPage() {
             </button>
 
             <div
-              className="flex pb-12 pt-5 transition-transform duration-500 ease-out"
+              className={`flex pb-12 pt-5 ${isTemplateCarouselJumping ? '' : 'transition-transform duration-500 ease-out'}`}
               style={{
                 gap: 'var(--template-card-gap)',
-                transform: `translateX(calc(50vw - (var(--template-card-width) / 2) - ${activeTemplateIndex + featuredTemplates.length} * (var(--template-card-width) + var(--template-card-gap))))`,
+                transform: `translateX(calc(50vw - (var(--template-card-width) / 2) - ${activeTemplateIndex} * (var(--template-card-width) + var(--template-card-gap))))`,
               }}
               onWheel={(event) => event.preventDefault()}
               onTouchMove={(event) => event.preventDefault()}

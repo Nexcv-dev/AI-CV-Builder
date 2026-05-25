@@ -269,27 +269,7 @@ export default function MyCvs() {
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
-                <h2 className="font-montserrat text-lg font-black">Tips to improve your CV</h2>
-                <div className="mt-4 grid gap-2">
-                  {[
-                    ['Add a professional summary', 'A strong summary grabs attention quickly.'],
-                    ['Quantify your achievements', 'Use numbers and metrics to show impact.'],
-                    ['Keep it concise', 'Ideal CV length is 1-2 pages for most roles.'],
-                  ].map(([title, copy]) => (
-                    <Link key={title} to="/templates" className="group flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/35 p-3 transition hover:border-violet-300/30 hover:bg-white/5.5">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-300 ring-1 ring-sky-300/20">
-                        <BookOpen size={15} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-extrabold text-slate-200">{title}</span>
-                        <span className="mt-0.5 block text-xs font-semibold leading-5 text-slate-500">{copy}</span>
-                      </span>
-                      <ArrowRight size={15} className="text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-violet-300" />
-                    </Link>
-                  ))}
-                </div>
-              </section>
+
             </aside>
           </section>
         </main>

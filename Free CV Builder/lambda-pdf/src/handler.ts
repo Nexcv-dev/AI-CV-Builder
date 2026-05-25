@@ -201,16 +201,59 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
   return renderBlock(templateHtml, root);
 }
 
+interface TemplateRenderOptions {
+  watermark?: boolean;
+}
 
-const safeHexColorForTemplate = (value: unknown, fallback: string) =>
+const TEMPLATE_DEFAULT_THEME_COLORS: Record<string, string> = {
+  'compact-timeline': '#fca311',
+  'corporate-split': '#243b67',
+  'corporate-v1': '#0f3d75',
+  'corporate_blue_cv_template_v5': '#0f3d75',
+  'creative-executive': '#7c3aed',
+  'creative-v3': '#7c3aed',
+  'creative_cv_template_v4': '#7c3aed',
+  'elegant-sidebar': '#b45309',
+  'executive-v2': '#b88a44',
+  'executive_cv_template_v3': '#b88a44',
+  'modular-card': '#14b8a6',
+  'Tech template': '#22d3ee',
+  'tech-1': '#22d3ee',
+  'tech-gradient': '#38bdf8',
+  'tech-v2': '#2563eb',
+  'tech_style_cv_template_v2': '#2563eb',
+  'violet-executive-template': '#6d28d9',
+};
+
+const safeHexColor = (value: unknown, fallback: string) =>
   typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
 
-const safeNumberForTemplate = (value: unknown, fallback: number, min: number, max: number) => {
+const resolveTemplateThemeColor = (template: unknown, value: unknown) => {
+  const themeColor = safeHexColor(value, '#000000');
+  if (themeColor.toLowerCase() !== '#000000' || typeof template !== 'string') return themeColor;
+  return TEMPLATE_DEFAULT_THEME_COLORS[template] || themeColor;
+};
+
+const profileImageCss = (cvData: any) => {
+  const imageZoom = Number.isFinite(Number(cvData?.imageZoom)) ? Math.min(Math.max(Number(cvData.imageZoom), 0.5), 3) : 1;
+  const imageX = Number.isFinite(Number(cvData?.imageX)) ? Math.min(Math.max(Number(cvData.imageX), -120), 120) : 0;
+  const imageY = Number.isFinite(Number(cvData?.imageY)) ? Math.min(Math.max(Number(cvData.imageY), -120), 120) : 0;
+  const transform = `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)`;
+  return {
+    imageZoom,
+    imageX,
+    imageY,
+    transform,
+    style: `width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:${transform};`,
+  };
+};
+
+const safeNumber = (value: unknown, fallback: number, min: number, max: number) => {
   const number = Number(value);
   return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
 };
 
-const getContrastColorForTemplate = (hex: string) => {
+const getContrastColor = (hex: string) => {
   if (!hex || hex.length < 7) return '#ffffff';
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -219,64 +262,49 @@ const getContrastColorForTemplate = (hex: string) => {
 };
 
 const templateFontMap: Record<string, string> = {
-  'Inter': "'Inter', sans-serif",
-  'Lora': "'Lora', serif",
-  'Roboto': "'Roboto', sans-serif",
-  'Montserrat': "'Montserrat', sans-serif",
-  'Merriweather': "'Merriweather', serif",
+  Inter: "'Inter', sans-serif",
+  Lora: "'Lora', serif",
+  Roboto: "'Roboto', sans-serif",
+  Montserrat: "'Montserrat', sans-serif",
+  Merriweather: "'Merriweather', serif",
   'Playfair Display': "'Playfair Display', serif",
   'JetBrains Mono': "'JetBrains Mono', monospace",
 };
 
-function prepareS3TemplateData(cvData: any, template: TemplateName, options: { watermark?: boolean } = {}) {
-  const rawPersonalInfo = cvData.personalInfo || {};
-  const personalInfo = {
-    ...rawPersonalInfo,
-    fullName: rawPersonalInfo.fullName || 'Your Name',
-  };
-  const experience = Array.isArray(cvData.experience) ? cvData.experience : [];
-  const education = Array.isArray(cvData.education) ? cvData.education : [];
-  const skills = Array.isArray(cvData.skills) ? cvData.skills : [];
-  const projects = Array.isArray(cvData.projects) ? cvData.projects : [];
-  const courses = Array.isArray(cvData.courses) ? cvData.courses : [];
-  const awards = Array.isArray(cvData.awards) ? cvData.awards : [];
-  const languages = Array.isArray(cvData.languages) ? cvData.languages : [];
-  const references = Array.isArray(cvData.references) ? cvData.references : [];
-  const sectionOrder = Array.isArray(cvData.sectionOrder)
+const formatDateInline = (startDate?: string, endDate?: string) =>
+  [startDate || '', endDate || ''].filter(Boolean).join(startDate && endDate ? ' - ' : '');
+
+const formatDateStacked = (startDate?: string, endDate?: string) =>
+  (startDate || '') + (startDate && endDate ? '<br>-<br>' : '') + (endDate || '');
+
+const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {}) => {
+  const personalInfo = cvData?.personalInfo || {};
+  const experience = Array.isArray(cvData?.experience) ? cvData.experience : [];
+  const education = Array.isArray(cvData?.education) ? cvData.education : [];
+  const skills = Array.isArray(cvData?.skills) ? cvData.skills : [];
+  const projects = Array.isArray(cvData?.projects) ? cvData.projects : [];
+  const courses = Array.isArray(cvData?.courses) ? cvData.courses : [];
+  const awards = Array.isArray(cvData?.awards) ? cvData.awards : [];
+  const languages = Array.isArray(cvData?.languages) ? cvData.languages : [];
+  const references = Array.isArray(cvData?.references) ? cvData.references : [];
+  const sectionOrder = Array.isArray(cvData?.sectionOrder)
     ? cvData.sectionOrder
     : ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
-  const hiddenSections = Array.isArray(cvData.hiddenSections) ? cvData.hiddenSections : [];
-
-  const themeColor = safeHexColorForTemplate(cvData.themeColor, '#000000');
-  const sidebarColor = safeHexColorForTemplate(cvData.sidebarColor, '#111827');
-  const templateSurfaceColor = safeHexColorForTemplate(
-    cvData.templateSurfaceColor,
-    getTemplateSurfaceColorFallback(template, { themeColor, sidebarColor })
-  );
-  const sidebarTextColor = getContrastColorForTemplate(templateSurfaceColor);
-  const fontFamily = cvData.fontFamily || 'Inter';
-  const profileImage = sanitizePdfImageSource(cvData.profileImage);
-  const imageZoom = Number.isFinite(Number(cvData.imageZoom)) ? Math.min(Math.max(Number(cvData.imageZoom), 0.5), 3) : 1;
-  const imageX = Number.isFinite(Number(cvData.imageX)) ? Math.min(Math.max(Number(cvData.imageX), -120), 120) : 0;
-  const imageY = Number.isFinite(Number(cvData.imageY)) ? Math.min(Math.max(Number(cvData.imageY), -120), 120) : 0;
-  const lineSpacing = safeNumberForTemplate(cvData.lineSpacing, 1.5, 1, 2.5);
-  const sectionGap = safeNumberForTemplate(cvData.sectionGap, 2, 0.5, 4);
-  const isProfessional = template === 'professional';
-
-  const dateInline = (startDate?: string, endDate?: string) =>
-    [startDate || '', endDate || ''].filter(Boolean).join(startDate && endDate ? ' - ' : '');
-  const dateStacked = (startDate?: string, endDate?: string) =>
-    (startDate || '') + (startDate && endDate ? '<br>-<br>' : '') + (endDate || '');
-
-  const hasPersonalDetails = Boolean(
-    personalInfo.dob ||
-    personalInfo.nic ||
-    personalInfo.gender ||
-    personalInfo.nationality ||
-    personalInfo.religion ||
-    personalInfo.maritalStatus
-  );
-
+  const hiddenSections = Array.isArray(cvData?.hiddenSections) ? cvData.hiddenSections : [];
+  const themeColor = resolveTemplateThemeColor(cvData?.template, cvData?.themeColor);
+  const sidebarColor = safeHexColor(cvData?.sidebarColor, '#1e293b');
+  const templateSurfaceColor = safeHexColor(cvData?.templateSurfaceColor, getTemplateSurfaceColorFallback(cvData?.template, { themeColor, sidebarColor }));
+  const sidebarTextColor = getContrastColor(templateSurfaceColor);
+  const startupHeaderTextColor = getContrastColor(templateSurfaceColor);
+  const startupHeaderMutedColor = startupHeaderTextColor === '#ffffff' ? 'rgba(236, 253, 245, 0.92)' : 'rgba(15, 23, 42, 0.72)';
+  const startupHeaderBackground = cvData?.templateSurfaceColor
+    ? templateSurfaceColor
+    : `linear-gradient(135deg, ${themeColor} 0%, #047857 100%)`;
+  const fontFamily = cvData?.fontFamily || 'Inter';
+  const imageCss = profileImageCss(cvData);
+  const profileImage = sanitizePdfImageSource(cvData?.profileImage);
+  const lineSpacing = safeNumber(cvData?.lineSpacing, 1.5, 1, 2.5);
+  const sectionGap = safeNumber(cvData?.sectionGap, 2, 0.5, 4);
   const personalDetails = [
     personalInfo.dob ? { label: 'Date of Birth', value: personalInfo.dob } : null,
     personalInfo.nic ? { label: 'NIC', value: personalInfo.nic } : null,
@@ -285,57 +313,25 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     personalInfo.nationality ? { label: 'Nationality', value: personalInfo.nationality } : null,
     personalInfo.religion ? { label: 'Religion', value: personalInfo.religion } : null,
   ].filter(Boolean);
-
   const processedExperience = experience.map((item: any) => ({
     ...item,
-    position: item.position || 'Position',
+    position: item.position || '',
     company: item.company || 'Company',
-    formattedDate: dateInline(item.startDate, item.endDate),
-    formattedDateStacked: dateStacked(item.startDate, item.endDate),
+    formattedDate: formatDateInline(item.startDate, item.endDate),
+    formattedDateStacked: formatDateStacked(item.startDate, item.endDate),
   }));
-
   const processedEducation = education.map((item: any) => ({
     ...item,
     degree: item.degree || 'Degree',
     institution: item.institution || 'Institution',
-    formattedDate: dateInline(item.startDate, item.endDate),
-    formattedDateStacked: dateStacked(item.startDate, item.endDate),
+    formattedDate: formatDateInline(item.startDate, item.endDate),
+    formattedDateStacked: formatDateStacked(item.startDate, item.endDate),
   }));
-
-  const processedProjects = projects.map((item: any) => ({
-    ...item,
-    name: item.name || 'Project Name',
-    hasLink: Boolean(item.link),
-  }));
-
-  const processedCourses = courses.map((item: any) => ({
-    ...item,
-    name: item.name || 'Course Name',
-    institution: item.institution || 'Institution',
-    formattedDate: dateInline(item.startDate, item.endDate),
-  }));
-
-  const processedAwards = awards.map((item: any) => ({
-    ...item,
-    name: item.name || 'Award Name',
-    issuer: item.issuer || 'Issuer',
-  }));
-
   const processedSkills = skills.map((item: any) => {
     const level = Number(item.level || 0);
     const clampedLevel = Number.isFinite(level) ? Math.min(Math.max(level, 0), 5) : 0;
-    return {
-      ...item,
-      level: clampedLevel,
-      levelPercent: String((clampedLevel / 5) * 100) + '%',
-    };
+    return { ...item, level: clampedLevel, levelPercent: `${(clampedLevel / 5) * 100}%` };
   });
-
-  const processedLanguages = languages.map((item: any) => ({
-    ...item,
-    label: item.proficiency ? String(item.name || '') + ' (' + String(item.proficiency) + ')' : (item.name || ''),
-  }));
-
   const groupedSkillsMap = processedSkills.reduce((acc: Record<string, any[]>, skill: any) => {
     const category = skill.category?.trim() || 'Core Skills';
     if (!acc[category]) acc[category] = [];
@@ -343,14 +339,13 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     return acc;
   }, {});
   const groupedSkills = Object.entries(groupedSkillsMap).map(([category, items]) => ({ category, items }));
-
-  const processedReferences = references.map((item: any) => ({
-    ...item,
-    name: item.name || 'Reference Name',
-    sub: [item.position, item.company].filter(Boolean).join(', '),
-    hasContact: Boolean(item.email || item.phone),
-  }));
-
+  const processedProjects = projects.map((item: any) => ({ ...item, name: item.name || 'Project Name', hasLink: Boolean(item.link) }));
+  const processedCourses = courses.map((item: any) => ({ ...item, name: item.name || 'Course Name', institution: item.institution || 'Institution', formattedDate: formatDateInline(item.startDate, item.endDate) }));
+  const processedAwards = awards.map((item: any) => ({ ...item, name: item.name || 'Award Name', issuer: item.issuer || 'Issuer' }));
+  const processedLanguages = languages.map((item: any) => ({ ...item, label: item.proficiency ? `${item.name || ''} (${item.proficiency})` : (item.name || '') }));
+  const processedReferences = references.map((item: any) => ({ ...item, name: item.name || 'Reference Name', sub: [item.position, item.company].filter(Boolean).join(', '), hasContact: Boolean(item.email || item.phone) }));
+  const hasPersonalDetails = personalDetails.length > 0;
+  const isProfessional = cvData?.template === 'professional';
   const sectionBuilders: Record<string, () => any | null> = {
     summary: () => personalInfo.summary ? { key: 'summary', isSummary: true, title: isProfessional ? 'Professional Summary' : 'Profile' } : null,
     personalDetails: () => hasPersonalDetails ? { key: 'personalDetails', isPersonalDetails: true, title: 'Personal Details', items: personalDetails } : null,
@@ -363,11 +358,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     languages: () => processedLanguages.length ? { key: 'languages', isLanguages: true, title: 'Languages', items: processedLanguages } : null,
     references: () => processedReferences.length ? { key: 'references', isReferences: true, title: 'References', items: processedReferences } : null,
   };
-
-  const sections = sectionOrder
-    .filter((key: string) => !hiddenSections.includes(key))
-    .map((key: string) => sectionBuilders[key]?.())
-    .filter(Boolean);
+  const sections = sectionOrder.filter((key: string) => !hiddenSections.includes(key)).map((key: string) => sectionBuilders[key]?.()).filter(Boolean);
   const minimalistSideSectionKeys = ['personalDetails', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const minimalistLeftSections = sections.filter((section: any) => !minimalistSideSectionKeys.includes(section.key));
   const minimalistRightSections = sections.filter((section: any) => minimalistSideSectionKeys.includes(section.key));
@@ -376,15 +367,10 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
   const startupRightSections = sections.filter((section: any) => ['education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'].includes(section.key));
   const creativeSideSections = sections.filter((section: any) => ['personalDetails', 'skills', 'languages'].includes(section.key));
   const creativeMainSections = sections.filter((section: any) => !['personalDetails', 'skills', 'languages'].includes(section.key));
-  const startupHeaderTextColor = getContrastColorForTemplate(templateSurfaceColor);
-  const startupHeaderMutedColor = startupHeaderTextColor === '#ffffff' ? 'rgba(236, 253, 245, 0.92)' : 'rgba(15, 23, 42, 0.72)';
-  const startupHeaderBackground = cvData.templateSurfaceColor
-    ? templateSurfaceColor
-    : 'linear-gradient(135deg, ' + themeColor + ' 0%, #047857 100%)';
 
   return {
     ...cvData,
-    personalInfo,
+    personalInfo: { ...personalInfo, fullName: personalInfo.fullName || 'Your Name' },
     contactItems: [personalInfo.email, personalInfo.phone, personalInfo.address].filter(Boolean).map((value: string) => ({ value })),
     experience: processedExperience,
     education: processedEducation,
@@ -403,13 +389,18 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     creativeMainSections,
     minimalistLeftSections,
     minimalistRightSections,
+    themeColor,
+    sidebarColor,
+    templateSurfaceColor,
+    primaryColor: themeColor,
+    watermark: Boolean(options.watermark),
     computed: {
       themeColor,
+      primaryColor: themeColor,
       sidebarColor,
       templateSurfaceColor,
       sidebarTextColor,
       sidebarMutedColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-      sidebarBorderColor: sidebarTextColor === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
       startupHeaderTextColor,
       startupHeaderMutedColor,
       startupHeaderBackground,
@@ -418,23 +409,21 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       googleFontName: String(fontFamily || 'Inter').replace(/\s+/g, '+'),
       lineSpacing,
       sectionGap,
-      sectionGapRem: String(sectionGap) + 'rem',
+      sectionGapRem: `${sectionGap}rem`,
       profileImage,
       hasProfileImage: Boolean(profileImage),
-      profileImageTransform: 'scale(' + imageZoom + ') translate(' + imageX + 'px,' + imageY + 'px)',
-      startupHeadlineTitle: processedExperience[0]?.position || 'Professional Title',
+      profileImageTransform: imageCss.transform,
+      startupHeadlineTitle: processedExperience[0]?.position || '',
     },
     flags: {
       isProfessional,
-      isClassic: template === 'classic',
       hasPersonalDetails,
       hasSkills: processedSkills.length > 0,
       hasLanguages: processedLanguages.length > 0,
       hasSkillCategories: processedSkills.some((skill: any) => skill.category?.trim()),
     },
-    watermark: Boolean(options.watermark),
   };
-}
+};
 
 
 const CV_TEMPLATE_PAGINATION_RULES = `
@@ -560,7 +549,7 @@ const CV_TEMPLATE_PAGINATION_RULES = `
 async function generateS3CVHTML(cvData: any, template: TemplateName, options: { watermark?: boolean } = {}) {
   lastS3TemplateDebug = 'attempting';
   const templateHtml = await loadS3TemplateHtml(template);
-  return templateHtml ? renderCvTemplateString(templateHtml, prepareS3TemplateData(cvData, template, options), options) : null;
+  return templateHtml ? renderCvTemplateString(templateHtml, prepareS3TemplateData({ ...cvData, template }, options), options) : null;
 }
 
 const PDF_ICONS = {
@@ -764,7 +753,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
 
         if (key === 'experience' && experience.length > 0) {
             const items = experience.map((exp: any) => {
-                const t = title3(exp.position || 'Position');
+                const t = exp.position ? title3(exp.position) : '';
                 const d = desc(exp.description);
                 if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${t}
@@ -1059,7 +1048,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
             <div style="position:absolute;inset:0;opacity:0.1;background-image:radial-gradient(#ffffff 2px,transparent 2px);background-size:24px 24px"></div>
             <div style="position:relative;z-index:2;padding-right:${profileImage ? '170px' : '0'}">
               <h1 style="font-size:3rem;line-height:1.05;font-weight:800;letter-spacing:-0.025em;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
-              <div style="margin-top:8px;font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${startupHeaderMutedColor}">${esc(experience[0]?.position || 'Professional Title')}</div>
+              ${experience[0]?.position ? `<div style="margin-top:8px;font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${startupHeaderMutedColor}">${esc(experience[0].position)}</div>` : ''}
               <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px;font-size:0.875rem;font-weight:500;color:${startupHeaderMutedColor}">${contactItems}</div>
             </div>
           </header>

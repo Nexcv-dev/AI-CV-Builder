@@ -56,4 +56,67 @@ describe('renderCvTemplateString', () => {
     expect(html).toContain('.line');
     expect(html).toContain('padding-top: 0 !important');
   });
+
+  it('renders Startup header surface colors for S3 preview CSS placeholders', () => {
+    const html = renderCvTemplateString(`
+      <style>
+        .hero {
+          background: {{{computed.startupHeaderBackground}}};
+          color: {{{computed.startupHeaderTextColor}}};
+        }
+        .title { color: {{{computed.startupHeaderMutedColor}}}; }
+      </style>
+      <header class="hero"><div class="title">{{computed.startupHeadlineTitle}}</div></header>
+    `, {
+      ...cvData,
+      templateSurfaceColor: '#123456',
+    });
+
+    expect(html).toContain('background: #123456;');
+    expect(html).toContain('color: #ffffff;');
+    expect(html).toContain('rgba(236, 253, 245, 0.92)');
+    expect(html).toContain('<div class="title">One</div>');
+  });
+
+  it('uses the template accent when the saved theme color is still default black', () => {
+    const html = renderCvTemplateString('<style>a { color: {{themeColor}}; }</style>', {
+      ...cvData,
+      template: 'compact-timeline',
+      themeColor: '#000000',
+    });
+
+    expect(html).toContain('color: #fca311;');
+  });
+
+  it('uses active custom template accents for legacy S3 keys', () => {
+    const html = renderCvTemplateString('<style>a { color: {{themeColor}}; border-color: {{primaryColor}}; }</style>', {
+      ...cvData,
+      template: 'tech-1',
+      themeColor: '#000000',
+    });
+
+    expect(html).toContain('color: #22d3ee;');
+    expect(html).toContain('border-color: #22d3ee;');
+  });
+
+  it('respects user-selected colors over template default accents', () => {
+    const html = renderCvTemplateString('<style>a { color: {{themeColor}}; }</style>', {
+      ...cvData,
+      template: 'compact-timeline',
+      themeColor: '#2563eb',
+    });
+
+    expect(html).toContain('color: #2563eb;');
+    expect(html).not.toContain('#fca311');
+  });
+
+  it('does not render ghost position text for empty experience titles', () => {
+    const html = renderCvTemplateString('{{#experience}}<h3>{{position}}</h3>{{/experience}}', {
+      ...cvData,
+      experience: [{ id: '1', position: '' }],
+    });
+
+    expect(html).toContain('<h3></h3>');
+    expect(html).not.toContain('Position');
+  });
 });

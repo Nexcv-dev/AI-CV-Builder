@@ -3,6 +3,7 @@ import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import * as dotenv from 'dotenv';
 import { injectCvTemplatePaginationRules } from '../src/utils/cvTemplateRules';
+import { prepareS3TemplateData, profileImageCss } from '../src/utils/templateData';
 
 dotenv.config();
 
@@ -126,20 +127,6 @@ const esc = (str: string) => (
     (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 );
 
-const profileImageCss = (cvData: any) => {
-    const imageZoom = Number.isFinite(Number(cvData?.imageZoom)) ? Math.min(Math.max(Number(cvData.imageZoom), 0.5), 3) : 1;
-    const imageX = Number.isFinite(Number(cvData?.imageX)) ? Math.min(Math.max(Number(cvData.imageX), -120), 120) : 0;
-    const imageY = Number.isFinite(Number(cvData?.imageY)) ? Math.min(Math.max(Number(cvData.imageY), -120), 120) : 0;
-    const transform = `scale(${imageZoom}) translate(${imageX}px, ${imageY}px)`;
-    return {
-        imageZoom,
-        imageX,
-        imageY,
-        transform,
-        style: `width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:${transform};`,
-    };
-};
-
 const applyProfileImageAdjustments = (html: string, profileImageUrl: string, style: string) => {
     if (!profileImageUrl) return html;
     const dom = new JSDOM(html);
@@ -154,31 +141,25 @@ const applyProfileImageAdjustments = (html: string, profileImageUrl: string, sty
 };
 
 export function renderCvTemplateString(templateHtml: string, cvData: any, options: { watermark?: boolean } = {}) {
-    const headline = cvData?.experience?.[0]?.position || cvData?.education?.[0]?.degree || '';
-    const location = cvData?.personalInfo?.address || '';
-    const profileImageUrl = cvData?.profileImage || '';
-    const imageCss = profileImageCss(cvData);
-    const personalInfo = cvData?.personalInfo || {};
+    const rootData = prepareS3TemplateData(cvData, options);
+    const headline = rootData?.experience?.[0]?.position || rootData?.education?.[0]?.degree || '';
+    const location = rootData?.personalInfo?.address || '';
+    const profileImageUrl = rootData?.profileImage || '';
+    const imageCss = profileImageCss(rootData);
+    const personalInfo = rootData?.personalInfo || {};
     const hasSummary = Boolean(personalInfo.summary);
-    const hasPersonalDetails = Boolean(
-        personalInfo.dob ||
-        personalInfo.nic ||
-        personalInfo.gender ||
-        personalInfo.nationality ||
-        personalInfo.religion ||
-        personalInfo.maritalStatus
-    );
+    const hasPersonalDetails = Boolean(rootData?.flags?.hasPersonalDetails);
     const hasContact = Boolean(personalInfo.email || personalInfo.phone || location);
-    const hasExperience = Boolean(cvData?.experience?.length);
-    const hasEducation = Boolean(cvData?.education?.length);
-    const hasSkills = Boolean(cvData?.skills?.length);
-    const hasCourses = Boolean(cvData?.courses?.length);
-    const hasProjects = Boolean(cvData?.projects?.length);
-    const hasAwards = Boolean(cvData?.awards?.length);
-    const hasLanguages = Boolean(cvData?.languages?.length);
-    const hasReferences = Boolean(cvData?.references?.length);
+    const hasExperience = Boolean(rootData?.experience?.length);
+    const hasEducation = Boolean(rootData?.education?.length);
+    const hasSkills = Boolean(rootData?.skills?.length);
+    const hasCourses = Boolean(rootData?.courses?.length);
+    const hasProjects = Boolean(rootData?.projects?.length);
+    const hasAwards = Boolean(rootData?.awards?.length);
+    const hasLanguages = Boolean(rootData?.languages?.length);
+    const hasReferences = Boolean(rootData?.references?.length);
     const root = {
-        ...cvData,
+        ...rootData,
         headline,
         location,
         profileImageUrl,
@@ -240,5 +221,5 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
 
 export async function generateS3CVHTML(cvData: any, template: string, options: { watermark?: boolean } = {}) {
     const templateHtml = await loadS3TemplateHtml(template);
-    return templateHtml ? renderCvTemplateString(templateHtml, cvData, options) : null;
+    return templateHtml ? renderCvTemplateString(templateHtml, { ...cvData, template }, options) : null;
 }
