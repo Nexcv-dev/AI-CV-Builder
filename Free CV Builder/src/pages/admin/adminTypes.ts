@@ -84,6 +84,17 @@ export interface AdminTemplateItem {
   updatedAt?: string;
 }
 
+export interface AdminTemplateValidationIssue {
+  severity: 'error' | 'warn';
+  fileName: string;
+  message: string;
+}
+
+export interface AdminTemplateValidationResult {
+  errors: AdminTemplateValidationIssue[];
+  warnings: AdminTemplateValidationIssue[];
+}
+
 export interface AdminPaymentItem {
   id: string;
   provider: string;

@@ -201,29 +201,18 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
   return renderBlock(templateHtml, root);
 }
 
+import templateReleaseMap from '../../config/template-release-map.json';
+
 interface TemplateRenderOptions {
   watermark?: boolean;
 }
 
-const TEMPLATE_DEFAULT_THEME_COLORS: Record<string, string> = {
-  'compact-timeline': '#fca311',
-  'corporate-split': '#243b67',
-  'corporate-v1': '#0f3d75',
-  'corporate_blue_cv_template_v5': '#0f3d75',
-  'creative-executive': '#7c3aed',
-  'creative-v3': '#7c3aed',
-  'creative_cv_template_v4': '#7c3aed',
-  'elegant-sidebar': '#b45309',
-  'executive-v2': '#b88a44',
-  'executive_cv_template_v3': '#b88a44',
-  'modular-card': '#14b8a6',
-  'Tech template': '#22d3ee',
-  'tech-1': '#22d3ee',
-  'tech-gradient': '#38bdf8',
-  'tech-v2': '#2563eb',
-  'tech_style_cv_template_v2': '#2563eb',
-  'violet-executive-template': '#6d28d9',
-};
+const TEMPLATE_DEFAULT_THEME_COLORS: Record<string, string> = Object.fromEntries(
+  templateReleaseMap.flatMap((item) => [
+    [item.sourceFolder, item.defaultThemeColor],
+    [item.targetKey, item.defaultThemeColor],
+  ])
+);
 
 const safeHexColor = (value: unknown, fallback: string) =>
   typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
