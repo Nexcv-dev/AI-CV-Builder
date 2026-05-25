@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { bindDeps, type RouteDeps } from '../_shared';
+import { validateAdminTemplateSource } from '../../server-utils/templateValidation';
 
 export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
     const { CVDocument, TemplateSetting, CV_TEMPLATES, requireAdminPermission, sendError, adminTemplateJsonParser, clearS3TemplateCache, fetchS3Text, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, currentUserId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, sanitizeProfileField, recordAdminAuditLog } = bindDeps(deps);
@@ -65,6 +66,14 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
             const cssError = validateTemplateCss(styleCss);
             if (htmlError || cssError) return res.status(400).json({ error: htmlError || cssError });
             if (!thumbnailUpload) return res.status(400).json({ error: 'Upload a PNG, JPG, WebP, or SVG thumbnail under 900 KB.' });
+            const validation = validateAdminTemplateSource({
+                indexHtml,
+                styleCss,
+                thumbnailPresent: Boolean(thumbnailUpload),
+            });
+            if (validation.errors.length) {
+                return res.status(400).json({ error: 'Fix template validation errors before saving.', validation });
+            }
 
             const s3Prefix = S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key;
             const indexS3Key = `${s3Prefix}/index.html`;
@@ -105,7 +114,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 ip: req.ip,
                 userAgent: req.get('user-agent'),
             });
-            return res.status(201).json({ template: customTemplateSummary(setting, 0) });
+            return res.status(201).json({ template: customTemplateSummary(setting, 0), validation });
         } catch (error) {
             return sendError(res, 500, 'Could not create template.', error);
         }
@@ -150,6 +159,16 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 const thumbnailUpload = parseThumbnailUpload(req.body.thumbnailDataUrl);
                 const s3Prefix = existingCustom?.s3Prefix || (S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key);
                 update.s3Prefix = s3Prefix;
+                const currentIndexHtml = indexHtml || (existingCustom?.indexS3Key ? await fetchS3Text(existingCustom.indexS3Key) : '');
+                const currentStyleCss = styleCss || (existingCustom?.styleS3Key ? await fetchS3Text(existingCustom.styleS3Key) : '');
+                const validation = validateAdminTemplateSource({
+                    indexHtml: currentIndexHtml,
+                    styleCss: currentStyleCss,
+                    thumbnailPresent: Boolean(thumbnailUpload || existingCustom?.thumbnailS3Key),
+                });
+                if (validation.errors.length) {
+                    return res.status(400).json({ error: 'Fix template validation errors before saving.', validation });
+                }
 
                 if (indexHtml) {
                     const htmlError = validateTemplateHtml(indexHtml);
@@ -198,7 +217,11 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 ip: req.ip,
                 userAgent: req.get('user-agent'),
             });
-            return res.json({ template: template ? adminTemplateSummary(template, setting, usageCount) : customTemplateSummary(setting, usageCount) });
+            return res.json({ template: template ? adminTemplateSummary(template, setting, usageCount) : customTemplateSummary(setting, usageCount), validation: !template ? validateAdminTemplateSource({
+                indexHtml: setting.indexS3Key ? await fetchS3Text(setting.indexS3Key) : '',
+                styleCss: setting.styleS3Key ? await fetchS3Text(setting.styleS3Key) : '',
+                thumbnailPresent: Boolean(setting.thumbnailS3Key),
+            }) : undefined });
         } catch (error) {
             return sendError(res, 500, 'Could not update template.', error);
         }
@@ -215,6 +238,14 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
             if (!indexHtml || !styleCss || !setting.thumbnailS3Key) {
                 return res.status(400).json({ error: 'Template needs HTML, CSS, and thumbnail files before publishing.' });
             }
+            const validation = validateAdminTemplateSource({
+                indexHtml,
+                styleCss,
+                thumbnailPresent: Boolean(setting.thumbnailS3Key),
+            });
+            if (validation.errors.length) {
+                return res.status(400).json({ error: 'Fix template validation errors before publishing.', validation });
+            }
             setting.status = 'active';
             setting.updatedBy = currentUserId(req);
             await setting.save();
@@ -230,7 +261,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 ip: req.ip,
                 userAgent: req.get('user-agent'),
             });
-            return res.json({ template: customTemplateSummary(setting, usageCount) });
+            return res.json({ template: customTemplateSummary(setting, usageCount), validation });
         } catch (error) {
             return sendError(res, 500, 'Could not publish template.', error);
         }

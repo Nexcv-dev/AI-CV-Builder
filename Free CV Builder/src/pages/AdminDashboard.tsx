@@ -103,6 +103,8 @@ export default function AdminDashboard() {
     templateCategoryFilter,
     templateFileForm,
     templateForm,
+    templateValidation,
+    templateWarningConfirmationPending,
     templates,
     templatesLoading,
     templateSearch,
@@ -566,6 +568,8 @@ export default function AdminDashboard() {
               selectedTemplate={selectedTemplate}
               templateForm={templateForm}
               templateFileForm={templateFileForm}
+              templateValidation={templateValidation}
+              templateWarningConfirmationPending={templateWarningConfirmationPending}
               savingTemplate={savingTemplate}
               createTemplateOpen={createTemplateOpen}
               customTemplateForm={customTemplateForm}

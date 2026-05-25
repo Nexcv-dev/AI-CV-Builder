@@ -1,12 +1,15 @@
 import React from 'react';
 import {
+  AlertCircle,
+  CheckCircle2,
   Eye,
   Loader2,
   Plus,
   Search,
+  TriangleAlert,
   X,
 } from 'lucide-react';
-import type { AdminTemplateItem } from './adminTypes';
+import type { AdminTemplateItem, AdminTemplateValidationResult } from './adminTypes';
 import { emptyCustomTemplateForm, formatDate } from './adminUtils';
 import { DetailTile, TemplateAccessBadge } from './AdminSharedComponents';
 
@@ -20,6 +23,8 @@ export default function TemplateManagementSection({
   selectedTemplate,
   templateForm,
   templateFileForm,
+  templateValidation,
+  templateWarningConfirmationPending,
   savingTemplate,
   createTemplateOpen,
   customTemplateForm,
@@ -48,7 +53,9 @@ export default function TemplateManagementSection({
   accessFilter: string;
   selectedTemplate: AdminTemplateItem | null;
   templateForm: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string };
-  templateFileForm: { indexHtml: string; styleCss: string; thumbnailDataUrl: string };
+  templateFileForm: { indexHtml: string; indexHtmlFileName: string; styleCss: string; styleCssFileName: string; thumbnailDataUrl: string; thumbnailFileName: string };
+  templateValidation: AdminTemplateValidationResult | null;
+  templateWarningConfirmationPending: boolean;
   savingTemplate: boolean;
   createTemplateOpen: boolean;
   customTemplateForm: typeof emptyCustomTemplateForm;
@@ -59,7 +66,7 @@ export default function TemplateManagementSection({
   onOpenTemplate: (template: AdminTemplateItem) => void;
   onCloseDetail: () => void;
   onFormChange: (value: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string }) => void;
-  onTemplateFileFormChange: (value: { indexHtml: string; styleCss: string; thumbnailDataUrl: string }) => void;
+  onTemplateFileFormChange: (value: { indexHtml: string; indexHtmlFileName: string; styleCss: string; styleCssFileName: string; thumbnailDataUrl: string; thumbnailFileName: string }) => void;
   onSelectedTemplateFileChange: (file: File | undefined, field: 'indexHtml' | 'styleCss' | 'thumbnailDataUrl') => void;
   onSaveTemplate: () => void;
   onOpenCreate: () => void;
@@ -69,6 +76,11 @@ export default function TemplateManagementSection({
   onCreateTemplate: () => void;
   onChangeCustomStatus: (template: AdminTemplateItem, action: 'publish' | 'archive') => void;
 }) {
+  const hasValidationResults = Boolean(templateValidation && (templateValidation.errors.length || templateValidation.warnings.length));
+  const validationSummary = templateValidation
+    ? `${templateValidation.errors.length} error${templateValidation.errors.length === 1 ? '' : 's'}, ${templateValidation.warnings.length} warning${templateValidation.warnings.length === 1 ? '' : 's'}`
+    : '';
+
   return (
     <section className="mt-6">
       <div className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px_auto]">
@@ -402,7 +414,7 @@ export default function TemplateManagementSection({
                   <label className="grid cursor-pointer gap-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 transition hover:border-violet-300/50 hover:bg-white/[0.06]">
                     <span className="text-sm font-black text-slate-100">index.html</span>
                     <span className={`text-xs font-bold ${templateFileForm.indexHtml ? 'text-emerald-300' : 'text-slate-500'}`}>
-                      {templateFileForm.indexHtml ? 'HTML file selected' : 'Choose the replacement HTML file'}
+                      {templateFileForm.indexHtml ? `HTML file selected: ${templateFileForm.indexHtmlFileName || 'index.html'}` : 'Choose the replacement HTML file'}
                     </span>
                     <input
                       type="file"
@@ -414,7 +426,7 @@ export default function TemplateManagementSection({
                   <label className="grid cursor-pointer gap-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 transition hover:border-violet-300/50 hover:bg-white/[0.06]">
                     <span className="text-sm font-black text-slate-100">style.css</span>
                     <span className={`text-xs font-bold ${templateFileForm.styleCss ? 'text-emerald-300' : 'text-slate-500'}`}>
-                      {templateFileForm.styleCss ? 'CSS file selected' : 'Choose the replacement CSS file'}
+                      {templateFileForm.styleCss ? `CSS file selected: ${templateFileForm.styleCssFileName || 'style.css'}` : 'Choose the replacement CSS file'}
                     </span>
                     <input
                       type="file"
@@ -426,7 +438,7 @@ export default function TemplateManagementSection({
                   <label className="grid cursor-pointer gap-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 transition hover:border-violet-300/50 hover:bg-white/[0.06]">
                     <span className="text-sm font-black text-slate-100">Thumbnail</span>
                     <span className={`text-xs font-bold ${templateFileForm.thumbnailDataUrl ? 'text-emerald-300' : 'text-slate-500'}`}>
-                      {templateFileForm.thumbnailDataUrl ? 'Thumbnail selected' : 'Choose a PNG, JPG, WebP, or SVG thumbnail'}
+                      {templateFileForm.thumbnailDataUrl ? `Thumbnail selected: ${templateFileForm.thumbnailFileName || 'thumbnail'}` : 'Choose a PNG, JPG, WebP, or SVG thumbnail'}
                     </span>
                     <input
                       type="file"
@@ -464,13 +476,48 @@ export default function TemplateManagementSection({
                   </div>
                 )}
 
+                {templateValidation && (
+                  <div className={`mt-4 rounded-2xl border p-3 ${templateValidation.errors.length ? 'border-red-400/25 bg-red-500/10' : hasValidationResults ? 'border-amber-300/25 bg-amber-400/10' : 'border-emerald-300/20 bg-emerald-400/10'}`}>
+                    <div className="flex items-center gap-2">
+                      {templateValidation.errors.length ? (
+                        <AlertCircle size={16} className="text-red-300" />
+                      ) : templateValidation.warnings.length ? (
+                        <TriangleAlert size={16} className="text-amber-200" />
+                      ) : (
+                        <CheckCircle2 size={16} className="text-emerald-300" />
+                      )}
+                      <p className={`text-xs font-black uppercase ${templateValidation.errors.length ? 'text-red-100' : templateValidation.warnings.length ? 'text-amber-100' : 'text-emerald-100'}`}>
+                        Template validation: {validationSummary}
+                      </p>
+                    </div>
+                    {templateWarningConfirmationPending && (
+                      <p className="mt-2 text-xs font-bold text-amber-100/90">
+                        Review these warnings, then click Upload with warnings to continue.
+                      </p>
+                    )}
+                    {hasValidationResults ? (
+                      <div className="mt-3 grid gap-2">
+                        {[...templateValidation.errors, ...templateValidation.warnings].map((issue, index) => (
+                          <div key={`${issue.fileName}-${index}`} className={`rounded-xl border px-3 py-2 text-xs font-bold ${issue.severity === 'error' ? 'border-red-400/20 bg-red-950/30 text-red-100' : 'border-amber-300/20 bg-amber-950/20 text-amber-100'}`}>
+                            <span className="font-black uppercase">{issue.severity}</span>
+                            <span className="text-slate-400"> / {issue.fileName}: </span>
+                            {issue.message}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs font-semibold text-emerald-100/80">No template validation issues found.</p>
+                    )}
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={onSaveTemplate}
                   disabled={savingTemplate || (!templateFileForm.indexHtml && !templateFileForm.styleCss && !templateFileForm.thumbnailDataUrl)}
                   className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
                 >
-                  {savingTemplate ? <Loader2 className="animate-spin" size={16} /> : 'Save file changes'}
+                  {savingTemplate ? <Loader2 className="animate-spin" size={16} /> : templateWarningConfirmationPending ? 'Upload with warnings' : 'Save file changes'}
                 </button>
               </section>
             )}
