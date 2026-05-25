@@ -159,6 +159,20 @@ const s3TemplatePreprocessorTs = String.raw`
 const safeHexColorForTemplate = (value: unknown, fallback: string) =>
   typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
 
+const TEMPLATE_DEFAULT_THEME_COLORS: Record<string, string> = {
+  'compact-timeline': '#fca311',
+  'corporate-split': '#243b67',
+  'elegant-sidebar': '#b45309',
+  'modular-card': '#14b8a6',
+  'tech-gradient': '#38bdf8',
+};
+
+const resolveTemplateThemeColor = (template: unknown, value: unknown) => {
+  const themeColor = safeHexColorForTemplate(value, '#000000');
+  if (themeColor.toLowerCase() !== '#000000' || typeof template !== 'string') return themeColor;
+  return TEMPLATE_DEFAULT_THEME_COLORS[template] || themeColor;
+};
+
 const safeNumberForTemplate = (value: unknown, fallback: number, min: number, max: number) => {
   const number = Number(value);
   return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
@@ -201,7 +215,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     : ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const hiddenSections = Array.isArray(cvData.hiddenSections) ? cvData.hiddenSections : [];
 
-  const themeColor = safeHexColorForTemplate(cvData.themeColor, '#000000');
+  const themeColor = resolveTemplateThemeColor(template, cvData.themeColor);
   const sidebarColor = safeHexColorForTemplate(cvData.sidebarColor, '#111827');
   const templateSurfaceColor = safeHexColorForTemplate(
     cvData.templateSurfaceColor,
@@ -242,7 +256,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
 
   const processedExperience = experience.map((item: any) => ({
     ...item,
-    position: item.position || 'Position',
+    position: item.position || '',
     company: item.company || 'Company',
     formattedDate: dateInline(item.startDate, item.endDate),
     formattedDateStacked: dateStacked(item.startDate, item.endDate),
@@ -376,7 +390,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: 'scale(' + imageZoom + ') translate(' + imageX + 'px,' + imageY + 'px)',
-      startupHeadlineTitle: processedExperience[0]?.position || 'Professional Title',
+      startupHeadlineTitle: processedExperience[0]?.position || '',
     },
     flags: {
       isProfessional,

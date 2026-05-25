@@ -145,7 +145,7 @@
                         <article class="experience">
                           <div class="experience-top">
                             <div class="experience-title">
-                              <h3>{{position}}</h3>
+                              {{#position}}<h3>{{position}}</h3>{{/position}}
                             </div>
                             <div class="experience-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
                           </div>
@@ -166,7 +166,7 @@
                         <article class="experience">
                           <div class="experience-top">
                             <div class="experience-title">
-                              <h3>{{position}}</h3>
+                              {{#position}}<h3>{{position}}</h3>{{/position}}
                             </div>
                             <div class="experience-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
                           </div>
@@ -183,7 +183,7 @@
                         <article class="experience">
                           <div class="experience-top">
                             <div class="experience-title">
-                              <h3>{{position}}</h3>
+                              {{#position}}<h3>{{position}}</h3>{{/position}}
                             </div>
                             <div class="experience-date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
                           </div>
@@ -257,7 +257,7 @@
                   {{#references}}
                     <article class="mini-item">
                       <h3>{{name}}</h3>
-                      <p class="mini-sub">{{position}}{{#company}}, {{company}}{{/company}}</p>
+                      {{#sub}}<p class="mini-sub">{{sub}}</p>{{/sub}}
                       <p class="mini-sub">{{email}}</p>
                       <p class="mini-sub">{{phone}}</p>
                     </article>

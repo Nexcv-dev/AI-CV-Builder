@@ -114,7 +114,7 @@
                   {{#references}}
                     <article class="reference-card">
                       <h3>{{name}}</h3>
-                      <p class="sub">{{position}}{{#company}}, {{company}}{{/company}}</p>
+                      {{#sub}}<p class="sub">{{sub}}</p>{{/sub}}
                       <p class="tiny">{{email}}</p>
                       <p class="tiny">{{phone}}</p>
                     </article>
@@ -141,7 +141,7 @@
                       <article class="timeline-item">
                         <div class="date-box">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
                         <div class="timeline-content">
-                          <h3>{{position}}</h3>
+                          {{#position}}<h3>{{position}}</h3>{{/position}}
                           <p class="sub accent">{{company}}</p>
                           <div class="rich compact">{{{description}}}</div>
                         </div>
@@ -159,7 +159,7 @@
                       <article class="timeline-item">
                         <div class="date-box">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
                         <div class="timeline-content">
-                          <h3>{{position}}</h3>
+                          {{#position}}<h3>{{position}}</h3>{{/position}}
                           <p class="sub accent">{{company}}</p>
                           <div class="rich compact">{{{description}}}</div>
                         </div>
@@ -174,7 +174,7 @@
                       <article class="timeline-item">
                         <div class="date-box">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
                         <div class="timeline-content">
-                          <h3>{{position}}</h3>
+                          {{#position}}<h3>{{position}}</h3>{{/position}}
                           <p class="sub accent">{{company}}</p>
                           <div class="rich compact">{{{description}}}</div>
                         </div>

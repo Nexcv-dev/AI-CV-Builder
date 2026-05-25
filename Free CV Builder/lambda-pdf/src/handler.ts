@@ -205,6 +205,20 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
 const safeHexColorForTemplate = (value: unknown, fallback: string) =>
   typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
 
+const TEMPLATE_DEFAULT_THEME_COLORS: Record<string, string> = {
+  'compact-timeline': '#fca311',
+  'corporate-split': '#243b67',
+  'elegant-sidebar': '#b45309',
+  'modular-card': '#14b8a6',
+  'tech-gradient': '#38bdf8',
+};
+
+const resolveTemplateThemeColor = (template: unknown, value: unknown) => {
+  const themeColor = safeHexColorForTemplate(value, '#000000');
+  if (themeColor.toLowerCase() !== '#000000' || typeof template !== 'string') return themeColor;
+  return TEMPLATE_DEFAULT_THEME_COLORS[template] || themeColor;
+};
+
 const safeNumberForTemplate = (value: unknown, fallback: number, min: number, max: number) => {
   const number = Number(value);
   return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
@@ -247,7 +261,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
     : ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const hiddenSections = Array.isArray(cvData.hiddenSections) ? cvData.hiddenSections : [];
 
-  const themeColor = safeHexColorForTemplate(cvData.themeColor, '#000000');
+  const themeColor = resolveTemplateThemeColor(template, cvData.themeColor);
   const sidebarColor = safeHexColorForTemplate(cvData.sidebarColor, '#111827');
   const templateSurfaceColor = safeHexColorForTemplate(
     cvData.templateSurfaceColor,
@@ -288,7 +302,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
 
   const processedExperience = experience.map((item: any) => ({
     ...item,
-    position: item.position || 'Position',
+    position: item.position || '',
     company: item.company || 'Company',
     formattedDate: dateInline(item.startDate, item.endDate),
     formattedDateStacked: dateStacked(item.startDate, item.endDate),
@@ -422,7 +436,7 @@ function prepareS3TemplateData(cvData: any, template: TemplateName, options: { w
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: 'scale(' + imageZoom + ') translate(' + imageX + 'px,' + imageY + 'px)',
-      startupHeadlineTitle: processedExperience[0]?.position || 'Professional Title',
+      startupHeadlineTitle: processedExperience[0]?.position || '',
     },
     flags: {
       isProfessional,
@@ -764,7 +778,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
 
         if (key === 'experience' && experience.length > 0) {
             const items = experience.map((exp: any) => {
-                const t = title3(exp.position || 'Position');
+                const t = exp.position ? title3(exp.position) : '';
                 const d = desc(exp.description);
                 if (isModern || isMin) {
                     return `<div style="break-inside:avoid">${t}
@@ -1059,7 +1073,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
             <div style="position:absolute;inset:0;opacity:0.1;background-image:radial-gradient(#ffffff 2px,transparent 2px);background-size:24px 24px"></div>
             <div style="position:relative;z-index:2;padding-right:${profileImage ? '170px' : '0'}">
               <h1 style="font-size:3rem;line-height:1.05;font-weight:800;letter-spacing:-0.025em;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
-              <div style="margin-top:8px;font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${startupHeaderMutedColor}">${esc(experience[0]?.position || 'Professional Title')}</div>
+              ${experience[0]?.position ? `<div style="margin-top:8px;font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${startupHeaderMutedColor}">${esc(experience[0].position)}</div>` : ''}
               <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px;font-size:0.875rem;font-weight:500;color:${startupHeaderMutedColor}">${contactItems}</div>
             </div>
           </header>

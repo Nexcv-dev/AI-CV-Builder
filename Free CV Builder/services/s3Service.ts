@@ -126,6 +126,23 @@ const esc = (str: string) => (
     (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 );
 
+const safeHexColor = (value: unknown, fallback: string) =>
+    typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+
+const TEMPLATE_DEFAULT_THEME_COLORS: Record<string, string> = {
+    'compact-timeline': '#fca311',
+    'corporate-split': '#243b67',
+    'elegant-sidebar': '#b45309',
+    'modular-card': '#14b8a6',
+    'tech-gradient': '#38bdf8',
+};
+
+const resolveTemplateThemeColor = (template: unknown, value: unknown) => {
+    const themeColor = safeHexColor(value, '#000000');
+    if (themeColor.toLowerCase() !== '#000000' || typeof template !== 'string') return themeColor;
+    return TEMPLATE_DEFAULT_THEME_COLORS[template] || themeColor;
+};
+
 const profileImageCss = (cvData: any) => {
     const imageZoom = Number.isFinite(Number(cvData?.imageZoom)) ? Math.min(Math.max(Number(cvData.imageZoom), 0.5), 3) : 1;
     const imageX = Number.isFinite(Number(cvData?.imageX)) ? Math.min(Math.max(Number(cvData.imageX), -120), 120) : 0;
@@ -179,6 +196,7 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
     const hasReferences = Boolean(cvData?.references?.length);
     const root = {
         ...cvData,
+        themeColor: resolveTemplateThemeColor(cvData?.template, cvData?.themeColor),
         headline,
         location,
         profileImageUrl,
@@ -240,5 +258,5 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
 
 export async function generateS3CVHTML(cvData: any, template: string, options: { watermark?: boolean } = {}) {
     const templateHtml = await loadS3TemplateHtml(template);
-    return templateHtml ? renderCvTemplateString(templateHtml, cvData, options) : null;
+    return templateHtml ? renderCvTemplateString(templateHtml, { ...cvData, template }, options) : null;
 }

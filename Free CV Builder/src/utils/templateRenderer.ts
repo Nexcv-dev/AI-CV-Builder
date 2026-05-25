@@ -46,6 +46,20 @@ const withExperiencePageBreakGroups = (cvData: any) => {
 const safeHexColor = (value: unknown, fallback: string) =>
   typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
 
+const TEMPLATE_DEFAULT_THEME_COLORS: Record<string, string> = {
+  'compact-timeline': '#fca311',
+  'corporate-split': '#243b67',
+  'elegant-sidebar': '#b45309',
+  'modular-card': '#14b8a6',
+  'tech-gradient': '#38bdf8',
+};
+
+const resolveTemplateThemeColor = (template: unknown, value: unknown) => {
+  const themeColor = safeHexColor(value, '#000000');
+  if (themeColor.toLowerCase() !== '#000000' || typeof template !== 'string') return themeColor;
+  return TEMPLATE_DEFAULT_THEME_COLORS[template] || themeColor;
+};
+
 const safeNumber = (value: unknown, fallback: number, min: number, max: number) => {
   const number = Number(value);
   return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
@@ -89,7 +103,7 @@ const prepareS3TemplateData = (cvData: any, options: { watermark?: boolean } = {
     ? cvData.sectionOrder
     : ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const hiddenSections = Array.isArray(cvData?.hiddenSections) ? cvData.hiddenSections : [];
-  const themeColor = safeHexColor(cvData?.themeColor, '#000000');
+  const themeColor = resolveTemplateThemeColor(cvData?.template, cvData?.themeColor);
   const sidebarColor = safeHexColor(cvData?.sidebarColor, '#1e293b');
   const templateSurfaceColor = safeHexColor(cvData?.templateSurfaceColor, themeColor);
   const sidebarTextColor = getContrastColor(templateSurfaceColor);
@@ -113,7 +127,7 @@ const prepareS3TemplateData = (cvData: any, options: { watermark?: boolean } = {
   ].filter(Boolean);
   const processedExperience = experience.map((item: any) => ({
     ...item,
-    position: item.position || 'Position',
+    position: item.position || '',
     company: item.company || 'Company',
     formattedDate: formatDateInline(item.startDate, item.endDate),
     formattedDateStacked: formatDateStacked(item.startDate, item.endDate),
@@ -209,7 +223,7 @@ const prepareS3TemplateData = (cvData: any, options: { watermark?: boolean } = {
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: imageCss.transform,
-      startupHeadlineTitle: processedExperience[0]?.position || 'Professional Title',
+      startupHeadlineTitle: processedExperience[0]?.position || '',
     },
     flags: {
       isProfessional,

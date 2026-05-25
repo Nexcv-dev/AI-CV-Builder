@@ -116,7 +116,7 @@
                 {{#references}}
                   <article class="reference">
                     <h3>{{name}}</h3>
-                    <p>{{position}}{{#company}}, {{company}}{{/company}}</p>
+                    {{#sub}}<p>{{sub}}</p>{{/sub}}
                     <p>{{email}}</p>
                     <p>{{phone}}</p>
                   </article>
@@ -151,7 +151,7 @@
                     <article class="item">
                       <div class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
                       <div class="item-body">
-                        <h3>{{position}}</h3>
+                        {{#position}}<h3>{{position}}</h3>{{/position}}
                         <div class="company">{{company}}</div>
                         <div class="rich">{{{description}}}</div>
                       </div>
@@ -169,7 +169,7 @@
                     <article class="item">
                       <div class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
                       <div class="item-body">
-                        <h3>{{position}}</h3>
+                        {{#position}}<h3>{{position}}</h3>{{/position}}
                         <div class="company">{{company}}</div>
                         <div class="rich">{{{description}}}</div>
                       </div>
@@ -184,7 +184,7 @@
                     <article class="item">
                       <div class="date">{{startDate}}{{#endDate}} - {{endDate}}{{/endDate}}</div>
                       <div class="item-body">
-                        <h3>{{position}}</h3>
+                        {{#position}}<h3>{{position}}</h3>{{/position}}
                         <div class="company">{{company}}</div>
                         <div class="rich">{{{description}}}</div>
                       </div>
