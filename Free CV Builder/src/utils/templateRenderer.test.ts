@@ -88,6 +88,17 @@ describe('renderCvTemplateString', () => {
     expect(html).toContain('color: #fca311;');
   });
 
+  it('uses active custom template accents for legacy S3 keys', () => {
+    const html = renderCvTemplateString('<style>a { color: {{themeColor}}; border-color: {{primaryColor}}; }</style>', {
+      ...cvData,
+      template: 'tech-1',
+      themeColor: '#000000',
+    });
+
+    expect(html).toContain('color: #22d3ee;');
+    expect(html).toContain('border-color: #22d3ee;');
+  });
+
   it('respects user-selected colors over template default accents', () => {
     const html = renderCvTemplateString('<style>a { color: {{themeColor}}; }</style>', {
       ...cvData,
