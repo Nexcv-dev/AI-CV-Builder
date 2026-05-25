@@ -21,7 +21,7 @@ vi.mock('lucide-react', () => {
     'CheckCircle', 'AlertCircle', 'CheckCircle2', 'LayoutTemplate', 
     'MoveHorizontal', 'MoveVertical', 'Layout', 'Sparkles', 'LogOut', 
     'Mail', 'Phone', 'MapPin', 'Linkedin', 'Github',
-    'ArrowLeft', 'ArrowRight', 'Check', 'SkipForward', 'Type', 'Calendar'
+    'ArrowLeft', 'ArrowRight', 'Check', 'SkipForward', 'Type', 'Calendar', 'RotateCcw'
   ];
   const mockExports: any = { __esModule: true };
   icons.forEach(name => {
