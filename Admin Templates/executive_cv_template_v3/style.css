@@ -57,7 +57,7 @@ body * {
 }
 
 a {
-  color: #8a6a2f;
+  color: {{themeColor}};
   text-decoration: none;
   font-weight: 700;
 }
@@ -97,7 +97,7 @@ a {
 
 .role {
   margin-top: 10px;
-  color: #8a6a2f;
+  color: {{themeColor}};
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 2px;
@@ -125,7 +125,7 @@ a {
 .executive-summary {
   margin-bottom: 34px;
   padding: 20px 24px;
-  border-left: 5px solid #b88a44;
+  border-left: 5px solid {{themeColor}};
   background: #faf8f2;
 }
 
@@ -182,7 +182,7 @@ a {
 }
 
 .item-date {
-  color: #8a6a2f;
+  color: {{themeColor}};
   font-family: Arial, sans-serif;
   font-size: 12px;
   font-weight: 700;

@@ -55,7 +55,7 @@ body * {
 }
 
 a {
-  color: #db2777;
+  color: {{themeColor}};
   text-decoration: none;
   font-weight: 800;
 }
@@ -101,7 +101,7 @@ img {
   width: 80mm;
   height: 80mm;
   border-radius: 50%;
-  background: #7c3aed;
+  background: {{themeColor}};
   opacity: 0.13;
 }
 
@@ -139,7 +139,7 @@ img {
 }
 
 .name::first-letter {
-  color: #7c3aed;
+  color: {{themeColor}};
 }
 
 .role {
@@ -168,7 +168,7 @@ img {
   height: 39mm;
   padding: 1.8mm;
   border-radius: 9mm;
-  background: linear-gradient(135deg, #7c3aed, #ff4ecd, #facc15);
+  background: linear-gradient(135deg, {{themeColor}}, #ff4ecd, #facc15);
   transform: rotate(3deg);
 }
 
@@ -222,7 +222,7 @@ img {
   height: 7mm;
   flex: 0 0 auto;
   border-radius: 2.4mm;
-  background: linear-gradient(135deg, #7c3aed, #ff4ecd);
+  background: linear-gradient(135deg, {{themeColor}}, #ff4ecd);
   transform: rotate(8deg);
 }
 

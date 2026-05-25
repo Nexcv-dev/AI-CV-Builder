@@ -5,9 +5,14 @@ export interface TemplateRenderOptions {
 export const TEMPLATE_DEFAULT_THEME_COLORS: Record<string, string> = {
   'compact-timeline': '#fca311',
   'corporate-split': '#243b67',
+  'corporate_blue_cv_template_v5': '#0f3d75',
+  'creative_cv_template_v4': '#7c3aed',
   'elegant-sidebar': '#b45309',
+  'executive_cv_template_v3': '#b88a44',
   'modular-card': '#14b8a6',
+  'Tech template': '#22d3ee',
   'tech-gradient': '#38bdf8',
+  'tech_style_cv_template_v2': '#2563eb',
 };
 
 export const safeHexColor = (value: unknown, fallback: string) =>
@@ -177,9 +182,11 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
     themeColor,
     sidebarColor,
     templateSurfaceColor,
+    primaryColor: themeColor,
     watermark: Boolean(options.watermark),
     computed: {
       themeColor,
+      primaryColor: themeColor,
       sidebarColor,
       templateSurfaceColor,
       sidebarTextColor,

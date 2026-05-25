@@ -177,8 +177,8 @@ const validateCss = (template, source) => {
   if (/(^|[^-])color:\s*(#000000|#000|black)\b/i.test(source) || /background(?:-color)?:\s*(#000000|#000|black)\b/i.test(source)) {
     addResult(template, 'warn', 'style.css', 'Hard black foreground/background found. Confirm this is intentional, not a default accent.');
   }
-  if (!/{{\s*themeColor\s*}}|{{{\s*computed\.|{{\s*computed\./.test(source)) {
-    addResult(template, 'warn', 'style.css', 'No themeColor/computed color placeholder found; design panel color may not affect this template.');
+  if (!/{{\s*(themeColor|primaryColor)\s*}}|{{{\s*computed\.|{{\s*computed\./.test(source)) {
+    addResult(template, 'warn', 'style.css', 'No themeColor/primaryColor/computed color placeholder found; design panel color may not affect this template.');
   }
   validatePlaceholders(template, 'style.css', source);
 };
