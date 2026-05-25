@@ -2,66 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Added / Fixed (Codebase Cleanup & Verification)
-- Verification: TypeScript check and Production build pass successfully.
-- Fixed admin summary TypeScript lint failures.
-- Added template print/page-break safeguards for custom template layout stability.
-- Prevented the builder auth-loading state from briefly showing the login CTA while an existing user session is being restored.
-- Added route-level lazy loading for the main frontend pages.
-- Split heavy builder surfaces so `CVForm`, `CVPreview`, form sections, design controls, and import modals load in smaller chunks.
-- Replaced the third-party date picker with a native date input, removing duplicate date icons and unused date-picker dependencies.
-- Split the admin dashboard into shell, overview/analytics sections, lazy admin modules, and first-pass data hooks.
-- Added `useAdminBootstrap` and `useAdminUsers` to move auth/summary and user-management data logic out of the dashboard page.
-
-## [1.1.0] - 2026-05-17
-
-### Added
-- **Startup Template**: Added a new modern CV template layout (`startup`) with unique structural styling.
-- **Minimalist Template**: Added a clean, spacious, typography-focused `minimalist` template option.
-- **Billing & Payments**: Integrated fully fledged pricing and plan management models (`userPlan`, `cvQuota`, `CvCreationQuotaModel`, `DownloadQuotaModel`).
-- **Pricing & Checkout Pages**: Created `PricingPage.tsx` and `CheckoutPage.tsx` with full support for PayHere payment gateways (including official high-visibility dark/long banner integration).
-- **Refund Policy Page**: Added `RefundPolicy.tsx` to handle standard refund compliance along with dynamic `/refund-policy` routing.
-- **Micro-animations**: Dynamic sliding gradient underline hover effect (`.nav-link-hover`) added to header navigation links.
-- **Quality Assurance**: Added Vitest test suites (`CVForm_logic.test.tsx`, `CVPreview.test.tsx`, and backend `pdf_generation.test.ts`) covering CV creation state, side-by-side builder live layouts, and Puppeteer server-side PDF exports.
-- **Stand-alone Mockup Templates**: Added 7 full HTML/Tailwind templates in the root folder (`bold`, `creative`, `elegant`, `executive`, `split`, `startup`, and `studio`) for layout preview testing and visual design iteration.
-
-### Changed
-- **Autofill Dark Theme Support**: Added key CSS overrides in `index.css` to prevent default browser autofill behavior from turning form input backgrounds white in dark mode.
-- **Mobile Responsive Layouts**: Set checkout page input font sizes to `16px` to prevent default iOS/Android zoom-focus alignments, and reordered checkout layout columns to display the selected plan details at the top on mobile viewports.
-- **Distraction-Free Layouts**: Dynamically hid the global application footer on key conversion page routes (Checkout, Reset Password, Dashboard).
-- **One-Time Payment Clarification**: Updated pricing plan displays across the Landing Page, Pricing Page, Home workspace modal, and Checkout Page to explicitly declare "One-Time Payment", avoiding subscription confusion.
-- **Monthly Plan Pricing Wording**: Synced "30 days" text to "LKR 2199" in builder upgrade prompts and synchronized pricing plans between Home and Landing views.
-
-### Fixed
-- **Text Wrapping**: Resolved critical rendering bugs across multiple fields (Experience, Education, Projects, and Skills descriptions) where long inputs did not break/wrap and overflowed template borders.
-- **Reset Password Robustness**: Fixed authentication email reset flows to include strict verification checks, loading indicators, and error-handling popups.
 ## Commit History
-* Merge pull request #179 from bimanthaperera-lab/test/overview (3c4bab1) - Bimantha Perera, 9 seconds ago
-* add template color reset button (c118cad) - Bimantha Perera, 53 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (50d0ea4) - bimanthaperera-lab, 2 hours ago
-* Merge pull request #178 from bimanthaperera-lab/test/overview (e183a9c) - Bimantha Perera, 2 hours ago
-* add release automation (bbd4835) - Bimantha Perera, 2 hours ago
-* Add admin template validation gate (4d59037) - Bimantha Perera, 2 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (1efa7c6) - bimanthaperera-lab, 4 hours ago
-* Merge pull request #177 from bimanthaperera-lab/test/overview (f52109e) - Bimantha Perera, 4 hours ago
-* fix default color bug in design panel (eb0b089) - Bimantha Perera, 4 hours ago
-* add script to validate new templates (dcb9e7b) - Bimantha Perera, 5 hours ago
-* Improve Template Rendering (b2408d6) - Bimantha Perera, 5 hours ago
-* fix template issues (e165f72) - Bimantha Perera, 7 hours ago
-* fix mobile preview bug (2f68c3d) - Bimantha Perera, 8 hours ago
-* Create cv_templates_mobile_preview_safe.zip (e0842f5) - Bimantha Perera, 24 hours ago
-* Update MyCvs.tsx (bf9e59c) - Bimantha Perera, 24 hours ago
-* fix landing page carousel bug (dc27d02) - Bimantha Perera, 29 hours ago
-* fix startup template bug (7e78fd1) - Bimantha Perera, 29 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (8812e6c) - bimanthaperera-lab, 30 hours ago
-* Merge pull request #175 from bimanthaperera-lab/test/overview (0935cd8) - Bimantha Perera, 30 hours ago
-* Update CVPreview.test.tsx (e6db45e) - Bimantha Perera, 30 hours ago
-* fix template render issue (831163d) - Bimantha Perera, 30 hours ago
+* Merge pull request #180 from bimanthaperera-lab/test/overview (244492e) - Bimantha Perera, 10 seconds ago
+* Merge branch 'main' into test/overview (f8f9109) - Bimantha Perera, 24 seconds ago
+* update documentation (c66d857) - Bimantha Perera, 13 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (4722eed) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #179 from bimanthaperera-lab/test/overview (3c4bab1) - Bimantha Perera, 4 hours ago
+* add template color reset button (c118cad) - Bimantha Perera, 5 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (50d0ea4) - bimanthaperera-lab, 6 hours ago
+* Merge pull request #178 from bimanthaperera-lab/test/overview (e183a9c) - Bimantha Perera, 6 hours ago
+* add release automation (bbd4835) - Bimantha Perera, 7 hours ago
+* Add admin template validation gate (4d59037) - Bimantha Perera, 7 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (1efa7c6) - bimanthaperera-lab, 8 hours ago
+* Merge pull request #177 from bimanthaperera-lab/test/overview (f52109e) - Bimantha Perera, 8 hours ago
+* fix default color bug in design panel (eb0b089) - Bimantha Perera, 9 hours ago
+* add script to validate new templates (dcb9e7b) - Bimantha Perera, 9 hours ago
+* Improve Template Rendering (b2408d6) - Bimantha Perera, 10 hours ago
+* fix template issues (e165f72) - Bimantha Perera, 12 hours ago
+* fix mobile preview bug (2f68c3d) - Bimantha Perera, 12 hours ago
+* Create cv_templates_mobile_preview_safe.zip (e0842f5) - Bimantha Perera, 29 hours ago
+* Update MyCvs.tsx (bf9e59c) - Bimantha Perera, 29 hours ago
+* fix landing page carousel bug (dc27d02) - Bimantha Perera, 33 hours ago
+* fix startup template bug (7e78fd1) - Bimantha Perera, 33 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (8812e6c) - bimanthaperera-lab, 34 hours ago
+* Merge pull request #175 from bimanthaperera-lab/test/overview (0935cd8) - Bimantha Perera, 34 hours ago
+* Update CVPreview.test.tsx (e6db45e) - Bimantha Perera, 34 hours ago
+* fix template render issue (831163d) - Bimantha Perera, 34 hours ago
 * remove templates (c916ca0) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (b6c1248) - bimanthaperera-lab, 2 days ago
 * Merge pull request #171 from bimanthaperera-lab/test/overview (333ee89) - Bimantha Perera, 2 days ago
@@ -69,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * add daily download cap for plans (ef918ce) - Bimantha Perera, 2 days ago
 * Fix template render issue (b8138c7) - Bimantha Perera, 2 days ago
 * Bug Fixing and Code optimization (0184b42) - Bimantha Perera, 2 days ago
-* Bug fixing and improve admin panel (4081d81) - Bimantha Perera, 2 days ago
+* Bug fixing and improve admin panel (4081d81) - Bimantha Perera, 3 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (0a08350) - bimanthaperera-lab, 3 days ago
 * Merge pull request #168 from bimanthaperera-lab/test/overview (e4f8dc4) - Bimantha Perera, 3 days ago
 * Update Readme.md (2f63aa2) - Bimantha Perera, 3 days ago
@@ -140,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Send template request to S3 bucket (77118d3) - Bimantha Perera, 6 days ago
 * Implement Support Ticket (1e7163a) - Bimantha Perera, 6 days ago
 * move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 6 days ago
-* Update CVForm.tsx (37f2feb) - Bimantha Perera, 6 days ago
+* Update CVForm.tsx (37f2feb) - Bimantha Perera, 7 days ago
 * implement template management settings with backend (932c731) - Bimantha Perera, 7 days ago
 * implement Admin Panel Template and dashboard settings (07345f4) - Bimantha Perera, 7 days ago
 * Create Admin Panel Structre (aff3de4) - Bimantha Perera, 7 days ago
@@ -184,7 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * add draft option (db215a6) - Bimantha Perera, 10 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (45502fe) - bimanthaperera-lab, 10 days ago
 * Merge pull request #121 from bimanthaperera-lab/test/overview (98ccc00) - Bimantha Perera, 10 days ago
-* Clean the layout and bug fixing (d348fdb) - Bimantha Perera, 10 days ago
+* Clean the layout and bug fixing (d348fdb) - Bimantha Perera, 11 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (b6a3d11) - bimanthaperera-lab, 11 days ago
 * Merge pull request #112 from bimanthaperera-lab/test/overview (0ec9f58) - Bimantha Perera, 11 days ago
 * Create New Tips & Recourses page (46c13a8) - Bimantha Perera, 11 days ago
@@ -226,7 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * create Superuser (bcce7c7) - Bimantha Perera, 12 days ago
 * fix template section selected icon overlap issue (4fae2a8) - Bimantha Perera, 12 days ago
 * Improve password reset modal (a62979c) - Bimantha Perera, 12 days ago
-* Fix mail not sending issue in render (b81eb1c) - Bimantha Perera, 12 days ago
+* Fix mail not sending issue in render (b81eb1c) - Bimantha Perera, 13 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (2771e1b) - bimanthaperera-lab, 13 days ago
 * Merge pull request #101 from bimanthaperera-lab/test/overview (5a4a254) - Bimantha Perera, 13 days ago
 * Update README.md (c070926) - Bimantha Perera, 13 days ago
@@ -353,7 +319,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Merge pull request #35 from bimanthaperera-lab/test/overview (2d28618) - Bimantha Perera, 2 weeks ago
 * Update README.md (e1b0841) - Bimantha Perera, 2 weeks ago
 * Update main.yml (2922038) - Bimantha Perera, 2 weeks ago
-* Dockerization the App (359fe20) - Bimantha Perera, 2 weeks ago
+* Dockerization the App (359fe20) - Bimantha Perera, 3 weeks ago
 * chore: bump version to 0.1.2 (2d4e777) - bimanthaperera-lab, 3 weeks ago
 * docs: auto-update CHANGELOG.md [skip ci] (b80c98c) - bimanthaperera-lab, 3 weeks ago
 * Merge pull request #32 from bimanthaperera-lab/test/overview (0a57633) - Bimantha Perera, 3 weeks ago
