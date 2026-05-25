@@ -38,11 +38,25 @@ Current release focus: production hardening, admin operations, CMS-driven templa
 - Rate limiting, Helmet, CORS controls, input sanitization, and secure session configuration.
 - Email service readiness checks and admin test-email endpoint.
 
-### Payments And Email
-- PayHere checkout integration.
-- Billing plan and coupon management in admin.
-- Nodemailer-based system email delivery.
-- Email provider detection for Gmail API, Resend, and SMTP-style credentials.
+
+## Documentation
+
+We have comprehensive documentation covering different aspects of the platform:
+
+**Core Architecture & Development:**
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [API Documentation](docs/API_DOCS.md)
+- [Contributing Guidelines](docs/CONTRIBUTING.md)
+
+**System Deep Dives:**
+- [Template System](docs/TEMPLATES.md)
+- [PDF Rendering Pipeline](docs/PDF_RENDERING.md)
+
+**Operations & Admin:**
+- [Admin Panel Guide](docs/ADMIN_PANEL.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Operations Runbook](docs/OPERATIONS_RUNBOOK.md)
+- [Project Roadmap](docs/ROADMAP.md)
 
 ## Repository Layout
 
@@ -50,8 +64,6 @@ Current release focus: production hardening, admin operations, CMS-driven templa
 AI-CV-Builder/
   README.md
   Free CV Builder/            # Main React + Express application
-    src/                      # React frontend
-    routes/                   # Express route modules
     services/                 # Email, PDF, S3, and business services
     middlewares/              # Auth, session, security, rate limits
     server-models/            # Mongoose models
@@ -119,61 +131,3 @@ npm run test:run       # Run Vitest once
 npm run build          # Production frontend build
 npm run build:pdf-lambda
 ```
-
-## Verification Status
-
-Recent verification:
-- TypeScript check passes.
-- Production build passes.
-
-Recent codebase cleanup:
-- Fixed admin summary TypeScript lint failures.
-- Added template print/page-break safeguards for custom template layout stability.
-- Prevented the builder auth-loading state from briefly showing the login CTA while an existing user session is being restored.
-- Added route-level lazy loading for the main frontend pages.
-- Split heavy builder surfaces so `CVForm`, `CVPreview`, form sections, design controls, and import modals load in smaller chunks.
-- Replaced the third-party date picker with a native date input, removing duplicate date icons and unused date-picker dependencies.
-- Split the admin dashboard into shell, overview/analytics sections, lazy admin modules, and first-pass data hooks.
-- Added `useAdminBootstrap` and `useAdminUsers` to move auth/summary and user-management data logic out of the dashboard page.
-
-Recommended next implementation plan:
-1. Continue admin dashboard decomposition with `useAdminTemplates`, then `useAdminBilling`, `useAdminSupport`, settings/email, roles, and audit hooks.
-2. Audit the user dashboard load path, then split dashboard data into hooks and lazy-load heavy panels.
-3. Clean the CV preview/template-rendering layer next, because print/export and page-break issues usually start there.
-4. Keep `npm run lint` and `npm run build` passing after each structural step.
-
-## Production Readiness Gaps
-
-This list is based on the current app structure: React/Vite frontend, Express route modules, MongoDB models, PayHere checkout/IPN, S3-backed custom templates, Lambda/local PDF generation, email delivery, admin modules, and the existing Vitest/security/PDF tests.
-
-### Must Have Before Launch
-
-1. Observability and alerts: structured JSON server logs, CloudWatch or hosting log shipping, uptime checks, error tracking, and alerts for failed payments, failed PDF generation, failed email delivery, and MongoDB connection problems.
-2. Payment hardening: PayHere IPN replay/idempotency review, reconciliation job between `CheckoutSession` and `PaymentTransaction`, admin-visible failed payment reasons, receipt history, refund tracking, and a cleanup job for expired pending checkouts.
-3. Admin security: optional 2FA for admin roles, session/device management, suspicious-login alerts, documented `ADMIN_ALLOWED_IPS` runbook, and long-term audit export outside MongoDB before the 30-day TTL removes records.
-4. Data lifecycle: account export, account deletion verification, CV deletion retention policy, S3 orphan cleanup for custom template files/thumbnails, backup/restore drills, and MongoDB index review.
-5. Production QA: end-to-end tests for signup/login, email verification, builder save, PDF download, checkout sandbox/live flow, admin permissions, CMS edits, template publish/archive, support replies, and maintenance mode.
-
-### Should Have Soon After Launch
-
-1. Analytics improvements: date filters for 7/30/90 days, exportable reports, checkout funnel by plan, template conversion tracking, retention metrics, and revenue by coupon/promotion.
-2. Template operations: visual preview before publish, version history, rollback to previous template versions, PDF/mobile validation previews, and thumbnail regeneration tooling.
-3. Support workflow: ticket assignment, reply history, internal notes timeline, canned replies, SLA state, email thread correlation, and support analytics.
-4. Performance polish: continue route/component splitting already started, tune bundles, optimize images/thumbnails, review cache headers/CDN strategy, and measure Core Web Vitals.
-5. Launch operations: environment checklist, secret rotation process, production smoke tests, release checklist, rollback plan, incident response notes, and post-launch monitoring dashboard.
-
-### Code Optimization Plan
-
-Optimization should happen in two passes: keep the current feature work stable first, then optimize before launch, and repeat after real production metrics are available.
-
-1. Split large frontend routes: keep lazy-loaded admin, builder, checkout, profile, and public content/legal pages out of the first bundle.
-2. Break down oversized components: continue splitting `AdminDashboard`, `Home`, user dashboard, and large admin sections into route-level containers, data hooks, and focused presentational components.
-3. Move repeated admin UI patterns into shared components: cards, filters, status badges, empty states, loading states, section headers, and save bars.
-4. Reduce duplicate API loading logic: continue extracting reusable hooks for admin templates, billing, support, settings, audit logs, analytics, and user dashboard data.
-5. Optimize backend route modules: move large shared dependency binding into smaller service helpers, keep route handlers thin, and isolate billing, templates, audit, and settings business logic.
-6. Review database indexes and query shapes: admin lists, analytics aggregations, audit logs, payments, templates, and user search should have intentional indexes and bounded result sizes.
-7. Improve PDF/template performance: cache custom template HTML/CSS safely, warm Lambda PDF generation where useful, and keep local fallback observable.
-8. Add bundle and runtime checks to CI: `npm run lint`, `npm run test:run`, `npm run build`, bundle size review, and smoke tests for critical production flows.
-9. Clean dead or stale code after launch readiness is stable: remove unused helpers, old commented logic, duplicate constants, and temporary debug logs.
-10. Use production data for final tuning: optimize slow API endpoints, large client chunks, and PDF/email/payment bottlenecks based on logs and metrics, not guesswork.
-

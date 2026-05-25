@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added / Fixed (Codebase Cleanup & Verification)
+- Verification: TypeScript check and Production build pass successfully.
+- Fixed admin summary TypeScript lint failures.
+- Added template print/page-break safeguards for custom template layout stability.
+- Prevented the builder auth-loading state from briefly showing the login CTA while an existing user session is being restored.
+- Added route-level lazy loading for the main frontend pages.
+- Split heavy builder surfaces so `CVForm`, `CVPreview`, form sections, design controls, and import modals load in smaller chunks.
+- Replaced the third-party date picker with a native date input, removing duplicate date icons and unused date-picker dependencies.
+- Split the admin dashboard into shell, overview/analytics sections, lazy admin modules, and first-pass data hooks.
+- Added `useAdminBootstrap` and `useAdminUsers` to move auth/summary and user-management data logic out of the dashboard page.
+
+## [1.1.0] - 2026-05-17
+
+### Added
+- **Startup Template**: Added a new modern CV template layout (`startup`) with unique structural styling.
+- **Minimalist Template**: Added a clean, spacious, typography-focused `minimalist` template option.
+- **Billing & Payments**: Integrated fully fledged pricing and plan management models (`userPlan`, `cvQuota`, `CvCreationQuotaModel`, `DownloadQuotaModel`).
+- **Pricing & Checkout Pages**: Created `PricingPage.tsx` and `CheckoutPage.tsx` with full support for PayHere payment gateways (including official high-visibility dark/long banner integration).
+- **Refund Policy Page**: Added `RefundPolicy.tsx` to handle standard refund compliance along with dynamic `/refund-policy` routing.
+- **Micro-animations**: Dynamic sliding gradient underline hover effect (`.nav-link-hover`) added to header navigation links.
+- **Quality Assurance**: Added Vitest test suites (`CVForm_logic.test.tsx`, `CVPreview.test.tsx`, and backend `pdf_generation.test.ts`) covering CV creation state, side-by-side builder live layouts, and Puppeteer server-side PDF exports.
+- **Stand-alone Mockup Templates**: Added 7 full HTML/Tailwind templates in the root folder (`bold`, `creative`, `elegant`, `executive`, `split`, `startup`, and `studio`) for layout preview testing and visual design iteration.
+
+### Changed
+- **Autofill Dark Theme Support**: Added key CSS overrides in `index.css` to prevent default browser autofill behavior from turning form input backgrounds white in dark mode.
+- **Mobile Responsive Layouts**: Set checkout page input font sizes to `16px` to prevent default iOS/Android zoom-focus alignments, and reordered checkout layout columns to display the selected plan details at the top on mobile viewports.
+- **Distraction-Free Layouts**: Dynamically hid the global application footer on key conversion page routes (Checkout, Reset Password, Dashboard).
+- **One-Time Payment Clarification**: Updated pricing plan displays across the Landing Page, Pricing Page, Home workspace modal, and Checkout Page to explicitly declare "One-Time Payment", avoiding subscription confusion.
+- **Monthly Plan Pricing Wording**: Synced "30 days" text to "LKR 2199" in builder upgrade prompts and synchronized pricing plans between Home and Landing views.
+
+### Fixed
+- **Text Wrapping**: Resolved critical rendering bugs across multiple fields (Experience, Education, Projects, and Skills descriptions) where long inputs did not break/wrap and overflowed template borders.
+- **Reset Password Robustness**: Fixed authentication email reset flows to include strict verification checks, loading indicators, and error-handling popups.
 ## Commit History
 * Merge pull request #179 from bimanthaperera-lab/test/overview (3c4bab1) - Bimantha Perera, 9 seconds ago
 * add template color reset button (c118cad) - Bimantha Perera, 53 minutes ago
