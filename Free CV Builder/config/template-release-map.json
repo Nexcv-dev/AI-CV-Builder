@@ -1,0 +1,102 @@
+[
+  {
+    "sourceFolder": "violet-executive-template",
+    "targetKey": "creative-executive",
+    "label": "Creative Executive",
+    "category": "Creative",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#6d28d9"
+  },
+  {
+    "sourceFolder": "Tech template",
+    "targetKey": "tech-1",
+    "label": "Tech",
+    "category": "Tech",
+    "access": "paid",
+    "surfaceColorRole": "header",
+    "surfaceColorLabel": "Header",
+    "defaultThemeColor": "#22d3ee"
+  },
+  {
+    "sourceFolder": "tech_style_cv_template_v2",
+    "targetKey": "tech-v2",
+    "label": "Tech Creative",
+    "category": "Tech",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#2563eb"
+  },
+  {
+    "sourceFolder": "executive_cv_template_v3",
+    "targetKey": "executive-v2",
+    "label": "Executive Pro",
+    "category": "Executive",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#b88a44"
+  },
+  {
+    "sourceFolder": "creative_cv_template_v4",
+    "targetKey": "creative-v3",
+    "label": "Creative Creator",
+    "category": "Creative",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#7c3aed"
+  },
+  {
+    "sourceFolder": "corporate_blue_cv_template_v5",
+    "targetKey": "corporate-v1",
+    "label": "Corporate",
+    "category": "Corporate",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#0f3d75"
+  },
+  {
+    "sourceFolder": "corporate-split",
+    "targetKey": "corporate-split",
+    "label": "Corporate Split",
+    "category": "Modern",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#243b67"
+  },
+  {
+    "sourceFolder": "tech-gradient",
+    "targetKey": "tech-gradient",
+    "label": "Tech Gradient",
+    "category": "Tech",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#38bdf8"
+  },
+  {
+    "sourceFolder": "elegant-sidebar",
+    "targetKey": "elegant-sidebar",
+    "label": "Elegant Sidebar",
+    "category": "Modern",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#b45309"
+  },
+  {
+    "sourceFolder": "compact-timeline",
+    "targetKey": "compact-timeline",
+    "label": "Compact Timeline",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#fca311"
+  },
+  {
+    "sourceFolder": "modular-card",
+    "targetKey": "modular-card",
+    "label": "Modular Card",
+    "category": "Modern",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#14b8a6"
+  }
+]
