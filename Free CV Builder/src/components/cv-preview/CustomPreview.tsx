@@ -18,7 +18,7 @@ const CustomPreview = forwardRef<HTMLDivElement, CustomPreviewProps>(({ cvData, 
   const { html, loading, error } = useTemplateHtml(template);
   const renderedHtml = useMemo(() => html ? renderCvTemplateString(html, { ...cvData, template }) : '', [cvData, html, template]);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const [iframeHeight, setIframeHeight] = useState('297mm');
+  const [iframeHeight, setIframeHeight] = useState(`${A4_PREVIEW_HEIGHT_PX}px`);
 
   const syncIframeHeight = () => {
     const iframe = iframeRef.current;
@@ -35,7 +35,7 @@ const CustomPreview = forwardRef<HTMLDivElement, CustomPreviewProps>(({ cvData, 
   };
 
   useEffect(() => {
-    setIframeHeight('297mm');
+    setIframeHeight(`${A4_PREVIEW_HEIGHT_PX}px`);
   }, [renderedHtml, template]);
 
   return (
@@ -65,7 +65,7 @@ const CustomPreview = forwardRef<HTMLDivElement, CustomPreviewProps>(({ cvData, 
             key={template}
             title="Custom CV template preview"
             srcDoc={renderedHtml}
-            className="block w-full border-0 transition-opacity duration-150"
+            className="pointer-events-none block w-full select-none border-0 transition-opacity duration-150"
             sandbox="allow-same-origin"
             scrolling="no"
             style={{ height: iframeHeight, minHeight: `${A4_PREVIEW_HEIGHT_PX}px` }}

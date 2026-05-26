@@ -11,6 +11,31 @@ export const CV_TEMPLATE_PAGINATION_RULES = `
     html,
     body {
       overflow: visible !important;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+    }
+
+    @media screen {
+      html,
+      body {
+        margin: 0 !important;
+        width: 794px !important;
+        min-width: 794px !important;
+        min-height: 1122px !important;
+        overflow: visible !important;
+      }
+
+      .page,
+      .cv,
+      .resume,
+      .sheet,
+      .document,
+      .wrapper {
+        width: 794px !important;
+        min-width: 794px !important;
+        min-height: 1122px !important;
+        max-width: none !important;
+      }
     }
 
     .page,
