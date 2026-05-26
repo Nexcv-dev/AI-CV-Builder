@@ -10,6 +10,7 @@ export interface IUser extends Document {
   role: UserRole;
   profileImage?: string;
   phone?: string;
+  termsAcceptedAt?: Date;
   address?: string;
   dob?: string;
   gender?: string;
@@ -37,6 +38,7 @@ const UserSchema: Schema = new Schema(
     role: { type: String, enum: ALL_USER_ROLES, default: DEFAULT_USER_ROLE, required: true },
     profileImage: { type: String },
     phone: { type: String },
+    termsAcceptedAt: { type: Date },
     address: { type: String },
     dob: { type: String },
     gender: { type: String },

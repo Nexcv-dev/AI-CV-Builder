@@ -42,7 +42,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
     const markExpiredPendingCheckouts = async () => {
         await CheckoutSession.updateMany(
             { status: 'pending', expiresAt: { $lt: new Date() } },
-            { $set: { status: 'expired' } }
+            { $set: { status: 'expired', billingReviewStatus: 'resolved', expiredAt: new Date() } }
         );
     };
 
@@ -371,7 +371,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 finalAmountCents: quote.finalAmountCents,
                 couponCode: quote.couponCode || undefined,
                 status: 'pending',
-                expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+                expiresAt: new Date(Date.now() + 15 * 60 * 1000),
             });
             const frontendOrigin = getFrontendOrigin(req);
             const notifyUrl = process.env.PAYHERE_NOTIFY_URL?.trim() || `${getApiOrigin(req)}/api/payhere/ipn`;
@@ -409,6 +409,35 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             });
         } catch (error) {
             return sendError(res, 500, 'Could not start PayHere checkout.', error);
+        }
+    });
+
+    router.post('/api/billing/checkout/:orderId/cancel', requireAuth, async (req: Request, res: Response) => {
+        try {
+            const orderId = typeof req.params.orderId === 'string' ? req.params.orderId.trim() : '';
+            if (!orderId) return res.status(400).json({ error: 'Missing checkout order.' });
+
+            const checkoutSession = await CheckoutSession.findOne({
+                orderId,
+                userId: currentUserId(req),
+                status: 'pending',
+            });
+            if (!checkoutSession) {
+                return res.json({ status: 'ignored' });
+            }
+
+            checkoutSession.status = 'cancelled';
+            checkoutSession.billingReviewStatus = 'resolved';
+            checkoutSession.cancelledAt = new Date();
+            await checkoutSession.save();
+            logEvent('info', 'payment.checkout_cancelled_by_user', {
+                orderId,
+                userId: currentUserId(req),
+                plan: checkoutSession.plan,
+            });
+            return res.json({ status: checkoutSession.status });
+        } catch (error) {
+            return sendError(res, 500, 'Could not cancel checkout.', error);
         }
     });
 

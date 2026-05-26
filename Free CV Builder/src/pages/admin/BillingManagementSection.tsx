@@ -54,7 +54,7 @@ export default function BillingManagementSection({
   onReviewNoteChange: (value: string) => void;
   onMarkReviewed: (payment: AdminPaymentItem) => void;
 }) {
-  const needsReviewCount = (summary?.expiredCheckoutCount || 0) + (summary?.failedPaymentCount || 0);
+  const needsReviewCount = (summary?.checkoutReviewCount || 0) + (summary?.failedPaymentCount || 0);
 
   return (
     <section className="mt-6">

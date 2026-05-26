@@ -102,7 +102,7 @@ export interface AdminPaymentItem {
   paymentId: string;
   orderId: string;
   reviewType?: 'payment' | 'checkout';
-  reviewStatus?: 'processed' | 'unprocessed' | 'expired' | 'pending' | 'failed';
+  reviewStatus?: 'processed' | 'unprocessed' | 'expired' | 'pending' | 'failed' | 'cancelled';
   billingReviewStatus?: 'open' | 'resolved';
   reviewedAt?: string;
   reviewNote?: string;
@@ -168,7 +168,7 @@ export interface AdminPaymentSummary {
   currency: string;
   processedCount: number;
   pendingCheckoutCount: number;
-  expiredCheckoutCount: number;
+  checkoutReviewCount: number;
   failedPaymentCount: number;
   revenueByPlan: Record<string, number>;
   dailyRevenue: Array<{ day: string; cents: number }>;

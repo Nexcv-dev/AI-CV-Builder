@@ -9,7 +9,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
     const markExpiredPendingCheckouts = async () => {
         await CheckoutSession.updateMany(
             { status: 'pending', expiresAt: { $lt: new Date() } },
-            { $set: { status: 'expired' } }
+            { $set: { status: 'expired', billingReviewStatus: 'resolved', expiredAt: new Date() } }
         );
     };
 
@@ -33,7 +33,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
         return {
             id: checkout._id?.toString?.() || checkout.id,
             provider: 'payhere',
-            paymentId: checkout.status === 'expired' ? 'Expired checkout' : 'Pending checkout',
+            paymentId: checkout.status === 'failed' ? 'Failed checkout' : 'Checkout review',
             orderId: checkout.orderId,
             reviewType: 'checkout',
             reviewStatus: checkout.status,
@@ -316,7 +316,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 .populate('userId', 'email displayName');
             let checkoutReviewItems: any[] = [];
             if (status === 'review') {
-                const checkoutFilter: any = { status: { $in: ['expired', 'failed'] }, billingReviewStatus: { $ne: 'resolved' } };
+                const checkoutFilter: any = { status: 'failed', billingReviewStatus: { $ne: 'resolved' } };
                 if (['payg', 'monthly'].includes(plan)) checkoutFilter.plan = plan;
                 if (search) {
                     const pattern = new RegExp(escapeRegex(search), 'i');
@@ -335,12 +335,12 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             const [
                 allProcessedPayments,
                 pendingCheckoutCount,
-                expiredCheckoutCount,
+                checkoutReviewCount,
                 failedPaymentCount,
             ] = await Promise.all([
                 PaymentTransaction.find({ processed: true }).select('amount currency plan createdAt'),
                 CheckoutSession.countDocuments({ status: 'pending' }),
-                CheckoutSession.countDocuments({ status: { $in: ['expired', 'failed'] }, billingReviewStatus: { $ne: 'resolved' } }),
+                CheckoutSession.countDocuments({ status: 'failed', billingReviewStatus: { $ne: 'resolved' } }),
                 PaymentTransaction.countDocuments({ processed: false, billingReviewStatus: { $ne: 'resolved' } }),
             ]);
     
@@ -381,7 +381,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                     currency: 'LKR',
                     processedCount: allProcessedPayments.length,
                     pendingCheckoutCount,
-                    expiredCheckoutCount,
+                    checkoutReviewCount,
                     failedPaymentCount,
                     revenueByPlan,
                     dailyRevenue,

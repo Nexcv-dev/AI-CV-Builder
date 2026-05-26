@@ -403,7 +403,7 @@ export default function AdminDashboard() {
         const isCheckoutReview = payment.reviewType === 'checkout';
         return {
           ...current,
-          expiredCheckoutCount: isCheckoutReview ? Math.max(0, current.expiredCheckoutCount - 1) : current.expiredCheckoutCount,
+          checkoutReviewCount: isCheckoutReview ? Math.max(0, current.checkoutReviewCount - 1) : current.checkoutReviewCount,
           failedPaymentCount: isCheckoutReview ? current.failedPaymentCount : Math.max(0, current.failedPaymentCount - 1),
         };
       });

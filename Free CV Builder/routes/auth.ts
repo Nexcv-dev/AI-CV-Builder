@@ -50,7 +50,9 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             const email = normalizeEmail(req.body.email);
             const displayName = sanitizeDisplayName(req.body.displayName);
+            const phone = sanitizeProfileField(req.body.phone, 40);
             const password = typeof req.body.password === 'string' ? req.body.password : '';
+            const acceptedTerms = req.body.acceptedTerms === true || req.body.acceptedTerms === 'true';
     
             if (!isValidEmail(email)) {
                 return res.status(400).json({ error: 'Enter a valid email address.' });
@@ -58,6 +60,14 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             if (!displayName) {
                 return res.status(400).json({ error: 'Enter your name.' });
+            }
+
+            if (!phone) {
+                return res.status(400).json({ error: 'Enter your contact number.' });
+            }
+
+            if (!acceptedTerms) {
+                return res.status(400).json({ error: 'Please accept the Terms and Privacy Policy to create your account.' });
             }
     
             if (!validatePasswordStrength(password)) {
@@ -73,8 +83,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const user = await User.create({
                 email,
                 displayName,
+                phone,
                 passwordHash: hashPassword(password),
                 role: roleForEmail(email),
+                termsAcceptedAt: new Date(),
                 emailVerified: false,
                 emailVerificationToken: verification.codeHash,
                 emailVerificationExpires: verification.expires,

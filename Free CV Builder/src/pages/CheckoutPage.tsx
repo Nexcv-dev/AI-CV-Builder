@@ -219,6 +219,11 @@ export default function CheckoutPage() {
   useEffect(() => {
     const paymentStatus = searchParams.get('payment');
     if (paymentStatus === 'cancel') {
+      const orderId = searchParams.get('order');
+      if (orderId) {
+        void apiFetch(`/api/billing/checkout/${encodeURIComponent(orderId)}/cancel`, { method: 'POST' }).catch(() => undefined);
+      }
+      sessionStorage.removeItem('nexcv-pending-checkout');
       toast.error('Payment cancelled. Your plan was not changed.');
       setSearchParams({ plan: selectedPlan.key }, { replace: true });
       return;

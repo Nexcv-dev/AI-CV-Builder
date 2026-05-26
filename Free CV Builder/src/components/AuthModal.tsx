@@ -1,6 +1,6 @@
 import React, { FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Eye, EyeOff, Lock, Mail, RotateCcw, ShieldCheck, User, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Eye, EyeOff, Lock, Mail, Phone, RotateCcw, ShieldCheck, User, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
 
@@ -40,7 +40,7 @@ function GoogleLogo() {
   );
 }
 
-async function authRequest(mode: AuthMode, payload: Record<string, string>) {
+async function authRequest(mode: AuthMode, payload: Record<string, unknown>) {
   const response = await fetch(authCopy[mode].endpoint, {
     method: 'POST',
     headers: {
@@ -68,8 +68,10 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [displayName, setDisplayName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,6 +85,8 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     if (!isOpen) return;
     setMode(initialMode);
     setError('');
+    setPhone('');
+    setAcceptedTerms(false);
     setIsRedirecting(false);
     setShowOtpStep(false);
     setVerificationCode('');
@@ -133,8 +137,10 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const switchMode = (nextMode: AuthMode) => {
     setMode(nextMode);
     setDisplayName('');
+    setPhone('');
     setEmail('');
     setPassword('');
+    setAcceptedTerms(false);
     setShowPassword(false);
     setShowOtpStep(false);
     setVerificationCode('');
@@ -154,13 +160,21 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
+
+    if (mode === 'signup' && !acceptedTerms) {
+      setError('Please accept the Terms and Privacy Policy to create your account.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const data = await authRequest(mode, {
         displayName,
+        phone,
         email,
         password,
+        acceptedTerms,
       });
       if (mode === 'signup') {
         if (data.user) {
@@ -365,19 +379,39 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
 
               <form key={mode} className="auth-mode-fade space-y-3" onSubmit={handleSubmit}>
             {mode === 'signup' && (
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-extrabold uppercase text-slate-400">Name</span>
-                <span className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950 px-3 py-3 focus-within:border-violet-400">
-                  <User size={17} className="text-slate-500" />
-                  <input
-                    value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    className="w-full bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
-                    placeholder="Your name"
-                    autoComplete="name"
-                  />
-                </span>
-              </label>
+              <>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-extrabold uppercase text-slate-400">Name</span>
+                  <span className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950 px-3 py-3 focus-within:border-violet-400">
+                    <User size={17} className="text-slate-500" />
+                    <input
+                      value={displayName}
+                      onChange={(event) => setDisplayName(event.target.value)}
+                      className="w-full bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
+                      placeholder="Your name"
+                      autoComplete="name"
+                      required
+                    />
+                  </span>
+                </label>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-extrabold uppercase text-slate-400">Contact number</span>
+                  <span className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950 px-3 py-3 focus-within:border-violet-400">
+                    <Phone size={17} className="text-slate-500" />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      className="w-full bg-transparent text-base font-semibold text-white outline-none sm:text-sm"
+                      placeholder="+94 77 123 4567"
+                      autoComplete="tel"
+                      maxLength={40}
+                      required
+                    />
+                  </span>
+                </label>
+              </>
             )}
 
             <label className="block">
@@ -443,9 +477,32 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               </p>
             )}
 
+            {mode === 'signup' && (
+              <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(event) => setAcceptedTerms(event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-violet-500 focus:ring-violet-400"
+                  required
+                />
+                <span className="text-xs font-semibold leading-5 text-slate-300">
+                  I agree to the{' '}
+                  <Link to="/terms" className="font-black text-violet-300 hover:text-violet-200" onClick={onClose}>
+                    Terms and Conditions
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy-policy" className="font-black text-violet-300 hover:text-violet-200" onClick={onClose}>
+                    Privacy Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+            )}
+
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (mode === 'signup' && (!acceptedTerms || !phone.trim()))}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? 'Please wait...' : copy.action}

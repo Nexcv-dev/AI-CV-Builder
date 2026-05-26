@@ -5,6 +5,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock3,
+  Crown,
   Download,
   Edit3,
   FileText,
@@ -111,6 +112,7 @@ export default function Dashboard() {
   const recentDocuments = useMemo(() => documents.slice(0, 3), [documents]);
   const templatesUsed = useMemo(() => new Set(documents.map((document) => document.template)).size, [documents]);
   const creationLimitReached = Boolean(quota?.reached);
+  const isFreePlan = !user || user.plan === 'free';
   const planExpiryReminder = useMemo(() => {
     if (!user?.planExpiresAt || user.plan === 'free' || user.plan === 'unlimited') return null;
 
@@ -209,6 +211,40 @@ export default function Dashboard() {
             compactValue
           />
         </section>
+
+        {isFreePlan && (
+          <section className="mt-5 overflow-hidden rounded-2xl border border-emerald-300/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.14),rgba(124,58,237,0.12),rgba(255,255,255,0.035))] p-4 shadow-xl shadow-black/10 sm:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200 ring-1 ring-emerald-200/25">
+                  <Crown size={20} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase text-emerald-200">Free plan</p>
+                  <h2 className="mt-1 font-montserrat text-xl font-black text-white sm:text-2xl">Unlock more CVs, premium templates, and AI help</h2>
+                  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-300">
+                    Free includes the basics. Upgrade when you need more saves, more PDF downloads, premium designs, and faster CV polishing.
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:w-auto lg:min-w-[300px]">
+                <Link
+                  to="/checkout?plan=payg"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-300 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-200 active:scale-[0.98]"
+                >
+                  Upgrade now
+                  <ArrowRight size={16} />
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10 active:scale-[0.98]"
+                >
+                  Compare plans
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         <AnimatePresence initial={false}>
           {planExpiryReminder && (
