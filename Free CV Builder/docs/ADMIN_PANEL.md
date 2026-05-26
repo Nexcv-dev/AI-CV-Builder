@@ -1,43 +1,119 @@
-# Admin Platform Guide
+# Admin Panel Guide
 
-The NexCV Admin Platform is a protected area of the application designed for system operators, support staff, and platform owners to manage the application without needing direct database access.
+The NexCV admin panel is the protected operations area for platform owners and support/admin staff. It provides user, template, billing, support, settings, role, and audit management without direct database access.
 
-## 1. Access & Security
-*   **Authentication**: Admins must log in using approved Google OAuth credentials.
-*   **Super Admin List**: The initial master admins are defined via the `SUPER_ADMIN_EMAILS` environment variable.
-*   **IP Restricting**: In production, the admin routes are completely hidden and inaccessible to any IP address not explicitly listed in the `ADMIN_ALLOWED_IPS` environment variable. This prevents public discovery of the admin portal.
-*   **Audit Logging**: Every write-action performed by an admin (e.g., deleting a user, publishing a template, refunding a payment) is recorded in the MongoDB Audit Logs collection, retaining the Admin ID, action type, target ID, and timestamp for 30 days.
+## Access And Security
 
-## 2. Core Modules
+- Admins must be authenticated.
+- Initial owner access comes from `SUPER_ADMIN_EMAILS`.
+- Role and permission checks are enforced through `requireAdminPermission(...)`.
+- Production admin access can be hidden from untrusted networks with `ADMIN_ALLOWED_IPS`.
+- Important state changes should create admin audit log entries.
 
-### Dashboard & Analytics
-Provides a high-level overview of the platform's health:
-*   Total registered users.
-*   Total CVs created.
-*   Conversion rates (Free to Premium users).
-*   Recent payment transactions.
+Local development usually leaves `ADMIN_ALLOWED_IPS` empty. In production, set it to trusted public IPv4/IPv6 addresses only.
 
-### User Management
-*   Search and filter users by email or ID.
-*   View user details, including their saved CVs and billing tier.
-*   Manually upgrade or downgrade user accounts (e.g., granting premium access for support reasons).
+## Core Modules
 
-### Template Management
-*   Upload new custom templates (HTML/CSS) directly to S3.
-*   Set template metadata (Premium flag, thumbnails, image crop data).
-*   Publish, draft, or archive templates in real-time.
+### Overview
 
-### Billing & Payments
-*   View all PayHere transactions.
-*   Manage premium plans and update pricing copy.
-*   Manage promotional coupons and track their usage.
+The overview shows operational summaries such as user counts, CV activity, payment health, and service readiness. The backing API is `GET /api/admin/summary`.
 
-### Content Management System (CMS)
-Allows admins to update text on the public-facing pages without deploying new code:
-*   Landing page copy.
-*   FAQ entries.
-*   Legal policies (Privacy, Terms).
+### Users
 
-### Settings & Operations
-*   **Maintenance Mode**: Toggle the site into maintenance mode, displaying a friendly "brb" page to users while allowing Admins to continue testing the site.
-*   **Service Checks**: Verify connection status to MongoDB, AWS S3, and the Email SMTP server.
+Admins can:
+
+- Search and inspect users.
+- View user plan/account state.
+- Update user plans for support or manual correction.
+- Change roles when the acting admin has the required permission.
+
+Relevant APIs:
+
+- `GET /api/admin/users`
+- `GET /api/admin/users/:id`
+- `PATCH /api/admin/users/:id/plan`
+- `PATCH /api/admin/users/:id/role`
+
+### Templates
+
+Admins can manage template records and publication state.
+
+- List managed templates.
+- Create and update template metadata/content.
+- Publish templates when they are ready for users.
+- Archive templates that should no longer appear publicly.
+
+Relevant APIs:
+
+- `GET /api/admin/templates`
+- `POST /api/admin/templates`
+- `PATCH /api/admin/templates/:key`
+- `POST /api/admin/templates/:key/publish`
+- `POST /api/admin/templates/:key/archive`
+
+For local authoring rules, see [Template Authoring Guide](template-authoring-guide.md).
+
+### Billing And Coupons
+
+Admins can:
+
+- View/update plan configuration.
+- Create/update coupons.
+- Review payment transactions.
+- Support users after PayHere/IPN failures.
+
+Relevant APIs:
+
+- `GET /api/admin/billing/config`
+- `PATCH /api/admin/billing/plans/:plan`
+- `POST /api/admin/billing/coupons`
+- `PATCH /api/admin/billing/coupons/:code`
+- `GET /api/admin/payments`
+
+### Support
+
+Admins can view support tickets, update ticket status, and send replies.
+
+Relevant APIs:
+
+- `GET /api/admin/support/tickets`
+- `PATCH /api/admin/support/tickets/:id`
+- `POST /api/admin/support/tickets/:id/reply`
+
+### Settings
+
+Settings cover launch and runtime controls, including:
+
+- Maintenance mode.
+- Public app settings.
+- Default/template settings.
+- Runtime environment display.
+- Service readiness indicators for MongoDB, S3, PayHere, Gemini, email, and session configuration.
+- Test-email delivery.
+
+Relevant APIs:
+
+- `GET /api/admin/settings`
+- `PATCH /api/admin/settings`
+- `POST /api/admin/settings/test-email`
+
+### Audit Logs
+
+Audit logs provide a history of sensitive admin activity. Keep in mind that database-retained audit logs are not a long-term compliance archive by themselves. Export them externally if launch/compliance requirements need longer retention.
+
+Relevant API:
+
+- `GET /api/admin/audit-logs`
+
+## Operational Checklist
+
+Before production launch:
+
+- Configure `SUPER_ADMIN_EMAILS`.
+- Configure `SESSION_SECRET`.
+- Decide whether `ADMIN_ALLOWED_IPS` is required.
+- Verify role permissions with a non-owner admin account.
+- Test billing updates and coupon creation in sandbox.
+- Test template publish/archive flow with one non-critical template.
+- Test email delivery through the admin test-email endpoint.
+- Confirm audit logs are written for sensitive actions.

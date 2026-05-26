@@ -11,6 +11,9 @@ interface CustomPreviewProps {
   fallback?: React.ReactNode;
 }
 
+const A4_PREVIEW_WIDTH_PX = 794;
+const A4_PREVIEW_HEIGHT_PX = 1122;
+
 const CustomPreview = forwardRef<HTMLDivElement, CustomPreviewProps>(({ cvData, template, fallback }, ref) => {
   const { html, loading, error } = useTemplateHtml(template);
   const renderedHtml = useMemo(() => html ? renderCvTemplateString(html, { ...cvData, template }) : '', [cvData, html, template]);
@@ -26,7 +29,7 @@ const CustomPreview = forwardRef<HTMLDivElement, CustomPreviewProps>(({ cvData, 
     const nextHeight = Math.max(
       documentElement?.scrollHeight || 0,
       body?.scrollHeight || 0,
-      Math.round(297 * 3.78)
+      A4_PREVIEW_HEIGHT_PX
     );
     setIframeHeight(`${nextHeight}px`);
   };
@@ -38,18 +41,22 @@ const CustomPreview = forwardRef<HTMLDivElement, CustomPreviewProps>(({ cvData, 
   return (
     <div ref={ref} className="print:p-0">
       <div
-        className="cv-preview-surface relative mx-auto mb-8 min-h-[297mm] w-[210mm] overflow-visible bg-white shadow-2xl print:mb-0 print:shadow-none"
-        style={{ minWidth: '210mm' }}
+        className="cv-preview-surface relative mx-auto mb-0 overflow-visible bg-white shadow-2xl print:mb-0 print:shadow-none lg:mb-8"
+        style={{
+          width: `${A4_PREVIEW_WIDTH_PX}px`,
+          minWidth: `${A4_PREVIEW_WIDTH_PX}px`,
+          minHeight: `${A4_PREVIEW_HEIGHT_PX}px`,
+        }}
       >
         {loading ? (
-          <div className="flex min-h-[297mm] items-center justify-center gap-3 text-sm font-bold text-slate-500">
+          <div className="flex items-center justify-center gap-3 text-sm font-bold text-slate-500" style={{ minHeight: `${A4_PREVIEW_HEIGHT_PX}px` }}>
             <Loader2 className="animate-spin text-violet-500" size={18} />
             Loading custom template...
           </div>
         ) : error && fallback ? (
           fallback
         ) : error ? (
-          <div className="flex min-h-[297mm] items-center justify-center px-10 text-center text-sm font-bold text-red-500">
+          <div className="flex items-center justify-center px-10 text-center text-sm font-bold text-red-500" style={{ minHeight: `${A4_PREVIEW_HEIGHT_PX}px` }}>
             {error}
           </div>
         ) : (
@@ -58,10 +65,10 @@ const CustomPreview = forwardRef<HTMLDivElement, CustomPreviewProps>(({ cvData, 
             key={template}
             title="Custom CV template preview"
             srcDoc={renderedHtml}
-            className="block min-h-[297mm] w-full border-0 transition-opacity duration-150"
+            className="block w-full border-0 transition-opacity duration-150"
             sandbox="allow-same-origin"
             scrolling="no"
-            style={{ height: iframeHeight }}
+            style={{ height: iframeHeight, minHeight: `${A4_PREVIEW_HEIGHT_PX}px` }}
             onLoad={syncIframeHeight}
           />
         )}

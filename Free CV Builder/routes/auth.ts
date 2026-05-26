@@ -1,12 +1,46 @@
 ﻿import express, { Router, Request, Response, NextFunction } from 'express';
 import { bindDeps } from './_shared';
-import type { BillingPlan } from '../server-models/userPlan';
-import type { TemplateName } from '../src/templates';
 
 type RouteDeps = Record<string, any>;
 
 export function registerAuthRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash } = bindDeps(deps);
+    const {
+        CVDocument,
+        User,
+        authLimiter,
+        currentUserId,
+        emailGreetingName,
+        emailVerificationAttemptLimiter,
+        emailVerificationLimiter,
+        generateEmailVerificationOtp,
+        hashPassword,
+        hashToken,
+        isEmailVerified,
+        isMongoDuplicateKeyError,
+        isMongoValidationError,
+        isValidEmail,
+        mergeEmailTemplates,
+        mongoose,
+        normalizeEmail,
+        normalizeEmailFrom,
+        passport,
+        passwordPolicyMessage,
+        passwordResetLimiter,
+        publicUser,
+        randomBytes,
+        renderEmailTemplate,
+        requireAuth,
+        roleForEmail,
+        sanitizeDisplayName,
+        sanitizeProfileField,
+        sendAppEmail,
+        sendEmailVerificationWithRetry,
+        sendError,
+        sendNewAccountNotification,
+        syncUserRoleFromAllowlist,
+        validatePasswordStrength,
+        verifyPassword,
+    } = bindDeps(deps);
 
     router.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -235,8 +269,8 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
     
             const templates = (req as any).appSettings?.emailTemplates;
-            const passwordResetTemplate = deps.renderEmailTemplate(
-                deps.mergeEmailTemplates(templates).passwordReset,
+            const passwordResetTemplate = renderEmailTemplate(
+                mergeEmailTemplates(templates).passwordReset,
                 {
                     name: emailGreetingName(user.displayName),
                     resetUrl,

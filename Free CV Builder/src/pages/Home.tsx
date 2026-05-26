@@ -566,7 +566,8 @@ export default function Home() {
         parseFloat(containerStyles.paddingLeft || '0') +
         parseFloat(containerStyles.paddingRight || '0');
       const availableWidth = Math.max(container.clientWidth - horizontalPadding, 0);
-      const contentWidth = previewNode?.scrollWidth || previewWidth || DEFAULT_A4_PREVIEW_WIDTH_PX;
+      const measuredWidth = previewNode?.scrollWidth || previewWidth || DEFAULT_A4_PREVIEW_WIDTH_PX;
+      const contentWidth = Math.max(measuredWidth, DEFAULT_A4_PREVIEW_WIDTH_PX);
       const nextScale = availableWidth > 0 ? Math.min(1, availableWidth / contentWidth) : 1;
 
       setScale(Number.isFinite(nextScale) ? nextScale : 1);
@@ -588,8 +589,10 @@ export default function Home() {
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
-        const nextWidth = entry.target.scrollWidth || entry.contentRect.width || DEFAULT_A4_PREVIEW_WIDTH_PX;
-        const nextHeight = entry.target.scrollHeight || entry.contentRect.height || DEFAULT_A4_PREVIEW_HEIGHT_PX;
+        const measuredWidth = entry.target.scrollWidth || entry.contentRect.width || DEFAULT_A4_PREVIEW_WIDTH_PX;
+        const measuredHeight = entry.target.scrollHeight || entry.contentRect.height || DEFAULT_A4_PREVIEW_HEIGHT_PX;
+        const nextWidth = Math.max(measuredWidth, DEFAULT_A4_PREVIEW_WIDTH_PX);
+        const nextHeight = Math.max(measuredHeight, DEFAULT_A4_PREVIEW_HEIGHT_PX);
         setPreviewWidth(nextWidth);
         setPreviewHeight(nextHeight);
       }
@@ -975,7 +978,7 @@ export default function Home() {
           >
             <div
               ref={previewContainerRef}
-              className="preview-container-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 pb-6 lg:pb-8 flex flex-col items-center justify-start overscroll-y-none overscroll-x-none print:p-0 print:overflow-visible"
+              className="preview-container-scroll flex-1 min-h-0 touch-pan-y overflow-y-auto overflow-x-hidden p-4 pb-3 lg:pb-8 flex flex-col items-center justify-start overscroll-y-none overscroll-x-none print:p-0 print:overflow-visible"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <div

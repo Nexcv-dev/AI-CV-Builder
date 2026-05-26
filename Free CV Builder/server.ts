@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dns from 'node:dns';
 import * as dotenv from 'dotenv';
-import { createHash, pbkdf2Sync, randomBytes, randomInt, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import mongoose from 'mongoose';
 import connectDB from './server-models/db';
 import User from './server-models/User';
@@ -52,7 +52,7 @@ import {
     S3_TEMPLATE_PREFIX,
 } from './services/s3Service';
 import { generateCVHTML, generatePdfDocument, sanitizeCvData } from './services/pdfService';
-import { CV_TEMPLATES, DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName, templateRequiresPaidPlan, type TemplateName } from './src/templates';
+import { CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan } from './src/templates';
 import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from './src/adminAccess';
 import { mergeEmailTemplates, renderEmailTemplate } from './src/emailTemplateDefaults';
@@ -60,6 +60,61 @@ import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildDownloadQuota, getNextUtcDayResetAt, getUtcDayKey } from './server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
 import type { BillingPlan } from './server-models/userPlan';
+import { isAdminIpAllowed, requireAdminAllowedIp, requireAdminPageAllowedIp } from './server-utils/adminIpAllowlist';
+import {
+    adminTemplateSummary,
+    customTemplateSummary,
+    defaultTemplateCategory,
+    getActiveTemplateForKey,
+    MAX_TEMPLATE_CSS_LENGTH,
+    MAX_TEMPLATE_HTML_LENGTH,
+    parseThumbnailUpload,
+    resolveRequestedTemplate,
+    sanitizeTemplateSource,
+    TEMPLATE_CATEGORIES,
+    TEMPLATE_STATUSES,
+    TEMPLATE_SURFACE_COLOR_ROLES,
+    templateThumbnailPath,
+    validateCustomTemplateKey,
+    validateTemplateCss,
+    validateTemplateHtml,
+} from './server-utils/templateAdmin';
+import {
+    buildPayHereCheckoutHash,
+    buildPayHereMd5Signature,
+    generateTransactionId,
+    getPayHereCheckoutUrl,
+    getPayHereMerchantConfig,
+    getPlanPrice,
+    getPublicBillingPlans,
+    isPaidBillingPlan,
+    normalizeCouponCode,
+    PAYHERE_PLAN_PRICES,
+    payHereAmountToCents,
+    planDisplayName,
+    quoteCheckout,
+    resolvePayHerePaymentContext,
+    verifyPayHereMd5Signature,
+} from './server-utils/payHere';
+import {
+    emailGreetingName,
+    generateEmailVerificationOtp,
+    hashPassword,
+    hashToken,
+    isEmailVerified,
+    isValidEmail,
+    normalizeEmail,
+    passwordPolicyMessage,
+    publicUser,
+    sanitizeDisplayName,
+    sanitizeProfileField,
+    sendBillingSuccessNotifications,
+    sendContactNotification,
+    sendEmailVerificationWithRetry,
+    sendNewAccountNotification,
+    validatePasswordStrength,
+    verifyPassword,
+} from './server-utils/userAuth';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAuthRoutes } from './routes/auth';
 import { registerCvRoutes } from './routes/cv';
@@ -76,6 +131,12 @@ export {
     buildPasswordResetTransportOptions,
     generateCVHTML,
     renderCvTemplateString,
+    PAYHERE_PLAN_PRICES,
+    buildPayHereCheckoutHash,
+    buildPayHereMd5Signature,
+    payHereAmountToCents,
+    resolvePayHerePaymentContext,
+    verifyPayHereMd5Signature,
 };
 
 dns.setDefaultResultOrder('ipv4first');
@@ -145,72 +206,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
         supportEmail: settings.supportEmail || 'support@nexcv.com',
     });
 });
-
-const normalizeClientIp = (value: unknown) => {
-    if (typeof value !== 'string') return '';
-    let trimmed = value.trim();
-    if (!trimmed) return '';
-    trimmed = trimmed.replace(/^\[/, '').replace(/\]$/, '');
-    if (/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(trimmed)) {
-        trimmed = trimmed.slice(0, trimmed.lastIndexOf(':'));
-    }
-    if (trimmed === '::1') return '127.0.0.1';
-    return trimmed.replace(/^::ffff:/, '');
-};
-
-const getAllowedAdminIps = () => (
-    (process.env.ADMIN_ALLOWED_IPS || '')
-        .split(',')
-        .map(normalizeClientIp)
-        .filter(Boolean)
-);
-
-const hasConfiguredAdminIpAllowlist = () => getAllowedAdminIps().length > 0;
-
-const getRequestIpCandidates = (req: Request) => {
-    const forwardedFor = (req.header('x-forwarded-for') || '')
-        .split(',')
-        .map(normalizeClientIp)
-        .filter(Boolean);
-
-    return new Set([
-        normalizeClientIp(req.ip),
-        normalizeClientIp(req.socket?.remoteAddress),
-        normalizeClientIp(req.header('x-real-ip')),
-        normalizeClientIp(req.header('cf-connecting-ip')),
-        normalizeClientIp(req.header('true-client-ip')),
-        normalizeClientIp(req.header('fly-client-ip')),
-        normalizeClientIp(req.header('x-client-ip')),
-        ...((req.ips || []).map(normalizeClientIp)),
-        ...forwardedFor,
-    ].filter(Boolean));
-};
-
-const isAdminIpAllowed = (req: Request) => {
-    const allowedIps = getAllowedAdminIps();
-    if (!allowedIps.length) return false;
-    const candidates = getRequestIpCandidates(req);
-    if (process.env.NODE_ENV !== 'production' && (candidates.has('127.0.0.1') || candidates.has('localhost'))) {
-        return true;
-    }
-    return allowedIps.some((ip) => candidates.has(ip));
-};
-
-const requireAdminAllowedIp = (req: Request, res: Response, next: NextFunction) => {
-    if (!hasConfiguredAdminIpAllowlist()) {
-        return res.status(403).json({ error: 'Admin IP allowlist is not configured.' });
-    }
-    if (isAdminIpAllowed(req)) return next();
-    return res.status(403).json({ error: 'Admin access is not allowed from this network.' });
-};
-
-const requireAdminPageAllowedIp = (req: Request, res: Response, next: NextFunction) => {
-    if (!hasConfiguredAdminIpAllowlist()) {
-        return res.status(404).send('Not found');
-    }
-    if (isAdminIpAllowed(req)) return next();
-    return res.status(404).send('Not found');
-};
 
 // Helper to provide private error responses
 export const sendError = (res: express.Response, status: number, clientMessage: string, internalError?: any) => {
@@ -297,125 +292,11 @@ export function sanitizeContextField(value: any): string {
     return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, 200).trim() || 'Unknown';
 }
 
-const normalizeEmail = (email: unknown) => (
-    typeof email === 'string' ? email.trim().toLowerCase() : ''
-);
-
-const sanitizeDisplayName = (name: unknown) => (
-    typeof name === 'string'
-        ? name.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim().slice(0, 80)
-        : ''
-);
-
-const emailGreetingName = (name: unknown) => sanitizeDisplayName(name) || 'there';
-
-const sanitizeProfileField = (value: unknown, maxLength = 160) => (
-    typeof value === 'string'
-        ? value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim().slice(0, maxLength)
-        : ''
-);
-
-const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
 const isMongoDuplicateKeyError = (error: any) => (
     error?.code === 11000 || error?.name === 'MongoServerError' && error?.code === 11000
 );
 
 const isMongoValidationError = (error: any) => error?.name === 'ValidationError';
-
-const passwordPolicyMessage = 'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.';
-const emailVerificationExpiresMs = 10 * 60 * 1000;
-
-const validatePasswordStrength = (password: string) => (
-    password.length >= 8 &&
-    /[a-z]/.test(password) &&
-    /[A-Z]/.test(password) &&
-    /\d/.test(password) &&
-    /[^A-Za-z0-9]/.test(password)
-);
-
-const hashPassword = (password: string) => {
-    const salt = randomBytes(16).toString('hex');
-    const hash = pbkdf2Sync(password, salt, 120000, 32, 'sha256').toString('hex');
-    return `${salt}:${hash}`;
-};
-
-const verifyPassword = (password: string, storedHash: string) => {
-    const [salt, hash] = storedHash.split(':');
-    if (!salt || !hash) return false;
-
-    const expected = Buffer.from(hash, 'hex');
-    const actual = pbkdf2Sync(password, salt, 120000, 32, 'sha256');
-    return expected.length === actual.length && timingSafeEqual(expected, actual);
-};
-
-const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
-
-const generateEmailVerificationOtp = () => {
-    const code = randomInt(100000, 1000000).toString();
-    return {
-        code,
-        codeHash: hashToken(code),
-        expires: new Date(Date.now() + emailVerificationExpiresMs),
-    };
-};
-
-const isEmailVerified = (user: any) => user?.authProvider === 'google' || user?.emailVerified !== false;
-const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || 'www.bimanthaperera@gmail.com';
-
-const getEmailTemplates = async () => {
-    const settings = await getAppSettings().catch(() => null);
-    return mergeEmailTemplates(settings?.emailTemplates);
-};
-
-const sendEmailVerification = async (user: any, code: string) => {
-    const templates = await getEmailTemplates();
-    const email = renderEmailTemplate(templates.verification, {
-        name: emailGreetingName(user.displayName),
-        code,
-        expiresIn: '10 minutes',
-    });
-    await sendSystemEmail({
-        to: user.email,
-        subject: email.subject,
-        text: email.text,
-    });
-};
-
-const sendEmailVerificationWithRetry = async (user: any, code: string) => {
-    try {
-        await sendEmailVerification(user, code);
-        return true;
-    } catch (firstError) {
-        console.error('Could not send verification OTP on first attempt:', firstError);
-
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            await sendEmailVerification(user, code);
-            return true;
-        } catch (retryError) {
-            console.error('Could not send verification OTP on retry:', retryError);
-            return false;
-        }
-    }
-};
-
-const publicUser = (user: any) => ({
-    id: user._id?.toString?.() || user.id,
-    email: user.email,
-    displayName: user.displayName,
-    role: user.role || 'user',
-    emailVerified: isEmailVerified(user),
-    profileImage: user.profileImage,
-    phone: user.phone,
-    address: user.address,
-    dob: user.dob,
-    gender: user.gender,
-    nationality: user.nationality,
-    authProvider: user.authProvider,
-    plan: getEffectivePlan(user),
-    planExpiresAt: user.planExpiresAt,
-});
 
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated() || !req.user) {
@@ -511,98 +392,6 @@ const sanitizeContactMessage = (value: unknown) => (
         : ''
 );
 
-const md5Upper = (value: string) => createHash('md5').update(value, 'utf8').digest('hex').toUpperCase();
-
-export const PAYHERE_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount: string; cents: number; currency: 'LKR' }> = {
-    payg: { amount: '499.00', cents: 49900, currency: 'LKR' },
-    monthly: { amount: '2199.00', cents: 219900, currency: 'LKR' },
-};
-
-const centsToPayHereAmount = (cents: number) => (Math.max(0, cents) / 100).toFixed(2);
-
-const calculateDiscountCents = (amountCents: number, discountType?: string, discountValue?: number) => {
-    if (!discountType || !discountValue) return 0;
-    const rawDiscount = discountType === 'percent'
-        ? Math.floor(amountCents * Math.min(Math.max(discountValue, 0), 100) / 100)
-        : Math.round(discountValue);
-    return Math.min(Math.max(rawDiscount, 0), Math.max(amountCents - 100, 0));
-};
-
-const normalizeCouponCode = (value: unknown) => (
-    typeof value === 'string'
-        ? value.replace(/[^a-z0-9_-]/gi, '').trim().toUpperCase().slice(0, 32)
-        : ''
-);
-
-const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>) => {
-    const setting = await BillingPlanSetting.findOne({ plan, active: true });
-    const fallback = PAYHERE_PLAN_PRICES[plan];
-    const baseAmountCents = setting?.amountCents ?? fallback.cents;
-    const promotionDiscountCents = setting?.promotionActive
-        ? calculateDiscountCents(baseAmountCents, setting.promotionDiscountType, setting.promotionDiscountValue)
-        : 0;
-    const finalAmountCents = Math.max(baseAmountCents - promotionDiscountCents, 100);
-    return {
-        plan,
-        label: setting?.label || planDisplayName(plan),
-        amount: centsToPayHereAmount(finalAmountCents),
-        cents: finalAmountCents,
-        baseAmountCents,
-        promotionDiscountCents,
-        promotionActive: promotionDiscountCents > 0,
-        promotionLabel: promotionDiscountCents > 0 ? (setting?.promotionLabel || 'Limited offer') : '',
-        promotionDiscountType: setting?.promotionDiscountType || 'fixed',
-        promotionDiscountValue: setting?.promotionDiscountValue || 0,
-        discountBadge: promotionDiscountCents > 0
-            ? (setting?.promotionDiscountType === 'percent'
-                ? `${setting.promotionDiscountValue}% OFF`
-                : `${setting?.currency || fallback.currency} ${Math.round(promotionDiscountCents / 100)} OFF`)
-            : '',
-        currency: (setting?.currency || fallback.currency) as 'LKR',
-        source: setting ? 'admin' : 'default',
-        updatedAt: setting?.updatedAt,
-    };
-};
-
-const getPublicBillingPlans = async () => {
-    const [payg, monthly] = await Promise.all([getPlanPrice('payg'), getPlanPrice('monthly')]);
-    return [payg, monthly];
-};
-
-const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCode?: string) => {
-    const price = await getPlanPrice(plan);
-    let coupon: any = null;
-    let discountCents = 0;
-    const code = normalizeCouponCode(couponCode);
-    const now = new Date();
-    if (code) {
-        coupon = await Coupon.findOne({ code, active: true });
-        const planAllowed = coupon && (!coupon.appliesTo?.length || coupon.appliesTo.includes(plan));
-        const started = !coupon?.startsAt || coupon.startsAt <= now;
-        const notExpired = !coupon?.expiresAt || coupon.expiresAt >= now;
-        const underLimit = !coupon?.maxRedemptions || coupon.redeemedCount < coupon.maxRedemptions;
-        if (!coupon || !planAllowed || !started || !notExpired || !underLimit) {
-            return { error: 'Coupon is not valid for this plan.' };
-        }
-        discountCents = calculateDiscountCents(price.cents, coupon.discountType, coupon.discountValue);
-    }
-    const finalAmountCents = Math.max(price.cents - discountCents, 100);
-    return {
-        plan,
-        currency: price.currency,
-        baseAmountCents: price.baseAmountCents,
-        promotionDiscountCents: price.promotionDiscountCents,
-        discountCents: price.promotionDiscountCents + discountCents,
-        couponDiscountCents: discountCents,
-        finalAmountCents,
-        amount: centsToPayHereAmount(finalAmountCents),
-        couponCode: coupon?.code || '',
-        couponLabel: coupon?.label || '',
-        promotionLabel: price.promotionLabel,
-        discountBadge: price.discountBadge,
-    };
-};
-
 const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated() || !req.user) {
         return res.status(401).json({ error: 'Not authenticated' });
@@ -627,83 +416,6 @@ export const requireAdminPermission = (permission: AdminPermission) => (req: Req
     next();
 };
 
-export const getPayHereMerchantConfig = () => ({
-    merchantId: (process.env.PAYHERE_MERCHANT_ID || process.env.PAYHERE_SANDBOX_MERCHANT_ID || '').trim(),
-    merchantSecret: (process.env.PAYHERE_MERCHANT_SECRET || process.env.PAYHERE_SANDBOX_MERCHANT_SECRET || '').trim(),
-});
-
-export const getPayHereCheckoutUrl = () => (
-    process.env.PAYHERE_CHECKOUT_URL?.trim() ||
-    (process.env.PAYHERE_MERCHANT_ID ? 'https://www.payhere.lk/pay/checkout' : 'https://sandbox.payhere.lk/pay/checkout')
-);
-
-export const buildPayHereCheckoutHash = (payload: {
-    merchant_id: string;
-    order_id: string;
-    amount: string;
-    currency: string;
-}, merchantSecret: string) => md5Upper(
-    `${payload.merchant_id}${payload.order_id}${payload.amount}${payload.currency}${md5Upper(merchantSecret)}`
-);
-
-export const buildPayHereMd5Signature = (payload: {
-    merchant_id: string;
-    order_id: string;
-    payhere_amount: string;
-    payhere_currency: string;
-    status_code: string;
-}, merchantSecret: string) => md5Upper(
-    `${payload.merchant_id}${payload.order_id}${payload.payhere_amount}${payload.payhere_currency}${payload.status_code}${md5Upper(merchantSecret)}`
-);
-
-export const verifyPayHereMd5Signature = (payload: {
-    merchant_id: string;
-    order_id: string;
-    payhere_amount: string;
-    payhere_currency: string;
-    status_code: string;
-    md5sig: string;
-}, merchantSecret: string) => {
-    const received = String(payload.md5sig || '').trim().toUpperCase();
-    const expected = buildPayHereMd5Signature(payload, merchantSecret);
-    const receivedBuffer = Buffer.from(received, 'hex');
-    const expectedBuffer = Buffer.from(expected, 'hex');
-    return receivedBuffer.length === expectedBuffer.length && timingSafeEqual(receivedBuffer, expectedBuffer);
-};
-
-export const payHereAmountToCents = (value: unknown) => {
-    if (typeof value !== 'string' || !/^\d+(?:\.\d{1,2})?$/.test(value.trim())) return null;
-    return Math.round(Number(value.trim()) * 100);
-};
-
-const isPaidBillingPlan = (value: unknown): value is Exclude<BillingPlan, 'free'> => (
-    value === 'payg' || value === 'monthly'
-);
-
-export const resolvePayHerePaymentContext = (payload: Record<string, unknown>) => {
-    const customUserId = typeof payload.custom_1 === 'string' ? payload.custom_1.trim() : '';
-    const customPlan = typeof payload.custom_2 === 'string' ? payload.custom_2.trim().toLowerCase() : '';
-    const orderId = typeof payload.order_id === 'string' ? payload.order_id.trim() : '';
-    const orderMatch = orderId.match(/([a-f\d]{24})[^a-z\d]+(payg|monthly)|(payg|monthly)[^a-z\d]+([a-f\d]{24})/i);
-
-    const userId = isValidDocumentId(customUserId)
-        ? customUserId
-        : orderMatch?.[1] || orderMatch?.[4] || '';
-    const plan = isPaidBillingPlan(customPlan)
-        ? customPlan
-        : orderMatch?.[2]?.toLowerCase() || orderMatch?.[3]?.toLowerCase() || '';
-
-    return {
-        userId: isValidDocumentId(userId) ? userId : '',
-        plan: isPaidBillingPlan(plan) ? plan : null,
-    };
-};
-
-const generateTransactionId = () => {
-    const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    return `NX-${datePart}-${randomBytes(4).toString('hex').toUpperCase()}`;
-};
-
 const getApiOrigin = (req: Request) => {
     const configured = process.env.API_PUBLIC_URL || process.env.BACKEND_PUBLIC_URL;
     if (configured?.trim()) return configured.trim().replace(/\/+$/, '');
@@ -716,69 +428,6 @@ const getFrontendOrigin = (req: Request) => {
     const configured = process.env.FRONTEND_URL || process.env.ALLOWED_ORIGIN;
     if (configured?.trim()) return configured.trim().replace(/\/+$/, '');
     return getApiOrigin(req);
-};
-
-const planDisplayName = (plan: BillingPlan) => (
-    plan === 'monthly' ? 'Monthly' :
-        plan === 'payg' ? 'Pay As You Go' :
-            'Free'
-);
-
-const sendNewAccountNotification = (user: any) => sendNotificationEmail({
-    to: ADMIN_NOTIFICATION_EMAIL,
-    subject: 'New NexCV account created',
-    text: `A new NexCV account was created.\n\n` +
-        `Name: ${sanitizeDisplayName(user.displayName) || 'Unknown'}\n` +
-        `Email: ${user.email || 'Unknown'}\n` +
-        `Provider: ${user.authProvider || 'email'}\n` +
-        `User ID: ${user._id?.toString?.() || user.id || 'Unknown'}\n` +
-        `Created at: ${new Date().toISOString()}\n`,
-});
-
-const sendContactNotification = (details: { fullName: string; email: string; message: string }) => sendSystemEmail({
-    to: ADMIN_NOTIFICATION_EMAIL,
-    replyTo: details.email,
-    subject: `New NexCV contact message from ${details.fullName}`,
-    text: `A contact form message was submitted on NexCV.\n\n` +
-        `Name: ${details.fullName}\n` +
-        `Email: ${details.email}\n\n` +
-        `Message:\n${details.message}\n`,
-});
-
-const sendBillingSuccessNotifications = async (details: {
-    user: any;
-    plan: BillingPlan;
-    transactionId: string;
-    planExpiresAt?: Date;
-}) => {
-    const planName = planDisplayName(details.plan);
-    const expiresAt = details.planExpiresAt?.toISOString?.() || 'Unknown';
-
-    await sendNotificationEmail({
-        to: ADMIN_NOTIFICATION_EMAIL,
-        subject: `NexCV payment success - ${details.transactionId}`,
-        text: `A NexCV transaction completed successfully.\n\n` +
-            `Transaction ID: ${details.transactionId}\n` +
-            `Plan: ${planName}\n` +
-            `Customer: ${sanitizeDisplayName(details.user.displayName) || 'Unknown'}\n` +
-            `Email: ${details.user.email || 'Unknown'}\n` +
-            `User ID: ${details.user._id?.toString?.() || details.user.id || 'Unknown'}\n` +
-            `Plan expires at: ${expiresAt}\n`,
-    });
-
-    const templates = await getEmailTemplates();
-    const receiptEmail = renderEmailTemplate(templates.paymentReceipt, {
-        name: emailGreetingName(details.user.displayName),
-        planName,
-        transactionId: details.transactionId,
-        expiresAt,
-    });
-
-    await sendNotificationEmail({
-        to: details.user.email,
-        subject: receiptEmail.subject,
-        text: receiptEmail.text,
-    });
 };
 
 const documentSummary = (document: any) => ({
@@ -824,61 +473,6 @@ const adminUserSummary = (user: any, cvCount = 0) => ({
     cvCount,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-});
-
-const TEMPLATE_CATEGORIES = ['Modern', 'ATS Friendly', 'Minimal', 'Executive', 'Creative', 'Tech', 'Corporate'] as const;
-const TEMPLATE_STATUSES = ['draft', 'active', 'archived'] as const;
-const TEMPLATE_SURFACE_COLOR_ROLES = ['none', 'sidebar', 'header'] as const;
-const CUSTOM_TEMPLATE_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
-const MAX_TEMPLATE_HTML_LENGTH = 240_000;
-const MAX_TEMPLATE_CSS_LENGTH = 160_000;
-const MAX_TEMPLATE_THUMBNAIL_BYTES = 900_000;
-
-const defaultTemplateCategory = (key: string) => {
-    if (key === 'classic') return 'ATS Friendly';
-    if (key === 'minimalist') return 'Minimal';
-    if (key === 'professional') return 'Corporate';
-    if (key === 'startup') return 'Creative';
-    if (key === 'timeline') return 'Executive';
-    return 'Modern';
-};
-
-const templateThumbnailPath = (key: string, version?: unknown) => (
-    `/api/templates/${encodeURIComponent(key)}/thumbnail${version ? `?v=${encodeURIComponent(String(version))}` : ''}`
-);
-
-const builtInTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
-    key: template.key,
-    label: setting?.label || template.label,
-    category: setting?.category || defaultTemplateCategory(template.key),
-    access: setting?.access || template.access,
-    thumbnail: setting?.thumbnail || template.image,
-    builtInThumbnail: template.image,
-    surfaceColorRole: setting?.surfaceColorRole || template.surfaceColorRole,
-    surfaceColorLabel: setting?.surfaceColorLabel || template.surfaceColorLabel || null,
-    source: 'built_in',
-    status: setting?.status || 'active',
-    usageCount,
-    updatedAt: setting?.updatedAt,
-});
-
-const customTemplateSummary = (setting: any, usageCount = 0) => ({
-    key: setting.key,
-    label: setting.label || setting.key,
-    category: setting.category || defaultTemplateCategory(setting.key),
-    access: setting.access || 'paid',
-    thumbnail: setting.thumbnail || templateThumbnailPath(setting.key, setting.updatedAt?.getTime?.() || setting.updatedAt),
-    builtInThumbnail: setting.thumbnail || templateThumbnailPath(setting.key, setting.updatedAt?.getTime?.() || setting.updatedAt),
-    surfaceColorRole: setting.surfaceColorRole || 'none',
-    surfaceColorLabel: setting.surfaceColorLabel || null,
-    source: 'custom',
-    status: setting.status || 'draft',
-    usageCount,
-    updatedAt: setting.updatedAt,
-});
-
-const adminTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
-    ...builtInTemplateSummary(template, setting, usageCount),
 });
 
 const adminPaymentSummary = (payment: any) => {
@@ -931,74 +525,6 @@ const adminSupportTicketSummary = (ticket: any) => ({
     createdAt: ticket.createdAt,
     updatedAt: ticket.updatedAt,
 });
-
-const getTemplateSettingForKey = async (key: string) => {
-    const template = CV_TEMPLATES.find((item) => item.key === key);
-    if (!template) {
-        const setting = await TemplateSetting.findOne({ key, source: 'custom', status: { $ne: 'archived' } });
-        return setting ? customTemplateSummary(setting, 0) : null;
-    }
-    const setting = await TemplateSetting.findOne({ key });
-    return adminTemplateSummary(template, setting, 0);
-};
-
-const getActiveTemplateForKey = async (key: unknown) => {
-    if (!isTemplateName(key)) return null;
-    const builtIn = CV_TEMPLATES.find((item) => item.key === key);
-    if (builtIn) {
-        const setting = await TemplateSetting.findOne({ key });
-        const summary = builtInTemplateSummary(builtIn, setting, 0);
-        return summary.status === 'archived' ? null : summary;
-    }
-    const custom = await TemplateSetting.findOne({ key, source: 'custom', status: 'active' });
-    return custom ? customTemplateSummary(custom, 0) : null;
-};
-
-const resolveRequestedTemplate = async (value: unknown): Promise<TemplateName> => {
-    const template = await getActiveTemplateForKey(value);
-    return (template?.key || DEFAULT_TEMPLATE) as TemplateName;
-};
-
-const validateCustomTemplateKey = (value: unknown) => {
-    const key = sanitizeProfileField(value, 60).toLowerCase();
-    return CUSTOM_TEMPLATE_KEY_PATTERN.test(key) ? key : '';
-};
-
-const sanitizeTemplateSource = (value: unknown, maxLength: number) => (
-    typeof value === 'string'
-        ? value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').slice(0, maxLength)
-        : ''
-);
-
-const validateTemplateHtml = (html: string) => {
-    if (!html.trim()) return 'Template HTML is required.';
-    if (html.length > MAX_TEMPLATE_HTML_LENGTH) return 'Template HTML is too large.';
-    if (/<\s*script\b/i.test(html)) return 'Template HTML cannot include script tags.';
-    if (/\son[a-z]+\s*=/i.test(html)) return 'Template HTML cannot include inline event handlers.';
-    if (/javascript:/i.test(html)) return 'Template HTML cannot include javascript URLs.';
-    if (!/{{\s*personalInfo\.fullName\s*}}/.test(html) && !/{{\s*#/.test(html)) {
-        return 'Template HTML must include NexCV template placeholders.';
-    }
-    return '';
-};
-
-const validateTemplateCss = (css: string) => {
-    if (!css.trim()) return 'Template CSS is required.';
-    if (css.length > MAX_TEMPLATE_CSS_LENGTH) return 'Template CSS is too large.';
-    if (/<\s*script\b/i.test(css) || /javascript:/i.test(css)) return 'Template CSS contains unsafe content.';
-    return '';
-};
-
-const parseThumbnailUpload = (value: unknown) => {
-    if (typeof value !== 'string' || !value.trim()) return null;
-    const match = value.match(/^data:image\/(png|jpe?g|webp|svg\+xml);base64,([a-z0-9+/=\s]+)$/i);
-    if (!match) return null;
-    const extension = match[1].toLowerCase().replace('jpeg', 'jpg').replace('svg+xml', 'svg');
-    const buffer = Buffer.from(match[2].replace(/\s+/g, ''), 'base64');
-    if (!buffer.length || buffer.length > MAX_TEMPLATE_THUMBNAIL_BYTES) return null;
-    const contentType = extension === 'svg' ? 'image/svg+xml' : `image/${extension === 'jpg' ? 'jpeg' : extension}`;
-    return { buffer, extension, contentType };
-};
 
 // â”€â”€â”€ API Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

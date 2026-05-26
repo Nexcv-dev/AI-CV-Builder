@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { bindDeps, type RouteDeps } from '../_shared';
-import { validateAdminTemplateSource } from '../../server-utils/templateValidation';
+import { mergeTemplateValidationResults, validateAdminTemplateMetadata, validateAdminTemplateSource } from '../../server-utils/templateValidation';
 
 export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
     const { CVDocument, TemplateSetting, CV_TEMPLATES, requireAdminPermission, sendError, adminTemplateJsonParser, clearS3TemplateCache, fetchS3Text, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, currentUserId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, sanitizeProfileField, recordAdminAuditLog } = bindDeps(deps);
@@ -59,6 +59,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 ? req.body.surfaceColorRole
                 : 'none';
             const surfaceColorLabel = sanitizeProfileField(req.body.surfaceColorLabel, 80);
+            const defaultThemeColor = typeof req.body.defaultThemeColor === 'string' ? req.body.defaultThemeColor.trim() : '#000000';
             const indexHtml = sanitizeTemplateSource(req.body.indexHtml, MAX_TEMPLATE_HTML_LENGTH);
             const styleCss = sanitizeTemplateSource(req.body.styleCss, MAX_TEMPLATE_CSS_LENGTH);
             const thumbnailUpload = parseThumbnailUpload(req.body.thumbnailDataUrl);
@@ -66,11 +67,14 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
             const cssError = validateTemplateCss(styleCss);
             if (htmlError || cssError) return res.status(400).json({ error: htmlError || cssError });
             if (!thumbnailUpload) return res.status(400).json({ error: 'Upload a PNG, JPG, WebP, or SVG thumbnail under 900 KB.' });
-            const validation = validateAdminTemplateSource({
+            const validation = mergeTemplateValidationResults(
+                validateAdminTemplateMetadata({ key, label, category, access, surfaceColorRole, surfaceColorLabel, defaultThemeColor }),
+                validateAdminTemplateSource({
                 indexHtml,
                 styleCss,
                 thumbnailPresent: Boolean(thumbnailUpload),
-            });
+                })
+            );
             if (validation.errors.length) {
                 return res.status(400).json({ error: 'Fix template validation errors before saving.', validation });
             }
@@ -93,6 +97,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 thumbnail: templateThumbnailPath(key, Date.now()),
                 surfaceColorRole,
                 surfaceColorLabel,
+                defaultThemeColor,
                 source: 'custom',
                 status: req.body.status === 'active' ? 'active' : 'draft',
                 s3Prefix,
@@ -140,7 +145,14 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 ? req.body.surfaceColorRole
                 : (template?.surfaceColorRole || existingCustom?.surfaceColorRole || 'none');
             const surfaceColorLabel = sanitizeProfileField(req.body.surfaceColorLabel, 80) || (template && 'surfaceColorLabel' in template ? template.surfaceColorLabel : '') || existingCustom?.surfaceColorLabel || '';
+            const defaultThemeColor = typeof req.body.defaultThemeColor === 'string'
+                ? req.body.defaultThemeColor.trim()
+                : previousTemplate?.defaultThemeColor || '#000000';
             let thumbnail = sanitizeProfileField(req.body.thumbnail, 500) || template?.image || existingCustom?.thumbnail || templateThumbnailPath(key, Date.now());
+            const metadataValidation = validateAdminTemplateMetadata({ key, label, category, access, surfaceColorRole, surfaceColorLabel, defaultThemeColor, thumbnail }, { requireThumbnailPath: true });
+            if (metadataValidation.errors.length) {
+                return res.status(400).json({ error: 'Fix template validation errors before saving.', validation: metadataValidation });
+            }
             const update: any = {
                 key,
                 label,
@@ -149,6 +161,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 thumbnail,
                 surfaceColorRole,
                 surfaceColorLabel,
+                defaultThemeColor,
                 source: template ? 'built_in' : 'custom',
                 updatedBy: currentUserId(req),
             };
@@ -161,11 +174,11 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 update.s3Prefix = s3Prefix;
                 const currentIndexHtml = indexHtml || (existingCustom?.indexS3Key ? await fetchS3Text(existingCustom.indexS3Key) : '');
                 const currentStyleCss = styleCss || (existingCustom?.styleS3Key ? await fetchS3Text(existingCustom.styleS3Key) : '');
-                const validation = validateAdminTemplateSource({
+                const validation = mergeTemplateValidationResults(metadataValidation, validateAdminTemplateSource({
                     indexHtml: currentIndexHtml,
                     styleCss: currentStyleCss,
                     thumbnailPresent: Boolean(thumbnailUpload || existingCustom?.thumbnailS3Key),
-                });
+                }));
                 if (validation.errors.length) {
                     return res.status(400).json({ error: 'Fix template validation errors before saving.', validation });
                 }
@@ -217,11 +230,11 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 ip: req.ip,
                 userAgent: req.get('user-agent'),
             });
-            return res.json({ template: template ? adminTemplateSummary(template, setting, usageCount) : customTemplateSummary(setting, usageCount), validation: !template ? validateAdminTemplateSource({
+            return res.json({ template: template ? adminTemplateSummary(template, setting, usageCount) : customTemplateSummary(setting, usageCount), validation: !template ? mergeTemplateValidationResults(validateAdminTemplateMetadata({ key, label, category, access, surfaceColorRole, surfaceColorLabel, defaultThemeColor, thumbnail }, { requireThumbnailPath: true }), validateAdminTemplateSource({
                 indexHtml: setting.indexS3Key ? await fetchS3Text(setting.indexS3Key) : '',
                 styleCss: setting.styleS3Key ? await fetchS3Text(setting.styleS3Key) : '',
                 thumbnailPresent: Boolean(setting.thumbnailS3Key),
-            }) : undefined });
+            })) : metadataValidation });
         } catch (error) {
             return sendError(res, 500, 'Could not update template.', error);
         }
@@ -238,11 +251,23 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
             if (!indexHtml || !styleCss || !setting.thumbnailS3Key) {
                 return res.status(400).json({ error: 'Template needs HTML, CSS, and thumbnail files before publishing.' });
             }
-            const validation = validateAdminTemplateSource({
+            const validation = mergeTemplateValidationResults(
+                validateAdminTemplateMetadata({
+                    key,
+                    label: setting.label || key,
+                    category: setting.category,
+                    access: setting.access,
+                    surfaceColorRole: setting.surfaceColorRole,
+                    surfaceColorLabel: setting.surfaceColorLabel,
+                    defaultThemeColor: setting.defaultThemeColor || '#000000',
+                    thumbnail: setting.thumbnail,
+                }, { requireThumbnailPath: true }),
+                validateAdminTemplateSource({
                 indexHtml,
                 styleCss,
                 thumbnailPresent: Boolean(setting.thumbnailS3Key),
-            });
+                })
+            );
             if (validation.errors.length) {
                 return res.status(400).json({ error: 'Fix template validation errors before publishing.', validation });
             }

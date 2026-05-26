@@ -36,6 +36,7 @@ export const emptyCustomTemplateForm = {
   access: 'paid' as 'free' | 'paid',
   surfaceColorRole: 'none' as 'none' | 'sidebar' | 'header',
   surfaceColorLabel: '',
+  defaultThemeColor: '#000000',
   indexHtml: '',
   styleCss: '',
   thumbnailDataUrl: '',

@@ -20,6 +20,66 @@ export const resolveTemplateThemeColor = (template: unknown, value: unknown) => 
   return TEMPLATE_DEFAULT_THEME_COLORS[template] || themeColor;
 };
 
+const safeColorMap = (value: unknown) =>
+  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+
+export const resolveTemplateThemeColorForData = (template: unknown, cvData: { themeColor?: unknown; templateThemeColors?: unknown }, defaultThemeColor?: string) => {
+  const templateKey = typeof template === 'string' ? template : '';
+  const templateThemeColors = safeColorMap(cvData.templateThemeColors);
+  const templateDefault = safeHexColor(defaultThemeColor, resolveTemplateThemeColor(template, '#000000'));
+  const savedTemplateColor = safeHexColor(templateThemeColors[templateKey], '');
+  if (savedTemplateColor) return savedTemplateColor;
+  const themeColor = safeHexColor(cvData.themeColor, '#000000');
+  return themeColor.toLowerCase() === '#000000' ? templateDefault : themeColor;
+};
+
+export const resolveTemplateSurfaceColorForData = (
+  template: unknown,
+  cvData: { templateSurfaceColor?: unknown; templateSurfaceColors?: unknown },
+  fallback: string
+) => {
+  const templateKey = typeof template === 'string' ? template : '';
+  const templateSurfaceColors = safeColorMap(cvData.templateSurfaceColors);
+  return safeHexColor(templateSurfaceColors[templateKey] || cvData.templateSurfaceColor, fallback);
+};
+
+export const applyTemplateColorDefaults = <T extends {
+  themeColor: string;
+  templateThemeColors?: Record<string, string>;
+  templateSurfaceColor?: string;
+  templateSurfaceColors?: Record<string, string>;
+}>(
+  cvData: T,
+  currentTemplate: unknown,
+  nextTemplate: unknown,
+  templateDefaults: Record<string, string> = {}
+): T => {
+  const currentTemplateKey = typeof currentTemplate === 'string' ? currentTemplate : '';
+  const nextTemplateKey = typeof nextTemplate === 'string' ? nextTemplate : '';
+  const currentDefault = safeHexColor(templateDefaults[currentTemplateKey], resolveTemplateThemeColor(currentTemplate, '#000000'));
+  const nextDefault = safeHexColor(templateDefaults[nextTemplateKey], resolveTemplateThemeColor(nextTemplate, '#000000'));
+  const currentThemeColor = safeHexColor(cvData.themeColor, currentDefault);
+  const nextTemplateThemeColor = safeHexColor(cvData.templateThemeColors?.[nextTemplateKey], nextDefault);
+  const templateThemeColors = { ...(cvData.templateThemeColors || {}) };
+  const templateSurfaceColors = { ...(cvData.templateSurfaceColors || {}) };
+
+  if (currentTemplateKey && currentThemeColor.toLowerCase() !== currentDefault.toLowerCase() && !templateThemeColors[currentTemplateKey]) {
+    templateThemeColors[currentTemplateKey] = currentThemeColor;
+  }
+
+  if (currentTemplateKey && cvData.templateSurfaceColor && !templateSurfaceColors[currentTemplateKey]) {
+    templateSurfaceColors[currentTemplateKey] = cvData.templateSurfaceColor;
+  }
+
+  return {
+    ...cvData,
+    themeColor: nextTemplateThemeColor,
+    templateThemeColors,
+    templateSurfaceColor: templateSurfaceColors[nextTemplateKey],
+    templateSurfaceColors,
+  };
+};
+
 export const profileImageCss = (cvData: any) => {
   const imageZoom = Number.isFinite(Number(cvData?.imageZoom)) ? Math.min(Math.max(Number(cvData.imageZoom), 0.5), 3) : 1;
   const imageX = Number.isFinite(Number(cvData?.imageX)) ? Math.min(Math.max(Number(cvData.imageX), -120), 120) : 0;
@@ -77,9 +137,9 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
     ? cvData.sectionOrder
     : ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
   const hiddenSections = Array.isArray(cvData?.hiddenSections) ? cvData.hiddenSections : [];
-  const themeColor = resolveTemplateThemeColor(cvData?.template, cvData?.themeColor);
+  const themeColor = resolveTemplateThemeColorForData(cvData?.template, cvData || {});
   const sidebarColor = safeHexColor(cvData?.sidebarColor, '#1e293b');
-  const templateSurfaceColor = safeHexColor(cvData?.templateSurfaceColor, themeColor);
+  const templateSurfaceColor = resolveTemplateSurfaceColorForData(cvData?.template, cvData || {}, themeColor);
   const sidebarTextColor = getContrastColor(templateSurfaceColor);
   const startupHeaderTextColor = getContrastColor(templateSurfaceColor);
   const startupHeaderMutedColor = startupHeaderTextColor === '#ffffff' ? 'rgba(236, 253, 245, 0.92)' : 'rgba(15, 23, 42, 0.72)';

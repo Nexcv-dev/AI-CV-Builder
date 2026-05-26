@@ -11,6 +11,7 @@ export interface TemplateConfigItem {
   builtInThumbnail: string;
   surfaceColorRole: string;
   surfaceColorLabel?: string | null;
+  defaultThemeColor?: string;
   source?: 'built_in' | 'custom';
   status?: 'draft' | 'active' | 'archived';
   usageCount?: number;
@@ -24,6 +25,7 @@ const fallbackTemplates: TemplateConfigItem[] = CV_TEMPLATES.map((template) => (
   thumbnail: template.image,
   builtInThumbnail: template.image,
   surfaceColorRole: template.surfaceColorRole,
+  defaultThemeColor: '#000000',
 }));
 
 export function useTemplateConfig() {

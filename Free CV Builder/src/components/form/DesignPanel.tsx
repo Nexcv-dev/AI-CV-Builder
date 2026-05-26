@@ -3,29 +3,34 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Palette, Upload, ChevronDown, Check, Image as ImageIcon, MoveHorizontal, MoveVertical, Layout, Type, RotateCcw } from 'lucide-react';
 import { CVData } from '../../types';
 import { getTemplateSurfaceColorFallback, getTemplateSurfaceColorLabel, TemplateName } from '../../templates';
-import { resolveTemplateThemeColor } from '../../utils/templateData';
+import { resolveTemplateSurfaceColorForData, resolveTemplateThemeColor, resolveTemplateThemeColorForData } from '../../utils/templateData';
 import { fonts, DESIGN_CARD_CLASS, DESIGN_CARD_LIGHT, DESIGN_CARD_DARK, DESIGN_SECTION_TITLE_CLASS, DESIGN_ICON_CLASS } from './constants';
 
 interface DesignPanelProps {
   cvData: CVData;
   setCvData: React.Dispatch<React.SetStateAction<CVData>>;
   template: TemplateName;
+  templateDefaultThemeColor?: string;
   isDarkMode?: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
+export const DesignPanel = React.memo(({ cvData, setCvData, template, templateDefaultThemeColor, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
   const templateSurfaceColorLabel = getTemplateSurfaceColorLabel(template);
-  const templateDefaultThemeColor = resolveTemplateThemeColor(template, '#000000');
-  const themeColor = resolveTemplateThemeColor(template, cvData.themeColor);
-  const canResetThemeColor = themeColor.toLowerCase() !== templateDefaultThemeColor.toLowerCase() || Boolean(cvData.templateSurfaceColor);
-  const templateSurfaceColor = cvData.templateSurfaceColor || getTemplateSurfaceColorFallback(template, {
+  const defaultThemeColor = resolveTemplateThemeColor(template, templateDefaultThemeColor || '#000000');
+  const themeColor = resolveTemplateThemeColorForData(template, cvData, defaultThemeColor);
+  const templateSurfaceFallback = getTemplateSurfaceColorFallback(template, {
     themeColor,
     sidebarColor: cvData.sidebarColor,
   });
+  const templateSurfaceColor = resolveTemplateSurfaceColorForData(template, cvData, templateSurfaceFallback);
+  const canResetThemeColor =
+    themeColor.toLowerCase() !== defaultThemeColor.toLowerCase() ||
+    Boolean(cvData.templateThemeColors?.[template]) ||
+    Boolean(cvData.templateSurfaceColors?.[template]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -46,10 +51,25 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode
     setCvData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleThemeColorChange = (value: string) => {
+    setCvData((prev) => ({
+      ...prev,
+      themeColor: value,
+      templateThemeColors: {
+        ...(prev.templateThemeColors || {}),
+        [template]: value,
+      },
+    }));
+  };
+
   const handleTemplateSurfaceColorChange = (value: string) => {
     setCvData((prev) => ({
       ...prev,
       templateSurfaceColor: value,
+      templateSurfaceColors: {
+        ...(prev.templateSurfaceColors || {}),
+        [template]: value,
+      },
       sidebarColor: template === 'modern' ? value : prev.sidebarColor,
     }));
   };
@@ -57,8 +77,10 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode
   const handleResetTemplateColors = () => {
     setCvData((prev) => ({
       ...prev,
-      themeColor: templateDefaultThemeColor,
+      themeColor: defaultThemeColor,
+      templateThemeColors: Object.fromEntries(Object.entries(prev.templateThemeColors || {}).filter(([key]) => key !== template)),
       templateSurfaceColor: undefined,
+      templateSurfaceColors: Object.fromEntries(Object.entries(prev.templateSurfaceColors || {}).filter(([key]) => key !== template)),
     }));
   };
 
@@ -118,7 +140,7 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode
           <div>
             <label htmlFor="themeColor" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Primary Theme Color</label>
             <div className="flex items-center space-x-4">
-              <div className="relative"><input id="themeColor" name="themeColor" type="color" value={themeColor} onChange={(e) => handleThemeChange('themeColor', e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
+              <div className="relative"><input id="themeColor" name="themeColor" type="color" value={themeColor} onChange={(e) => handleThemeColorChange(e.target.value)} className={`h-10 w-14 p-1 border rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`} /></div>
               <span className={`text-sm font-mono px-3 py-1.5 border rounded-md uppercase ${isDarkMode ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-gray-200 text-gray-600'}`}>{themeColor}</span>
               <button
                 type="button"

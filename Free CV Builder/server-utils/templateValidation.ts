@@ -11,6 +11,17 @@ export interface TemplateValidationResult {
   warnings: TemplateValidationIssue[];
 }
 
+export interface TemplateMetadataValidationInput {
+  key?: string | null;
+  label?: string | null;
+  category?: string | null;
+  access?: string | null;
+  surfaceColorRole?: string | null;
+  surfaceColorLabel?: string | null;
+  defaultThemeColor?: string | null;
+  thumbnail?: string | null;
+}
+
 const SUPPORTED_ROOTS = new Set([
   'awards',
   'computed',
@@ -79,6 +90,53 @@ const lineForIndex = (source: string, index: number) => source.slice(0, index).s
 const addIssue = (issues: TemplateValidationIssue[], severity: TemplateValidationSeverity, fileName: string, message: string) => {
   issues.push({ severity, fileName, message });
 };
+
+const TEMPLATE_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
+const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const CATEGORIES = new Set(['Modern', 'ATS Friendly', 'Minimal', 'Executive', 'Creative', 'Tech', 'Corporate']);
+const ACCESS_LEVELS = new Set(['free', 'paid']);
+const SURFACE_COLOR_ROLES = new Set(['none', 'sidebar', 'header']);
+
+export const validateAdminTemplateMetadata = (input: TemplateMetadataValidationInput, options: { requireThumbnailPath?: boolean } = {}) => {
+  const issues: TemplateValidationIssue[] = [];
+  const key = String(input.key || '').trim();
+  const label = String(input.label || '').trim();
+  const category = String(input.category || '').trim();
+  const access = String(input.access || '').trim();
+  const surfaceColorRole = String(input.surfaceColorRole || '').trim();
+  const surfaceColorLabel = String(input.surfaceColorLabel || '').trim();
+  const defaultThemeColor = String(input.defaultThemeColor || '').trim();
+  const thumbnail = String(input.thumbnail || '').trim();
+
+  if (key && !TEMPLATE_KEY_PATTERN.test(key)) {
+    addIssue(issues, 'error', 'metadata', 'Template key must be a lowercase slug like modern-2026.');
+  }
+  if (!label) addIssue(issues, 'error', 'metadata', 'Template label is required.');
+  if (label.length > 80) addIssue(issues, 'error', 'metadata', 'Template label must be 80 characters or fewer.');
+  if (!CATEGORIES.has(category)) addIssue(issues, 'error', 'metadata', 'Template category is invalid.');
+  if (!ACCESS_LEVELS.has(access)) addIssue(issues, 'error', 'metadata', 'Template access must be free or paid.');
+  if (!SURFACE_COLOR_ROLES.has(surfaceColorRole)) addIssue(issues, 'error', 'metadata', 'Surface color role is invalid.');
+  if (!COLOR_PATTERN.test(defaultThemeColor)) addIssue(issues, 'error', 'metadata', 'Default theme color must be a #rrggbb hex color.');
+  if (surfaceColorRole === 'none' && surfaceColorLabel) {
+    addIssue(issues, 'warn', 'metadata', 'Surface label is ignored when surface color role is None.');
+  }
+  if (surfaceColorRole !== 'none' && !surfaceColorLabel) {
+    addIssue(issues, 'warn', 'metadata', 'Add a surface label so the design panel explains what this color controls.');
+  }
+  if (options.requireThumbnailPath && !thumbnail) {
+    addIssue(issues, 'warn', 'metadata', 'Thumbnail path is empty; the template list may show a broken preview.');
+  }
+
+  return {
+    errors: issues.filter((issue) => issue.severity === 'error'),
+    warnings: issues.filter((issue) => issue.severity === 'warn'),
+  };
+};
+
+export const mergeTemplateValidationResults = (...results: TemplateValidationResult[]) => ({
+  errors: results.flatMap((result) => result.errors),
+  warnings: results.flatMap((result) => result.warnings),
+});
 
 const extractPlaceholders = (source: string) => {
   const matches = source.matchAll(/{{{?\s*([#/^]?)\s*([^{}]+?)\s*}?}}/g);

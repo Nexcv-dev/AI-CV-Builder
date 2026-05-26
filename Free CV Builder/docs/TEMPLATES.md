@@ -1,27 +1,93 @@
-# Template Management & Rendering
+# Template System
 
-NexCV uses a robust, S3-backed template system to render user CVs both in the browser (Live Preview) and on the server (PDF Generation).
+NexCV supports built-in templates and admin-managed HTML/CSS templates. The same normalized CV data model is used for live preview and PDF rendering.
 
-## 1. Template Types
-*   **Built-in Templates**: Pre-packaged templates included in the React frontend codebase. These are loaded locally and provide immediate fallbacks.
-*   **Custom S3 Templates**: Dynamic HTML/CSS templates stored in an AWS S3 bucket. The Admin Panel allows uploading and managing these without changing the core codebase.
+## Template Sources
 
-## 2. How Templates Work
-A template in NexCV is essentially a combination of:
-1.  **HTML Layout**: The structure of the CV. It uses placeholder tokens (e.g., `{{firstName}}`, `{{summary}}`) that get replaced with actual user data.
-2.  **CSS Styles**: The design rules. These define layout, colors, typography, and specific `print` media queries to ensure page breaks work correctly when generating a PDF.
-3.  **Metadata**: Information such as the template name, thumbnail URL, premium status (free vs. paid), and profile image positioning details.
+### Built-In Templates
 
-## 3. Template Rendering Pipeline
-1.  **Data Hydration**: The user's JSON CV data is mapped to the placeholder tokens.
-2.  **DOM Injection**: The mapped data replaces the placeholders in the HTML string.
-3.  **CSS Injection**: The corresponding CSS is injected into the `<head>` of the rendered document.
-4.  **Preview / Export**: The final HTML document is either rendered in an iframe for live preview in the React app, or sent to the PDF microservice.
+Built-in templates are shipped with the frontend code and public assets. They provide reliable defaults and fallback behavior when S3/admin templates are unavailable.
 
-## 4. Admin Management
-Admins can upload new templates via the Admin Dashboard. When a template is uploaded:
-1.  The HTML and CSS files are uploaded to the S3 Bucket defined by `S3_TEMPLATE_BUCKET_NAME` and `S3_TEMPLATE_PREFIX`.
-2.  A MongoDB record is created linking the S3 URLs and the template's metadata.
-3.  Users immediately see the new template in their dashboard.
+Relevant files:
 
-*(For detailed instructions on writing your own custom templates with proper page-break support, see `template-authoring-guide.md`.)*
+- `src/templates.ts`
+- `src/utils/templateData.ts`
+- `src/utils/templateRenderer.ts`
+- `public/templates/`
+
+### Admin Templates
+
+Admin templates are authored locally under `Admin Templates/` and can be released into the app/S3 flow after validation.
+
+Expected folder shape:
+
+```text
+Admin Templates/
+  template-key/
+    index.html
+    style.css
+    thumbnail.svg
+```
+
+Template folders should use lowercase letters, numbers, and hyphens.
+
+## Rendering Model
+
+Each custom template contains:
+
+- `index.html` - Mustache-style placeholders and layout.
+- `style.css` - screen and print styling.
+- `thumbnail.*` - card/admin thumbnail.
+- Metadata - name, key, premium status, status, profile-image settings, and colors.
+
+Data is normalized before rendering, then injected into the template HTML. CSS is loaded alongside the HTML for preview and export.
+
+## Admin Lifecycle
+
+Typical flow:
+
+1. Create or edit a folder in `Admin Templates/`.
+2. Run validation.
+3. Preview desktop/mobile and PDF behavior.
+4. Dry-run template release.
+5. Release to the managed template system.
+6. Publish from admin when ready.
+
+Commands:
+
+```bash
+cd "Free CV Builder"
+npm run validate:template-map
+npm run validate:templates
+npm run templates:release:dry-run
+npm run templates:release
+```
+
+## S3 Storage
+
+Managed template assets use:
+
+```env
+S3_TEMPLATE_BUCKET_NAME=your_template_bucket
+S3_TEMPLATE_PREFIX=templates
+AWS_REGION=eu-north-1
+S3_TEMPLATE_CACHE_TTL_MS=300000
+```
+
+`TEMPLATE_BUCKET_NAME` is also supported as a fallback name for the bucket in backend services.
+
+## Safety Rules
+
+Admin templates should not include:
+
+- `<script>`
+- `<iframe>`
+- JavaScript URLs
+- remote tracking pixels
+- unsupported form controls
+
+Rich text is sanitized by the app, but templates should still remain simple and printable.
+
+## Authoring Details
+
+For placeholder syntax, computed values, color rules, profile image fields, print CSS, and the upload checklist, use [Template Authoring Guide](template-authoring-guide.md).
