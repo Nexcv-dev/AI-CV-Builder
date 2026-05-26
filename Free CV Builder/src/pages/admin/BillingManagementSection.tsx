@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import {
   Check,
+  AlertCircle,
   CreditCard,
   Crown,
   Eye,
+  Clock3,
   Loader2,
   Search,
   X,
@@ -23,11 +25,16 @@ export default function BillingManagementSection({
   planFilter,
   statusFilter,
   selectedPayment,
+  reviewNote,
+  reviewingPaymentId,
+  canReviewPayments,
   onSearchChange,
   onPlanFilterChange,
   onStatusFilterChange,
   onOpenPayment,
   onCloseDetail,
+  onReviewNoteChange,
+  onMarkReviewed,
 }: {
   payments: AdminPaymentItem[];
   summary: AdminPaymentSummary | null;
@@ -36,18 +43,34 @@ export default function BillingManagementSection({
   planFilter: string;
   statusFilter: string;
   selectedPayment: AdminPaymentItem | null;
+  reviewNote: string;
+  reviewingPaymentId: string | null;
+  canReviewPayments: boolean;
   onSearchChange: (value: string) => void;
   onPlanFilterChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
   onOpenPayment: (payment: AdminPaymentItem) => void;
   onCloseDetail: () => void;
+  onReviewNoteChange: (value: string) => void;
+  onMarkReviewed: (payment: AdminPaymentItem) => void;
 }) {
+  const needsReviewCount = (summary?.checkoutReviewCount || 0) + (summary?.failedPaymentCount || 0);
+
   return (
     <section className="mt-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-5">
         <AdminStat icon={<CreditCard size={19} />} label="Total Revenue" value={summary ? formatCurrency(summary.totalRevenueCents, summary.currency) : 'LKR 0'} />
         <AdminStat icon={<Check size={19} />} label="Processed Payments" value={String(summary?.processedCount || 0)} />
         <AdminStat icon={<Crown size={19} />} label="Monthly Revenue" value={formatCurrency(summary?.revenueByPlan.monthly || 0, summary?.currency || 'LKR')} />
+        <AdminStat icon={<Clock3 size={19} />} label="Pending Checkouts" value={String(summary?.pendingCheckoutCount || 0)} />
+        <button
+          type="button"
+          onClick={() => onStatusFilterChange(statusFilter === 'review' ? 'all' : 'review')}
+          className={`rounded-2xl text-left transition active:scale-[0.99] ${statusFilter === 'review' ? 'ring-2 ring-amber-300/50' : 'hover:ring-1 hover:ring-amber-300/30'}`}
+          aria-pressed={statusFilter === 'review'}
+        >
+          <AdminStat icon={<AlertCircle size={19} />} label="Needs Review" value={String(needsReviewCount)} />
+        </button>
       </div>
 
 
@@ -70,6 +93,7 @@ export default function BillingManagementSection({
           <option value="all">All statuses</option>
           <option value="processed">Processed</option>
           <option value="unprocessed">Unprocessed</option>
+          <option value="review">Needs Review</option>
         </select>
       </div>
 
@@ -104,7 +128,13 @@ export default function BillingManagementSection({
             <span className="w-fit rounded-full bg-violet-400/10 px-3 py-1 text-xs font-black text-violet-300 ring-1 ring-violet-300/20">{payment.plan || 'Unknown'}</span>
             <div>
               <p className="text-sm font-black text-slate-100">{payment.currency} {payment.amount}</p>
-              <PaymentStatusBadge processed={payment.processed} statusCode={payment.statusCode} />
+              {payment.reviewStatus === 'expired' ? (
+                <span className="mt-1 inline-flex rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-black uppercase text-amber-300 ring-1 ring-amber-300/20">Expired</span>
+              ) : payment.reviewStatus === 'failed' ? (
+                <span className="mt-1 inline-flex rounded-full bg-red-400/10 px-2 py-0.5 text-[10px] font-black uppercase text-red-300 ring-1 ring-red-300/20">Failed</span>
+              ) : (
+                <PaymentStatusBadge processed={payment.processed} statusCode={payment.statusCode} />
+              )}
             </div>
             <button type="button" onClick={() => onOpenPayment(payment)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-3 text-xs font-black text-slate-100 transition hover:bg-white/10 active:scale-[0.98]">
               <Eye size={14} />
@@ -130,7 +160,7 @@ export default function BillingManagementSection({
           <aside className="h-full w-full max-w-xl overflow-y-auto border-l border-white/10 bg-slate-950 p-5 text-white shadow-2xl shadow-black/40">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase text-violet-300">Payment Details</p>
+                <p className="text-xs font-black uppercase text-violet-300">{selectedPayment.reviewType === 'checkout' ? 'Checkout Review' : 'Payment Details'}</p>
                 <h2 className="mt-1 truncate font-montserrat text-2xl font-black">{selectedPayment.paymentId}</h2>
                 <p className="mt-1 truncate text-sm font-semibold text-slate-400">{selectedPayment.orderId}</p>
               </div>
@@ -140,12 +170,47 @@ export default function BillingManagementSection({
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <DetailTile label="Provider" value={selectedPayment.provider} />
-              <DetailTile label="Status" value={selectedPayment.processed ? 'Processed' : `Code ${selectedPayment.statusCode}`} />
+              <DetailTile label="Status" value={selectedPayment.reviewStatus === 'expired' ? 'Expired checkout' : selectedPayment.reviewStatus === 'failed' ? 'Failed checkout' : selectedPayment.processed ? 'Processed' : `Code ${selectedPayment.statusCode}`} />
+              <DetailTile label="Review Type" value={selectedPayment.reviewType === 'checkout' ? 'Checkout session' : 'Payment notification'} />
               <DetailTile label="Plan" value={selectedPayment.plan || 'Unknown'} />
               <DetailTile label="Amount" value={`${selectedPayment.currency} ${selectedPayment.amount}`} />
               <DetailTile label="User" value={selectedPayment.user?.email || 'No linked user'} />
               <DetailTile label="Date" value={formatDate(selectedPayment.createdAt)} />
+              <DetailTile label="Processed At" value={selectedPayment.processedAt ? formatDate(selectedPayment.processedAt) : 'Not processed'} />
+              <DetailTile label="Processing Lock" value={selectedPayment.processingStartedAt ? formatDate(selectedPayment.processingStartedAt) : 'None'} />
+              <DetailTile label="Review State" value={selectedPayment.billingReviewStatus === 'resolved' ? 'Resolved' : 'Open'} />
+              {selectedPayment.reviewedAt && <DetailTile label="Reviewed At" value={formatDate(selectedPayment.reviewedAt)} />}
             </div>
+            {selectedPayment.reviewType && (
+              <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                <h3 className="font-montserrat text-lg font-black">Review Action</h3>
+                {selectedPayment.billingReviewStatus === 'resolved' ? (
+                  <p className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm font-bold text-emerald-200">
+                    Resolved{selectedPayment.reviewNote ? `: ${selectedPayment.reviewNote}` : '.'}
+                  </p>
+                ) : (
+                  <>
+                    <textarea
+                      value={reviewNote}
+                      onChange={(event) => onReviewNoteChange(event.target.value)}
+                      className="mt-4 min-h-24 w-full resize-y rounded-xl border border-white/10 bg-slate-900 p-3 text-sm font-semibold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400"
+                      placeholder="Add what you checked before resolving"
+                      maxLength={500}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onMarkReviewed(selectedPayment)}
+                      disabled={!canReviewPayments || reviewingPaymentId === selectedPayment.id}
+                      className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 text-sm font-black text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {reviewingPaymentId === selectedPayment.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                      Mark Reviewed
+                    </button>
+                    {!canReviewPayments && <p className="mt-2 text-xs font-bold text-slate-500">Billing write permission required.</p>}
+                  </>
+                )}
+              </section>
+            )}
             <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
               <h3 className="font-montserrat text-lg font-black">Payload Summary</h3>
               <pre className="mt-4 max-h-80 overflow-auto rounded-xl bg-slate-900 p-3 text-xs font-semibold text-slate-300">

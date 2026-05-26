@@ -15,6 +15,12 @@ export interface IPaymentTransaction extends Document {
   couponCode?: string;
   statusCode: string;
   processed: boolean;
+  processingStartedAt?: Date;
+  processedAt?: Date;
+  billingReviewStatus?: 'open' | 'resolved';
+  reviewedAt?: Date;
+  reviewedBy?: mongoose.Types.ObjectId;
+  reviewNote?: string;
   rawPayload: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -35,6 +41,12 @@ const PaymentTransactionSchema = new Schema<IPaymentTransaction>(
     couponCode: { type: String, uppercase: true, trim: true },
     statusCode: { type: String, required: true },
     processed: { type: Boolean, default: false, required: true },
+    processingStartedAt: { type: Date },
+    processedAt: { type: Date },
+    billingReviewStatus: { type: String, enum: ['open', 'resolved'], default: 'open', index: true },
+    reviewedAt: { type: Date },
+    reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    reviewNote: { type: String, maxlength: 500 },
     rawPayload: { type: Schema.Types.Mixed, default: {} },
   },
   {
@@ -45,6 +57,7 @@ const PaymentTransactionSchema = new Schema<IPaymentTransaction>(
 PaymentTransactionSchema.index({ provider: 1, paymentId: 1 }, { unique: true });
 PaymentTransactionSchema.index({ orderId: 1 });
 PaymentTransactionSchema.index({ userId: 1, createdAt: -1 });
+PaymentTransactionSchema.index({ processed: 1, billingReviewStatus: 1, createdAt: -1 });
 
 const PaymentTransaction =
   (mongoose.models.PaymentTransaction as mongoose.Model<IPaymentTransaction>) ||

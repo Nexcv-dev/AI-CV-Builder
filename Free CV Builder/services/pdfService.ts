@@ -6,6 +6,7 @@ import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName } from '../src/templates';
 import { CV_TEMPLATE_PAGINATION_RULES } from '../src/utils/cvTemplateRules';
+import { logError, logEvent } from '../server-utils/logger';
 
 dotenv.config();
 
@@ -826,19 +827,19 @@ async function buildPdfBrowserLaunchOptions() {
 
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
         launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-        console.log(`Using custom browser at: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+        logEvent('info', 'pdf.browser_custom_path', { configured: true });
     } else if (isLocal) {
         const systemBrowser = findSystemBrowser();
         if (systemBrowser) {
             launchOptions.executablePath = systemBrowser;
-            console.log(`Using system browser at: ${systemBrowser}`);
+            logEvent('info', 'pdf.browser_system_path', { browserPath: systemBrowser });
         } else {
             throw new Error('Could not find a local Chrome installation. Please set PUPPETEER_EXECUTABLE_PATH.');
         }
     } else {
-        console.log('Using @sparticuz/chromium executable...');
+        logEvent('info', 'pdf.browser_sparticuz_path');
         launchOptions.executablePath = await chromium.executablePath();
-        console.log(`Sparticuz Chromium path: ${launchOptions.executablePath}`);
+        logEvent('info', 'pdf.browser_sparticuz_ready');
     }
 
     return launchOptions;
@@ -866,7 +867,7 @@ async function closeWarmPdfBrowser() {
     if (isPdfBrowserConnected(browser)) {
         try {
             await browser.close();
-            console.log('Warm PDF browser closed.');
+            logEvent('info', 'pdf.warm_browser_closed');
         } catch {
             // Browser may already be gone.
         }
@@ -894,10 +895,10 @@ async function getWarmPdfBrowser() {
 
     warmPdfBrowserLaunchPromise = (async () => {
         console.time('PuppeteerWarmLaunch');
-        console.log('Launching warm PDF browser...');
+        logEvent('info', 'pdf.warm_browser_launching');
         const browser = await puppeteer.launch(await buildPdfBrowserLaunchOptions());
         console.timeEnd('PuppeteerWarmLaunch');
-        console.log('Warm PDF browser ready.');
+        logEvent('info', 'pdf.warm_browser_ready');
 
         browser.on?.('disconnected', () => {
             if (warmPdfBrowser === browser) {
@@ -920,10 +921,10 @@ async function getWarmPdfBrowser() {
 
 async function launchOneShotPdfBrowser() {
     console.time('PuppeteerLaunch');
-    console.log('Launching one-shot PDF browser...');
+    logEvent('info', 'pdf.oneshot_browser_launching');
     const browser = await puppeteer.launch(await buildPdfBrowserLaunchOptions());
     console.timeEnd('PuppeteerLaunch');
-    console.log('One-shot PDF browser launched.');
+    logEvent('info', 'pdf.oneshot_browser_ready');
     return browser;
 }
 
@@ -936,7 +937,7 @@ export async function generatePdfWithLambda(cvData: any, template: string, water
 
     try {
         console.time('PdfLambdaGeneration');
-        console.log('Generating PDF with AWS Lambda...');
+        logEvent('info', 'pdf.lambda_generation_started', { template, watermark });
         const response = await fetch(lambdaUrl, {
             method: 'POST',
             headers: {
@@ -973,7 +974,7 @@ export async function generatePdfWithLambda(cvData: any, template: string, water
 
         throw new Error('PDF Lambda returned an unexpected response format.');
     } catch (error) {
-        console.warn('PDF Lambda unavailable; falling back to local PDF generation.', error);
+        logError('pdf.lambda_unavailable', error, { template, watermark });
         return null;
     } finally {
         clearTimeout(timeout);
@@ -984,7 +985,11 @@ export async function generatePdfDocument({ cvData, template, watermark, html, t
     if (useLambda) {
         const lambdaPdf = await generatePdfWithLambda(cvData, template, watermark);
         if (lambdaPdf) {
-            console.log(`Lambda PDF generated. Buffer size: ${lambdaPdf.buffer.length}`);
+            logEvent('info', 'pdf.lambda_generated', {
+                template,
+                templateSource: lambdaPdf.templateSource,
+                bytes: lambdaPdf.buffer.length,
+            });
             return {
                 buffer: Buffer.from(lambdaPdf.buffer),
                 renderer: 'lambda',
@@ -992,7 +997,7 @@ export async function generatePdfDocument({ cvData, template, watermark, html, t
             };
         }
     } else {
-        console.log(`Skipping PDF Lambda for ${templateSource} template; using rendered HTML.`);
+        logEvent('info', 'pdf.lambda_skipped', { template, templateSource });
     }
 
     let browser: any = null;
@@ -1000,7 +1005,7 @@ export async function generatePdfDocument({ cvData, template, watermark, html, t
     let shouldCloseBrowser = true;
 
     try {
-        console.log(`HTML generated: ${html.length} bytes`);
+        logEvent('info', 'pdf.local_generation_started', { template, templateSource, htmlBytes: html.length });
 
         browser = useWarmBrowser ? await getWarmPdfBrowser() : await launchOneShotPdfBrowser();
         shouldCloseBrowser = !useWarmBrowser;
@@ -1023,13 +1028,13 @@ export async function generatePdfDocument({ cvData, template, watermark, html, t
         await page.setViewport({ width: 794, height: 1122, deviceScaleFactor: 1 });
 
         console.time('SetContent');
-        console.log('Setting page content directly (no navigation)...');
+        logEvent('info', 'pdf.local_set_content_started', { template });
         await page.setContent(html, {
             waitUntil: 'domcontentloaded',
             timeout: 30000,
         });
         console.timeEnd('SetContent');
-        console.log('Page content set. Generating PDF...');
+        logEvent('info', 'pdf.local_render_started', { template });
 
         console.time('RenderWait');
         await page.evaluate(async () => {
@@ -1050,7 +1055,7 @@ export async function generatePdfDocument({ cvData, template, watermark, html, t
             margin: { top: '0', right: '0', bottom: '0', left: '0' },
         });
         console.timeEnd('PdfGeneration');
-        console.log(`PDF generated. Buffer size: ${pdfBuffer.length}`);
+        logEvent('info', 'pdf.local_generated', { template, templateSource, bytes: pdfBuffer.length });
 
         await page.close();
         page = null;
@@ -1068,6 +1073,7 @@ export async function generatePdfDocument({ cvData, template, watermark, html, t
             templateSource,
         };
     } catch (error) {
+        logError('pdf.local_generation_failed', error, { template, templateSource });
         if (page) {
             try { await page.close(); } catch { /* ignore */ }
         }

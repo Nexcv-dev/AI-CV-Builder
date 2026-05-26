@@ -101,6 +101,11 @@ export interface AdminPaymentItem {
   provider: string;
   paymentId: string;
   orderId: string;
+  reviewType?: 'payment' | 'checkout';
+  reviewStatus?: 'processed' | 'unprocessed' | 'expired' | 'pending' | 'failed' | 'cancelled';
+  billingReviewStatus?: 'open' | 'resolved';
+  reviewedAt?: string;
+  reviewNote?: string;
   user: { id: string; email: string; displayName: string } | null;
   plan: 'payg' | 'monthly' | null;
   amount: string;
@@ -112,6 +117,8 @@ export interface AdminPaymentItem {
   currency: string;
   statusCode: string;
   processed: boolean;
+  processingStartedAt?: string;
+  processedAt?: string;
   rawPayload: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -160,6 +167,9 @@ export interface AdminPaymentSummary {
   totalRevenueCents: number;
   currency: string;
   processedCount: number;
+  pendingCheckoutCount: number;
+  checkoutReviewCount: number;
+  failedPaymentCount: number;
   revenueByPlan: Record<string, number>;
   dailyRevenue: Array<{ day: string; cents: number }>;
 }
@@ -210,11 +220,17 @@ export interface AdminSettingsSummary {
   services: Array<{
     key: string;
     label: string;
+    status: 'ok' | 'warn' | 'error';
     configured: boolean;
+    detail: string;
   }>;
   security: {
     sessionSecretConfigured: boolean;
     superAdminAllowlistCount: number;
+    adminIpAllowlistConfigured: boolean;
+    payhereCheckoutUrl: string;
+    payhereNotifyUrlConfigured: boolean;
+    pdfLambdaConfigured: boolean;
   };
   email: {
     configured: boolean;

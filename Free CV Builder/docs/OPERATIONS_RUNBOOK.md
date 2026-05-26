@@ -6,7 +6,7 @@ This runbook is for production support, launch checks, and incident response.
 
 When something is wrong:
 
-1. Check `/api/health`.
+1. Check `/api/health` and review any degraded readiness checks.
 2. Check hosting logs for the Express app.
 3. Check MongoDB Atlas health.
 4. Check admin settings/service-readiness if admin is reachable.
@@ -23,6 +23,7 @@ Symptoms:
 Diagnosis:
 
 - Check Express logs for `/api/generate-pdf`.
+- Search logs for `pdf.generate_failed`, `pdf.lambda_unavailable`, or `pdf.local_generation_failed`.
 - Check whether `PDF_LAMBDA_URL` is configured.
 - Check Lambda CloudWatch logs.
 - Check Lambda memory/timeout.
@@ -47,6 +48,7 @@ Symptoms:
 Diagnosis:
 
 - Check logs for `POST /api/payhere/ipn`.
+- Search logs for `payment.payhere_ipn_failed`, `payment.payhere_ipn_signature_failed`, `payment.payhere_ipn_amount_mismatch`, or `payment.payhere_ipn_unprocessed_status`.
 - Confirm PayHere can reach the deployed public URL.
 - Confirm `PAYHERE_MERCHANT_ID` and `PAYHERE_MERCHANT_SECRET`.
 - Confirm `PAYHERE_NOTIFY_URL` points to `/api/payhere/ipn`.
@@ -89,6 +91,7 @@ Symptoms:
 Diagnosis:
 
 - Use admin settings test-email.
+- Search logs for `email.gmail_api_failed`, `email.resend_failed`, `email.smtp_failed`, or `email.notification_failed`.
 - Check `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_FROM`, SMTP variables, `RESEND_API_KEY`, or Gmail OAuth variables.
 - Check provider rate limits and spam/bounce logs.
 
@@ -114,6 +117,7 @@ If the database is down, app-level maintenance mode may not be available. Use ho
 ## Routine Maintenance
 
 - Confirm MongoDB automated backups.
+- Search logs for `mongodb.connection_failed` after deploys or environment changes.
 - Take a manual snapshot before risky data operations.
 - Review failed PayHere transactions.
 - Review failed email/PDF logs.

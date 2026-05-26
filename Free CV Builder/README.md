@@ -22,6 +22,7 @@ npm run dev:all
 npm run lint
 npm run test:run
 npm run build
+npm run launch:check
 npm run validate:templates
 npm run build:pdf-lambda
 ```

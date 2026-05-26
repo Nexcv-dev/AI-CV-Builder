@@ -138,6 +138,7 @@ npm run server                      # Run Express backend only
 npm run lint                        # TypeScript compile check
 npm run test:run                    # Run Vitest once
 npm run build                       # Production frontend build
+npm run launch:check                # Run launch readiness checks
 npm run build:pdf-lambda            # Build Lambda ZIP
 npm run validate:templates          # Validate Admin Templates folders
 npm run templates:release:dry-run   # Validate and dry-run template release

@@ -11,14 +11,25 @@ const roleSummary = (role: UserRole) => ({
     access: role === 'user' ? [] : ADMIN_ROLE_ACCESS[role],
 });
 
-const serviceStatus = (configured: boolean, label: string) => ({
+const mongoReadyStateLabel = (state: number) => (
+    ['disconnected', 'connected', 'connecting', 'disconnecting'][state] || 'unknown'
+);
+
+const serviceStatus = (
+    status: 'ok' | 'warn' | 'error',
+    label: string,
+    detail: string,
+    configured = status !== 'error',
+) => ({
     key: label.toLowerCase().replace(/\s+/g, '_'),
     label,
+    status,
     configured,
+    detail,
 });
 
 export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
-    const { User, AppSetting, CV_TEMPLATES, requireAdminPermission, sendError, currentUserId, isValidDocumentId, adminUserSummary, recordAdminAuditLog, normalizeEmail, sanitizeProfileField, isEmailServiceConfigured, getAppEmailFrom, sendSystemEmail } = bindDeps(deps);
+    const { User, AppSetting, CV_TEMPLATES, requireAdminPermission, sendError, currentUserId, isValidDocumentId, adminUserSummary, recordAdminAuditLog, normalizeEmail, sanitizeProfileField, isEmailServiceConfigured, getAppEmailFrom, sendSystemEmail, getPayHereMerchantConfig, getPayHereCheckoutUrl, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, mongoose } = bindDeps(deps);
 
     router.get('/api/admin/roles', requireAdminPermission('roles.read'), async (_req: Request, res: Response) => {
         try {
@@ -87,6 +98,13 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
         try {
             const appSettings = await getAppSettings();
             const emailConfigured = isEmailServiceConfigured();
+            const mongoConfigured = Boolean(process.env.MONGO_URI || process.env.MONGODB_URI);
+            const mongoReadyState = mongoose?.connection?.readyState ?? 0;
+            const payhereConfig = getPayHereMerchantConfig();
+            const payhereConfigured = Boolean(payhereConfig.merchantId && payhereConfig.merchantSecret);
+            const payhereNotifyConfigured = Boolean(process.env.PAYHERE_NOTIFY_URL?.trim());
+            const pdfLambdaConfigured = Boolean(process.env.PDF_LAMBDA_URL?.trim());
+            const sessionSecretConfigured = Boolean(process.env.SESSION_SECRET?.trim());
             return res.json({
                 app: appSettingsSummary(appSettings),
                 environment: process.env.NODE_ENV || 'development',
@@ -96,21 +114,61 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
                     api: process.env.API_ORIGIN || '',
                 },
                 services: [
-                    serviceStatus(Boolean(process.env.MONGO_URI || process.env.MONGODB_URI), 'MongoDB'),
-                    serviceStatus(emailConfigured, 'Email'),
-                    serviceStatus(Boolean(process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME), 'S3 Templates'),
-                    serviceStatus(Boolean(
-                        (process.env.PAYHERE_MERCHANT_ID && process.env.PAYHERE_MERCHANT_SECRET) ||
-                        (process.env.PAYHERE_SANDBOX_MERCHANT_ID && process.env.PAYHERE_SANDBOX_MERCHANT_SECRET)
-                    ), 'PayHere'),
-                    serviceStatus(Boolean(process.env.GEMINI_API_KEY), 'Gemini'),
+                    serviceStatus(
+                        !mongoConfigured ? 'warn' : mongoReadyState === 1 ? 'ok' : 'error',
+                        'MongoDB',
+                        !mongoConfigured ? 'URI not configured.' : `Connection is ${mongoReadyStateLabel(mongoReadyState)}.`,
+                        mongoConfigured,
+                    ),
+                    serviceStatus(
+                        sessionSecretConfigured || process.env.NODE_ENV !== 'production' ? 'ok' : 'error',
+                        'Session Secret',
+                        sessionSecretConfigured ? 'Configured.' : 'Missing in production.',
+                        sessionSecretConfigured,
+                    ),
+                    serviceStatus(
+                        emailConfigured ? 'ok' : 'error',
+                        'Email',
+                        emailConfigured ? `Configured via ${emailSettingsSummary(appSettings, { isEmailServiceConfigured, getAppEmailFrom }).provider}.` : 'No email provider is configured.',
+                        emailConfigured,
+                    ),
+                    serviceStatus(
+                        Boolean(S3_TEMPLATE_BUCKET) ? 'ok' : 'warn',
+                        'S3 Templates',
+                        S3_TEMPLATE_BUCKET ? `Bucket configured${S3_TEMPLATE_PREFIX ? ` with prefix ${S3_TEMPLATE_PREFIX}.` : '.'}` : 'Bucket not configured; custom templates will not be available.',
+                        Boolean(S3_TEMPLATE_BUCKET),
+                    ),
+                    serviceStatus(
+                        payhereConfigured && payhereNotifyConfigured ? 'ok' : payhereConfigured ? 'warn' : 'error',
+                        'PayHere',
+                        payhereConfigured
+                            ? `Checkout configured. Notify URL ${payhereNotifyConfigured ? 'configured' : 'missing'}.`
+                            : 'Merchant credentials are missing.',
+                        payhereConfigured,
+                    ),
+                    serviceStatus(
+                        pdfLambdaConfigured ? 'ok' : 'warn',
+                        'PDF Lambda',
+                        pdfLambdaConfigured ? 'Lambda renderer URL configured.' : 'Missing; built-in templates will use local fallback.',
+                        pdfLambdaConfigured,
+                    ),
+                    serviceStatus(
+                        process.env.GEMINI_API_KEY ? 'ok' : 'error',
+                        'Gemini',
+                        process.env.GEMINI_API_KEY ? 'Configured.' : 'Missing; AI features will fail.',
+                        Boolean(process.env.GEMINI_API_KEY),
+                    ),
                 ],
                 security: {
-                    sessionSecretConfigured: Boolean(process.env.SESSION_SECRET),
+                    sessionSecretConfigured,
                     superAdminAllowlistCount: (process.env.SUPER_ADMIN_EMAILS || '')
                         .split(',')
                         .map((email) => email.trim())
                         .filter(Boolean).length,
+                    adminIpAllowlistConfigured: Boolean(process.env.ADMIN_ALLOWED_IPS?.trim()),
+                    payhereCheckoutUrl: getPayHereCheckoutUrl(),
+                    payhereNotifyUrlConfigured: payhereNotifyConfigured,
+                    pdfLambdaConfigured,
                 },
                 email: emailSettingsSummary(appSettings, { isEmailServiceConfigured, getAppEmailFrom }),
             });

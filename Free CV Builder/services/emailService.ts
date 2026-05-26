@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import * as dotenv from 'dotenv';
+import { logError, logEvent } from '../server-utils/logger';
 
 dotenv.config();
 
@@ -132,43 +133,57 @@ async function sendGmailApiEmail(options: AppEmailOptions) {
 
         return true;
     } catch (error) {
-        console.warn('Gmail API sending failed, falling back to other methods:', error instanceof Error ? error.message : String(error));
+        logError('email.gmail_api_failed', error, { to: options.to, subject: options.subject });
         return false;
     }
 }
 
 export async function sendAppEmail({ to, from, subject, text, replyTo }: AppEmailOptions) {
     const gmailSent = await sendGmailApiEmail({ to, from, subject, text, replyTo });
-    if (gmailSent) return;
-
-    const resendApiKey = process.env.RESEND_API_KEY?.trim();
-    if (resendApiKey) {
-        const response = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${resendApiKey}`,
-                'Content-Type': 'application/json',
-                'User-Agent': 'NexCV/1.0',
-            },
-            body: JSON.stringify({
-                from,
-                to,
-                subject,
-                text,
-                ...(replyTo ? { reply_to: replyTo } : {}),
-            }),
-        });
-
-        if (!response.ok) {
-            const details = await response.text().catch(() => '');
-            throw new Error(`Resend email API failed with ${response.status}: ${details || response.statusText}`);
-        }
-
+    if (gmailSent) {
+        logEvent('info', 'email.sent', { provider: 'gmail_api', to, subject });
         return;
     }
 
-    const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
-    await transporter.sendMail({ to, from, subject, text, replyTo });
+    const resendApiKey = process.env.RESEND_API_KEY?.trim();
+    if (resendApiKey) {
+        try {
+            const response = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${resendApiKey}`,
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'NexCV/1.0',
+                },
+                body: JSON.stringify({
+                    from,
+                    to,
+                    subject,
+                    text,
+                    ...(replyTo ? { reply_to: replyTo } : {}),
+                }),
+            });
+
+            if (!response.ok) {
+                const details = await response.text().catch(() => '');
+                throw new Error(`Resend email API failed with ${response.status}: ${details || response.statusText}`);
+            }
+            logEvent('info', 'email.sent', { provider: 'resend', to, subject });
+            return;
+        } catch (error) {
+            logError('email.resend_failed', error, { to, subject });
+            throw error;
+        }
+    }
+
+    try {
+        const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
+        await transporter.sendMail({ to, from, subject, text, replyTo });
+        logEvent('info', 'email.sent', { provider: 'smtp', to, subject });
+    } catch (error) {
+        logError('email.smtp_failed', error, { to, subject });
+        throw error;
+    }
 }
 
 const hasGmailApiConfig = () => Boolean(
@@ -206,7 +221,7 @@ export const sendSystemEmail = async (options: Omit<AppEmailOptions, 'from'>) =>
 
 export const sendNotificationEmail = async (options: Omit<AppEmailOptions, 'from'>) => {
     if (!isEmailServiceConfigured()) {
-        console.warn('Email service is not configured; notification email skipped.');
+        logEvent('warn', 'email.notification_skipped_config_missing', { to: options.to, subject: options.subject });
         return false;
     }
 
@@ -214,7 +229,7 @@ export const sendNotificationEmail = async (options: Omit<AppEmailOptions, 'from
         await sendSystemEmail(options);
         return true;
     } catch (error) {
-        console.error('Notification email failed:', error);
+        logError('email.notification_failed', error, { to: options.to, subject: options.subject });
         return false;
     }
 };

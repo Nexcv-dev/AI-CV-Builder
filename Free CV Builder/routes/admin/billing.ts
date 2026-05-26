@@ -4,7 +4,14 @@ import type { BillingPlan } from '../../server-models/userPlan';
 
 
 export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
-    const { User, PaymentTransaction, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, recordAdminAuditLog } = bindDeps(deps);
+    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, recordAdminAuditLog } = bindDeps(deps);
+
+    const markExpiredPendingCheckouts = async () => {
+        await CheckoutSession.updateMany(
+            { status: 'pending', expiresAt: { $lt: new Date() } },
+            { $set: { status: 'expired', billingReviewStatus: 'resolved', expiredAt: new Date() } }
+        );
+    };
 
     const adminCouponSummary = (coupon: any) => ({
         id: coupon._id?.toString?.() || coupon.id,
@@ -19,6 +26,93 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
         maxRedemptions: coupon.maxRedemptions || null,
         redeemedCount: coupon.redeemedCount || 0,
         updatedAt: coupon.updatedAt,
+    });
+
+    const adminCheckoutReviewSummary = (checkout: any) => {
+        const user = checkout.userId && typeof checkout.userId === 'object' ? checkout.userId : null;
+        return {
+            id: checkout._id?.toString?.() || checkout.id,
+            provider: 'payhere',
+            paymentId: checkout.status === 'failed' ? 'Failed checkout' : 'Checkout review',
+            orderId: checkout.orderId,
+            reviewType: 'checkout',
+            reviewStatus: checkout.status,
+            billingReviewStatus: checkout.billingReviewStatus || 'open',
+            reviewedAt: checkout.reviewedAt,
+            reviewNote: checkout.reviewNote || '',
+            user: user ? {
+                id: user._id?.toString?.() || user.id,
+                email: user.email,
+                displayName: user.displayName,
+            } : null,
+            plan: checkout.plan || null,
+            amount: (Math.max(0, checkout.finalAmountCents || 0) / 100).toFixed(2),
+            amountCents: checkout.finalAmountCents || 0,
+            baseAmountCents: checkout.baseAmountCents || 0,
+            discountCents: checkout.discountCents || 0,
+            finalAmountCents: checkout.finalAmountCents || 0,
+            couponCode: checkout.couponCode || '',
+            currency: checkout.currency || 'LKR',
+            statusCode: checkout.status,
+            processed: false,
+            rawPayload: {
+                checkoutStatus: checkout.status,
+                expiresAt: checkout.expiresAt,
+                couponCode: checkout.couponCode || '',
+            },
+            createdAt: checkout.createdAt,
+            updatedAt: checkout.updatedAt,
+        };
+    };
+
+    router.patch('/api/admin/billing/review/:type/:id', requireAdminPermission('billing.write'), async (req: Request, res: Response) => {
+        try {
+            const reviewType = req.params.type;
+            if (reviewType !== 'payment' && reviewType !== 'checkout') {
+                return res.status(400).json({ error: 'Choose a valid billing review type.' });
+            }
+            if (!isValidDocumentId(req.params.id)) {
+                return res.status(400).json({ error: 'Invalid review item id.' });
+            }
+
+            const reviewNote = sanitizeProfileField(req.body?.note, 500);
+            const reviewUpdate = {
+                billingReviewStatus: 'resolved',
+                reviewedAt: new Date(),
+                reviewedBy: currentUserId(req),
+                reviewNote,
+            };
+            const model = reviewType === 'payment' ? PaymentTransaction : CheckoutSession;
+            const item = await model.findByIdAndUpdate(req.params.id, { $set: reviewUpdate }, { new: true, runValidators: true }).populate('userId', 'email displayName');
+            if (!item) return res.status(404).json({ error: 'Review item not found.' });
+
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'billing.review.resolved',
+                targetType: reviewType === 'payment' ? 'payment_transaction' : 'checkout_session',
+                targetId: item._id?.toString?.() || req.params.id,
+                targetLabel: reviewType === 'payment' ? item.paymentId : item.orderId,
+                metadata: {
+                    reviewType,
+                    orderId: item.orderId,
+                    noteProvided: Boolean(reviewNote),
+                },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
+
+            return res.json({
+                payment: reviewType === 'payment'
+                    ? {
+                        ...adminPaymentSummary(item),
+                        reviewType: 'payment',
+                        reviewStatus: item.processed ? 'processed' : 'unprocessed',
+                    }
+                    : adminCheckoutReviewSummary(item),
+            });
+        } catch (error) {
+            return sendError(res, 500, 'Could not resolve billing review.', error);
+        }
     });
 
 
@@ -183,6 +277,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
 
     router.get('/api/admin/payments', requireAdminPermission('billing.read'), async (req: Request, res: Response) => {
         try {
+            await markExpiredPendingCheckouts();
             const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
             const plan = typeof req.query.plan === 'string' ? req.query.plan.trim() : '';
             const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
@@ -200,6 +295,9 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 filter.processed = true;
             } else if (status === 'unprocessed') {
                 filter.processed = false;
+            } else if (status === 'review') {
+                filter.processed = false;
+                filter.billingReviewStatus = { $ne: 'resolved' };
             }
     
             if (search) {
@@ -216,7 +314,35 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 .sort({ createdAt: -1 })
                 .limit(limit)
                 .populate('userId', 'email displayName');
-            const allProcessedPayments = await PaymentTransaction.find({ processed: true }).select('amount currency plan createdAt');
+            let checkoutReviewItems: any[] = [];
+            if (status === 'review') {
+                const checkoutFilter: any = { status: 'failed', billingReviewStatus: { $ne: 'resolved' } };
+                if (['payg', 'monthly'].includes(plan)) checkoutFilter.plan = plan;
+                if (search) {
+                    const pattern = new RegExp(escapeRegex(search), 'i');
+                    const matchedUsers = await User.find({ $or: [{ email: pattern }, { displayName: pattern }] }).select('_id');
+                    checkoutFilter.$or = [
+                        { orderId: pattern },
+                        { couponCode: pattern },
+                        ...(matchedUsers.length ? [{ userId: { $in: matchedUsers.map((user) => user._id) } }] : []),
+                    ];
+                }
+                checkoutReviewItems = await CheckoutSession.find(checkoutFilter)
+                    .sort({ updatedAt: -1 })
+                    .limit(limit)
+                    .populate('userId', 'email displayName');
+            }
+            const [
+                allProcessedPayments,
+                pendingCheckoutCount,
+                checkoutReviewCount,
+                failedPaymentCount,
+            ] = await Promise.all([
+                PaymentTransaction.find({ processed: true }).select('amount currency plan createdAt'),
+                CheckoutSession.countDocuments({ status: 'pending' }),
+                CheckoutSession.countDocuments({ status: 'failed', billingReviewStatus: { $ne: 'resolved' } }),
+                PaymentTransaction.countDocuments({ processed: false, billingReviewStatus: { $ne: 'resolved' } }),
+            ]);
     
             const revenueCents = allProcessedPayments.reduce((sum, payment) => sum + parsePaymentAmountCents(payment.amount), 0);
             const revenueByPlan = allProcessedPayments.reduce((acc: Record<string, number>, payment) => {
@@ -240,11 +366,23 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             });
     
             return res.json({
-                payments: payments.map(adminPaymentSummary),
+                payments: [
+                    ...payments.map((payment: any) => ({
+                        ...adminPaymentSummary(payment),
+                        reviewType: 'payment',
+                        reviewStatus: payment.processed ? 'processed' : 'unprocessed',
+                    })),
+                    ...checkoutReviewItems.map(adminCheckoutReviewSummary),
+                ]
+                    .sort((a: any, b: any) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
+                    .slice(0, limit),
                 summary: {
                     totalRevenueCents: revenueCents,
                     currency: 'LKR',
                     processedCount: allProcessedPayments.length,
+                    pendingCheckoutCount,
+                    checkoutReviewCount,
+                    failedPaymentCount,
                     revenueByPlan,
                     dailyRevenue,
                 },
