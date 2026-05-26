@@ -456,12 +456,19 @@
   .preview-container-scroll {
     contain: paint layout;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   .preview-scale-wrapper {
     will-change: transform;
     backface-visibility: hidden;
     transform-style: preserve-3d;
+    touch-action: pan-y;
+    user-select: none;
+  }
+
+  .preview-scale-shell {
+    touch-action: pan-y;
   }
 
   .pb-safe {
@@ -1400,6 +1407,12 @@
 
 .light-scrollbar::-webkit-scrollbar {
   width: 6px;
+}
+
+@media (max-width: 1023px) {
+  .preview-scale-wrapper {
+    transition: none !important;
+  }
 }
 .light-scrollbar::-webkit-scrollbar-track {
   background: transparent;
