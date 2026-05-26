@@ -3,9 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #182 from bimanthaperera-lab/test/overview (ae3a582) - Bimantha Perera, 10 seconds ago
-* fix mobile preview scrolling bug (6386995) - Bimantha Perera, 71 minutes ago
-* Optimize and documentation update (3116b32) - Bimantha Perera, 86 minutes ago
+* Merge pull request #183 from bimanthaperera-lab/test/overview (8000471) - Bimantha Perera, 9 seconds ago
+* fix mobile preview bugs (22e24c9) - Bimantha Perera, 9 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (b243b92) - bimanthaperera-lab, 20 minutes ago
+* Merge pull request #182 from bimanthaperera-lab/test/overview (ae3a582) - Bimantha Perera, 20 minutes ago
+* fix mobile preview scrolling bug (6386995) - Bimantha Perera, 2 hours ago
+* Optimize and documentation update (3116b32) - Bimantha Perera, 2 hours ago
 * add template per color behavior (be3ebbd) - Bimantha Perera, 4 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (464ea93) - bimanthaperera-lab, 16 hours ago
 * Merge pull request #180 from bimanthaperera-lab/test/overview (244492e) - Bimantha Perera, 16 hours ago
@@ -14,16 +17,16 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (4722eed) - bimanthaperera-lab, 20 hours ago
 * Merge pull request #179 from bimanthaperera-lab/test/overview (3c4bab1) - Bimantha Perera, 20 hours ago
 * add template color reset button (c118cad) - Bimantha Perera, 21 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (50d0ea4) - bimanthaperera-lab, 22 hours ago
-* Merge pull request #178 from bimanthaperera-lab/test/overview (e183a9c) - Bimantha Perera, 22 hours ago
-* add release automation (bbd4835) - Bimantha Perera, 22 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (50d0ea4) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #178 from bimanthaperera-lab/test/overview (e183a9c) - Bimantha Perera, 23 hours ago
+* add release automation (bbd4835) - Bimantha Perera, 23 hours ago
 * Add admin template validation gate (4d59037) - Bimantha Perera, 23 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (1efa7c6) - bimanthaperera-lab, 24 hours ago
 * Merge pull request #177 from bimanthaperera-lab/test/overview (f52109e) - Bimantha Perera, 24 hours ago
 * fix default color bug in design panel (eb0b089) - Bimantha Perera, 25 hours ago
 * add script to validate new templates (dcb9e7b) - Bimantha Perera, 25 hours ago
 * Improve Template Rendering (b2408d6) - Bimantha Perera, 26 hours ago
-* fix template issues (e165f72) - Bimantha Perera, 27 hours ago
+* fix template issues (e165f72) - Bimantha Perera, 28 hours ago
 * fix mobile preview bug (2f68c3d) - Bimantha Perera, 28 hours ago
 * Create cv_templates_mobile_preview_safe.zip (e0842f5) - Bimantha Perera, 2 days ago
 * Update MyCvs.tsx (bf9e59c) - Bimantha Perera, 2 days ago
