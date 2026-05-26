@@ -1,35 +1,63 @@
-# Terms of Service
+# Terms of Service Draft
 
 **Effective Date:** [Insert Date]
 
-Welcome to NexCV. By accessing or using our CV builder platform, you agree to be bound by these Terms of Service.
+This is a working draft for NexCV and must be reviewed by qualified legal counsel before production use.
 
-## 1. Description of Service
-NexCV provides an online tool for creating, managing, and exporting resumes/CVs in PDF format. We offer both free services (with limited features and quotas) and premium paid plans.
+## 1. Service Description
 
-## 2. User Accounts
-*   You must be at least 16 years old to use this service.
-*   You are responsible for maintaining the security of your account and password.
-*   You agree to provide accurate information when creating your CV.
+NexCV provides online tools for creating, editing, saving, previewing, and exporting resumes/CVs. The service may include free usage limits, paid plans, premium templates, AI-assisted writing tools, and PDF downloads.
 
-## 3. Payments and Refunds
-*   **Payments:** All payments for premium plans are processed securely via PayHere. 
-*   **Refunds:** Due to the digital nature of our service (downloadable PDFs), all payments are generally non-refundable unless there is a critical technical failure on our end that prevented you from receiving the service you paid for. (Please refer to our Refund Policy for detailed information).
+## 2. Accounts
 
-## 4. Acceptable Use
-You agree NOT to:
-*   Use NexCV to generate deceptive, fraudulent, or harmful documents.
-*   Attempt to bypass our payment systems, PDF download quotas, or security measures.
-*   Reverse engineer the application or steal our premium CV templates.
+- You must provide accurate account information.
+- You are responsible for keeping your login credentials secure.
+- You must not share admin access or attempt to access another user's account.
+- NexCV may suspend or restrict accounts that violate these terms or create security risk.
 
-## 5. Intellectual Property
-The templates, designs, logos, and code of NexCV are our intellectual property. Your personal CV data and the content you input remain your property. By using our service, you grant us the right to process your text through our AI partners (e.g., Google Gemini) solely for the purpose of generating your CV.
+## 3. User Content
 
-## 6. Limitation of Liability
-NexCV is provided "as is" without any warranties. We are not responsible for your job search outcomes or any loss of data. Always keep a backup of your important information.
+You own the CV content you enter into NexCV. You grant NexCV the limited permission needed to store, process, render, export, and transmit that content so the service can operate.
 
-## 7. Changes to Terms
-We reserve the right to modify these terms at any time. We will notify users of significant changes via the email associated with their account.
+You are responsible for the accuracy and legality of the CV content you provide.
 
-## 8. Contact Information
-For support or inquiries regarding these terms, contact: **support@nexcv.com**
+## 4. AI Features
+
+AI features are optional and may generate imperfect, incomplete, or inaccurate text. You are responsible for reviewing and editing AI-generated content before using it in a CV or job application.
+
+When you use AI features, relevant text may be sent to Google Gemini or another configured AI provider for processing.
+
+## 5. Payments, Plans, And Quotas
+
+- Paid plans and premium features are processed through PayHere or another configured payment provider.
+- Free and paid usage may be subject to quotas, including CV creation and PDF download limits.
+- Plan activation may depend on successful payment verification.
+- Refund handling should follow the published refund policy and applicable law.
+
+## 6. Acceptable Use
+
+You agree not to:
+
+- Use NexCV to create fraudulent, deceptive, unlawful, or harmful documents.
+- Upload malicious content or attempt to compromise the service.
+- Bypass quotas, payment checks, admin controls, or security measures.
+- Copy, resell, or redistribute NexCV templates, source code, branding, or paid features without permission.
+- Abuse support, email, AI, payment, or PDF generation systems.
+
+## 7. Intellectual Property
+
+NexCV owns its software, branding, templates, designs, and platform materials except where third-party licenses apply. Your personal CV content remains yours.
+
+## 8. Availability And Changes
+
+NexCV may change, suspend, or discontinue parts of the service. Maintenance mode may be used for upgrades, security work, or incident response.
+
+## 9. Limitation Of Liability
+
+NexCV is provided as is. NexCV does not guarantee job search outcomes, interview results, hiring decisions, uninterrupted availability, or error-free AI output. Always keep your own backup of important CV data.
+
+## 10. Contact
+
+For support or questions about these terms, contact:
+
+**support@nexcv.com**

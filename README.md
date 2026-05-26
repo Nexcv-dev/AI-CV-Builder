@@ -1,74 +1,75 @@
 # NexCV - AI CV Builder
 
-NexCV is a full-stack AI-powered CV builder for creating, managing, previewing, and exporting professional resumes. The app supports guest-first CV creation, authenticated cloud saving, premium templates, AI-assisted writing, PayHere payments, PDF generation, and an expanding admin platform for operations.
+NexCV is a full-stack CV builder for creating, saving, previewing, and exporting professional resumes. The project combines a React/Vite frontend, an Express/TypeScript API, MongoDB persistence, AI-assisted writing through Gemini, PayHere billing, S3-backed custom templates, and a separate Lambda-ready PDF renderer.
 
-Current release focus: production hardening, admin operations, CMS-driven templates, and launch readiness.
+Current release focus: production hardening, admin operations, template reliability, payment/PDF readiness, and launch preparation.
 
-## Key Features
+## Features
 
 ### CV Builder
-- Guest-first builder flow with live preview.
-- Authenticated dashboard for saved CVs.
-- Template selector with free and premium badges.
-- Profile image crop and adjustment support.
-- PDF download flow with free-user quotas and premium unlocks.
-- AI CV parsing and summary generation through Gemini.
+- Guest-first editing flow with live preview.
+- Authenticated dashboard for saved CV documents.
+- Built-in and admin-managed templates with free/premium metadata.
+- Profile image crop, position, zoom, and template-specific rendering.
+- AI import, summary generation, and text refinement with Gemini.
+- PDF export with quota and plan checks.
 
 ### Templates
-- Built-in curated CV templates.
-- Admin-managed custom templates.
-- S3-backed HTML/CSS template rendering pipeline.
-- Dashboard thumbnails use live template metadata.
-- Custom templates support profile image positioning values.
+- Built-in templates in the frontend bundle.
+- Admin-managed HTML/CSS templates stored in S3.
+- Local template authoring flow under `Admin Templates/`.
+- Template validation and release-map scripts.
+- S3/local fallback rendering for preview and PDF generation.
 
 ### Admin Platform
-- Modular admin platform with dashboard, analytics, users, templates, billing, promotions, CMS, notifications, support, settings, roles, and audit sections.
-- Role-based admin permissions.
-- Admin audit logs for sensitive changes with 30-day database retention.
-- Analytics dashboard for signups, CV saves, downloads, checkout conversion, and template usage.
-- CMS management for public landing content, FAQs, pricing copy, legal pages, and announcements.
-- Email notification management for transactional template copy and delivery testing.
-- CMS-style template management for adding, updating, publishing, and archiving templates.
-- Settings panel for launch controls, maintenance mode, quotas, support email, PayHere mode, default template, runtime readiness, and service checks.
+- Protected admin dashboard for users, templates, billing, coupons, support, settings, roles, and audit logs.
+- Role-based permission checks using `requireAdminPermission`.
+- `SUPER_ADMIN_EMAILS` bootstrap list for initial owners.
+- Optional production admin IP allowlist through `ADMIN_ALLOWED_IPS`.
+- Maintenance mode and service-readiness checks.
+- Admin audit logs for sensitive state changes.
 
 ### Security And Operations
-- Admin IP allowlist support through `ADMIN_ALLOWED_IPS`.
-- Production admin route hiding for non-allowed IPs.
-- Maintenance mode for public traffic while keeping admin access available.
-- Rate limiting, Helmet, CORS controls, input sanitization, and secure session configuration.
-- Email service readiness checks and admin test-email endpoint.
-
+- Express session cookies, Helmet, CORS controls, request-size limits, and route-level rate limiters.
+- Email verification, password reset, Google OAuth, and local email/password auth.
+- PayHere checkout and IPN verification helpers.
+- PDF rendering via Lambda when configured, with local Puppeteer fallback.
 
 ## Documentation
 
-We have comprehensive documentation covering different aspects of the platform:
+Main documentation lives in [Free CV Builder/docs](Free%20CV%20Builder/docs/README.md).
 
-**Core Architecture & Development:**
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [API Documentation](docs/API_DOCS.md)
-- [Contributing Guidelines](docs/CONTRIBUTING.md)
-
-**System Deep Dives:**
-- [Template System](docs/TEMPLATES.md)
-- [PDF Rendering Pipeline](docs/PDF_RENDERING.md)
-
-**Operations & Admin:**
-- [Admin Panel Guide](docs/ADMIN_PANEL.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
-- [Operations Runbook](docs/OPERATIONS_RUNBOOK.md)
-- [Project Roadmap](docs/ROADMAP.md)
+- [Architecture](Free%20CV%20Builder/docs/ARCHITECTURE.md)
+- [API Docs](Free%20CV%20Builder/docs/API_DOCS.md)
+- [Admin Panel](Free%20CV%20Builder/docs/ADMIN_PANEL.md)
+- [Deployment](Free%20CV%20Builder/docs/DEPLOYMENT.md)
+- [Operations Runbook](Free%20CV%20Builder/docs/OPERATIONS_RUNBOOK.md)
+- [PDF Rendering](Free%20CV%20Builder/docs/PDF_RENDERING.md)
+- [Template System](Free%20CV%20Builder/docs/TEMPLATES.md)
+- [Template Authoring Guide](Free%20CV%20Builder/docs/template-authoring-guide.md)
+- [Contributing](Free%20CV%20Builder/docs/CONTRIBUTING.md)
+- [Roadmap](Free%20CV%20Builder/docs/ROADMAP.md)
 
 ## Repository Layout
 
 ```text
 AI-CV-Builder/
   README.md
-  Free CV Builder/            # Main React + Express application
-    services/                 # Email, PDF, S3, and business services
-    middlewares/              # Auth, session, security, rate limits
-    server-models/            # Mongoose models
-    tests/                    # Vitest server/frontend tests
-    lambda-pdf/               # AWS Lambda PDF renderer
+  render.yaml
+  docker-compose.yml
+  Admin Templates/             # Local source folders for admin templates
+  sample templates/            # Static preview samples
+  Free CV Builder/             # Main React + Express application
+    src/                       # React frontend
+    routes/                    # Express route modules
+    middlewares/               # Session, auth, security, and rate limits
+    server-models/             # Mongoose models
+    server-utils/              # Shared backend helpers
+    services/                  # Email, PDF, and S3 services
+    scripts/                   # Build, validation, and template release scripts
+    docs/                      # Project documentation
+    tests/                     # Vitest server and frontend tests
+    lambda-pdf/                # AWS Lambda PDF renderer
 ```
 
 ## Local Development
@@ -83,15 +84,17 @@ Default local URLs:
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:3002`
 
-## Important Environment Variables
+## Environment Variables
 
-Create `.env` inside `Free CV Builder/`.
+Create `.env` inside `Free CV Builder/`. Do not commit real secrets.
 
 ```env
+NODE_ENV=development
 PORT=3002
+FRONTEND_URL=http://localhost:3000
 ALLOWED_ORIGIN=http://localhost:3000
-MONGODB_URI=your_mongodb_connection_string
-SESSION_SECRET=your_session_secret
+MONGODB_URI=mongodb://localhost:27017/nexcv
+SESSION_SECRET=replace_with_a_long_random_secret
 
 GEMINI_API_KEY=your_gemini_key
 
@@ -101,33 +104,50 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 EMAIL_USER=your_smtp_user
 EMAIL_PASS=your_smtp_password
 EMAIL_FROM="NexCV <support@nexcv.com>"
-ADMIN_NOTIFICATION_EMAIL=admin@nexcv.com
+ADMIN_NOTIFICATION_EMAIL=admin@example.com
 
 PAYHERE_MERCHANT_ID=your_payhere_merchant_id
 PAYHERE_MERCHANT_SECRET=your_payhere_secret
+PAYHERE_NOTIFY_URL=https://your-api.example.com/api/payhere/ipn
 
 S3_TEMPLATE_BUCKET_NAME=your_template_bucket
 S3_TEMPLATE_PREFIX=templates
+AWS_REGION=eu-north-1
 
-PDF_LAMBDA_URL=your_lambda_pdf_url
+PDF_LAMBDA_URL=https://your-lambda-url.example.com
+PDF_LAMBDA_TIMEOUT_MS=45000
 
 SUPER_ADMIN_EMAILS=owner@example.com
-ADMIN_ALLOWED_IPS=203.0.113.10
+ADMIN_ALLOWED_IPS=
 ```
 
-Notes:
-- Leave `ADMIN_ALLOWED_IPS` empty in local development unless you are testing IP restrictions.
-- In production, set `ADMIN_ALLOWED_IPS` to your trusted public IPv4/IPv6 addresses.
-- Do not commit real secrets.
+Optional quota variables:
+- `DAILY_CV_CREATION_LIMIT`
+- `DAILY_UNVERIFIED_DOWNLOAD_LIMIT`
+- `PAYG_DAILY_DOWNLOAD_LIMIT`
+- `MONTHLY_DAILY_DOWNLOAD_LIMIT`
 
 ## Useful Commands
 
+Run commands from `Free CV Builder/`.
+
 ```bash
-npm run dev:all        # Run frontend and backend together
-npm run dev            # Run Vite frontend only
-npm run server         # Run Express backend only
-npm run lint           # TypeScript compile check
-npm run test:run       # Run Vitest once
-npm run build          # Production frontend build
-npm run build:pdf-lambda
+npm run dev:all                     # Run frontend and backend together
+npm run dev                         # Run Vite frontend only
+npm run server                      # Run Express backend only
+npm run lint                        # TypeScript compile check
+npm run test:run                    # Run Vitest once
+npm run build                       # Production frontend build
+npm run build:pdf-lambda            # Build Lambda ZIP
+npm run validate:templates          # Validate Admin Templates folders
+npm run templates:release:dry-run   # Validate and dry-run template release
+npm run templates:release           # Validate and release admin templates
 ```
+
+## Production Notes
+
+- Set `SESSION_SECRET` to a long random value before production.
+- Set `ALLOWED_ORIGIN` to the public frontend origin in production.
+- Set `ADMIN_ALLOWED_IPS` to trusted public IPs if admin IP hiding is required.
+- Configure `PAYHERE_NOTIFY_URL` to the deployed `/api/payhere/ipn` endpoint.
+- Use `PDF_LAMBDA_URL` for production PDF generation; local Puppeteer fallback is intended for development and backup.

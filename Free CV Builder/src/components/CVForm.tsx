@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useRef, useCallback, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FileText, Palette, Check, LayoutTemplate, Crown } from 'lucide-react';
 import { DndContext, closestCorners, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -66,6 +66,7 @@ function FormChunkFallback({ isDarkMode = false }: { isDarkMode?: boolean }) {
 
 export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, isFreePlan = false, onUpgradeRequired }: CVFormProps) {
   const { templates, isTemplatePaid, getTemplateLabel } = useTemplateConfig();
+  const templateDefaults = useMemo(() => Object.fromEntries(templates.map((item) => [item.key, item.defaultThemeColor || '#000000'])), [templates]);
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design' | 'templates'>(showTemplatesOnMount ? 'templates' : 'content');
   const [pendingTemplate, setPendingTemplate] = useState<TemplateName | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
@@ -814,6 +815,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
               cvData={cvData}
               setCvData={setCvData}
               template={template}
+              templateDefaultThemeColor={templateDefaults[template]}
               isDarkMode={isDarkMode}
               fileInputRef={fileInputRef}
               onImageUpload={handleImageUpload}
@@ -902,7 +904,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                     <button
                       type="button"
                       onClick={() => {
-                        setCvData((prev) => applyTemplateColorDefaults(prev, template, pendingTemplate));
+                        setCvData((prev) => applyTemplateColorDefaults(prev, template, pendingTemplate, templateDefaults));
                         setTemplate(pendingTemplate);
                         setPendingTemplate(null);
                         setActiveMainTab('content');

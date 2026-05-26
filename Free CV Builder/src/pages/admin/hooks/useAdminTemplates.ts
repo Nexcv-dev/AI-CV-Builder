@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { ApiError, apiFetch } from '../../../utils/api';
 import type { AdminTemplateItem, AdminTemplateValidationResult } from '../adminTypes';
 import { emptyCustomTemplateForm } from '../adminUtils';
-import { validateAdminTemplateSource } from '../../../../server-utils/templateValidation';
+import { mergeTemplateValidationResults, validateAdminTemplateMetadata, validateAdminTemplateSource } from '../../../../server-utils/templateValidation';
 
 type TemplateForm = {
   label: string;
@@ -12,6 +12,7 @@ type TemplateForm = {
   thumbnail: string;
   surfaceColorRole: 'none' | 'sidebar' | 'header';
   surfaceColorLabel: string;
+  defaultThemeColor: string;
 };
 
 type TemplateFileForm = {
@@ -47,6 +48,7 @@ const templateFormFromItem = (template: AdminTemplateItem): TemplateForm => ({
   thumbnail: template.thumbnail,
   surfaceColorRole: template.surfaceColorRole || 'none',
   surfaceColorLabel: template.surfaceColorLabel || '',
+  defaultThemeColor: template.defaultThemeColor || '#000000',
 });
 
 function readTemplateFile(file: File, mode: 'text' | 'dataUrl') {
@@ -74,6 +76,7 @@ export function useAdminTemplates({ enabled }: { enabled: boolean }) {
     thumbnail: '',
     surfaceColorRole: 'none',
     surfaceColorLabel: '',
+    defaultThemeColor: '#000000',
   });
   const [templateFileForm, setTemplateFileForm] = useState<TemplateFileForm>(emptyTemplateFileForm);
   const [templateValidation, setTemplateValidation] = useState<AdminTemplateValidationResult | null>(null);
@@ -136,23 +139,26 @@ export function useAdminTemplates({ enabled }: { enabled: boolean }) {
   const saveSelectedTemplate = async () => {
     if (!selectedTemplate) return;
     const hasFileChanges = Boolean(templateFileForm.indexHtml || templateFileForm.styleCss || templateFileForm.thumbnailDataUrl);
-    let preflightValidation: AdminTemplateValidationResult | null = null;
+    let preflightValidation: AdminTemplateValidationResult | null = validateAdminTemplateMetadata({
+      key: selectedTemplate.key,
+      ...templateForm,
+    }, { requireThumbnailPath: true });
     if (hasFileChanges) {
-      preflightValidation = validateAdminTemplateSource({
+      preflightValidation = mergeTemplateValidationResults(preflightValidation, validateAdminTemplateSource({
         indexHtml: templateFileForm.indexHtml || placeholderHtmlForCssOnlyValidation,
         styleCss: templateFileForm.styleCss || placeholderCssForHtmlOnlyValidation,
         thumbnailPresent: true,
-      });
-      setTemplateValidation(preflightValidation);
-      if (preflightValidation.errors.length) {
-        toast.error(`Template has ${preflightValidation.errors.length} validation error${preflightValidation.errors.length === 1 ? '' : 's'}.`);
-        return;
-      }
-      if (preflightValidation.warnings.length && !templateWarningsConfirmed) {
-        setTemplateWarningsConfirmed(true);
-        toast.error(`Review ${preflightValidation.warnings.length} template warning${preflightValidation.warnings.length === 1 ? '' : 's'} before uploading.`);
-        return;
-      }
+      }));
+    }
+    setTemplateValidation(preflightValidation);
+    if (preflightValidation.errors.length) {
+      toast.error(`Template has ${preflightValidation.errors.length} validation error${preflightValidation.errors.length === 1 ? '' : 's'}.`);
+      return;
+    }
+    if (preflightValidation.warnings.length && !templateWarningsConfirmed) {
+      setTemplateWarningsConfirmed(true);
+      toast.error(`Review ${preflightValidation.warnings.length} template warning${preflightValidation.warnings.length === 1 ? '' : 's'} before saving.`);
+      return;
     }
     setSavingTemplate(true);
     try {
@@ -169,7 +175,7 @@ export function useAdminTemplates({ enabled }: { enabled: boolean }) {
       setSelectedTemplate(data.template);
       setTemplateForm(templateFormFromItem(data.template));
       setTemplateFileForm(emptyTemplateFileForm);
-      setTemplateValidation(preflightValidation?.warnings.length ? preflightValidation : (data.validation || emptyValidationResult));
+      setTemplateValidation(preflightValidation.warnings.length ? preflightValidation : (data.validation || emptyValidationResult));
       setTemplateWarningsConfirmed(false);
       toast.success(templateFileForm.indexHtml || templateFileForm.styleCss || templateFileForm.thumbnailDataUrl ? 'Template files updated.' : 'Template metadata updated.');
     } catch (error) {
@@ -182,6 +188,24 @@ export function useAdminTemplates({ enabled }: { enabled: boolean }) {
   };
 
   const createCustomTemplate = async () => {
+    const preflightValidation = mergeTemplateValidationResults(
+      validateAdminTemplateMetadata(customTemplateForm),
+      validateAdminTemplateSource({
+        indexHtml: customTemplateForm.indexHtml,
+        styleCss: customTemplateForm.styleCss,
+        thumbnailPresent: Boolean(customTemplateForm.thumbnailDataUrl),
+      })
+    );
+    setTemplateValidation(preflightValidation);
+    if (preflightValidation.errors.length) {
+      toast.error(`Template has ${preflightValidation.errors.length} validation error${preflightValidation.errors.length === 1 ? '' : 's'}.`);
+      return;
+    }
+    if (preflightValidation.warnings.length && !templateWarningsConfirmed) {
+      setTemplateWarningsConfirmed(true);
+      toast.error(`Review ${preflightValidation.warnings.length} template warning${preflightValidation.warnings.length === 1 ? '' : 's'} before creating.`);
+      return;
+    }
     setCreatingTemplate(true);
     try {
       const data = await apiFetch<{ template: AdminTemplateItem; validation?: AdminTemplateValidationResult }>('/api/admin/templates', {
@@ -192,6 +216,7 @@ export function useAdminTemplates({ enabled }: { enabled: boolean }) {
       setSelectedTemplate(data.template);
       setTemplateForm(templateFormFromItem(data.template));
       setTemplateValidation(data.validation || emptyValidationResult);
+      setTemplateWarningsConfirmed(false);
       setCustomTemplateForm(emptyCustomTemplateForm);
       setCreateTemplateOpen(false);
       toast.success(data.template.status === 'active' ? 'Template created and published.' : 'Template draft created.');
@@ -254,6 +279,18 @@ export function useAdminTemplates({ enabled }: { enabled: boolean }) {
     setTemplateWarningsConfirmed(false);
   };
 
+  const updateTemplateForm = (value: TemplateForm) => {
+    setTemplateForm(value);
+    setTemplateValidation(null);
+    setTemplateWarningsConfirmed(false);
+  };
+
+  const updateCustomTemplateForm = (value: typeof emptyCustomTemplateForm) => {
+    setCustomTemplateForm(value);
+    setTemplateValidation(null);
+    setTemplateWarningsConfirmed(false);
+  };
+
   return {
     changeCustomTemplateStatus,
     createCustomTemplate,
@@ -266,13 +303,13 @@ export function useAdminTemplates({ enabled }: { enabled: boolean }) {
     selectedTemplate,
     setCreateTemplateOpen,
     setCustomTemplateFile,
-    setCustomTemplateForm,
+    setCustomTemplateForm: updateCustomTemplateForm,
     setSelectedTemplate,
     setSelectedTemplateFile,
     setTemplateAccessFilter,
     setTemplateCategoryFilter,
     setTemplateFileForm: updateTemplateFileForm,
-    setTemplateForm,
+    setTemplateForm: updateTemplateForm,
     setTemplateSearch,
     templateAccessFilter,
     templateCategories,
@@ -280,7 +317,7 @@ export function useAdminTemplates({ enabled }: { enabled: boolean }) {
     templateFileForm,
     templateForm,
     templateValidation,
-    templateWarningConfirmationPending: Boolean(templateValidation?.warnings.length && !templateValidation.errors.length && (templateFileForm.indexHtml || templateFileForm.styleCss || templateFileForm.thumbnailDataUrl)),
+    templateWarningConfirmationPending: Boolean(templateValidation?.warnings.length && !templateValidation.errors.length && !templateWarningsConfirmed),
     templates,
     templatesLoading,
     templateSearch,

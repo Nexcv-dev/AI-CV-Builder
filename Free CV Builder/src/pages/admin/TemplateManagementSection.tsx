@@ -52,7 +52,7 @@ export default function TemplateManagementSection({
   categoryFilter: string;
   accessFilter: string;
   selectedTemplate: AdminTemplateItem | null;
-  templateForm: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string };
+  templateForm: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string; defaultThemeColor: string };
   templateFileForm: { indexHtml: string; indexHtmlFileName: string; styleCss: string; styleCssFileName: string; thumbnailDataUrl: string; thumbnailFileName: string };
   templateValidation: AdminTemplateValidationResult | null;
   templateWarningConfirmationPending: boolean;
@@ -65,7 +65,7 @@ export default function TemplateManagementSection({
   onAccessFilterChange: (value: string) => void;
   onOpenTemplate: (template: AdminTemplateItem) => void;
   onCloseDetail: () => void;
-  onFormChange: (value: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string }) => void;
+  onFormChange: (value: { label: string; category: string; access: 'free' | 'paid'; thumbnail: string; surfaceColorRole: 'none' | 'sidebar' | 'header'; surfaceColorLabel: string; defaultThemeColor: string }) => void;
   onTemplateFileFormChange: (value: { indexHtml: string; indexHtmlFileName: string; styleCss: string; styleCssFileName: string; thumbnailDataUrl: string; thumbnailFileName: string }) => void;
   onSelectedTemplateFileChange: (file: File | undefined, field: 'indexHtml' | 'styleCss' | 'thumbnailDataUrl') => void;
   onSaveTemplate: () => void;
@@ -237,6 +237,23 @@ export default function TemplateManagementSection({
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Default color
+                  <span className="flex h-11 items-center gap-3 rounded-xl border border-white/10 bg-slate-950 px-3 focus-within:border-violet-400">
+                    <input
+                      type="color"
+                      value={customTemplateForm.defaultThemeColor}
+                      onChange={(event) => onCustomFormChange({ ...customTemplateForm, defaultThemeColor: event.target.value })}
+                      className="h-8 w-10 cursor-pointer rounded border border-white/10 bg-transparent p-0"
+                      aria-label="Default theme color"
+                    />
+                    <input
+                      value={customTemplateForm.defaultThemeColor}
+                      onChange={(event) => onCustomFormChange({ ...customTemplateForm, defaultThemeColor: event.target.value })}
+                      className="min-w-0 flex-1 bg-transparent font-mono text-sm font-bold uppercase text-white outline-none"
+                    />
+                  </span>
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
                   Initial status
                   <select
                     value={customTemplateForm.status}
@@ -275,13 +292,48 @@ export default function TemplateManagementSection({
                 </label>
               </div>
 
+              {templateValidation && (
+                <div className={`rounded-2xl border p-3 ${templateValidation.errors.length ? 'border-red-400/25 bg-red-500/10' : hasValidationResults ? 'border-amber-300/25 bg-amber-400/10' : 'border-emerald-300/20 bg-emerald-400/10'}`}>
+                  <div className="flex items-center gap-2">
+                    {templateValidation.errors.length ? (
+                      <AlertCircle size={16} className="text-red-300" />
+                    ) : templateValidation.warnings.length ? (
+                      <TriangleAlert size={16} className="text-amber-200" />
+                    ) : (
+                      <CheckCircle2 size={16} className="text-emerald-300" />
+                    )}
+                    <p className={`text-xs font-black uppercase ${templateValidation.errors.length ? 'text-red-100' : templateValidation.warnings.length ? 'text-amber-100' : 'text-emerald-100'}`}>
+                      Template validation: {validationSummary}
+                    </p>
+                  </div>
+                  {templateWarningConfirmationPending && (
+                    <p className="mt-2 text-xs font-bold text-amber-100/90">
+                      Review these warnings, then click Create with warnings to continue.
+                    </p>
+                  )}
+                  {hasValidationResults ? (
+                    <div className="mt-3 grid gap-2">
+                      {[...templateValidation.errors, ...templateValidation.warnings].map((issue, index) => (
+                        <div key={`${issue.fileName}-${index}`} className={`rounded-xl border px-3 py-2 text-xs font-bold ${issue.severity === 'error' ? 'border-red-400/20 bg-red-950/30 text-red-100' : 'border-amber-300/20 bg-amber-950/20 text-amber-100'}`}>
+                          <span className="font-black uppercase">{issue.severity}</span>
+                          <span className="text-slate-400"> / {issue.fileName}: </span>
+                          {issue.message}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs font-semibold text-emerald-100/80">No template validation issues found.</p>
+                  )}
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={onCreateTemplate}
                 disabled={creatingTemplate}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
               >
-                {creatingTemplate ? <Loader2 className="animate-spin" size={16} /> : 'Create template'}
+                {creatingTemplate ? <Loader2 className="animate-spin" size={16} /> : templateWarningConfirmationPending ? 'Create with warnings' : 'Create template'}
               </button>
             </section>
           </aside>
@@ -372,13 +424,30 @@ export default function TemplateManagementSection({
                     className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
                   />
                 </label>
+                <label className="grid gap-2 text-sm font-black text-slate-200">
+                  Default color
+                  <span className="flex h-11 items-center gap-3 rounded-xl border border-white/10 bg-slate-950 px-3 focus-within:border-violet-400">
+                    <input
+                      type="color"
+                      value={templateForm.defaultThemeColor}
+                      onChange={(event) => onFormChange({ ...templateForm, defaultThemeColor: event.target.value })}
+                      className="h-8 w-10 cursor-pointer rounded border border-white/10 bg-transparent p-0"
+                      aria-label="Default theme color"
+                    />
+                    <input
+                      value={templateForm.defaultThemeColor}
+                      onChange={(event) => onFormChange({ ...templateForm, defaultThemeColor: event.target.value })}
+                      className="min-w-0 flex-1 bg-transparent font-mono text-sm font-bold uppercase text-white outline-none"
+                    />
+                  </span>
+                </label>
                 <button
                   type="button"
                   onClick={onSaveTemplate}
                   disabled={savingTemplate}
                   className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
                 >
-                  {savingTemplate ? <Loader2 className="animate-spin" size={16} /> : 'Save metadata'}
+                  {savingTemplate ? <Loader2 className="animate-spin" size={16} /> : templateWarningConfirmationPending ? 'Save with warnings' : 'Save metadata'}
                 </button>
                 {selectedTemplate.source === 'custom' && (
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -527,6 +596,7 @@ export default function TemplateManagementSection({
               <DetailTile label="Source" value={selectedTemplate.source} />
               <DetailTile label="Status" value={selectedTemplate.status} />
               <DetailTile label="Surface Color" value={selectedTemplate.surfaceColorRole} />
+              <DetailTile label="Default Color" value={selectedTemplate.defaultThemeColor} />
               <DetailTile label="Built-In Thumbnail" value={selectedTemplate.builtInThumbnail} />
               <DetailTile label="Last Updated" value={selectedTemplate.updatedAt ? formatDate(selectedTemplate.updatedAt) : 'Not customized'} />
             </section>

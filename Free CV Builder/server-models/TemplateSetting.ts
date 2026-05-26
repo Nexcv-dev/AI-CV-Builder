@@ -10,6 +10,7 @@ export interface ITemplateSetting extends Document {
   thumbnail?: string;
   surfaceColorRole: 'none' | 'sidebar' | 'header';
   surfaceColorLabel?: string;
+  defaultThemeColor?: string;
   source: 'built_in' | 'custom';
   status: 'draft' | 'active' | 'archived';
   s3Prefix?: string;
@@ -36,6 +37,7 @@ const TemplateSettingSchema = new Schema<ITemplateSetting>(
     thumbnail: { type: String, trim: true, maxlength: 500 },
     surfaceColorRole: { type: String, enum: ['none', 'sidebar', 'header'], default: 'none', required: true },
     surfaceColorLabel: { type: String, trim: true, maxlength: 80 },
+    defaultThemeColor: { type: String, trim: true, match: /^#[0-9a-fA-F]{6}$/, default: '#000000' },
     source: { type: String, enum: ['built_in', 'custom'], default: 'built_in', required: true, index: true },
     status: { type: String, enum: ['draft', 'active', 'archived'], default: 'active', required: true, index: true },
     s3Prefix: { type: String, trim: true, maxlength: 160 },

@@ -1,92 +1,101 @@
-# NexCV - System Architecture
+# NexCV Architecture
 
-This document provides a high-level overview of the NexCV application architecture. It is designed to help developers, sysadmins, and new contributors understand the structural components, data flow, and third-party integrations that make up the AI CV Builder platform.
+NexCV is a monolithic full-stack web application with a separate PDF-rendering worker. The main app serves the React frontend, exposes the Express API, manages sessions and MongoDB persistence, and delegates expensive PDF rendering to AWS Lambda when `PDF_LAMBDA_URL` is configured.
 
-## High-Level System Architecture
-
-NexCV is built as a monolithic full-stack web application (React + Express) with specific computationally intensive or stateless tasks offloaded to microservices (AWS Lambda) and cloud storage (AWS S3).
-
-### 1. Frontend Layer (React + Vite)
-The frontend is a Single Page Application (SPA) responsible for both the public-facing CV builder and the protected Admin platform.
-
-*   **Technology Stack**: React, Vite, TypeScript (implied).
-*   **Key Responsibilities**:
-    *   **CV Builder**: Handles the guest-first UI, live preview of templates, dynamic form inputs, and image cropping.
-    *   **Admin Dashboard**: Modular UI for managing users, templates, billing, support, and analytics.
-    *   **Lazy Loading**: The application employs route-level lazy loading (e.g., separating the builder, admin sections, checkout, and public pages) to optimize bundle sizes and improve initial load times.
-    *   **State Management**: Complex UI states for the CV preview and template interactions are managed locally or via dedicated hooks.
-
-### 2. Backend Layer (Node.js + Express)
-The backend acts as the core API gateway and business logic handler for the platform.
-
-*   **Technology Stack**: Node.js, Express, TypeScript (via `server.ts` and `routes/`).
-*   **Key Responsibilities**:
-    *   **Authentication & Authorization**: Session management, Google OAuth integration, and role-based access control (RBAC) for the admin dashboard. Features IP allowlisting (`ADMIN_ALLOWED_IPS`) for production security.
-    *   **API Endpoints**: Serves frontend requests for CV saving, user data, analytics, admin CMS updates, and billing.
-    *   **Security & Middleware**: Rate limiting, Helmet, CORS, input sanitization, and secure session management.
-    *   **Template Rendering Pipeline**: Serves and dynamically injects data into S3-backed HTML/CSS templates.
-
-### 3. Database Layer (MongoDB)
-The primary data store for the application.
-
-*   **Technology**: MongoDB (interacted with via Mongoose in `server-models/`).
-*   **Key Data Entities**:
-    *   **Users & Sessions**: Stores user profiles, Google OAuth links, and session data.
-    *   **CV Data**: JSON representations of user resumes.
-    *   **Templates**: Metadata for built-in and custom templates (pointing to S3).
-    *   **Transactions & Billing**: PayHere payment records, subscriptions, and quotas.
-    *   **Audit Logs**: Tracks sensitive admin actions (retained for 30 days).
-    *   **CMS & Settings**: Dynamic content for the landing page, FAQs, and global app settings.
-
-## External Services & Integrations
-
-NexCV relies on several external services to deliver premium features securely and efficiently:
-
-### AI & Processing
-*   **Google Gemini API**: Powers the AI-assisted writing features, such as CV parsing and intelligent summary generation.
-*   **AWS Lambda (`lambda-pdf/`)**: Offloads the heavy lifting of generating PDF files from HTML templates. This ensures the main Express server is not blocked by CPU-intensive Chromium/Puppeteer rendering tasks.
-
-### Storage & Assets
-*   **AWS S3**: Stores custom HTML/CSS CV templates and generated thumbnails. The backend fetches these templates to render user CVs dynamically.
-
-### Payments & Billing
-*   **PayHere**: Handles secure checkout flows and payment processing for premium plans. Integrates via PayHere IPN (Instant Payment Notification) to update local database transactions securely.
-
-### Communication
-*   **Email Delivery**: Uses Nodemailer combined with generic SMTP, Resend, or the Gmail API to send transactional emails (e.g., alerts, email verification, admin notifications).
-
-## Application Directory Structure
+## Runtime Shape
 
 ```text
-Free-AI-CV-Builder/
-├── Free CV Builder/            # Main Monorepo root
-│   ├── src/                    # React frontend application code
-│   ├── public/                 # Static assets (images, icons)
-│   ├── routes/                 # Express API route handlers
-│   ├── services/               # Core backend services (Email, PDF, S3, Billing)
-│   ├── middlewares/            # Express middlewares (Auth, Security)
-│   ├── server-models/          # Mongoose database schemas
-│   ├── server-utils/           # Shared backend utility functions
-│   ├── tests/                  # Vitest server & frontend tests
-│   ├── lambda-pdf/             # Code for the AWS Lambda PDF microservice
-│   ├── server.ts               # Main Express application entry point
-│   ├── vite.config.ts          # Frontend build configuration
-│   └── package.json            # Project dependencies and NPM scripts
+Browser
+  -> React/Vite app
+  -> Express API (server.ts)
+  -> MongoDB via Mongoose
+  -> External services:
+       Gemini API
+       PayHere
+       SMTP/Gmail/Resend
+       S3 templates
+       PDF Lambda
 ```
 
-## Data Flow: PDF Generation Process (Example)
+## Frontend
 
-1.  **User Request**: The user clicks "Download PDF" on the React frontend.
-2.  **API Call**: The frontend sends the raw CV data (JSON) and requested template ID to the Express backend.
-3.  **Template Retrieval**: The backend fetches the required HTML/CSS template from AWS S3 (or local cache).
-4.  **Data Injection**: The backend injects the user's JSON data into the HTML template.
-5.  **Lambda Offload**: The injected HTML payload is sent via HTTP to the AWS Lambda PDF generation endpoint.
-6.  **PDF Rendering**: The Lambda function uses a headless browser (Puppeteer/Playwright) to convert the HTML to a PDF binary.
-7.  **Response Delivery**: The Lambda returns the PDF buffer to the Express server, which pipes it back to the React frontend as a downloadable file.
+The frontend lives in `src/`.
+
+- `src/app/` contains route composition, guards, loading UI, and shell layout.
+- `src/pages/` contains public pages, dashboard pages, checkout, profile, and admin screens.
+- `src/components/` contains the CV form, preview, shared layout, auth modals, and form sections.
+- `src/hooks/` contains template and public content hooks.
+- `src/utils/templateData.ts` and `src/utils/templateRenderer.ts` prepare data for built-in and custom templates.
+
+The app uses local React state and focused hooks rather than a global state library. Admin and dashboard modules are split into smaller sections and hooks to keep the initial bundle lighter.
+
+## Backend
+
+The backend entrypoint is `server.ts`. Route modules live under `routes/`.
+
+- `routes/auth.ts` - signup, login, logout, Google OAuth, email verification, password reset, profile updates, and account deletion.
+- `routes/cv.ts` - saved CV documents, AI parsing/generation/refinement, and PDF export.
+- `routes/payment.ts` - billing plans, PayHere quote/checkout/IPN, and plan activation.
+- `routes/public.ts` - health, public settings, templates, template HTML/thumbnail, support tickets, and contact form.
+- `routes/admin/*` - admin dashboard, users, templates, support, billing, settings, roles, and audit logs.
+
+Shared backend support is split into:
+
+- `middlewares/` for sessions, Passport auth, security headers/CORS, and rate limiters.
+- `server-models/` for Mongoose schemas and quota utilities.
+- `server-utils/` for admin IP allowlisting, PayHere helpers, template admin helpers, validation, and user-auth helpers.
+- `services/` for email, PDF, and S3 access.
+
+## Data Model
+
+MongoDB stores:
+
+- Users, roles, email verification, password reset, and OAuth identity data.
+- CV documents owned by authenticated users.
+- Billing plans, checkout sessions, payment transactions, coupons, and quota state.
+- Template settings and metadata.
+- Support tickets.
+- App settings and CMS-like public content.
+- Admin audit logs with retention behavior.
+
+## Template Architecture
+
+NexCV supports two template sources:
+
+- Built-in templates shipped with the frontend and public assets.
+- Admin-managed templates stored as HTML/CSS/thumbnail files, normally backed by S3.
+
+Template data is normalized before rendering so the same CV model can be used by built-in previews, custom template previews, and PDF export. Template validation scripts protect against missing files, unsafe markup, missing print rules, and common authoring mistakes.
+
+## PDF Architecture
+
+PDF export is initiated by `POST /api/generate-pdf`.
+
+1. The route checks authentication, document/template access, plan state, and quotas.
+2. The app prepares CV data, selected template metadata, and watermark state.
+3. `services/pdfService.ts` tries the configured Lambda renderer when `PDF_LAMBDA_URL` exists.
+4. If Lambda is unavailable or not configured, the service can use a local Puppeteer-based renderer.
+5. The API returns the PDF buffer to the browser.
+
+The Lambda implementation lives in `lambda-pdf/` and can fetch template assets from S3 using `S3_TEMPLATE_BUCKET_NAME` and `S3_TEMPLATE_PREFIX`.
 
 ## Security Posture
 
-*   **Admin Access**: Production admin access is strictly gated by an IP Allowlist (`ADMIN_ALLOWED_IPS`).
-*   **Data Validation**: All inputs are sanitized before database entry.
-*   **Audit Logging**: Every state-changing action in the admin dashboard is logged with a 30-day TTL in MongoDB.
-*   **Maintenance Mode**: The application supports a graceful maintenance mode that restricts public traffic while keeping admin functions active for troubleshooting.
+- Sessions use `express-session` with `httpOnly` cookies.
+- Production requires a strong `SESSION_SECRET`.
+- Helmet and CORS are configured in `middlewares/security.ts`.
+- Authentication-sensitive routes use rate limiters.
+- Admin routes are protected by role/permission checks.
+- `ADMIN_ALLOWED_IPS` can hide admin routes from untrusted IPs in production.
+- PayHere IPN verification is centralized in `server-utils/payHere.ts`.
+- Admin state changes should be audit logged.
+
+## Deployment Model
+
+The main app can run on Render or another Node host:
+
+- `npm run build` builds the Vite frontend.
+- `npm start` runs the Express server through `tsx server.ts`.
+- `render.yaml` points Render at the `Free CV Builder` root.
+
+The PDF Lambda is built separately with `npm run build:pdf-lambda` and deployed to AWS Lambda or a compatible function URL/API Gateway setup.

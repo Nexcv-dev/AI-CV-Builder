@@ -78,6 +78,7 @@ export interface AdminTemplateItem {
   builtInThumbnail: string;
   surfaceColorRole: 'none' | 'sidebar' | 'header';
   surfaceColorLabel?: string | null;
+  defaultThemeColor: string;
   source: 'built_in' | 'custom';
   status: 'draft' | 'active' | 'archived';
   usageCount: number;

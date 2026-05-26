@@ -1,65 +1,89 @@
-# Contributing to NexCV
+# Contributing
 
-Thank you for your interest in contributing to NexCV! We welcome pull requests, bug reports, and feature suggestions.
+Thanks for contributing to NexCV. This project is a React/Vite frontend with an Express/TypeScript backend, MongoDB models, S3-backed templates, PayHere billing, and a Lambda PDF renderer.
 
-## 1. Getting Started
+## Prerequisites
 
-### Prerequisites
-*   Node.js (v18+)
-*   MongoDB (Local instance or Atlas URI)
-*   Git
+- Node.js 20 or newer recommended.
+- npm.
+- MongoDB local instance or Atlas URI.
+- Git.
 
-### Local Setup
-1.  Fork and clone the repository.
-2.  Navigate to the main application directory:
-    ```bash
-    cd "Free CV Builder"
-    ```
-3.  Install dependencies:
-    ```bash
-    npm install
-    ```
-4.  Create a `.env` file based on the examples provided in the `README.md`.
-5.  Start the development servers (runs both React and Express concurrently):
-    ```bash
-    npm run dev:all
-    ```
+Optional, depending on the feature:
 
-## 2. Development Workflow
+- AWS credentials/S3 bucket for template work.
+- PayHere sandbox account for billing work.
+- SMTP, Gmail OAuth, or Resend credentials for email work.
+- Gemini API key for AI features.
 
-### Branching Strategy
-*   `main` is the stable production branch.
-*   Create feature branches off `main` (e.g., `feature/add-new-template`, `bugfix/fix-pdf-timeout`).
+## Local Setup
 
-### Code Style & Linting
-*   This project uses TypeScript and ESLint.
-*   Before committing, always ensure your code passes the linting checks:
-    ```bash
-    npm run lint
-    ```
-*   Format your code using Prettier (if configured in your IDE).
+```bash
+cd "Free CV Builder"
+npm install
+```
 
-### Testing
-*   We use Vitest for both frontend and backend testing.
-*   To run the test suite:
-    ```bash
-    npm run test:run
-    ```
-*   If you add a new feature, please include relevant tests. If you fix a bug, add a test that prevents regression.
+Create `.env` in `Free CV Builder/`. The root README contains the current environment variable list.
 
-## 3. Making a Pull Request (PR)
-1.  Commit your changes with clear, descriptive commit messages.
-2.  Push your branch to your fork.
-3.  Open a Pull Request against the `main` branch of this repository.
-4.  In your PR description, clearly explain:
-    *   What problem you are solving.
-    *   How you solved it.
-    *   Any new environment variables or dependencies introduced.
-5.  Wait for a maintainer to review your code.
+Start the app:
 
-## 4. Reporting Bugs
-If you find a bug but cannot fix it yourself, please open an Issue. Provide:
-*   Steps to reproduce the bug.
-*   Expected behavior vs. actual behavior.
-*   Browser and OS version.
-*   Any relevant error logs from the browser console or server terminal.
+```bash
+npm run dev:all
+```
+
+Default URLs:
+
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:3002`
+
+## Development Workflow
+
+- Keep changes scoped to the feature or fix.
+- Prefer existing route/service/model patterns.
+- Avoid committing secrets, generated logs, or local build output.
+- Update docs when routes, env vars, deployment steps, templates, or admin workflows change.
+- Add or update tests for behavioral changes.
+
+## Quality Checks
+
+Run from `Free CV Builder/`:
+
+```bash
+npm run lint
+npm run test:run
+npm run build
+```
+
+Template changes should also run:
+
+```bash
+npm run validate:template-map
+npm run validate:templates
+```
+
+PDF Lambda changes should run:
+
+```bash
+npm run build:pdf-lambda
+```
+
+## Branches And Pull Requests
+
+- Branch from the current integration branch.
+- Use clear branch names such as `feature/admin-template-preview` or `fix/payhere-ipn`.
+- Keep pull requests focused.
+- In the PR description, include:
+  - What changed.
+  - Why it changed.
+  - How it was tested.
+  - Any new environment variables or deployment steps.
+
+## Bug Reports
+
+Include:
+
+- Steps to reproduce.
+- Expected and actual behavior.
+- Browser/OS if frontend-related.
+- Relevant API response or server log excerpt.
+- Whether the issue affects local, staging, production, or all environments.

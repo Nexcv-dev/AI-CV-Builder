@@ -1,12 +1,40 @@
-﻿import express, { Router, Request, Response, NextFunction } from 'express';
+import express, { Router, Request, Response } from 'express';
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
-import type { TemplateName } from '../src/templates';
 
 type RouteDeps = Record<string, any>;
 
 export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash } = bindDeps(deps);
+    const {
+        CheckoutSession,
+        Coupon,
+        PaymentTransaction,
+        PAYHERE_PLAN_PRICES,
+        User,
+        buildPayHereCheckoutHash,
+        createPlanExpiry,
+        currentUserId,
+        generateTransactionId,
+        getApiOrigin,
+        getCvCreationQuota,
+        getDownloadQuota,
+        getFrontendOrigin,
+        getPayHereCheckoutUrl,
+        getPayHereMerchantConfig,
+        getPublicBillingPlans,
+        normalizeEmail,
+        payHereAmountToCents,
+        planDisplayName,
+        publicUser,
+        quoteCheckout,
+        requireAuth,
+        requireVerifiedEmail,
+        resolvePayHerePaymentContext,
+        sanitizeProfileField,
+        sendBillingSuccessNotifications,
+        sendError,
+        verifyPayHereMd5Signature,
+    } = bindDeps(deps);
 
     router.get('/api/billing/plans', async (_req: Request, res: Response) => {
         try {
@@ -16,7 +44,6 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             return sendError(res, 500, 'Could not load billing plans.', error);
         }
     });
-
 
     router.post('/api/billing/quote', async (req: Request, res: Response) => {
         try {
@@ -32,7 +59,6 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         }
     });
 
-
     router.post('/api/payhere/ipn', express.urlencoded({ extended: false }), async (req: Request, res: Response) => {
         try {
             const payload = req.body as Record<string, string>;
@@ -42,18 +68,18 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 console.warn('PayHere IPN missing field:', missingField);
                 return res.status(400).send('Missing payment notification field.');
             }
-    
+
             const { merchantId, merchantSecret } = getPayHereMerchantConfig();
             if (!merchantId || !merchantSecret) {
                 console.error('PayHere IPN received but merchant configuration is missing.');
                 return res.status(500).send('Payment notification is not configured.');
             }
-    
+
             if (payload.merchant_id !== merchantId) {
                 console.warn('PayHere IPN merchant mismatch:', payload.merchant_id);
                 return res.status(400).send('Invalid merchant.');
             }
-    
+
             const signaturePayload = {
                 merchant_id: payload.merchant_id,
                 order_id: payload.order_id,
@@ -62,12 +88,12 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 status_code: payload.status_code,
                 md5sig: payload.md5sig,
             };
-    
+
             if (!verifyPayHereMd5Signature(signaturePayload, merchantSecret)) {
                 console.warn('PayHere IPN signature verification failed for order:', payload.order_id);
                 return res.status(400).send('Invalid payment signature.');
             }
-    
+
             const context = resolvePayHerePaymentContext(payload);
             const checkoutSession = await CheckoutSession.findOne({ orderId: payload.order_id });
             const transactionFilter = { provider: 'payhere' as const, paymentId: payload.payment_id };
@@ -75,7 +101,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             if (existingTransaction?.processed) {
                 return res.status(200).send('OK');
             }
-    
+
             if (payload.status_code !== '2') {
                 await PaymentTransaction.findOneAndUpdate(
                     transactionFilter,
@@ -99,7 +125,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 );
                 return res.status(200).send('OK');
             }
-    
+
             if (!checkoutSession && (!context.userId || !context.plan)) {
                 console.warn('PayHere IPN could not resolve user or plan for order:', payload.order_id);
                 return res.status(400).send('Invalid payment context.');
@@ -162,20 +188,19 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 },
                 { upsert: true, new: true, setDefaultsOnInsert: true }
             );
-    
+
             await sendBillingSuccessNotifications({
                 user,
                 plan: purchasedPlan,
                 transactionId: payload.payment_id,
                 planExpiresAt: user.planExpiresAt,
             });
-    
+
             return res.status(200).send('OK');
         } catch (error) {
             return sendError(res, 500, 'Could not process payment notification.', error);
         }
     });
-
 
     router.post('/api/billing/payhere-checkout', requireAuth, async (req: Request, res: Response) => {
         try {
@@ -186,12 +211,12 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             if ((req as any).appSettings?.payhereEnabled === false) {
                 return res.status(503).json({ error: 'Online checkout is temporarily disabled.' });
             }
-    
+
             const plan = req.body.plan as BillingPlan;
             if (plan !== 'payg' && plan !== 'monthly') {
                 return res.status(400).json({ error: 'Choose a valid paid plan.' });
             }
-    
+
             const customer = req.body.customer || {};
             const firstName = sanitizeProfileField(customer.firstName, 80);
             const lastName = sanitizeProfileField(customer.lastName, 80);
@@ -203,12 +228,12 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             if (!firstName || !lastName || !email || !phone || !address || !city) {
                 return res.status(400).json({ error: 'Please complete your customer details.' });
             }
-    
+
             const { merchantId, merchantSecret } = getPayHereMerchantConfig();
             if (!merchantId || !merchantSecret) {
                 return res.status(500).json({ error: 'PayHere checkout is not configured.' });
             }
-    
+
             const userId = currentUserId(req).toString();
             const quote = await quoteCheckout(plan, req.body.couponCode);
             if ('error' in quote) return res.status(400).json({ error: quote.error });
@@ -233,7 +258,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 amount: quote.amount,
                 currency: quote.currency,
             };
-    
+
             return res.json({
                 actionUrl: getPayHereCheckoutUrl(),
                 orderId,
@@ -264,23 +289,22 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         }
     });
 
-
     router.post('/api/billing/activate', requireAuth, async (req: Request, res: Response) => {
         try {
             if (!requireVerifiedEmail(req, res)) {
                 return;
             }
-    
+
             const plan = req.body.plan as BillingPlan;
             if (plan !== 'payg' && plan !== 'monthly') {
                 return res.status(400).json({ error: 'Choose a valid paid plan.' });
             }
-    
+
             const user = await User.findById(currentUserId(req));
             if (!user) {
                 return res.status(404).json({ error: 'User not found.' });
             }
-    
+
             user.plan = plan;
             user.planStartedAt = new Date();
             user.planExpiresAt = createPlanExpiry(plan);
@@ -288,7 +312,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 user.paygCvSaveCredits = (user.paygCvSaveCredits || 0) + 1;
             }
             await user.save();
-    
+
             const transactionId = typeof req.body.transactionId === 'string' && req.body.transactionId.trim()
                 ? sanitizeProfileField(req.body.transactionId, 80)
                 : generateTransactionId();
@@ -298,7 +322,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 transactionId,
                 planExpiresAt: user.planExpiresAt,
             });
-    
+
             const quota = await getCvCreationQuota(user);
             const downloadQuota = await getDownloadQuota(user);
             return res.json({ user: publicUser(user), quota, downloadQuota, transactionId });
@@ -306,7 +330,4 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             return sendError(res, 500, 'Could not activate this plan.', error);
         }
     });
-
-
 }
-

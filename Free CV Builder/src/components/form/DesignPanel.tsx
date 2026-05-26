@@ -10,24 +10,25 @@ interface DesignPanelProps {
   cvData: CVData;
   setCvData: React.Dispatch<React.SetStateAction<CVData>>;
   template: TemplateName;
+  templateDefaultThemeColor?: string;
   isDarkMode?: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
+export const DesignPanel = React.memo(({ cvData, setCvData, template, templateDefaultThemeColor, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
   const templateSurfaceColorLabel = getTemplateSurfaceColorLabel(template);
-  const templateDefaultThemeColor = resolveTemplateThemeColor(template, '#000000');
-  const themeColor = resolveTemplateThemeColorForData(template, cvData);
+  const defaultThemeColor = resolveTemplateThemeColor(template, templateDefaultThemeColor || '#000000');
+  const themeColor = resolveTemplateThemeColorForData(template, cvData, defaultThemeColor);
   const templateSurfaceFallback = getTemplateSurfaceColorFallback(template, {
     themeColor,
     sidebarColor: cvData.sidebarColor,
   });
   const templateSurfaceColor = resolveTemplateSurfaceColorForData(template, cvData, templateSurfaceFallback);
   const canResetThemeColor =
-    themeColor.toLowerCase() !== templateDefaultThemeColor.toLowerCase() ||
+    themeColor.toLowerCase() !== defaultThemeColor.toLowerCase() ||
     Boolean(cvData.templateThemeColors?.[template]) ||
     Boolean(cvData.templateSurfaceColors?.[template]);
 
@@ -76,7 +77,7 @@ export const DesignPanel = React.memo(({ cvData, setCvData, template, isDarkMode
   const handleResetTemplateColors = () => {
     setCvData((prev) => ({
       ...prev,
-      themeColor: templateDefaultThemeColor,
+      themeColor: defaultThemeColor,
       templateThemeColors: Object.fromEntries(Object.entries(prev.templateThemeColors || {}).filter(([key]) => key !== template)),
       templateSurfaceColor: undefined,
       templateSurfaceColors: Object.fromEntries(Object.entries(prev.templateSurfaceColors || {}).filter(([key]) => key !== template)),

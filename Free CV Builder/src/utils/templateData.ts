@@ -23,10 +23,14 @@ export const resolveTemplateThemeColor = (template: unknown, value: unknown) => 
 const safeColorMap = (value: unknown) =>
   value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 
-export const resolveTemplateThemeColorForData = (template: unknown, cvData: { themeColor?: unknown; templateThemeColors?: unknown }) => {
+export const resolveTemplateThemeColorForData = (template: unknown, cvData: { themeColor?: unknown; templateThemeColors?: unknown }, defaultThemeColor?: string) => {
   const templateKey = typeof template === 'string' ? template : '';
   const templateThemeColors = safeColorMap(cvData.templateThemeColors);
-  return resolveTemplateThemeColor(template, templateThemeColors[templateKey] || cvData.themeColor);
+  const templateDefault = safeHexColor(defaultThemeColor, resolveTemplateThemeColor(template, '#000000'));
+  const savedTemplateColor = safeHexColor(templateThemeColors[templateKey], '');
+  if (savedTemplateColor) return savedTemplateColor;
+  const themeColor = safeHexColor(cvData.themeColor, '#000000');
+  return themeColor.toLowerCase() === '#000000' ? templateDefault : themeColor;
 };
 
 export const resolveTemplateSurfaceColorForData = (
@@ -47,13 +51,14 @@ export const applyTemplateColorDefaults = <T extends {
 }>(
   cvData: T,
   currentTemplate: unknown,
-  nextTemplate: unknown
+  nextTemplate: unknown,
+  templateDefaults: Record<string, string> = {}
 ): T => {
   const currentTemplateKey = typeof currentTemplate === 'string' ? currentTemplate : '';
   const nextTemplateKey = typeof nextTemplate === 'string' ? nextTemplate : '';
-  const currentDefault = resolveTemplateThemeColor(currentTemplate, '#000000');
-  const nextDefault = resolveTemplateThemeColor(nextTemplate, '#000000');
-  const currentThemeColor = resolveTemplateThemeColor(currentTemplate, cvData.themeColor);
+  const currentDefault = safeHexColor(templateDefaults[currentTemplateKey], resolveTemplateThemeColor(currentTemplate, '#000000'));
+  const nextDefault = safeHexColor(templateDefaults[nextTemplateKey], resolveTemplateThemeColor(nextTemplate, '#000000'));
+  const currentThemeColor = safeHexColor(cvData.themeColor, currentDefault);
   const nextTemplateThemeColor = safeHexColor(cvData.templateThemeColors?.[nextTemplateKey], nextDefault);
   const templateThemeColors = { ...(cvData.templateThemeColors || {}) };
   const templateSurfaceColors = { ...(cvData.templateSurfaceColors || {}) };
