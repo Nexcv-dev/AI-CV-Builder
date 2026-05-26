@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Loader2, Save, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Save, XCircle } from 'lucide-react';
 import type { AdminSettingsSummary, AdminTemplateItem } from './adminTypes';
 import type { CmsContent, CmsFaqItem, CmsLegalPage, CmsPlanCopy } from '../../contentDefaults';
 
@@ -203,17 +203,24 @@ export default function SettingsManagementSection({
         <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
           <h2 className="font-montserrat text-lg font-black">Service Readiness</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {settings.services.map((service) => (
-              <div key={service.key} className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                {service.configured ? <CheckCircle2 className="text-emerald-300" size={19} /> : <XCircle className="text-red-300" size={19} />}
-                <div>
+            {settings.services.map((service) => {
+              const isOk = service.status === 'ok';
+              const isWarn = service.status === 'warn';
+              const tone = isOk ? 'text-emerald-300' : isWarn ? 'text-amber-300' : 'text-red-300';
+              const label = isOk ? 'Ready' : isWarn ? 'Needs review' : 'Missing or down';
+              return (
+              <div key={service.key} className="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
+                {isOk ? <CheckCircle2 className="mt-0.5 text-emerald-300" size={19} /> : isWarn ? <AlertCircle className="mt-0.5 text-amber-300" size={19} /> : <XCircle className="mt-0.5 text-red-300" size={19} />}
+                <div className="min-w-0">
                   <p className="text-sm font-black text-slate-100">{service.label}</p>
-                  <p className={`mt-0.5 text-xs font-bold ${service.configured ? 'text-emerald-300' : 'text-red-300'}`}>
-                    {service.configured ? 'Configured' : 'Missing config'}
+                  <p className={`mt-0.5 text-xs font-bold ${tone}`}>
+                    {label}
                   </p>
+                  <p className="mt-1 break-words text-xs font-semibold leading-5 text-slate-500">{service.detail}</p>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </article>
 
@@ -235,6 +242,9 @@ export default function SettingsManagementSection({
           <div className="mt-4 grid gap-3">
             <InfoRow label="Session Secret" value={settings.security.sessionSecretConfigured ? 'Configured' : 'Missing'} />
             <InfoRow label="Allowlisted Admins" value={String(settings.security.superAdminAllowlistCount)} />
+            <InfoRow label="Admin IP Allowlist" value={settings.security.adminIpAllowlistConfigured ? 'Configured' : 'Not configured'} />
+            <InfoRow label="PayHere Notify URL" value={settings.security.payhereNotifyUrlConfigured ? 'Configured' : 'Missing'} />
+            <InfoRow label="PDF Lambda" value={settings.security.pdfLambdaConfigured ? 'Configured' : 'Fallback only'} />
             <InfoRow label="Settings Access" value={canUpdateSettings ? 'Editable' : 'Read only'} />
           </div>
         </article>

@@ -12,7 +12,7 @@ fetch(url, { credentials: 'include' })
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/health` | Basic API health response. |
+| `GET` | `/api/health` | API health and launch-readiness checks for core service configuration. |
 | `GET` | `/api/public/app-settings` | Public app settings such as maintenance/public flags. |
 | `GET` | `/api/templates/config` | Published template configuration and metadata. |
 | `GET` | `/api/templates/:key/html` | Renderable HTML for a template key. |
@@ -105,6 +105,7 @@ Admin routes require an authenticated admin user and the relevant permission. In
 | `PATCH` | `/api/admin/billing/plans/:plan` | `billing.write` | Update plan settings. |
 | `POST` | `/api/admin/billing/coupons` | `billing.write` | Create a coupon. |
 | `PATCH` | `/api/admin/billing/coupons/:code` | `billing.write` | Update a coupon. |
+| `PATCH` | `/api/admin/billing/review/:type/:id` | `billing.write` | Resolve a payment or checkout review item with an admin note. |
 | `GET` | `/api/admin/payments` | `billing.read` | List payment transactions. |
 
 ### Support, Settings, And Audit

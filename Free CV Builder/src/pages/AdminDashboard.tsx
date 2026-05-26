@@ -121,6 +121,8 @@ export default function AdminDashboard() {
   const [paymentPlanFilter, setPaymentPlanFilter] = useState('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState<AdminPaymentItem | null>(null);
+  const [billingReviewNote, setBillingReviewNote] = useState('');
+  const [reviewingPaymentId, setReviewingPaymentId] = useState<string | null>(null);
   const [supportTickets, setSupportTickets] = useState<AdminSupportTicket[]>([]);
   const [supportSummary, setSupportSummary] = useState<Record<'open' | 'pending' | 'resolved' | 'closed', number> | null>(null);
   const [supportLoading, setSupportLoading] = useState(false);
@@ -337,6 +339,7 @@ export default function AdminDashboard() {
   const canUpdateRoles = hasAdminPermission(user, 'users.role.update');
   const canUpdateSettings = hasAdminPermission(user, 'settings.write');
   const canUpdateEmail = hasAdminPermission(user, 'email.write');
+  const canReviewBilling = hasAdminPermission(user, 'billing.write');
   const activeNav = adminNavItems.find((item) => item.to === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(item.to)) || adminNavItems[0];
   const pageTitle = isUsersPage ? 'User Management' : isAnalyticsPage ? 'Analytics Dashboard' : isTemplatesPage ? 'Template Management' : isBillingPage ? 'Billing Management' : isPromotionsPage ? 'Promotions & Pricing' : isCmsPage ? 'CMS Management' : isSupportPage ? 'Support Tickets' : isRolesPage ? 'Roles & Access' : isSettingsPage ? 'Admin Settings' : isEmailPage ? 'Email Notifications' : isAuditPage ? 'Audit Logs' : 'Admin Dashboard';
   const pageDescription = isUsersPage
@@ -377,6 +380,41 @@ export default function AdminDashboard() {
     setSelectedTicket(ticket);
     setTicketForm({ status: ticket.status, priority: ticket.priority, adminNotes: ticket.adminNotes || '' });
     setSupportReplyMessage('');
+  };
+
+  const openPaymentDetail = (payment: AdminPaymentItem) => {
+    setSelectedPayment(payment);
+    setBillingReviewNote(payment.reviewNote || '');
+  };
+
+  const markBillingReviewResolved = async (payment: AdminPaymentItem) => {
+    if (!payment.reviewType) return;
+    setReviewingPaymentId(payment.id);
+    try {
+      const data = await apiFetch<{ payment: AdminPaymentItem }>(`/api/admin/billing/review/${payment.reviewType}/${payment.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ note: billingReviewNote }),
+      });
+      setPayments((items) => paymentStatusFilter === 'review'
+        ? items.filter((item) => item.id !== data.payment.id)
+        : items.map((item) => item.id === data.payment.id ? data.payment : item));
+      setPaymentSummary((current) => {
+        if (!current || payment.billingReviewStatus === 'resolved') return current;
+        const isCheckoutReview = payment.reviewType === 'checkout';
+        return {
+          ...current,
+          expiredCheckoutCount: isCheckoutReview ? Math.max(0, current.expiredCheckoutCount - 1) : current.expiredCheckoutCount,
+          failedPaymentCount: isCheckoutReview ? current.failedPaymentCount : Math.max(0, current.failedPaymentCount - 1),
+        };
+      });
+      setSelectedPayment(data.payment);
+      setBillingReviewNote(data.payment.reviewNote || '');
+      toast.success('Billing review resolved.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not resolve billing review.');
+    } finally {
+      setReviewingPaymentId(null);
+    }
   };
 
   const saveSelectedTicket = async () => {
@@ -599,11 +637,19 @@ export default function AdminDashboard() {
               planFilter={paymentPlanFilter}
               statusFilter={paymentStatusFilter}
               selectedPayment={selectedPayment}
+              reviewNote={billingReviewNote}
+              reviewingPaymentId={reviewingPaymentId}
+              canReviewPayments={canReviewBilling}
               onSearchChange={setPaymentSearch}
               onPlanFilterChange={setPaymentPlanFilter}
               onStatusFilterChange={setPaymentStatusFilter}
-              onOpenPayment={setSelectedPayment}
-              onCloseDetail={() => setSelectedPayment(null)}
+              onOpenPayment={openPaymentDetail}
+              onCloseDetail={() => {
+                setSelectedPayment(null);
+                setBillingReviewNote('');
+              }}
+              onReviewNoteChange={setBillingReviewNote}
+              onMarkReviewed={markBillingReviewResolved}
             />
           ) : isPromotionsPage ? (
             <PromotionManagementSection

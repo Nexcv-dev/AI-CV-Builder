@@ -8,6 +8,7 @@ This folder is the main documentation hub for the NexCV application.
 - [API Docs](API_DOCS.md) - current Express endpoints grouped by route module.
 - [Deployment](DEPLOYMENT.md) - production setup, Render notes, Lambda deployment, and environment variables.
 - [Operations Runbook](OPERATIONS_RUNBOOK.md) - incident response and routine maintenance.
+- [Launch Checklist](LAUNCH_CHECKLIST.md) - pre-launch verification across code, payments, PDF, admin, and recovery.
 
 ## Product And Admin
 

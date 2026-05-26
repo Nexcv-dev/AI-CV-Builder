@@ -10,7 +10,51 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash } = bindDeps(deps);
 
     router.get('/api/health', (req: Request, res: Response) => {
-        res.json({ status: 'ok', timestamp: new Date().toISOString() });
+        const mongoConfigured = Boolean((process.env.MONGO_URI || process.env.MONGODB_URI || '').trim());
+        const mongoReadyState = mongoose?.connection?.readyState;
+        const payhereConfig = getPayHereMerchantConfig();
+        const checks = {
+            api: {
+                ok: true,
+                detail: 'API process is responding.',
+            },
+            mongodb: {
+                ok: !mongoConfigured || mongoReadyState === 1,
+                configured: mongoConfigured,
+                state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoReadyState] || 'unknown',
+            },
+            session: {
+                ok: Boolean((process.env.SESSION_SECRET || '').trim()) || process.env.NODE_ENV !== 'production',
+                configured: Boolean((process.env.SESSION_SECRET || '').trim()),
+            },
+            email: {
+                ok: isEmailServiceConfigured(),
+                configured: isEmailServiceConfigured(),
+            },
+            payhere: {
+                ok: Boolean(payhereConfig.merchantId && payhereConfig.merchantSecret),
+                configured: Boolean(payhereConfig.merchantId && payhereConfig.merchantSecret),
+                checkoutUrl: getPayHereCheckoutUrl(),
+                notifyUrlConfigured: Boolean((process.env.PAYHERE_NOTIFY_URL || '').trim()),
+            },
+            s3Templates: {
+                ok: Boolean(S3_TEMPLATE_BUCKET),
+                configured: Boolean(S3_TEMPLATE_BUCKET),
+                prefix: S3_TEMPLATE_PREFIX || '',
+            },
+            pdfLambda: {
+                ok: Boolean((process.env.PDF_LAMBDA_URL || '').trim()),
+                configured: Boolean((process.env.PDF_LAMBDA_URL || '').trim()),
+            },
+        };
+        const status = Object.values(checks).every((check: any) => check.ok) ? 'ok' : 'degraded';
+        res.json({
+            status,
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV || 'development',
+            uptimeSeconds: Math.round(process.uptime()),
+            checks,
+        });
     });
 
     router.get('/api/public/app-settings', (req: Request, res: Response) => {

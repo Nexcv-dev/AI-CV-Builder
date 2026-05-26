@@ -136,6 +136,8 @@ npm run templates:release
 
 ## Production Smoke Test
 
+Use the full [Launch Checklist](LAUNCH_CHECKLIST.md) for launch-day signoff. At minimum, after deployment:
+
 After deployment:
 
 - Open `/api/health`.

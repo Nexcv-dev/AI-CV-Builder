@@ -23,8 +23,29 @@ import { hasAdminPermission } from '../src/adminAccess';
 import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
 import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getNextUtcDayResetAt, getUtcDayKey } from '../server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
+import { logEvent } from '../server-utils/logger';
 
 describe('Server Utils', () => {
+  describe('structured logging', () => {
+    it('should redact sensitive metadata fields', () => {
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+      logEvent('warn', 'test.redaction', {
+        orderId: 'order-123',
+        md5sig: 'secret-signature',
+        nested: { apiKey: 'secret-key', safe: 'visible' },
+      });
+
+      const line = String(spy.mock.calls[0][0]);
+      expect(line).toContain('"event":"test.redaction"');
+      expect(line).toContain('"orderId":"order-123"');
+      expect(line).toContain('"safe":"visible"');
+      expect(line).not.toContain('secret-signature');
+      expect(line).not.toContain('secret-key');
+      spy.mockRestore();
+    });
+  });
+
   describe('email verification rate limits', () => {
     it('should keep resend and verify OTP limits intentionally strict', () => {
       expect(EMAIL_VERIFICATION_RESEND_LIMIT).toBe(3);

@@ -10,7 +10,11 @@ export interface ICheckoutSession extends Document {
   discountCents: number;
   finalAmountCents: number;
   couponCode?: string;
-  status: 'pending' | 'paid' | 'failed';
+  status: 'pending' | 'paid' | 'failed' | 'expired';
+  billingReviewStatus?: 'open' | 'resolved';
+  reviewedAt?: Date;
+  reviewedBy?: mongoose.Types.ObjectId;
+  reviewNote?: string;
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -26,13 +30,18 @@ const CheckoutSessionSchema = new Schema<ICheckoutSession>(
     discountCents: { type: Number, required: true, min: 0 },
     finalAmountCents: { type: Number, required: true, min: 0 },
     couponCode: { type: String, uppercase: true, trim: true },
-    status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending', required: true, index: true },
+    status: { type: String, enum: ['pending', 'paid', 'failed', 'expired'], default: 'pending', required: true, index: true },
+    billingReviewStatus: { type: String, enum: ['open', 'resolved'], default: 'open', index: true },
+    reviewedAt: { type: Date },
+    reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    reviewNote: { type: String, maxlength: 500 },
     expiresAt: { type: Date, required: true, index: true },
   },
   { timestamps: true }
 );
 
 CheckoutSessionSchema.index({ userId: 1, createdAt: -1 });
+CheckoutSessionSchema.index({ status: 1, billingReviewStatus: 1, updatedAt: -1 });
 
 const CheckoutSession =
   (mongoose.models.CheckoutSession as mongoose.Model<ICheckoutSession>) ||

@@ -61,6 +61,7 @@ import { buildDownloadQuota, getNextUtcDayResetAt, getUtcDayKey } from './server
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
 import type { BillingPlan } from './server-models/userPlan';
 import { isAdminIpAllowed, requireAdminAllowedIp, requireAdminPageAllowedIp } from './server-utils/adminIpAllowlist';
+import { logError, logEvent } from './server-utils/logger';
 import {
     adminTemplateSummary,
     customTemplateSummary,
@@ -149,7 +150,7 @@ const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
 if (mongoUri) {
     connectDB();
 } else {
-    console.warn("MongoDB URI not found in .env. MongoDB connection skipped.");
+    logEvent('warn', 'mongodb.config_missing', { message: 'MongoDB URI not found. MongoDB connection skipped.' });
 }
 
 const app = express();
@@ -209,8 +210,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Helper to provide private error responses
 export const sendError = (res: express.Response, status: number, clientMessage: string, internalError?: any) => {
-    const errorId = crypto.randomUUID();
-    console.error(`[Error ID: ${errorId}] Status: ${status} | Message: ${clientMessage} | Details:`, internalError || 'N/A');
+    const errorId = logError('http.request_failed', internalError, { status, clientMessage });
 
     return res.status(status).json({
         error: clientMessage,
@@ -497,6 +497,11 @@ const adminPaymentSummary = (payment: any) => {
         currency: payment.currency || 'LKR',
         statusCode: payment.statusCode,
         processed: Boolean(payment.processed),
+        processingStartedAt: payment.processingStartedAt,
+        processedAt: payment.processedAt,
+        billingReviewStatus: payment.billingReviewStatus || 'open',
+        reviewedAt: payment.reviewedAt,
+        reviewNote: payment.reviewNote || '',
         rawPayload: payment.rawPayload || {},
         createdAt: payment.createdAt,
         updatedAt: payment.updatedAt,
@@ -556,6 +561,7 @@ const routeDeps = {
     startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, adminPaymentSummary,
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,
     recordAdminAuditLog, adminAuditLogSummary,
+    logEvent, logError,
     emailGreetingName, mergeEmailTemplates, renderEmailTemplate,
     sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, getAppEmailFrom,
     roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, isUserRole, isAdminIpAllowed,

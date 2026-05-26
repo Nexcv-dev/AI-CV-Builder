@@ -22,6 +22,9 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         getPayHereCheckoutUrl,
         getPayHereMerchantConfig,
         getPublicBillingPlans,
+        isMongoDuplicateKeyError,
+        logError,
+        logEvent,
         normalizeEmail,
         payHereAmountToCents,
         planDisplayName,
@@ -35,6 +38,13 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         sendError,
         verifyPayHereMd5Signature,
     } = bindDeps(deps);
+
+    const markExpiredPendingCheckouts = async () => {
+        await CheckoutSession.updateMany(
+            { status: 'pending', expiresAt: { $lt: new Date() } },
+            { $set: { status: 'expired' } }
+        );
+    };
 
     router.get('/api/billing/plans', async (_req: Request, res: Response) => {
         try {
@@ -65,18 +75,29 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const requiredFields = ['merchant_id', 'order_id', 'payment_id', 'payhere_amount', 'payhere_currency', 'status_code', 'md5sig'];
             const missingField = requiredFields.find((field) => typeof payload[field] !== 'string' || !payload[field].trim());
             if (missingField) {
-                console.warn('PayHere IPN missing field:', missingField);
+                logEvent('warn', 'payment.payhere_ipn_missing_field', {
+                    missingField,
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                    statusCode: payload.status_code,
+                });
                 return res.status(400).send('Missing payment notification field.');
             }
 
             const { merchantId, merchantSecret } = getPayHereMerchantConfig();
             if (!merchantId || !merchantSecret) {
-                console.error('PayHere IPN received but merchant configuration is missing.');
+                logEvent('error', 'payment.payhere_ipn_config_missing', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                });
                 return res.status(500).send('Payment notification is not configured.');
             }
 
             if (payload.merchant_id !== merchantId) {
-                console.warn('PayHere IPN merchant mismatch:', payload.merchant_id);
+                logEvent('warn', 'payment.payhere_ipn_merchant_mismatch', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                });
                 return res.status(400).send('Invalid merchant.');
             }
 
@@ -90,15 +111,25 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             };
 
             if (!verifyPayHereMd5Signature(signaturePayload, merchantSecret)) {
-                console.warn('PayHere IPN signature verification failed for order:', payload.order_id);
+                logEvent('warn', 'payment.payhere_ipn_signature_failed', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                    statusCode: payload.status_code,
+                });
                 return res.status(400).send('Invalid payment signature.');
             }
+
+            await markExpiredPendingCheckouts();
 
             const context = resolvePayHerePaymentContext(payload);
             const checkoutSession = await CheckoutSession.findOne({ orderId: payload.order_id });
             const transactionFilter = { provider: 'payhere' as const, paymentId: payload.payment_id };
             const existingTransaction = await PaymentTransaction.findOne(transactionFilter);
             if (existingTransaction?.processed) {
+                logEvent('info', 'payment.payhere_ipn_duplicate_processed', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                });
                 return res.status(200).send('OK');
             }
 
@@ -123,11 +154,25 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     },
                     { upsert: true, new: true, setDefaultsOnInsert: true }
                 );
+                if (checkoutSession && checkoutSession.status === 'pending') {
+                    checkoutSession.status = 'failed';
+                    await checkoutSession.save();
+                }
+                logEvent('warn', 'payment.payhere_ipn_unprocessed_status', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                    statusCode: payload.status_code,
+                    userId: checkoutSession?.userId || context.userId || undefined,
+                    plan: checkoutSession?.plan || context.plan || undefined,
+                });
                 return res.status(200).send('OK');
             }
 
             if (!checkoutSession && (!context.userId || !context.plan)) {
-                console.warn('PayHere IPN could not resolve user or plan for order:', payload.order_id);
+                logEvent('warn', 'payment.payhere_ipn_context_missing', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                });
                 return res.status(400).send('Invalid payment context.');
             }
 
@@ -136,22 +181,98 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 : PAYHERE_PLAN_PRICES[context.plan!];
             const paidCents = payHereAmountToCents(payload.payhere_amount);
             if (payload.payhere_currency.toUpperCase() !== expectedPrice.currency || paidCents !== expectedPrice.cents) {
-                console.warn('PayHere IPN amount mismatch:', {
+                logEvent('warn', 'payment.payhere_ipn_amount_mismatch', {
                     orderId: payload.order_id,
+                    paymentId: payload.payment_id,
                     plan: checkoutSession?.plan || context.plan,
                     paidAmount: payload.payhere_amount,
                     paidCurrency: payload.payhere_currency,
+                    expectedCurrency: expectedPrice.currency,
+                    expectedCents: expectedPrice.cents,
                 });
                 return res.status(400).send('Invalid payment amount.');
             }
 
             const user = await User.findById(checkoutSession?.userId || context.userId);
             if (!user) {
-                console.warn('PayHere IPN user not found:', checkoutSession?.userId || context.userId);
+                logEvent('warn', 'payment.payhere_ipn_user_missing', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                    userId: checkoutSession?.userId || context.userId,
+                });
                 return res.status(404).send('User not found.');
             }
 
             const purchasedPlan = checkoutSession?.plan || context.plan!;
+            const baseTransaction = {
+                provider: 'payhere',
+                paymentId: payload.payment_id,
+                orderId: payload.order_id,
+                userId: user._id,
+                plan: purchasedPlan,
+                amount: payload.payhere_amount,
+                currency: payload.payhere_currency,
+                baseAmountCents: checkoutSession?.baseAmountCents,
+                discountCents: checkoutSession?.discountCents,
+                finalAmountCents: checkoutSession?.finalAmountCents || paidCents || undefined,
+                couponCode: checkoutSession?.couponCode,
+                statusCode: payload.status_code,
+                rawPayload: payload,
+            };
+            const upsertReceivedTransaction = async () => {
+                try {
+                    return await PaymentTransaction.findOneAndUpdate(
+                        transactionFilter,
+                        {
+                            $setOnInsert: {
+                                ...baseTransaction,
+                                processed: false,
+                            },
+                            $set: {
+                                statusCode: payload.status_code,
+                                rawPayload: payload,
+                            },
+                        },
+                        { upsert: true, new: true, setDefaultsOnInsert: true }
+                    );
+                } catch (error) {
+                    if (!isMongoDuplicateKeyError(error)) throw error;
+                    const transaction = await PaymentTransaction.findOne(transactionFilter);
+                    if (!transaction) throw error;
+                    return transaction;
+                }
+            };
+            const receivedTransaction = await upsertReceivedTransaction();
+            if (receivedTransaction.processed) {
+                logEvent('info', 'payment.payhere_ipn_duplicate_processed', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                });
+                return res.status(200).send('OK');
+            }
+
+            const staleProcessingBefore = new Date(Date.now() - 10 * 60 * 1000);
+            const processingStartedAt = new Date();
+            const claimedTransaction = await PaymentTransaction.findOneAndUpdate(
+                {
+                    ...transactionFilter,
+                    processed: false,
+                    $or: [
+                        { processingStartedAt: { $exists: false } },
+                        { processingStartedAt: { $lt: staleProcessingBefore } },
+                    ],
+                },
+                { $set: { processingStartedAt } },
+                { new: true }
+            );
+            if (!claimedTransaction) {
+                logEvent('info', 'payment.payhere_ipn_duplicate_in_progress', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                });
+                return res.status(200).send('OK');
+            }
+
             user.plan = purchasedPlan;
             user.planStartedAt = new Date();
             user.planExpiresAt = createPlanExpiry(purchasedPlan);
@@ -171,20 +292,9 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             await PaymentTransaction.findOneAndUpdate(
                 transactionFilter,
                 {
-                    provider: 'payhere',
-                    paymentId: payload.payment_id,
-                    orderId: payload.order_id,
-                    userId: user._id,
-                    plan: purchasedPlan,
-                    amount: payload.payhere_amount,
-                    currency: payload.payhere_currency,
-                    baseAmountCents: checkoutSession?.baseAmountCents,
-                    discountCents: checkoutSession?.discountCents,
-                    finalAmountCents: checkoutSession?.finalAmountCents || paidCents || undefined,
-                    couponCode: checkoutSession?.couponCode,
-                    statusCode: payload.status_code,
+                    ...baseTransaction,
                     processed: true,
-                    rawPayload: payload,
+                    processedAt: new Date(),
                 },
                 { upsert: true, new: true, setDefaultsOnInsert: true }
             );
@@ -195,9 +305,21 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 transactionId: payload.payment_id,
                 planExpiresAt: user.planExpiresAt,
             });
+            logEvent('info', 'payment.payhere_ipn_processed', {
+                orderId: payload.order_id,
+                paymentId: payload.payment_id,
+                userId: user._id,
+                plan: purchasedPlan,
+                finalAmountCents: checkoutSession?.finalAmountCents || paidCents || undefined,
+            });
 
             return res.status(200).send('OK');
         } catch (error) {
+            logError('payment.payhere_ipn_failed', error, {
+                orderId: req.body?.order_id,
+                paymentId: req.body?.payment_id,
+                statusCode: req.body?.status_code,
+            });
             return sendError(res, 500, 'Could not process payment notification.', error);
         }
     });
@@ -237,6 +359,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const userId = currentUserId(req).toString();
             const quote = await quoteCheckout(plan, req.body.couponCode);
             if ('error' in quote) return res.status(400).json({ error: quote.error });
+            await markExpiredPendingCheckouts();
             const orderId = `${generateTransactionId()}-${userId}-${plan}`;
             await CheckoutSession.create({
                 orderId,
