@@ -12,6 +12,7 @@ import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
+import { applyTemplateColorDefaults } from '../utils/templateData';
 
 import {
   ALL_STEPS,
@@ -901,6 +902,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                     <button
                       type="button"
                       onClick={() => {
+                        setCvData((prev) => applyTemplateColorDefaults(prev, template, pendingTemplate));
                         setTemplate(pendingTemplate);
                         setPendingTemplate(null);
                         setActiveMainTab('content');

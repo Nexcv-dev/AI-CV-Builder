@@ -83,6 +83,7 @@ export interface CVData {
   awards: Award[];
   references: Reference[];
   themeColor: string;
+  templateThemeColors?: Record<string, string>;
   fontFamily: string;
   profileImage: string;
   imageZoom?: number;
@@ -90,6 +91,7 @@ export interface CVData {
   imageY?: number;
   sidebarColor: string;
   templateSurfaceColor?: string;
+  templateSurfaceColors?: Record<string, string>;
   sectionOrder: string[];
   lineSpacing?: number;
   sectionGap?: number;
