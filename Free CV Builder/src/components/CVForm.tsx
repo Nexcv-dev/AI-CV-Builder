@@ -156,6 +156,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const [refiningIds, setRefiningIds] = useState<Record<string, boolean>>({});
   const abortControllerRef = useRef<AbortController | null>(null);
   const importAbortControllerRef = useRef<AbortController | null>(null);
+  const aiRequestIdsRef = useRef<Set<string>>(new Set());
+  const importInFlightRef = useRef(false);
 
   // Cancel any ongoing AI generation when changing steps or tabs
   useEffect(() => {
@@ -181,6 +183,8 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const stripHtml = useCallback((html: string) => DOMPurify.sanitize(html, { ALLOWED_TAGS: [] }), []);
 
   const handleGenerateSummary = useCallback(async () => {
+    if (aiRequestIdsRef.current.has('summary')) return;
+
     if (isFreePlan) {
       onUpgradeRequired?.('ai');
       return;
@@ -189,6 +193,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
+    aiRequestIdsRef.current.add('summary');
     setRefining('summary', true);
     try {
       const res = await fetch('/api/generate-summary', {
@@ -222,11 +227,14 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       console.error('Error generating summary:', error);
       toast.error(error.message || 'Failed to generate summary. Please try again.');
     } finally {
+      aiRequestIdsRef.current.delete('summary');
       setRefining('summary', false);
     }
   }, [cvData.experience, cvData.education, cvData.skills, isFreePlan, onUpgradeRequired, setCvData, setRefining]);
 
   const handleRefineText = async (id: string, text: string, sectionType: string, context: any, onUpdate: (refined: string) => void) => {
+    if (aiRequestIdsRef.current.has(id)) return;
+
     if (isFreePlan) {
       onUpgradeRequired?.('ai');
       return;
@@ -238,6 +246,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
+    aiRequestIdsRef.current.add(id);
     setRefining(id, true);
     try {
       const res = await fetch('/api/refine-text', {
@@ -267,11 +276,17 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       console.error('Error refining text:', error);
       toast.error(error.message || 'Failed to refine text. Please try again.');
     } finally {
+      aiRequestIdsRef.current.delete(id);
       setRefining(id, false);
     }
   };
 
   const handleCVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (importInFlightRef.current) {
+      event.target.value = '';
+      return;
+    }
+
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -281,12 +296,14 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
       return;
     }
 
+    importInFlightRef.current = true;
     setIsImporting(true);
     setImportMessage({ type: 'success', text: 'Starting import...' });
 
     if (file.size > MAX_CV_FILE_SIZE) {
       setImportMessage({ type: 'error', text: 'File is too large. Maximum allowed size is 10 MB.' });
       event.target.value = '';
+      importInFlightRef.current = false;
       setIsImporting(false);
       return;
     }
@@ -420,11 +437,13 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
             : error.message;
           setImportMessage({ type: 'error', text: errorMsg });
         } finally {
+          importInFlightRef.current = false;
           setIsImporting(false);
         }
       };
     } catch (error: any) {
       console.error('Error importing CV:', error);
+      importInFlightRef.current = false;
       setIsImporting(false);
     }
     if (event.target) event.target.value = '';

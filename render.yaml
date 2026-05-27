@@ -5,9 +5,63 @@ services:
     rootDir: "Free CV Builder"
     buildCommand: npm install && npm run build
     startCommand: npm start
+    healthCheckPath: /api/ready
+    maxShutdownDelaySeconds: 60
     envVars:
       - key: NODE_ENV
         value: production
+      - key: SESSION_COOKIE_NAME
+        value: nexcv.sid
+      - key: SESSION_STORE_MAX_POOL_SIZE
+        value: "5"
+      - key: MONGODB_MAX_POOL_SIZE
+        value: "20"
+      - key: MONGODB_MIN_POOL_SIZE
+        value: "2"
+      - key: MONGODB_MAX_IDLE_TIME_MS
+        value: "30000"
+      - key: MONGODB_SERVER_SELECTION_TIMEOUT_MS
+        value: "10000"
+      - key: MONGODB_SLOW_QUERY_MS
+        value: "500"
+      - key: APP_SETTINGS_CACHE_TTL_MS
+        value: "30000"
+      - key: TEMPLATE_CONFIG_CACHE_TTL_MS
+        value: "300000"
+      - key: TEMPLATE_HTML_CACHE_TTL_MS
+        value: "600000"
+      - key: BILLING_PLANS_CACHE_TTL_MS
+        value: "60000"
+      - key: API_REQUEST_TIMEOUT_MS
+        value: "30000"
+      - key: AI_REQUEST_TIMEOUT_MS
+        value: "45000"
+      - key: GEMINI_REQUEST_TIMEOUT_MS
+        value: "35000"
+      - key: PDF_REQUEST_TIMEOUT_MS
+        value: "75000"
+      - key: CV_IMPORT_REQUEST_TIMEOUT_MS
+        value: "90000"
+      - key: SERVER_REQUEST_TIMEOUT_MS
+        value: "95000"
+      - key: SERVER_HEADERS_TIMEOUT_MS
+        value: "15000"
+      - key: SERVER_KEEP_ALIVE_TIMEOUT_MS
+        value: "65000"
+      - key: CIRCUIT_BREAKER_FAILURE_THRESHOLD
+        value: "5"
+      - key: CIRCUIT_BREAKER_COOLDOWN_MS
+        value: "60000"
+      - key: CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS
+        value: "1"
+      - key: GEMINI_CIRCUIT_FAILURE_THRESHOLD
+        value: "5"
+      - key: PDF_LAMBDA_CIRCUIT_FAILURE_THRESHOLD
+        value: "3"
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: ALLOWED_ORIGIN

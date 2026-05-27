@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useMemo, useState } from 'react';
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -145,6 +145,7 @@ export default function CheckoutPage() {
     city: '',
     country: 'Sri Lanka',
   });
+  const checkoutInFlightRef = useRef(false);
 
   useEffect(() => {
     let ignore = false;
@@ -284,6 +285,8 @@ export default function CheckoutPage() {
 
   const completeCheckout = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (checkoutInFlightRef.current || submitting) return;
+
     if (!user) {
       setAuthModalOpen(true);
       return;
@@ -322,6 +325,7 @@ export default function CheckoutPage() {
       },
     };
 
+    checkoutInFlightRef.current = true;
     setSubmitting(true);
     try {
       const checkout = await apiFetch<PayHereCheckoutResponse>('/api/billing/payhere-checkout', {
@@ -335,6 +339,7 @@ export default function CheckoutPage() {
       submitPayHereForm(checkout.actionUrl, checkout.fields);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not open PayHere checkout.');
+      checkoutInFlightRef.current = false;
       setSubmitting(false);
     }
   };

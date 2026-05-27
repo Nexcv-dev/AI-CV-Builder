@@ -42,6 +42,8 @@ const AdminAuditLogSchema = new Schema<IAdminAuditLog>(
 
 AdminAuditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
 AdminAuditLogSchema.index({ targetType: 1, createdAt: -1 });
+AdminAuditLogSchema.index({ action: 1, createdAt: -1 });
+AdminAuditLogSchema.index({ action: 1, targetType: 1, createdAt: -1 });
 
 const AdminAuditLog =
   (mongoose.models.AdminAuditLog as mongoose.Model<IAdminAuditLog>) ||

@@ -1,6 +1,7 @@
 import express, { Router, Request, Response } from 'express';
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
+import { getOrSetCachedValue, parseCacheTtlMs } from '../server-utils/ttlCache';
 
 type RouteDeps = Record<string, any>;
 
@@ -25,6 +26,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         isMongoDuplicateKeyError,
         logError,
         logEvent,
+        mongoose,
         normalizeEmail,
         payHereAmountToCents,
         planDisplayName,
@@ -34,6 +36,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         requireVerifiedEmail,
         resolvePayHerePaymentContext,
         sanitizeProfileField,
+        sendBillingAlertNotification,
         sendBillingSuccessNotifications,
         sendError,
         verifyPayHereMd5Signature,
@@ -46,9 +49,32 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         );
     };
 
+    const alertPayHereIpnFailure = async (
+        event: string,
+        reason: string,
+        payload: Record<string, string>,
+        extra: Record<string, unknown> = {}
+    ) => {
+        await sendBillingAlertNotification({
+            event,
+            reason,
+            orderId: payload.order_id,
+            paymentId: payload.payment_id,
+            statusCode: payload.status_code,
+            amount: payload.payhere_amount,
+            currency: payload.payhere_currency,
+            ...extra,
+        });
+    };
+
     router.get('/api/billing/plans', async (_req: Request, res: Response) => {
         try {
-            const plans = await getPublicBillingPlans();
+            const plans = await getOrSetCachedValue(
+                'public:billing:plans',
+                parseCacheTtlMs(process.env.BILLING_PLANS_CACHE_TTL_MS, 60_000),
+                getPublicBillingPlans
+            );
+            res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=60');
             return res.json({ plans });
         } catch (error) {
             return sendError(res, 500, 'Could not load billing plans.', error);
@@ -90,6 +116,11 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     orderId: payload.order_id,
                     paymentId: payload.payment_id,
                 });
+                await alertPayHereIpnFailure(
+                    'payment.payhere_ipn_config_missing',
+                    'PayHere merchant id or merchant secret is missing.',
+                    payload
+                );
                 return res.status(500).send('Payment notification is not configured.');
             }
 
@@ -98,6 +129,11 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     orderId: payload.order_id,
                     paymentId: payload.payment_id,
                 });
+                await alertPayHereIpnFailure(
+                    'payment.payhere_ipn_merchant_mismatch',
+                    'IPN merchant id did not match the configured merchant.',
+                    payload
+                );
                 return res.status(400).send('Invalid merchant.');
             }
 
@@ -116,6 +152,11 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     paymentId: payload.payment_id,
                     statusCode: payload.status_code,
                 });
+                await alertPayHereIpnFailure(
+                    'payment.payhere_ipn_signature_failed',
+                    'IPN signature verification failed.',
+                    payload
+                );
                 return res.status(400).send('Invalid payment signature.');
             }
 
@@ -173,6 +214,11 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     orderId: payload.order_id,
                     paymentId: payload.payment_id,
                 });
+                await alertPayHereIpnFailure(
+                    'payment.payhere_ipn_context_missing',
+                    'Successful IPN did not include a resolvable checkout session, user id, or plan.',
+                    payload
+                );
                 return res.status(400).send('Invalid payment context.');
             }
 
@@ -190,6 +236,12 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     expectedCurrency: expectedPrice.currency,
                     expectedCents: expectedPrice.cents,
                 });
+                await alertPayHereIpnFailure(
+                    'payment.payhere_ipn_amount_mismatch',
+                    `Paid amount did not match expected ${expectedPrice.cents} ${expectedPrice.currency} cents.`,
+                    payload,
+                    { plan: checkoutSession?.plan || context.plan }
+                );
                 return res.status(400).send('Invalid payment amount.');
             }
 
@@ -200,6 +252,15 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     paymentId: payload.payment_id,
                     userId: checkoutSession?.userId || context.userId,
                 });
+                await alertPayHereIpnFailure(
+                    'payment.payhere_ipn_user_missing',
+                    'Successful IPN referenced a user that does not exist.',
+                    payload,
+                    {
+                        userId: checkoutSession?.userId || context.userId,
+                        plan: checkoutSession?.plan || context.plan,
+                    }
+                );
                 return res.status(404).send('User not found.');
             }
 
@@ -273,42 +334,73 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.status(200).send('OK');
             }
 
-            user.plan = purchasedPlan;
-            user.planStartedAt = new Date();
-            user.planExpiresAt = createPlanExpiry(purchasedPlan);
-            if (purchasedPlan === 'payg') {
-                user.paygCvSaveCredits = (user.paygCvSaveCredits || 0) + 1;
-            }
-            await user.save();
+            let processedUser = user;
+            const session = await mongoose.startSession();
+            try {
+                await session.withTransaction(async () => {
+                    const planStartedAt = new Date();
+                    const planExpiresAt = createPlanExpiry(purchasedPlan);
+                    const userUpdate: Record<string, unknown> = {
+                        $set: {
+                            plan: purchasedPlan,
+                            planStartedAt,
+                            planExpiresAt,
+                        },
+                    };
+                    if (purchasedPlan === 'payg') {
+                        userUpdate.$inc = { paygCvSaveCredits: 1 };
+                    }
 
-            if (checkoutSession) {
-                checkoutSession.status = 'paid';
-                await checkoutSession.save();
-            }
-            if (checkoutSession?.couponCode) {
-                await Coupon.updateOne({ code: checkoutSession.couponCode }, { $inc: { redeemedCount: 1 } });
-            }
+                    const updatedUser = await User.findByIdAndUpdate(
+                        user._id,
+                        userUpdate,
+                        { new: true, session }
+                    );
+                    if (!updatedUser) {
+                        throw new Error('User not found while processing payment transaction.');
+                    }
+                    processedUser = updatedUser;
 
-            await PaymentTransaction.findOneAndUpdate(
-                transactionFilter,
-                {
-                    ...baseTransaction,
-                    processed: true,
-                    processedAt: new Date(),
-                },
-                { upsert: true, new: true, setDefaultsOnInsert: true }
-            );
+                    if (checkoutSession) {
+                        await CheckoutSession.updateOne(
+                            { _id: checkoutSession._id },
+                            { $set: { status: 'paid' } },
+                            { session }
+                        );
+                    }
+                    if (checkoutSession?.couponCode) {
+                        await Coupon.updateOne(
+                            { code: checkoutSession.couponCode },
+                            { $inc: { redeemedCount: 1 } },
+                            { session }
+                        );
+                    }
+
+                    await PaymentTransaction.findOneAndUpdate(
+                        transactionFilter,
+                        {
+                            ...baseTransaction,
+                            userId: updatedUser._id,
+                            processed: true,
+                            processedAt: new Date(),
+                        },
+                        { upsert: true, new: true, setDefaultsOnInsert: true, session }
+                    );
+                });
+            } finally {
+                await session.endSession();
+            }
 
             await sendBillingSuccessNotifications({
-                user,
+                user: processedUser,
                 plan: purchasedPlan,
                 transactionId: payload.payment_id,
-                planExpiresAt: user.planExpiresAt,
+                planExpiresAt: processedUser.planExpiresAt,
             });
             logEvent('info', 'payment.payhere_ipn_processed', {
                 orderId: payload.order_id,
                 paymentId: payload.payment_id,
-                userId: user._id,
+                userId: processedUser._id,
                 plan: purchasedPlan,
                 finalAmountCents: checkoutSession?.finalAmountCents || paidCents || undefined,
             });

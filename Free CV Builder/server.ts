@@ -20,6 +20,7 @@ import AdminAuditLog, { adminAuditLogSummary, recordAdminAuditLog } from './serv
 import { configureSecurityMiddleware, getRequestOrigin, isAllowedOrigin, integrityCheck } from './middlewares/security';
 import { assertSessionSecret, configureSessionMiddleware } from './middlewares/session';
 import { configurePassportAuth, passport } from './middlewares/passportAuth';
+import { configureRequestTimeout } from './middlewares/requestTimeout';
 import {
     authLimiter,
     configureRateLimiters,
@@ -109,6 +110,7 @@ import {
     publicUser,
     sanitizeDisplayName,
     sanitizeProfileField,
+    sendBillingAlertNotification,
     sendBillingSuccessNotifications,
     sendContactNotification,
     sendEmailVerificationWithRetry,
@@ -121,6 +123,9 @@ import { registerAuthRoutes } from './routes/auth';
 import { registerCvRoutes } from './routes/cv';
 import { registerPaymentRoutes } from './routes/payment';
 import { registerPublicRoutes } from './routes/public';
+import { initSentry, setupSentryExpressErrorHandler } from './server-utils/sentry';
+import { getOrSetCachedValue, parseCacheTtlMs } from './server-utils/ttlCache';
+import { withCircuitBreaker } from './server-utils/circuitBreaker';
 
 export {
     integrityCheck,
@@ -144,6 +149,7 @@ dns.setDefaultResultOrder('ipv4first');
 
 // Load environment variables from .env
 dotenv.config();
+initSentry();
 
 // Connect to MongoDB
 const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -162,6 +168,7 @@ configureSessionMiddleware(app);
 configurePassportAuth(app);
 configureSecurityMiddleware(app);
 configureRateLimiters(app);
+configureRequestTimeout(app);
 
 const defaultJsonParser = express.json({ limit: '1mb' });
 const cvImportJsonParser = express.json({ limit: '16mb' });
@@ -179,7 +186,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(async (req: Request, _res: Response, next: NextFunction) => {
     if (!req.path.startsWith('/api')) return next();
     try {
-        (req as any).appSettings = await getAppSettings();
+        (req as any).appSettings = await getOrSetCachedValue(
+            'app-settings',
+            parseCacheTtlMs(process.env.APP_SETTINGS_CACHE_TTL_MS, 30_000),
+            getAppSettings
+        );
     } catch {
         (req as any).appSettings = null;
     }
@@ -241,6 +252,9 @@ async function generateGeminiText(contents: any[], config?: Record<string, any>)
     if (!apiKey) {
         throw new Error('Gemini API key is not configured.');
     }
+    const timeoutMs = Number.parseInt(process.env.GEMINI_REQUEST_TIMEOUT_MS || '35000', 10) || 35000;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     const normalizedContents = contents.every(item => item && typeof item === 'object' && Array.isArray(item.parts))
         ? contents
@@ -252,17 +266,25 @@ async function generateGeminiText(contents: any[], config?: Record<string, any>)
             }),
         }];
 
-    const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: normalizedContents,
-                ...(config ? { generationConfig: config } : {}),
-            }),
-        }
-    );
+    let response;
+    try {
+        response = await withCircuitBreaker(
+            { name: 'gemini', failureThreshold: Number.parseInt(process.env.GEMINI_CIRCUIT_FAILURE_THRESHOLD || '5', 10) || 5 },
+            () => fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: normalizedContents,
+                    ...(config ? { generationConfig: config } : {}),
+                }),
+                signal: controller.signal,
+            }
+        ));
+    } finally {
+        clearTimeout(timeout);
+    }
 
     if (!response.ok) {
         const detail = await response.text().catch(() => '');
@@ -546,7 +568,7 @@ const routeDeps = {
     sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail,
     validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser,
     isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage,
-    sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications,
+    sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, sendBillingAlertNotification,
     getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId,
     adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory,
     sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload,
@@ -589,12 +611,24 @@ const cvRouter = express.Router();
 registerCvRoutes(cvRouter, routeDeps);
 app.use(cvRouter);
 
+setupSentryExpressErrorHandler(app);
+
 // --- Serve frontend static files in production ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, 'dist');
 
-app.use(express.static(distPath));
+app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            return;
+        }
+        if (/\.(png|jpe?g|webp|svg|ico|woff2?)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        }
+    },
+}));
 
 app.use('/admin', requireAdminPageAllowedIp);
 
@@ -604,9 +638,30 @@ app.get('*', (_req: Request, res: Response) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
         console.log(`Server listening on port ${PORT}`);
     });
+    server.requestTimeout = Number.parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS || '95000', 10) || 95000;
+    server.headersTimeout = Number.parseInt(process.env.SERVER_HEADERS_TIMEOUT_MS || '15000', 10) || 15000;
+    server.keepAliveTimeout = Number.parseInt(process.env.SERVER_KEEP_ALIVE_TIMEOUT_MS || '65000', 10) || 65000;
+
+    const shutdown = (signal: string) => {
+        logEvent('info', 'server.shutdown_started', { signal });
+        server.close(() => {
+            mongoose.connection.close(false)
+                .then(() => {
+                    logEvent('info', 'server.shutdown_completed', { signal });
+                    process.exit(0);
+                })
+                .catch((error) => {
+                    logError('server.shutdown_failed', error, { signal });
+                    process.exit(1);
+                });
+        });
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 

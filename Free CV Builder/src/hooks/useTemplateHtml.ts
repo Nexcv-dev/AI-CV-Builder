@@ -23,9 +23,8 @@ export function useTemplateHtml(template: TemplateName) {
 
     setLoading(!cached);
     setError(null);
-    fetch(`/api/templates/${encodeURIComponent(template)}/html?v=${Date.now()}`, {
+    fetch(`/api/templates/${encodeURIComponent(template)}/html`, {
       credentials: 'include',
-      cache: 'no-store',
       signal: controller.signal,
     })
       .then(async (response) => {

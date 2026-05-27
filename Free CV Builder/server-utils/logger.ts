@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { captureException } from './sentry';
 
 type LogLevel = 'info' | 'warn' | 'error';
 
@@ -52,10 +53,12 @@ export const logEvent = (level: LogLevel, event: string, meta: LogMeta = {}) => 
 
 export const logError = (event: string, error: unknown, meta: LogMeta = {}) => {
     const errorId = typeof meta.errorId === 'string' ? meta.errorId : createErrorId();
+    const redactedMeta = redact(meta) as LogMeta;
     logEvent('error', event, {
-        ...meta,
+        ...redactedMeta,
         errorId,
         error: normalizeError(error),
     });
+    captureException(error, { event, errorId, ...redactedMeta });
     return errorId;
 };

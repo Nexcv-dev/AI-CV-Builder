@@ -165,6 +165,8 @@ export default function Home() {
   const [themeTransition, setThemeTransition] = useState<{ x: number; y: number; key: number; targetDark: boolean } | null>(null);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+  const saveInFlightRef = useRef(false);
+  const pdfInFlightRef = useRef(false);
 
   const renderMobileUpgradeActions = (plan: 'free' | 'payg' | 'monthly') => (
     <div className="mt-3 grid gap-2 sm:hidden">
@@ -468,11 +470,17 @@ export default function Home() {
   }, [upgradePrompt]);
 
   const handleCloudSave = useCallback(async (status: 'draft' | 'completed' = 'completed', isSilent = false) => {
+    if (saveInFlightRef.current) {
+      if (!isSilent) toast.error('Save already in progress.');
+      return;
+    }
+
     if (currentUser && !currentUser.emailVerified) {
       if (!isSilent) toast.error('Verify your email to save CVs.');
       return;
     }
 
+    saveInFlightRef.current = true;
     if (!isSilent) setCloudSaveStatus('saving');
     else setIsAutoSaving(true);
 
@@ -517,6 +525,7 @@ export default function Home() {
         setTimeout(() => setCloudSaveStatus('idle'), 4000);
       }
     } finally {
+      saveInFlightRef.current = false;
       if (isSilent) setIsAutoSaving(false);
     }
   }, [currentUser, cvData, documentId, documentTitle, openUpgradePrompt, template]);
@@ -606,8 +615,21 @@ export default function Home() {
   }, [mobileView, previewNode, template]);
 
   const isFreePlan = currentUser ? (creationQuota?.plan || currentUser.plan) === 'free' : true;
+  const savedCvUsed = creationQuota?.used ?? (documentId ? 1 : 0);
+  const savedCvLimit = creationQuota?.limit ?? (isFreePlan ? 1 : null);
+  const savedCvRemaining = savedCvLimit === null
+    ? null
+    : Math.max((creationQuota?.remaining ?? savedCvLimit - savedCvUsed), 0);
+  const savedCvLimitLabel = savedCvLimit === null ? 'Unlimited' : savedCvLimit.toString();
+  const savedCvRemainingLabel = !currentUser
+    ? 'Login to track saves'
+    : savedCvRemaining === null
+      ? 'Unlimited saves available'
+      : `${savedCvRemaining} save${savedCvRemaining === 1 ? '' : 's'} left`;
 
   const handlePrint = async () => {
+    if (pdfInFlightRef.current || isGeneratingPDF) return;
+
     if (isFreePlan && isTemplatePaid(template)) {
       setShowDownloadConfirm(false);
       openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
@@ -623,6 +645,7 @@ export default function Home() {
 
 
     setShowDownloadConfirm(false);
+    pdfInFlightRef.current = true;
     setIsGeneratingPDF(true);
 
     try {
@@ -718,6 +741,7 @@ export default function Home() {
 
       setDownloadError({ title: 'Download Failed', message: details });
     } finally {
+      pdfInFlightRef.current = false;
       setIsGeneratingPDF(false);
     }
   };
@@ -1107,7 +1131,7 @@ export default function Home() {
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={handlePrint}
-                      disabled={downloadBlocked}
+                      disabled={isGeneratingPDF || downloadBlocked}
                       className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
                     >
                       <Download size={18} className="mr-2" /> {downloadBlocked ? downloadBlockedLabel : 'Yes, Download PDF'}
@@ -1154,14 +1178,27 @@ export default function Home() {
                   <X size={16} />
                 </button>
 
-                <div className="overflow-y-auto px-4 pb-4 pt-6 sm:p-8">
-                  <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl border sm:mb-5 sm:h-14 sm:w-14 ${isDarkMode ? 'border-violet-300/25 bg-violet-400/10' : 'border-violet-100 bg-violet-50'}`}>
+                <div className="overflow-y-auto px-4 pb-4 pt-5 sm:p-8">
+                  <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl border sm:mb-5 sm:h-14 sm:w-14 ${isDarkMode ? 'border-violet-300/25 bg-violet-400/10' : 'border-violet-100 bg-violet-50'}`}>
                     <Crown className="h-6 w-6 text-violet-600 sm:h-7 sm:w-7" strokeWidth={1.8} />
                   </div>
                   <h3 className="pr-12 text-xl font-black tracking-tight sm:text-2xl">{upgradePrompt.title}</h3>
                   <p className={`mt-2 max-w-xl text-sm font-semibold leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {upgradePrompt.message}
                   </p>
+
+                  <div className={`mt-3 grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl border p-3 sm:hidden ${isDarkMode ? 'border-emerald-300/20 bg-emerald-400/10' : 'border-emerald-100 bg-emerald-50'}`}>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isDarkMode ? 'bg-emerald-300/15 text-emerald-200' : 'bg-white text-emerald-600'}`}>
+                      <Save size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`text-[11px] font-black uppercase tracking-wide ${isDarkMode ? 'text-emerald-100/75' : 'text-emerald-700'}`}>Saved CVs</p>
+                      <p className={`truncate text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{savedCvRemainingLabel}</p>
+                    </div>
+                    <div className={`text-right text-2xl font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-950'}`}>
+                      {savedCvUsed}<span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>/{savedCvLimitLabel}</span>
+                    </div>
+                  </div>
 
                   <div className="mt-4 grid gap-2.5 sm:mt-6 sm:grid-cols-3 sm:gap-3">
                     <div className="flex flex-col h-full">
@@ -1173,7 +1210,7 @@ export default function Home() {
                         <div className="text-sm font-black">Free</div>
                         <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 0</div>
                         <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Starter access • Free forever</div>
-                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>1 saved CV, 1 watermarked download.</p>
+                        <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>1 saved CV, 1 watermarked download.</p>
                       </button>
                       {selectedUpgradePlan === 'free' && renderMobileUpgradeActions('free')}
                     </div>
@@ -1186,7 +1223,7 @@ export default function Home() {
                         <div className="flex items-center gap-2 text-sm font-black"><Zap size={15} className="text-violet-600" /> Pay As You Go</div>
                         <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 499</div>
                         <div className="text-[10px] font-bold text-violet-400/90 dark:text-violet-300/90 mt-0.5">7 days access • One-time payment</div>
-                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 extra CV, any template, unlimited edits, and faster PDF downloads for 7 days.</p>
+                        <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 extra CV, any template, unlimited edits, and faster PDF downloads for 7 days.</p>
                       </button>
                       {selectedUpgradePlan === 'payg' && renderMobileUpgradeActions('payg')}
                     </div>
@@ -1199,7 +1236,7 @@ export default function Home() {
                         <div className="text-sm font-black">Monthly</div>
                         <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 2199</div>
                         <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">30 days access • One-time payment</div>
-                        <p className={`mt-3 text-xs font-semibold leading-5 flex-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, faster PDF downloads, and AI features.</p>
+                        <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, faster PDF downloads, and AI features.</p>
                       </button>
                       {selectedUpgradePlan === 'monthly' && renderMobileUpgradeActions('monthly')}
                     </div>

@@ -68,6 +68,12 @@ UserSchema.index(
     partialFilterExpression: { googleId: { $type: 'string' } },
   }
 );
+UserSchema.index({ createdAt: -1 });
+UserSchema.index({ updatedAt: -1 });
+UserSchema.index({ role: 1, createdAt: -1 });
+UserSchema.index({ plan: 1, planExpiresAt: 1 });
+UserSchema.index({ resetPasswordToken: 1, resetPasswordExpires: 1 });
+UserSchema.index({ emailVerificationToken: 1, emailVerificationExpires: 1 });
 
 const User = (mongoose.models.User as mongoose.Model<IUser>) || mongoose.model<IUser>('User', UserSchema);
 export default User;

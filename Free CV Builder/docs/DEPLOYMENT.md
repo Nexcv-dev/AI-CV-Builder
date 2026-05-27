@@ -44,9 +44,35 @@ PORT=3002
 ALLOWED_ORIGIN=https://your-frontend-domain.example
 FRONTEND_URL=https://your-frontend-domain.example
 MONGODB_URI=your_mongodb_connection_string
+MONGODB_MAX_POOL_SIZE=20
+MONGODB_MIN_POOL_SIZE=2
+MONGODB_MAX_IDLE_TIME_MS=30000
+MONGODB_SERVER_SELECTION_TIMEOUT_MS=10000
+MONGODB_SLOW_QUERY_MS=500
+APP_SETTINGS_CACHE_TTL_MS=30000
+TEMPLATE_CONFIG_CACHE_TTL_MS=300000
+TEMPLATE_HTML_CACHE_TTL_MS=600000
+BILLING_PLANS_CACHE_TTL_MS=60000
+API_REQUEST_TIMEOUT_MS=30000
+AI_REQUEST_TIMEOUT_MS=45000
+GEMINI_REQUEST_TIMEOUT_MS=35000
+PDF_REQUEST_TIMEOUT_MS=75000
+CV_IMPORT_REQUEST_TIMEOUT_MS=90000
+SERVER_REQUEST_TIMEOUT_MS=95000
+SERVER_HEADERS_TIMEOUT_MS=15000
+SERVER_KEEP_ALIVE_TIMEOUT_MS=65000
+CIRCUIT_BREAKER_FAILURE_THRESHOLD=5
+CIRCUIT_BREAKER_COOLDOWN_MS=60000
+CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS=1
+GEMINI_CIRCUIT_FAILURE_THRESHOLD=5
+PDF_LAMBDA_CIRCUIT_FAILURE_THRESHOLD=3
 SESSION_SECRET=long_random_secret
+SESSION_COOKIE_NAME=nexcv.sid
+SESSION_STORE_MAX_POOL_SIZE=5
 SUPER_ADMIN_EMAILS=owner@example.com
 ```
+
+`MONGODB_URI` must point to a MongoDB replica set or managed cluster. PayHere IPN processing uses MongoDB transactions for atomic payment, checkout, coupon, and user updates.
 
 Feature-specific values:
 
@@ -74,6 +100,13 @@ AWS_REGION=eu-north-1
 
 PDF_LAMBDA_URL=https://your-lambda-url.example
 PDF_LAMBDA_TIMEOUT_MS=45000
+
+SENTRY_DSN=https://your-backend-dsn@sentry.io/project-id
+SENTRY_ENVIRONMENT=production
+SENTRY_TRACES_SAMPLE_RATE=0.1
+VITE_SENTRY_DSN=https://your-frontend-dsn@sentry.io/project-id
+VITE_SENTRY_ENVIRONMENT=production
+VITE_SENTRY_TRACES_SAMPLE_RATE=0.1
 
 ADMIN_ALLOWED_IPS=203.0.113.10,2001:db8::10
 ```
@@ -141,6 +174,7 @@ Use the full [Launch Checklist](LAUNCH_CHECKLIST.md) for launch-day signoff. At 
 After deployment:
 
 - Open `/api/health`.
+- Configure host/load-balancer readiness checks to use `/api/ready`.
 - Sign up or log in.
 - Verify email delivery or test reset email.
 - Create and save a CV.

@@ -113,6 +113,15 @@ export default function Dashboard() {
   const templatesUsed = useMemo(() => new Set(documents.map((document) => document.template)).size, [documents]);
   const creationLimitReached = Boolean(quota?.reached);
   const isFreePlan = !user || user.plan === 'free';
+  const savedCvUsed = quota?.used ?? documents.length;
+  const savedCvLimit = quota?.limit ?? (isFreePlan ? 1 : null);
+  const savedCvRemaining = savedCvLimit === null
+    ? null
+    : Math.max(quota?.remaining ?? savedCvLimit - savedCvUsed, 0);
+  const savedCvLimitLabel = savedCvLimit === null ? 'Unlimited' : savedCvLimit.toString();
+  const savedCvStatusLabel = savedCvRemaining === null
+    ? 'Unlimited saves'
+    : `${savedCvRemaining} save${savedCvRemaining === 1 ? '' : 's'} left`;
   const planExpiryReminder = useMemo(() => {
     if (!user?.planExpiresAt || user.plan === 'free' || user.plan === 'unlimited') return null;
 
@@ -213,21 +222,45 @@ export default function Dashboard() {
         </section>
 
         {isFreePlan && (
-          <section className="mt-5 overflow-hidden rounded-2xl border border-emerald-300/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.14),rgba(124,58,237,0.12),rgba(255,255,255,0.035))] p-4 shadow-xl shadow-black/10 sm:p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <section className="mt-5 overflow-hidden rounded-2xl border border-emerald-300/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.14),rgba(124,58,237,0.12),rgba(255,255,255,0.035))] p-3 shadow-xl shadow-black/10 sm:p-5">
+            <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-emerald-200/15 bg-emerald-300/10 p-3 sm:hidden">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200 ring-1 ring-emerald-200/20">
+                <FileText size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase text-emerald-200">Saved CVs</p>
+                <p className="truncate text-xs font-bold text-slate-300">{savedCvStatusLabel}</p>
+              </div>
+              <div className="text-right text-2xl font-black tabular-nums text-white">
+                {savedCvUsed}<span className="text-sm text-slate-400">/{savedCvLimitLabel}</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200 ring-1 ring-emerald-200/25">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200 ring-1 ring-emerald-200/25 max-[639px]:hidden">
                   <Crown size={20} />
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase text-emerald-200">Free plan</p>
-                  <h2 className="mt-1 font-montserrat text-xl font-black text-white sm:text-2xl">Unlock more CVs, premium templates, and AI help</h2>
-                  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-300">
+                  <h2 className="mt-1 font-montserrat text-lg font-black leading-tight text-white min-[380px]:text-xl sm:text-2xl">Unlock more CVs, premium templates, and AI help</h2>
+                  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-300 max-[639px]:text-[13px] max-[639px]:leading-5">
                     Free includes the basics. Upgrade when you need more saves, more PDF downloads, premium designs, and faster CV polishing.
                   </p>
                 </div>
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:w-auto lg:min-w-[300px]">
+                <div className="hidden items-center gap-3 rounded-xl border border-emerald-200/15 bg-emerald-300/10 p-3 sm:col-span-2 sm:grid sm:grid-cols-[auto_1fr_auto]">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200 ring-1 ring-emerald-200/20">
+                    <FileText size={18} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-black uppercase text-emerald-200">Saved CVs</p>
+                    <p className="truncate text-xs font-bold text-slate-300">{savedCvStatusLabel}</p>
+                  </div>
+                  <div className="text-right text-2xl font-black tabular-nums text-white">
+                    {savedCvUsed}<span className="text-sm text-slate-400">/{savedCvLimitLabel}</span>
+                  </div>
+                </div>
                 <Link
                   to="/checkout?plan=payg"
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-300 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-200 active:scale-[0.98]"
