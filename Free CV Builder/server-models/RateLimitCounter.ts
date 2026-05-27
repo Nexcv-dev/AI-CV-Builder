@@ -17,8 +17,6 @@ const RateLimitCounterSchema = new Schema<IRateLimitCounter>(
   { timestamps: true }
 );
 
-RateLimitCounterSchema.index({ resetTime: 1 }, { expireAfterSeconds: 60 * 60 });
-
 const RateLimitCounter =
   (mongoose.models.RateLimitCounter as mongoose.Model<IRateLimitCounter>) ||
   mongoose.model<IRateLimitCounter>('RateLimitCounter', RateLimitCounterSchema);
