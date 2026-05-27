@@ -7,6 +7,7 @@ import createDOMPurify from 'dompurify';
 import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName } from '../src/templates';
 import { CV_TEMPLATE_PAGINATION_RULES } from '../src/utils/cvTemplateRules';
 import { logError, logEvent } from '../server-utils/logger';
+import { withCircuitBreaker } from '../server-utils/circuitBreaker';
 
 dotenv.config();
 
@@ -938,15 +939,18 @@ export async function generatePdfWithLambda(cvData: any, template: string, water
     try {
         console.time('PdfLambdaGeneration');
         logEvent('info', 'pdf.lambda_generation_started', { template, watermark });
-        const response = await fetch(lambdaUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-App-Source': 'cv-builder-app',
-            },
-            body: JSON.stringify({ cvData, template, watermark }),
-            signal: controller.signal,
-        });
+        const response = await withCircuitBreaker(
+            { name: 'pdf-lambda', failureThreshold: Number.parseInt(process.env.PDF_LAMBDA_CIRCUIT_FAILURE_THRESHOLD || '3', 10) || 3 },
+            () => fetch(lambdaUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-App-Source': 'cv-builder-app',
+                },
+                body: JSON.stringify({ cvData, template, watermark }),
+                signal: controller.signal,
+            })
+        );
 
         const contentType = response.headers.get('content-type') || '';
         if (!response.ok) {

@@ -12,7 +12,7 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 - `NODE_ENV=production`.
 - `SESSION_SECRET` is long, random, and not reused from development.
 - `FRONTEND_URL`, `ALLOWED_ORIGIN`, and public API/host URLs match the live domains.
-- `MONGODB_URI` points to the production cluster with backups enabled.
+- `MONGODB_URI` points to a production replica set or managed cluster with backups enabled.
 - `SUPER_ADMIN_EMAILS` contains only launch owners.
 - `ADMIN_ALLOWED_IPS` is set to trusted public admin IPs if admin access should be network-restricted.
 - `GEMINI_API_KEY`, email provider credentials, PayHere credentials, S3 bucket, and PDF Lambda URL are configured.

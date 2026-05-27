@@ -3,8 +3,13 @@ import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
 import type { TemplateName } from '../src/templates';
 import { mergeCmsContent } from '../src/contentDefaults';
+import { getOrSetCachedValue, parseCacheTtlMs } from '../server-utils/ttlCache';
 
 type RouteDeps = Record<string, any>;
+
+const publicCacheControl = (browserMaxAgeSeconds: number, cdnMaxAgeSeconds = browserMaxAgeSeconds) => (
+    `public, max-age=${browserMaxAgeSeconds}, s-maxage=${cdnMaxAgeSeconds}, stale-while-revalidate=${cdnMaxAgeSeconds}`
+);
 
 export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash } = bindDeps(deps);
@@ -57,6 +62,22 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         });
     });
 
+    router.get('/api/ready', (_req: Request, res: Response) => {
+        const mongoConfigured = Boolean((process.env.MONGO_URI || process.env.MONGODB_URI || '').trim());
+        const mongoReady = !mongoConfigured || mongoose?.connection?.readyState === 1;
+        if (!mongoReady) {
+            return res.status(503).json({
+                status: 'not_ready',
+                mongodb: {
+                    configured: mongoConfigured,
+                    state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose?.connection?.readyState] || 'unknown',
+                },
+            });
+        }
+
+        return res.json({ status: 'ready' });
+    });
+
     router.get('/api/public/app-settings', (req: Request, res: Response) => {
         const settings = (req as any).appSettings;
         const cmsContent = mergeCmsContent(settings?.cmsContent);
@@ -74,18 +95,24 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
 
     router.get('/api/templates/config', async (_req: Request, res: Response) => {
         try {
-            const settings = await TemplateSetting.find();
-            const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
-            const builtInKeys = new Set<string>(CV_TEMPLATES.map((template) => template.key));
-            const builtIns = CV_TEMPLATES
-                .map((template) => adminTemplateSummary(template, settingMap.get(template.key), 0))
-                .filter((template) => template.status !== 'archived');
-            const customTemplates = settings
-                .filter((setting) => setting.source === 'custom' && setting.status === 'active' && !builtInKeys.has(setting.key))
-                .map((setting) => customTemplateSummary(setting, 0));
-            return res.json({
-                templates: [...builtIns, ...customTemplates],
-            });
+            const data = await getOrSetCachedValue(
+                'public:templates:config',
+                parseCacheTtlMs(process.env.TEMPLATE_CONFIG_CACHE_TTL_MS, 5 * 60_000),
+                async () => {
+                    const settings = await TemplateSetting.find();
+                    const settingMap = new Map(settings.map((setting) => [setting.key, setting]));
+                    const builtInKeys = new Set<string>(CV_TEMPLATES.map((template) => template.key));
+                    const builtIns = CV_TEMPLATES
+                        .map((template) => adminTemplateSummary(template, settingMap.get(template.key), 0))
+                        .filter((template) => template.status !== 'archived');
+                    const customTemplates = settings
+                        .filter((setting) => setting.source === 'custom' && setting.status === 'active' && !builtInKeys.has(setting.key))
+                        .map((setting) => customTemplateSummary(setting, 0));
+                    return { templates: [...builtIns, ...customTemplates] };
+                }
+            );
+            res.setHeader('Cache-Control', publicCacheControl(60, 300));
+            return res.json(data);
         } catch (error) {
             return sendError(res, 500, 'Could not load template configuration.', error);
         }
@@ -97,31 +124,36 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             const key = validateCustomTemplateKey(req.params.key);
             if (!key) return res.status(400).json({ error: 'Invalid template key.' });
 
-            const setting = await TemplateSetting.findOne({ key, source: 'custom', status: 'active' }).select('indexS3Key styleS3Key');
-            const builtInTemplate = CV_TEMPLATES.find((template: any) => template.key === key);
-            const s3Prefix = setting?.indexS3Key
-                ? ''
-                : builtInTemplate
-                    ? (S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key)
-                    : '';
-            const indexS3Key = setting?.indexS3Key || (s3Prefix ? `${s3Prefix}/index.html` : '');
-            const styleS3Key = setting?.styleS3Key || (s3Prefix ? `${s3Prefix}/style.css` : '');
-            if (!indexS3Key) return res.status(404).json({ error: 'Template HTML not found.' });
+            const html = await getOrSetCachedValue(
+                `public:templates:html:${key}`,
+                parseCacheTtlMs(process.env.TEMPLATE_HTML_CACHE_TTL_MS, 10 * 60_000),
+                async () => {
+                    const setting = await TemplateSetting.findOne({ key, source: 'custom', status: 'active' }).select('indexS3Key styleS3Key');
+                    const builtInTemplate = CV_TEMPLATES.find((template: any) => template.key === key);
+                    const s3Prefix = setting?.indexS3Key
+                        ? ''
+                        : builtInTemplate
+                            ? (S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key)
+                            : '';
+                    const indexS3Key = setting?.indexS3Key || (s3Prefix ? `${s3Prefix}/index.html` : '');
+                    const styleS3Key = setting?.styleS3Key || (s3Prefix ? `${s3Prefix}/style.css` : '');
+                    if (!indexS3Key) return '';
 
-            const indexHtml = await fetchS3Text(indexS3Key);
-            if (!indexHtml) return res.status(404).json({ error: 'Template HTML not found.' });
+                    const indexHtml = await fetchS3Text(indexS3Key);
+                    if (!indexHtml) return '';
 
-            const css = styleS3Key ? await fetchS3Text(styleS3Key) : '';
-            const html = css
-                ? indexHtml.includes('</head>')
-                    ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
-                    : `<style>\n${css}\n</style>\n${indexHtml}`
-                : indexHtml;
+                    const css = styleS3Key ? await fetchS3Text(styleS3Key) : '';
+                    return css
+                        ? indexHtml.includes('</head>')
+                            ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
+                            : `<style>\n${css}\n</style>\n${indexHtml}`
+                        : indexHtml;
+                }
+            );
+            if (!html) return res.status(404).json({ error: 'Template HTML not found.' });
 
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
+            res.setHeader('Cache-Control', publicCacheControl(300, 600));
             return res.send(html);
         } catch (error) {
             return sendError(res, 500, 'Could not load template HTML.', error);
@@ -226,6 +258,4 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     
     // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Auth Routes (Placeholders) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
-
 }
-

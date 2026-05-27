@@ -1,5 +1,7 @@
-import type { Express, Request } from 'express';
+import type { Express, Request, RequestHandler } from 'express';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import type { Options } from 'express-rate-limit';
+import { MongoRateLimitStore } from '../server-utils/mongoRateLimitStore';
 
 export const EMAIL_VERIFICATION_RESEND_LIMIT = 3;
 export const EMAIL_VERIFICATION_RESEND_WINDOW_MS = 60 * 60 * 1000;
@@ -11,7 +13,25 @@ export const getAuthenticatedRateLimitKey = (req: Request) => {
     return user?._id?.toString?.() || user?.id?.toString?.() || ipKeyGenerator(req.ip);
 };
 
-export const apiLimiter = rateLimit({
+const useSharedRateLimitStore = () => Boolean((process.env.MONGO_URI || process.env.MONGODB_URI || '').trim());
+const createRateLimitStore = (prefix: string) => useSharedRateLimitStore()
+    ? new MongoRateLimitStore(prefix)
+    : undefined;
+
+const lazyRateLimit = (prefix: string, options: Partial<Options>): RequestHandler => {
+    let limiter: RequestHandler | null = null;
+    return (req, res, next) => {
+        if (!limiter) {
+            limiter = rateLimit({
+                ...options,
+                store: createRateLimitStore(prefix),
+            });
+        }
+        return limiter(req, res, next);
+    };
+};
+
+export const apiLimiter = lazyRateLimit('api', {
     windowMs: 15 * 60 * 1000,
     max: 150,
     standardHeaders: true,
@@ -19,7 +39,7 @@ export const apiLimiter = rateLimit({
     message: { error: 'Too many requests. Please try again later.' },
 });
 
-export const pdfLimiter = rateLimit({
+export const pdfLimiter = lazyRateLimit('pdf', {
     windowMs: 15 * 60 * 1000,
     max: 10,
     standardHeaders: true,
@@ -27,7 +47,7 @@ export const pdfLimiter = rateLimit({
     message: { error: 'PDF generation limit reached. Please wait a few minutes before trying again.' },
 });
 
-export const authLimiter = rateLimit({
+export const authLimiter = lazyRateLimit('auth', {
     windowMs: 15 * 60 * 1000,
     max: 8,
     standardHeaders: true,
@@ -36,7 +56,7 @@ export const authLimiter = rateLimit({
     message: { error: 'Too many login attempts. Please wait a few minutes before trying again.' },
 });
 
-export const passwordResetLimiter = rateLimit({
+export const passwordResetLimiter = lazyRateLimit('password-reset', {
     windowMs: 60 * 60 * 1000,
     max: 3,
     standardHeaders: true,
@@ -44,7 +64,7 @@ export const passwordResetLimiter = rateLimit({
     message: { error: 'Too many password reset attempts. Please wait an hour before trying again.' },
 });
 
-export const emailVerificationLimiter = rateLimit({
+export const emailVerificationLimiter = lazyRateLimit('email-verification-send', {
     windowMs: EMAIL_VERIFICATION_RESEND_WINDOW_MS,
     max: EMAIL_VERIFICATION_RESEND_LIMIT,
     standardHeaders: true,
@@ -53,7 +73,7 @@ export const emailVerificationLimiter = rateLimit({
     message: { error: 'Too many verification OTP requests. Please wait an hour before trying again.' },
 });
 
-export const emailVerificationAttemptLimiter = rateLimit({
+export const emailVerificationAttemptLimiter = lazyRateLimit('email-verification-attempt', {
     windowMs: EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS,
     max: EMAIL_VERIFICATION_ATTEMPT_LIMIT,
     standardHeaders: true,

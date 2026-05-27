@@ -37,6 +37,8 @@ const SupportTicketSchema = new Schema<ISupportTicket>(
 
 SupportTicketSchema.index({ createdAt: -1 });
 SupportTicketSchema.index({ email: 1, createdAt: -1 });
+SupportTicketSchema.index({ status: 1, type: 1, createdAt: -1 });
+SupportTicketSchema.index({ priority: 1, createdAt: -1 });
 
 const SupportTicket =
   (mongoose.models.SupportTicket as mongoose.Model<ISupportTicket>) ||

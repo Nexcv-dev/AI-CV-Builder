@@ -165,6 +165,8 @@ export default function Home() {
   const [themeTransition, setThemeTransition] = useState<{ x: number; y: number; key: number; targetDark: boolean } | null>(null);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+  const saveInFlightRef = useRef(false);
+  const pdfInFlightRef = useRef(false);
 
   const renderMobileUpgradeActions = (plan: 'free' | 'payg' | 'monthly') => (
     <div className="mt-3 grid gap-2 sm:hidden">
@@ -468,11 +470,17 @@ export default function Home() {
   }, [upgradePrompt]);
 
   const handleCloudSave = useCallback(async (status: 'draft' | 'completed' = 'completed', isSilent = false) => {
+    if (saveInFlightRef.current) {
+      if (!isSilent) toast.error('Save already in progress.');
+      return;
+    }
+
     if (currentUser && !currentUser.emailVerified) {
       if (!isSilent) toast.error('Verify your email to save CVs.');
       return;
     }
 
+    saveInFlightRef.current = true;
     if (!isSilent) setCloudSaveStatus('saving');
     else setIsAutoSaving(true);
 
@@ -517,6 +525,7 @@ export default function Home() {
         setTimeout(() => setCloudSaveStatus('idle'), 4000);
       }
     } finally {
+      saveInFlightRef.current = false;
       if (isSilent) setIsAutoSaving(false);
     }
   }, [currentUser, cvData, documentId, documentTitle, openUpgradePrompt, template]);
@@ -608,6 +617,8 @@ export default function Home() {
   const isFreePlan = currentUser ? (creationQuota?.plan || currentUser.plan) === 'free' : true;
 
   const handlePrint = async () => {
+    if (pdfInFlightRef.current || isGeneratingPDF) return;
+
     if (isFreePlan && isTemplatePaid(template)) {
       setShowDownloadConfirm(false);
       openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
@@ -623,6 +634,7 @@ export default function Home() {
 
 
     setShowDownloadConfirm(false);
+    pdfInFlightRef.current = true;
     setIsGeneratingPDF(true);
 
     try {
@@ -718,6 +730,7 @@ export default function Home() {
 
       setDownloadError({ title: 'Download Failed', message: details });
     } finally {
+      pdfInFlightRef.current = false;
       setIsGeneratingPDF(false);
     }
   };
@@ -1107,7 +1120,7 @@ export default function Home() {
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={handlePrint}
-                      disabled={downloadBlocked}
+                      disabled={isGeneratingPDF || downloadBlocked}
                       className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
                     >
                       <Download size={18} className="mr-2" /> {downloadBlocked ? downloadBlockedLabel : 'Yes, Download PDF'}

@@ -23,6 +23,11 @@ const CVDocumentSchema = new Schema(
   }
 );
 
+CVDocumentSchema.index({ userId: 1, updatedAt: -1 });
+CVDocumentSchema.index({ template: 1 });
+CVDocumentSchema.index({ createdAt: -1 });
+CVDocumentSchema.index({ updatedAt: -1 });
+
 const CVDocument =
   (mongoose.models.CVDocument as mongoose.Model<ICVDocument>) ||
   mongoose.model<ICVDocument>('CVDocument', CVDocumentSchema);

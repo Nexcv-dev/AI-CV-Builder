@@ -176,3 +176,30 @@ export const sendBillingSuccessNotifications = async (details: {
         text: receiptEmail.text,
     });
 };
+
+export const sendBillingAlertNotification = async (details: {
+    event: string;
+    orderId?: string;
+    paymentId?: string;
+    statusCode?: string;
+    reason: string;
+    userId?: unknown;
+    plan?: unknown;
+    amount?: string;
+    currency?: string;
+}) => {
+    await sendNotificationEmail({
+        to: ADMIN_NOTIFICATION_EMAIL,
+        subject: `NexCV PayHere alert - ${details.event}`,
+        text: `A PayHere IPN needs attention.\n\n` +
+            `Event: ${details.event}\n` +
+            `Reason: ${details.reason}\n` +
+            `Order ID: ${details.orderId || 'Unknown'}\n` +
+            `Payment ID: ${details.paymentId || 'Unknown'}\n` +
+            `Status code: ${details.statusCode || 'Unknown'}\n` +
+            `User ID: ${details.userId?.toString?.() || 'Unknown'}\n` +
+            `Plan: ${details.plan?.toString?.() || 'Unknown'}\n` +
+            `Amount: ${details.amount || 'Unknown'} ${details.currency || ''}\n` +
+            `Detected at: ${new Date().toISOString()}\n`,
+    });
+};
