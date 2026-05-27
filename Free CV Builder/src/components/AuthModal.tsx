@@ -272,7 +272,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   };
 
   return (
-    <div className="auth-modal-shell fixed inset-0 z-100 flex items-center justify-center overflow-y-auto px-4 py-4 sm:py-6" role="dialog" aria-modal="true">
+    <div className="auth-modal-shell scrollbar-hide fixed inset-0 z-100 flex items-center justify-center overflow-y-auto px-4 py-4 sm:py-6" role="dialog" aria-modal="true">
       <button
         type="button"
         className="auth-modal-backdrop absolute inset-0 bg-slate-950/78 backdrop-blur-md"
@@ -280,7 +280,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
         onClick={onClose}
       />
 
-      <div className="auth-modal relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-slate-900 text-white shadow-2xl shadow-black/40">
+      <div className="auth-modal scrollbar-hide relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-slate-900 text-white shadow-2xl shadow-black/40">
         <div className="h-1 w-full bg-linear-to-r from-violet-600 to-emerald-500" />
 
         <div className="p-5 sm:p-6">

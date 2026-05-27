@@ -53,6 +53,14 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             },
         };
         const status = Object.values(checks).every((check: any) => check.ok) ? 'ok' : 'degraded';
+        const canViewDetailedHealth = process.env.NODE_ENV !== 'production' || isSuperAdmin(req.user);
+        if (!canViewDetailedHealth) {
+            return res.json({
+                status,
+                timestamp: new Date().toISOString(),
+            });
+        }
+
         res.json({
             status,
             timestamp: new Date().toISOString(),
