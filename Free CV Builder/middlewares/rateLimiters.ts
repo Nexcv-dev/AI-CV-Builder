@@ -3,14 +3,25 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Options } from 'express-rate-limit';
 import { MongoRateLimitStore } from '../server-utils/mongoRateLimitStore';
 
-export const EMAIL_VERIFICATION_RESEND_LIMIT = 3;
-export const EMAIL_VERIFICATION_RESEND_WINDOW_MS = 60 * 60 * 1000;
+export const EMAIL_VERIFICATION_RESEND_LIMIT = 6;
+export const EMAIL_VERIFICATION_RESEND_WINDOW_MS = 15 * 60 * 1000;
 export const EMAIL_VERIFICATION_ATTEMPT_LIMIT = 5;
 export const EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
 
 export const getAuthenticatedRateLimitKey = (req: Request) => {
     const user = req.user as any;
     return user?._id?.toString?.() || user?.id?.toString?.() || ipKeyGenerator(req.ip);
+};
+
+export const getEmailVerificationSendRateLimitKey = (req: Request) => {
+    const user = req.user as any;
+    const userId = user?._id?.toString?.() || user?.id?.toString?.();
+    if (userId) return `user:${userId}`;
+
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    if (email) return `email:${email}`;
+
+    return `ip:${ipKeyGenerator(req.ip)}`;
 };
 
 const useSharedRateLimitStore = () => Boolean((process.env.MONGO_URI || process.env.MONGODB_URI || '').trim());
@@ -64,13 +75,14 @@ export const passwordResetLimiter = lazyRateLimit('password-reset', {
     message: { error: 'Too many password reset attempts. Please wait an hour before trying again.' },
 });
 
-export const emailVerificationLimiter = lazyRateLimit('email-verification-send', {
+export const emailVerificationLimiter = lazyRateLimit('email-verification-send-v2', {
     windowMs: EMAIL_VERIFICATION_RESEND_WINDOW_MS,
     max: EMAIL_VERIFICATION_RESEND_LIMIT,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: getAuthenticatedRateLimitKey,
-    message: { error: 'Too many verification OTP requests. Please wait an hour before trying again.' },
+    skipFailedRequests: true,
+    keyGenerator: getEmailVerificationSendRateLimitKey,
+    message: { error: 'Too many OTP requests. Please wait 15 minutes before trying again.' },
 });
 
 export const emailVerificationAttemptLimiter = lazyRateLimit('email-verification-attempt', {
