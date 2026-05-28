@@ -3,20 +3,25 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #189 from bimanthaperera-lab/test/overview (e92255a) - Bimantha Perera, 11 seconds ago
-* fix login bug (49a36c0) - Bimantha Perera, 12 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (4d6d614) - bimanthaperera-lab, 28 minutes ago
-* Merge pull request #188 from bimanthaperera-lab/test/overview (dd883a5) - Bimantha Perera, 28 minutes ago
-* fix cross origin issue with new domain (8f080d0) - Bimantha Perera, 34 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (d987e2f) - bimanthaperera-lab, 50 minutes ago
-* Merge pull request #187 from bimanthaperera-lab/test/overview (ddc7c82) - Bimantha Perera, 50 minutes ago
-* fix production error (94f26c5) - Bimantha Perera, 58 minutes ago
-* improve login modal (67883d0) - Bimantha Perera, 14 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (45677e0) - bimanthaperera-lab, 19 hours ago
-* Merge pull request #186 from bimanthaperera-lab/test/overview (6669f74) - Bimantha Perera, 19 hours ago
-* hide api/health from public users (eeb1433) - Bimantha Perera, 20 hours ago
-* optimize dashboard upgrade card (28813dc) - Bimantha Perera, 21 hours ago
-* Harden production resilience and monitoring (b75e49f) - Bimantha Perera, 22 hours ago
+* Merge pull request #190 from bimanthaperera-lab/test/overview (f7121a4) - Bimantha Perera, 11 seconds ago
+* improve user active count (841f209) - Bimantha Perera, 40 minutes ago
+* fix issues (077c304) - Bimantha Perera, 51 minutes ago
+* SEO Optimization and UI Improvements (9443da4) - Bimantha Perera, 69 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (c1a4c73) - bimanthaperera-lab, 3 hours ago
+* Merge pull request #189 from bimanthaperera-lab/test/overview (e92255a) - Bimantha Perera, 3 hours ago
+* fix login bug (49a36c0) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (4d6d614) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #188 from bimanthaperera-lab/test/overview (dd883a5) - Bimantha Perera, 4 hours ago
+* fix cross origin issue with new domain (8f080d0) - Bimantha Perera, 4 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (d987e2f) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #187 from bimanthaperera-lab/test/overview (ddc7c82) - Bimantha Perera, 4 hours ago
+* fix production error (94f26c5) - Bimantha Perera, 4 hours ago
+* improve login modal (67883d0) - Bimantha Perera, 17 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (45677e0) - bimanthaperera-lab, 22 hours ago
+* Merge pull request #186 from bimanthaperera-lab/test/overview (6669f74) - Bimantha Perera, 22 hours ago
+* hide api/health from public users (eeb1433) - Bimantha Perera, 23 hours ago
+* optimize dashboard upgrade card (28813dc) - Bimantha Perera, 24 hours ago
+* Harden production resilience and monitoring (b75e49f) - Bimantha Perera, 26 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (7c36a4e) - bimanthaperera-lab, 2 days ago
 * Merge pull request #184 from bimanthaperera-lab/test/overview (1eb8f38) - Bimantha Perera, 2 days ago
 * Create Codebase Cleanup plan (dc951fc) - Bimantha Perera, 2 days ago
