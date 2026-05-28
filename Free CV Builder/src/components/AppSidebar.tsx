@@ -61,7 +61,7 @@ export function AppSidebar() {
     <aside className="hidden h-dvh w-72 shrink-0 border-r border-white/10 bg-slate-950/95 px-4 py-5 text-white shadow-2xl shadow-black/20 lg:sticky lg:top-0 lg:flex lg:flex-col">
       <Link to="/dashboard" className="flex items-center gap-3 px-2">
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/20 ring-1 ring-white/10">
-          <img src="/brand/faviconblack.png" alt="" className="h-9 w-9 rounded-xl" />
+          <img src="/brand/faviconblack.webp" alt="" className="h-9 w-9 rounded-xl" />
         </span>
         <span className="font-montserrat text-2xl font-black">NexCV</span>
       </Link>

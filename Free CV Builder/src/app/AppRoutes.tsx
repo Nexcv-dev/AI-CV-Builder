@@ -6,6 +6,7 @@ import { AdminProtectedRoute, ProtectedRoute } from './routeGuards';
 import { AdminDisabledPage, MaintenancePage, NotFound } from './systemPages';
 import type { PublicAppSettings } from './types';
 import { SeoHead } from '../components/SeoHead';
+import ForgotPassword from '../pages/ForgotPassword';
 
 const Home = lazy(() => import('../pages/Home'));
 const LandingPage = lazy(() => import('../pages/LandingPage'));
@@ -18,7 +19,6 @@ const PrintView = lazy(() => import('../pages/PrintView'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
 const MyCvs = lazy(() => import('../pages/MyCvs'));
 const Profile = lazy(() => import('../pages/Profile'));
-const ForgotPassword = lazy(() => import('../pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('../pages/ResetPassword'));
 const TipsAndResources = lazy(() => import('../pages/TipsAndResources'));
 const PricingPage = lazy(() => import('../pages/PricingPage'));

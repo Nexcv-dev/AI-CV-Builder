@@ -6,7 +6,6 @@ import { Link } from 'react-router-dom';
 const TipsAndResources = () => {
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
-    document.title = 'Comprehensive Resume Guide & Tips | NexCV - Build Better Resumes';
   }, []);
 
   return (
@@ -71,7 +70,7 @@ const TipsAndResources = () => {
               </p>
             </div>
             <div className="relative z-10 rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_40px_rgba(52,211,153,0.15)] aspect-video lg:aspect-square">
-              <img src="/images/ats_friendly.png" alt="ATS AI Scanning visualization" loading="lazy" decoding="async" className="object-cover w-full h-full hover:scale-105 transition-transform duration-700" />
+              <img src="/images/ats_friendly.webp" alt="ATS AI Scanning visualization" loading="lazy" decoding="async" className="object-cover w-full h-full hover:scale-105 transition-transform duration-700" />
             </div>
           </div>
 
@@ -116,7 +115,7 @@ const TipsAndResources = () => {
           </p>
 
           <div className="relative mx-auto mb-10 max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-[0_0_40px_rgba(139,92,246,0.15)]">
-            <img src="/images/resume_tips_hero.png" alt="Glowing professional resume illustration" loading="lazy" decoding="async" className="h-auto max-h-80 w-full object-contain" />
+            <img src="/images/resume_tips_hero.webp" alt="Glowing professional resume illustration" loading="lazy" decoding="async" className="h-auto max-h-80 w-full object-contain" />
           </div>
 
           <div className="space-y-6">

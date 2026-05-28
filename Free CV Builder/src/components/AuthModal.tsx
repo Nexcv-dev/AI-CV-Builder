@@ -592,8 +592,8 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   <button
                     type="button"
                     onClick={() => {
-                      onClose();
                       navigate('/forgot-password');
+                      onClose();
                     }}
                     className="text-xs font-black text-emerald-300 transition hover:text-emerald-200"
                   >
@@ -816,7 +816,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
           <div className="absolute inset-x-0 top-16 mx-auto h-64 w-64 rounded-full bg-cyan-400/18 blur-3xl" />
           <div className="absolute bottom-10 right-4 h-64 w-64 rounded-full bg-violet-500/18 blur-3xl" />
           <div className="absolute left-1/2 top-[45%] flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white shadow-2xl shadow-violet-950/40 backdrop-blur">
-            <img src="/brand/faviconblack.png" alt="" className="h-18 w-18 rounded-3xl" />
+            <img src="/brand/faviconblack.webp" alt="" className="h-18 w-18 rounded-3xl" />
           </div>
           {visualItems.map(({ icon: Icon, className }, index) => (
             <div

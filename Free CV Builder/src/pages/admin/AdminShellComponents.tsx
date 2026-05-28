@@ -26,7 +26,7 @@ export function AdminSidebar({
     <aside className="hidden h-dvh w-72 shrink-0 overflow-hidden border-r border-white/10 bg-slate-950 px-4 py-5 lg:flex lg:flex-col">
       <Link to="/admin" className="flex items-center gap-3 px-2">
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/20">
-          <img src="/brand/faviconblack.png" alt="" className="h-9 w-9 rounded-xl" />
+          <img src="/brand/faviconblack.webp" alt="" className="h-9 w-9 rounded-xl" />
         </span>
         <span className="font-montserrat text-2xl font-black">NexCV Admin</span>
       </Link>

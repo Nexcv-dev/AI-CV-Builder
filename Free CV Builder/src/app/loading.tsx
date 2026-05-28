@@ -59,7 +59,7 @@ export function PageLoadingOverlay() {
         >
           <div className="relative mb-6">
             <div className="h-20 w-20 animate-spin rounded-full border-4 border-violet-900/60 border-t-violet-600"></div>
-            <img src="/brand/faviconblack.png" alt="NexCV" className="absolute inset-0 m-auto h-12 w-12 rounded-2xl" />
+            <img src="/brand/faviconblack.webp" alt="NexCV" className="absolute inset-0 m-auto h-12 w-12 rounded-2xl" />
           </div>
           <h2 className="bg-linear-to-r from-slate-100 to-violet-400 bg-clip-text text-2xl font-bold text-transparent">
             NexCV
