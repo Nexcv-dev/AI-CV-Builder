@@ -8,15 +8,54 @@ const productionCspDirectives = {
     styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
     fontSrc: ["'self'", 'https://fonts.gstatic.com'],
     imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-    connectSrc: ["'self'", 'https://cloud.umami.is'],
+    connectSrc: ["'self'", 'https://cloud.umami.is', 'https://api-gateway.umami.dev'],
     objectSrc: ["'none'"],
     baseUri: ["'self'"],
     formAction: ["'self'", 'https://sandbox.payhere.lk', 'https://www.payhere.lk'],
     frameAncestors: ["'none'"],
 };
 
+const normalizeOrigin = (value: string) => {
+    try {
+        return new URL(value.trim()).origin;
+    } catch {
+        return '';
+    }
+};
+
+const expandOriginVariants = (origin: string) => {
+    if (!origin) return [];
+    const variants = new Set([origin]);
+
+    try {
+        const url = new URL(origin);
+        if (url.hostname.startsWith('www.')) {
+            url.hostname = url.hostname.replace(/^www\./, '');
+            variants.add(url.origin);
+        } else {
+            url.hostname = `www.${url.hostname}`;
+            variants.add(url.origin);
+        }
+    } catch {
+        return Array.from(variants);
+    }
+
+    return Array.from(variants);
+};
+
+const envOrigins = (...values: Array<string | undefined>) => values
+    .flatMap((value) => (value || '').split(','))
+    .map(normalizeOrigin)
+    .flatMap(expandOriginVariants)
+    .filter(Boolean);
+
 const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? [process.env.ALLOWED_ORIGIN || ''].filter(Boolean)
+    ? Array.from(new Set(envOrigins(
+        process.env.ALLOWED_ORIGIN,
+        process.env.ALLOWED_ORIGINS,
+        process.env.FRONTEND_URL,
+        process.env.FRONTEND_ORIGIN,
+    )))
     : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
 
 export const isAllowedOrigin = (origin: string) => {
