@@ -516,6 +516,15 @@
     animation: landing-sheet-mobile 7.5s ease-in-out infinite alternate;
   }
 
+  .landing-hero-art {
+    filter: drop-shadow(0 34px 54px rgba(0, 0, 0, 0.28)) saturate(1.08) contrast(1.04);
+    animation: landing-hero-art 9s ease-in-out infinite alternate;
+  }
+
+  .landing-hero-art-mobile {
+    filter: saturate(1.05);
+  }
+
   .landing-color-wash {
     animation: landing-color-wash 8s ease-in-out infinite alternate;
   }
@@ -679,6 +688,15 @@
   }
 }
 
+@keyframes landing-hero-art {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.01);
+  }
+  to {
+    transform: translate3d(18px, -10px, 0) scale(1.035);
+  }
+}
+
 @keyframes landing-color-wash {
   from {
     transform: translate3d(0, 0, 0) scale(1);
@@ -765,6 +783,7 @@
   .landing-hero-sheet-main,
   .landing-hero-sheet-left,
   .landing-hero-sheet-mobile,
+  .landing-hero-art,
   .landing-color-wash,
   .landing-bar,
   .auth-mode-fade {

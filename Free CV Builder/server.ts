@@ -2,6 +2,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dns from 'node:dns';
+import { readFileSync } from 'fs';
 import * as dotenv from 'dotenv';
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import mongoose from 'mongoose';
@@ -126,6 +127,18 @@ import { registerPublicRoutes } from './routes/public';
 import { initSentry, setupSentryExpressErrorHandler } from './server-utils/sentry';
 import { getOrSetCachedValue, parseCacheTtlMs } from './server-utils/ttlCache';
 import { withCircuitBreaker } from './server-utils/circuitBreaker';
+import {
+    buildAssetUrl,
+    buildCanonicalUrl,
+    buildJsonLd,
+    DEFAULT_SITE_URL,
+    getSeoRoute,
+    isPublicSeoPath,
+    normalizeSiteUrl,
+    PUBLIC_SEO_ROUTES,
+    shouldNoIndexPath,
+    SITE_NAME,
+} from './src/seo';
 
 export {
     integrityCheck,
@@ -617,6 +630,111 @@ setupSentryExpressErrorHandler(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, 'dist');
+const siteUrl = normalizeSiteUrl(process.env.FRONTEND_URL || process.env.ALLOWED_ORIGIN || DEFAULT_SITE_URL);
+
+function buildSitemapXml() {
+    const now = new Date().toISOString();
+    const urls = PUBLIC_SEO_ROUTES.map((route) => {
+        const loc = escapeXml(buildCanonicalUrl(route.path, siteUrl));
+        const priority = route.path === '/' ? '1.0' : route.path === '/templates' || route.path === '/tips' ? '0.8' : '0.6';
+        return [
+            '  <url>',
+            `    <loc>${loc}</loc>`,
+            `    <lastmod>${now}</lastmod>`,
+            '    <changefreq>weekly</changefreq>',
+            `    <priority>${priority}</priority>`,
+            '  </url>',
+        ].join('\n');
+    }).join('\n');
+
+    return [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        urls,
+        '</urlset>',
+        '',
+    ].join('\n');
+}
+
+function buildRobotsTxt() {
+    return [
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /admin',
+        'Disallow: /builder',
+        'Disallow: /checkout',
+        'Disallow: /dashboard',
+        'Disallow: /forgot-password',
+        'Disallow: /my-cvs',
+        'Disallow: /print',
+        'Disallow: /profile',
+        'Disallow: /reset-password',
+        'Disallow: /settings',
+        'Disallow: /verify-email',
+        `Sitemap: ${siteUrl}/sitemap.xml`,
+        '',
+    ].join('\n');
+}
+
+function renderSeoIndexHtml(req: Request) {
+    const indexPath = path.join(distPath, 'index.html');
+    const html = readFileSync(indexPath, 'utf-8');
+    const route = getSeoRoute(req.path);
+    const noIndex = shouldNoIndexPath(req.path) || !isPublicSeoPath(req.path);
+    const canonicalPath = isPublicSeoPath(req.path) ? route.path : '/';
+    const canonicalUrl = buildCanonicalUrl(canonicalPath, siteUrl);
+    const imageUrl = buildAssetUrl(route.image, siteUrl);
+    const jsonLd = JSON.stringify(buildJsonLd(route, siteUrl));
+    const jsonLdHash = createHash('sha256').update(jsonLd).digest('base64');
+    const meta = [
+        `<meta name="description" content="${escapeHtml(route.description)}">`,
+        `<meta name="keywords" content="${escapeHtml(route.keywords.join(', '))}">`,
+        `<meta name="robots" content="${noIndex ? 'noindex, nofollow' : 'index, follow'}">`,
+        `<link rel="canonical" href="${escapeHtml(canonicalUrl)}">`,
+        `<meta property="og:site_name" content="${escapeHtml(SITE_NAME)}">`,
+        '<meta property="og:type" content="website">',
+        `<meta property="og:title" content="${escapeHtml(route.title)}">`,
+        `<meta property="og:description" content="${escapeHtml(route.description)}">`,
+        `<meta property="og:url" content="${escapeHtml(canonicalUrl)}">`,
+        `<meta property="og:image" content="${escapeHtml(imageUrl)}">`,
+        '<meta name="twitter:card" content="summary_large_image">',
+        `<meta name="twitter:title" content="${escapeHtml(route.title)}">`,
+        `<meta name="twitter:description" content="${escapeHtml(route.description)}">`,
+        `<meta name="twitter:image" content="${escapeHtml(imageUrl)}">`,
+        `<script type="application/ld+json">${escapeScriptJson(jsonLd)}</script>`,
+    ].join('\n  ');
+
+    return html
+        .replace(/<title>.*?<\/title>/i, `<title>${escapeHtml(route.title)}</title>`)
+        .replace(/(script-src[^;"]*)/, `$1 'sha256-${jsonLdHash}'`)
+        .replace('</head>', `  ${meta}\n</head>`);
+}
+
+function escapeHtml(value: string) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function escapeXml(value: string) {
+    return escapeHtml(value).replace(/'/g, '&apos;');
+}
+
+function escapeScriptJson(value: string) {
+    return value.replace(/</g, '\\u003c');
+}
+
+app.get('/robots.txt', (_req: Request, res: Response) => {
+    res.type('text/plain').setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(buildRobotsTxt());
+});
+
+app.get('/sitemap.xml', (_req: Request, res: Response) => {
+    res.type('application/xml').setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(buildSitemapXml());
+});
 
 app.use(express.static(distPath, {
     setHeaders: (res, filePath) => {
@@ -637,8 +755,13 @@ app.get('/assets/*', (_req: Request, res: Response) => {
 });
 
 // Catch-all: serve index.html for any non-API route (React Router support)
-app.get('*', (_req: Request, res: Response) => {
-    res.sendFile(path.join(distPath, 'index.html'));
+app.get('*', (req: Request, res: Response) => {
+    try {
+        res.type('html').send(renderSeoIndexHtml(req));
+    } catch (error) {
+        logError('server.seo_index_render_failed', error, { path: req.path });
+        res.sendFile(path.join(distPath, 'index.html'));
+    }
 });
 
 if (process.env.NODE_ENV !== 'test') {

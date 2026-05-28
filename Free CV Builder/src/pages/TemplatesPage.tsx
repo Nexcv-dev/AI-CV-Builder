@@ -4,6 +4,40 @@ import { ArrowRight, Crown, LayoutTemplate, Sparkles } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
 
+const templateGuides = [
+  {
+    title: 'ATS-friendly CV templates',
+    body: 'Use a clean structure when you apply through online job portals. NexCV templates keep headings, work history, education, and skills easy to scan while preserving a polished visual layout.',
+  },
+  {
+    title: 'Professional templates for experienced roles',
+    body: 'Choose structured layouts when your CV needs to show leadership, measurable achievements, technical skills, or multiple roles without feeling crowded.',
+  },
+  {
+    title: 'Creative templates for standout portfolios',
+    body: 'Creative CV templates work best for design, marketing, media, and startup roles where personality matters, while still keeping the content readable for recruiters.',
+  },
+];
+
+const templateFaqs = [
+  {
+    question: 'Which CV template should I choose?',
+    answer: 'Choose a clean professional template for corporate, technical, finance, and operations roles. Use a creative template when the job values portfolio work, brand sense, or visual presentation.',
+  },
+  {
+    question: 'Are NexCV templates ATS-friendly?',
+    answer: 'NexCV templates are designed with readable sections, clear headings, and recruiter-friendly structure so your CV content stays easy to understand.',
+  },
+  {
+    question: 'Can I switch templates after entering my CV details?',
+    answer: 'Yes. You can add your details once, then switch templates and continue refining the design without rewriting your CV.',
+  },
+  {
+    question: 'Can I download my CV as a PDF?',
+    answer: 'Yes. After building your CV, NexCV can export it as a PDF for job applications, email attachments, and online submissions.',
+  },
+];
+
 export default function TemplatesPage() {
   const { templates } = useTemplateConfig();
   return (
@@ -42,6 +76,8 @@ export default function TemplatesPage() {
                     <img
                       src={template.thumbnail}
                       alt={`${template.label} CV template preview`}
+                      loading={index < 4 ? 'eager' : 'lazy'}
+                      decoding="async"
                       className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.035]"
                     />
                   </div>
@@ -58,6 +94,53 @@ export default function TemplatesPage() {
                     </span>
                   </div>
                 </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-y border-white/10 bg-slate-900 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+              <div>
+                <p className="text-sm font-black uppercase tracking-widest text-emerald-300">Template guide</p>
+                <h2 className="mt-3 max-w-xl font-montserrat text-3xl font-black leading-tight text-white sm:text-5xl">
+                  Pick a CV template that matches the job
+                </h2>
+                <p className="mt-5 max-w-2xl text-sm font-semibold leading-7 text-slate-300 sm:text-base">
+                  A good CV template should make your experience easy to read, highlight the right details, and help recruiters find the evidence they need quickly. Start with the role you want, then choose the layout that supports it.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+                {templateGuides.map((guide) => (
+                  <article key={guide.title} className="rounded-2xl border border-white/10 bg-white/6 p-5">
+                    <h3 className="font-montserrat text-base font-black text-white">{guide.title}</h3>
+                    <p className="mt-3 text-sm font-semibold leading-6 text-slate-400">{guide.body}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-slate-950 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+          <div className="mx-auto max-w-4xl">
+            <div className="text-center">
+              <p className="text-sm font-black uppercase tracking-widest text-violet-300">Template FAQ</p>
+              <h2 className="mt-3 font-montserrat text-3xl font-black text-white sm:text-5xl">
+                CV template questions
+              </h2>
+            </div>
+
+            <div className="mt-8 grid gap-3">
+              {templateFaqs.map((faq) => (
+                <details key={faq.question} className="group rounded-2xl border border-white/10 bg-white/6 p-5">
+                  <summary className="cursor-pointer list-none font-montserrat text-base font-black text-white">
+                    {faq.question}
+                  </summary>
+                  <p className="mt-3 text-sm font-semibold leading-6 text-slate-400">{faq.answer}</p>
+                </details>
               ))}
             </div>
           </div>
