@@ -41,7 +41,7 @@ export function PageLoadingOverlay() {
 
     previousPathname.current = location.pathname;
     setIsLoading(true);
-    const timer = window.setTimeout(() => setIsLoading(false), 650);
+    const timer = window.setTimeout(() => setIsLoading(false), 1000);
 
     return () => window.clearTimeout(timer);
   }, [location.pathname, location.hash, skipsPageLoadingOverlay]);

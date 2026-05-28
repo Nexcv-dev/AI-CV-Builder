@@ -3,6 +3,51 @@ import { bindDeps } from './_shared';
 
 type RouteDeps = Record<string, any>;
 
+const allowedAuthEmailDomains = new Set([
+    'gmail.com',
+    'googlemail.com',
+    'yahoo.com',
+    'hotmail.com',
+    'outlook.com',
+    'live.com',
+    'msn.com',
+    'icloud.com',
+    'me.com',
+    'proton.me',
+    'protonmail.com',
+    'aol.com',
+]);
+
+const blockedAuthEmailDomains = new Set([
+    'mailinator.com',
+    'guerrillamail.com',
+    'guerrillamail.net',
+    'guerrillamail.org',
+    'yopmail.com',
+    'tempmail.com',
+    'temp-mail.org',
+    '10minutemail.com',
+    'throwawaymail.com',
+    'trashmail.com',
+    'sharklasers.com',
+    'getairmail.com',
+]);
+
+const getAuthEmailDomainError = (email: string) => {
+    const domain = email.split('@')[1]?.toLowerCase() || '';
+    if (!domain) return 'Enter a valid email address.';
+    if (blockedAuthEmailDomains.has(domain)) return 'Enter a valid email address.';
+    if (!allowedAuthEmailDomains.has(domain)) {
+        return 'Enter a valid email address.';
+    }
+    return '';
+};
+
+const validateAuthEmail = (email: string, isValidEmail: (value: string) => boolean) => {
+    if (!isValidEmail(email)) return 'Enter a valid email address.';
+    return getAuthEmailDomainError(email);
+};
+
 export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     const {
         CVDocument,
@@ -16,6 +61,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         hashPassword,
         hashToken,
         isEmailVerified,
+        isEmailServiceConfigured,
         isMongoDuplicateKeyError,
         isMongoValidationError,
         isValidEmail,
@@ -54,8 +100,9 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const password = typeof req.body.password === 'string' ? req.body.password : '';
             const acceptedTerms = req.body.acceptedTerms === true || req.body.acceptedTerms === 'true';
     
-            if (!isValidEmail(email)) {
-                return res.status(400).json({ error: 'Enter a valid email address.' });
+            const emailError = validateAuthEmail(email, isValidEmail);
+            if (emailError) {
+                return res.status(400).json({ error: emailError });
             }
     
             if (!displayName) {
@@ -124,8 +171,9 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const email = normalizeEmail(req.body.email);
             const password = typeof req.body.password === 'string' ? req.body.password : '';
     
-            if (!isValidEmail(email) || !password) {
-                return res.status(400).json({ error: 'Enter your email and password.' });
+            const emailError = validateAuthEmail(email, isValidEmail);
+            if (emailError || !password) {
+                return res.status(400).json({ error: emailError || 'Enter your email and password.' });
             }
     
             const user = await User.findOne({ email });
@@ -141,6 +189,162 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             });
         } catch (error) {
             return sendError(res, 500, 'Could not sign you in.', error);
+        }
+    });
+
+
+    router.post('/api/auth/email/check', authLimiter, async (req: Request, res: Response) => {
+        try {
+            const email = normalizeEmail(req.body.email);
+
+            const emailError = validateAuthEmail(email, isValidEmail);
+            if (emailError) {
+                return res.status(400).json({ error: emailError });
+            }
+
+            const user = await User.findOne({ email });
+            if (!user) {
+                return res.status(404).json({ error: 'No account found for this email. Please sign up first.' });
+            }
+
+            return res.json({ exists: true, method: user.passwordHash ? 'password' : 'otp' });
+        } catch (error) {
+            return sendError(res, 500, 'Could not check this email.', error);
+        }
+    });
+
+
+    router.post('/api/auth/email/start', emailVerificationLimiter, async (req: Request, res: Response) => {
+        try {
+            if (mongoose.connection.readyState !== 1) {
+                return res.status(503).json({ error: 'Database is not connected. Check MongoDB settings and try again.' });
+            }
+
+            if (!isEmailServiceConfigured()) {
+                return res.status(503).json({ error: 'We could not send your OTP right now. Please try again in a few minutes.' });
+            }
+
+            const email = normalizeEmail(req.body.email);
+            const displayName = sanitizeDisplayName(req.body.displayName);
+            const password = typeof req.body.password === 'string' ? req.body.password : '';
+            const acceptedTerms = req.body.acceptedTerms === true || req.body.acceptedTerms === 'true';
+            const intent = req.body.intent === 'signup' ? 'signup' : 'login';
+
+            const emailError = validateAuthEmail(email, isValidEmail);
+            if (emailError) {
+                return res.status(400).json({ error: emailError });
+            }
+
+            let user = await User.findOne({ email });
+            const isNewUser = !user;
+
+            if (intent === 'signup' && user && user.emailVerified !== false) {
+                return res.status(409).json({ error: 'An account already exists for this email. Please login instead.' });
+            }
+
+            if (!displayName && isNewUser) {
+                return res.json({ needsName: true });
+            }
+
+            if (isNewUser && !acceptedTerms) {
+                return res.status(400).json({ error: 'Please accept the Terms and Privacy Policy to create your account.' });
+            }
+
+            if ((isNewUser || (intent === 'signup' && !user?.passwordHash)) && !validatePasswordStrength(password)) {
+                return res.status(400).json({ error: passwordPolicyMessage });
+            }
+
+            const verification = generateEmailVerificationOtp();
+
+            if (!user) {
+                user = await User.create({
+                    email,
+                    displayName,
+                    role: roleForEmail(email),
+                    passwordHash: hashPassword(password),
+                    termsAcceptedAt: new Date(),
+                    emailVerified: false,
+                    emailVerificationToken: verification.codeHash,
+                    emailVerificationExpires: verification.expires,
+                    authProvider: 'email',
+                });
+                void sendNewAccountNotification(user);
+            } else {
+                if (!user.displayName) {
+                    user.displayName = displayName;
+                }
+                user.emailVerificationToken = verification.codeHash;
+                user.emailVerificationExpires = verification.expires;
+                user.authProvider = user.authProvider || 'email';
+                if (intent === 'signup' && validatePasswordStrength(password)) {
+                    user.passwordHash = hashPassword(password);
+                }
+                await user.save();
+            }
+
+            const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.code);
+            if (!verificationEmailSent) {
+                if (isNewUser) {
+                    await User.findByIdAndDelete(user._id).catch(() => undefined);
+                }
+                return res.status(502).json({ error: 'We could not send your OTP right now. Please try again in a few minutes.' });
+            }
+
+            return res.json({
+                needsName: false,
+                message: 'OTP sent. Please check your email.',
+            });
+        } catch (error) {
+            if (isMongoDuplicateKeyError(error)) {
+                return res.status(409).json({ error: 'Could not start email login. Please try again.' });
+            }
+
+            if (isMongoValidationError(error)) {
+                return res.status(400).json({ error: 'Please check your details and try again.' });
+            }
+
+            return sendError(res, 500, 'Could not start email login.', error);
+        }
+    });
+
+
+    router.post('/api/auth/email/verify', emailVerificationAttemptLimiter, async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const email = normalizeEmail(req.body.email);
+            const code = typeof req.body.code === 'string' ? req.body.code.replace(/\D/g, '') : '';
+
+            const emailError = validateAuthEmail(email, isValidEmail);
+            if (emailError) {
+                return res.status(400).json({ error: emailError });
+            }
+
+            if (!/^\d{6}$/.test(code)) {
+                return res.status(400).json({ error: 'Enter the 6-digit verification code.' });
+            }
+
+            const user = await User.findOne({
+                email,
+                emailVerificationToken: hashToken(code),
+                emailVerificationExpires: { $gt: new Date() },
+            });
+
+            if (!user) {
+                return res.status(400).json({ error: 'OTP is invalid or has expired.' });
+            }
+
+            user.emailVerified = true;
+            user.emailVerificationToken = undefined;
+            user.emailVerificationExpires = undefined;
+            user.authProvider = user.authProvider || 'email';
+            await syncUserRoleFromAllowlist(user);
+            await user.save();
+
+            req.login(user, (err) => {
+                if (err) return next(err);
+                return res.json({ user: publicUser(user), message: 'Logged in successfully.' });
+            });
+        } catch (error) {
+            return sendError(res, 500, 'Could not verify OTP.', error);
         }
     });
 
@@ -243,8 +447,9 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     router.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request, res: Response) => {
         try {
             const email = normalizeEmail(req.body.email);
-            if (!isValidEmail(email)) {
-                return res.status(400).json({ error: 'Enter a valid email address.' });
+            const emailError = validateAuthEmail(email, isValidEmail);
+            if (emailError) {
+                return res.status(400).json({ error: emailError });
             }
     
             const user = await User.findOne({ email });
@@ -252,22 +457,14 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 return res.status(404).json({ error: 'No account found for this email address.' });
             }
     
-            const hasGmailApi = Boolean(
-                (process.env.GMAIL_CLIENT_ID?.trim() || process.env.GOOGLE_CLIENT_ID?.trim()) &&
-                (process.env.GMAIL_CLIENT_SECRET?.trim() || process.env.GOOGLE_CLIENT_SECRET?.trim()) &&
-                process.env.GMAIL_REFRESH_TOKEN?.trim()
-            );
             const resendApiKey = process.env.RESEND_API_KEY?.trim();
             const emailUser = process.env.EMAIL_USER?.trim();
             const emailPass = process.env.EMAIL_PASS?.trim();
-            const senderEmail = process.env.GMAIL_SENDER_EMAIL?.trim() || emailUser || 'onboarding@resend.dev';
-            const emailFromFallback = hasGmailApi
-                ? `NexCV <${senderEmail}>`
-                : resendApiKey
+            const emailFromFallback = resendApiKey
                     ? 'NexCV <onboarding@resend.dev>'
                     : emailUser || '';
             const emailFrom = normalizeEmailFrom(process.env.EMAIL_FROM, emailFromFallback);
-            if (!emailFrom || (!hasGmailApi && !resendApiKey && (!emailUser || !emailPass))) {
+            if (!emailFrom || (!resendApiKey && (!emailUser || !emailPass))) {
                 return res.status(500).json({ error: 'Email service is not configured.' });
             }
     

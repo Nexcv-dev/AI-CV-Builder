@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FileText, LayoutDashboard, User } from 'lucide-react';
 import { AccountMenu } from './AccountMenu';
@@ -11,6 +11,35 @@ const mobileNavItems = [
 
 export function AppShellHeader() {
   const location = useLocation();
+  const [mobileNavVisible, setMobileNavVisible] = useState(false);
+  const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    lastScrollYRef.current = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollYRef.current;
+
+      if (currentScrollY < 80) {
+        setMobileNavVisible(false);
+      } else if (delta > 8) {
+        setMobileNavVisible(true);
+      } else if (delta < -8) {
+        setMobileNavVisible(false);
+      }
+
+      lastScrollYRef.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    setMobileNavVisible(false);
+    lastScrollYRef.current = window.scrollY;
+  }, [location.pathname]);
 
   return (
     <>
@@ -27,7 +56,12 @@ export function AppShellHeader() {
         </div>
       </header>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-slate-950/94 px-3 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 text-white shadow-2xl shadow-black/40 backdrop-blur-xl lg:hidden" aria-label="Mobile dashboard navigation">
+      <nav
+        className={`fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-slate-950/94 px-3 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 text-white shadow-2xl shadow-black/40 backdrop-blur-xl transition duration-300 ease-out lg:hidden ${
+          mobileNavVisible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-full opacity-0'
+        }`}
+        aria-label="Mobile dashboard navigation"
+      >
         <div className="mx-auto grid max-w-md grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-white/[0.035] p-1">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
