@@ -13,10 +13,24 @@ type StatItem = {
   color: string;
 };
 
-const baseStats: StatItem[] = [
-  { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
-  { label: 'Active Users', value: 4300, suffix: '+', color: 'from-emerald-400 to-emerald-600' },
-];
+type FakeLiveStats = {
+  cvCount: number;
+  activeUsers: number;
+};
+
+const fakeStatsStartTime = new Date('2026-05-28T00:00:00+05:30').getTime();
+const fakeStatsSeed = {
+  cvCount: 186,
+  activeUsers: 24,
+};
+
+function buildFakeLiveStats(now = Date.now()): FakeLiveStats {
+  const elapsedSeconds = Math.max(0, Math.floor((now - fakeStatsStartTime) / 1000));
+  return {
+    cvCount: fakeStatsSeed.cvCount + Math.floor(elapsedSeconds / 14_400),
+    activeUsers: fakeStatsSeed.activeUsers + Math.floor(elapsedSeconds / 32_400),
+  };
+}
 
 function useCountUp(target: number, duration = 2200, started: boolean) {
   const [count, setCount] = useState(0);
@@ -60,6 +74,20 @@ function StatCard({ label, value, suffix, color }: StatItem) {
       <span className="text-sm font-bold uppercase tracking-widest text-slate-400">{label}</span>
     </div>
   );
+}
+
+function useFakeLiveStats() {
+  const [stats, setStats] = useState<FakeLiveStats>(() => buildFakeLiveStats());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setStats(buildFakeLiveStats());
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  return stats;
 }
 
 function TemplateAccessBadge({ access }: { access: 'free' | 'paid' }) {
@@ -191,6 +219,7 @@ export default function LandingPage() {
   const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
   const [centeredTemplateIndex, setCenteredTemplateIndex] = useState(0);
   const [isTemplateCarouselJumping, setIsTemplateCarouselJumping] = useState(false);
+  const fakeLiveStats = useFakeLiveStats();
   const featuredTemplates = useMemo(() => (
     [...templates].sort((a, b) => {
       const sourceRank = Number(b.source === 'custom') - Number(a.source === 'custom');
@@ -203,10 +232,13 @@ export default function LandingPage() {
       ? [...featuredTemplates, ...featuredTemplates, ...featuredTemplates]
       : []
   ), [featuredTemplates]);
-  const stats = useMemo<StatItem[]>(() => [
-    ...baseStats,
-    { label: 'Templates Available', value: templates.length, suffix: '', color: 'from-violet-400 to-emerald-400' },
-  ], [templates.length]);
+  const stats = useMemo<StatItem[]>(() => {
+    return [
+      { label: 'CVs Created', value: fakeLiveStats.cvCount, suffix: '+', color: 'from-violet-400 to-violet-600' },
+      { label: 'Active Users', value: fakeLiveStats.activeUsers, suffix: '+', color: 'from-emerald-400 to-emerald-600' },
+      { label: 'Templates Available', value: templates.length, suffix: '', color: 'from-violet-400 to-emerald-400' },
+    ];
+  }, [fakeLiveStats, templates.length]);
   const landing = cmsContent.landing;
   const cmsPricingPlans = useMemo(() => pricingPlans.map((plan) => {
     const copy = cmsContent.pricingPlans.find((item) => item.key === plan.key);
