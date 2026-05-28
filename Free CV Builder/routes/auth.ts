@@ -36,9 +36,9 @@ const blockedAuthEmailDomains = new Set([
 const getAuthEmailDomainError = (email: string) => {
     const domain = email.split('@')[1]?.toLowerCase() || '';
     if (!domain) return 'Enter a valid email address.';
-    if (blockedAuthEmailDomains.has(domain)) return 'Temporary or disposable email addresses are not allowed.';
+    if (blockedAuthEmailDomains.has(domain)) return 'Enter a valid email address.';
     if (!allowedAuthEmailDomains.has(domain)) {
-        return 'Use a common email provider such as Gmail, Yahoo, Hotmail, Outlook, iCloud, or Proton Mail.';
+        return 'Enter a valid email address.';
     }
     return '';
 };
@@ -221,7 +221,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             }
 
             if (!isEmailServiceConfigured()) {
-                return res.status(503).json({ error: 'Email service is not configured. Check email settings and try again.' });
+                return res.status(503).json({ error: 'We could not send your OTP right now. Please try again in a few minutes.' });
             }
 
             const email = normalizeEmail(req.body.email);
@@ -287,7 +287,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 if (isNewUser) {
                     await User.findByIdAndDelete(user._id).catch(() => undefined);
                 }
-                return res.status(502).json({ error: 'Email provider could not send OTP. Check email settings and try again.' });
+                return res.status(502).json({ error: 'We could not send your OTP right now. Please try again in a few minutes.' });
             }
 
             return res.json({
@@ -457,22 +457,14 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 return res.status(404).json({ error: 'No account found for this email address.' });
             }
     
-            const hasGmailApi = Boolean(
-                (process.env.GMAIL_CLIENT_ID?.trim() || process.env.GOOGLE_CLIENT_ID?.trim()) &&
-                (process.env.GMAIL_CLIENT_SECRET?.trim() || process.env.GOOGLE_CLIENT_SECRET?.trim()) &&
-                process.env.GMAIL_REFRESH_TOKEN?.trim()
-            );
             const resendApiKey = process.env.RESEND_API_KEY?.trim();
             const emailUser = process.env.EMAIL_USER?.trim();
             const emailPass = process.env.EMAIL_PASS?.trim();
-            const senderEmail = process.env.GMAIL_SENDER_EMAIL?.trim() || emailUser || 'onboarding@resend.dev';
-            const emailFromFallback = hasGmailApi
-                ? `NexCV <${senderEmail}>`
-                : resendApiKey
+            const emailFromFallback = resendApiKey
                     ? 'NexCV <onboarding@resend.dev>'
                     : emailUser || '';
             const emailFrom = normalizeEmailFrom(process.env.EMAIL_FROM, emailFromFallback);
-            if (!emailFrom || (!hasGmailApi && !resendApiKey && (!emailUser || !emailPass))) {
+            if (!emailFrom || (!resendApiKey && (!emailUser || !emailPass))) {
                 return res.status(500).json({ error: 'Email service is not configured.' });
             }
     

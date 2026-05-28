@@ -128,9 +128,9 @@ const getSuggestedEmail = (value: string) => {
 const getAuthEmailError = (value: string) => {
   const parts = getEmailParts(value);
   if (!parts) return 'Enter a valid email address.';
-  if (blockedAuthEmailDomains.has(parts.domain)) return 'Temporary or disposable email addresses are not allowed.';
+  if (blockedAuthEmailDomains.has(parts.domain)) return 'Enter a valid email address.';
   if (!allowedAuthEmailDomains.includes(parts.domain)) {
-    return 'Use a common email provider such as Gmail, Yahoo, Hotmail, Outlook, iCloud, or Proton Mail.';
+    return 'Enter a valid email address.';
   }
   return '';
 };
@@ -475,14 +475,9 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto px-4 py-5" role="dialog" aria-modal="true">
-      <button
-        type="button"
-        className="absolute inset-0 bg-slate-950/78 backdrop-blur-md"
-        aria-label="Close auth dialog"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-slate-950/78 backdrop-blur-md" aria-hidden="true" />
 
-      <div className="relative grid max-h-[calc(100dvh-2.5rem)] w-full max-w-4xl overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/50 lg:grid-cols-[0.95fr_1fr]">
+      <div className="relative grid max-h-[calc(100dvh-2.5rem)] w-full max-w-5xl overflow-y-auto rounded-[24px] border border-white/10 bg-slate-950 text-white shadow-2xl shadow-black/50 lg:grid-cols-[1fr_1.05fr]">
         <button
           type="button"
           className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-slate-900/95 text-white shadow-lg shadow-black/30 transition hover:bg-slate-800 sm:right-4 sm:top-4 sm:h-12 sm:w-12"
@@ -492,7 +487,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
           <X className="h-4.5 w-4.5 sm:h-6 sm:w-6" />
         </button>
 
-        <section className="min-h-[500px] px-6 py-7 sm:px-9 lg:px-10">
+        <section className="min-h-[540px] px-6 py-7 sm:px-9 lg:px-12">
           <div className="mb-7 flex items-center gap-2">
             {step !== 'choice' && (
               <button
@@ -759,7 +754,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                 disabled={isSubmitting}
                 className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? 'Sending OTP...' : 'Send OTP'}
+                {isSubmitting ? 'Sending OTP...' : 'Confirm password'}
                 {!isSubmitting && <ArrowRight size={17} />}
               </button>
             </form>
@@ -800,8 +795,8 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                 disabled={isSubmitting || verificationCode.length !== 6}
                 className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? 'Verifying...' : isLogin ? 'Login' : 'Create account'}
-                {!isSubmitting && !isLogin && <Check size={17} />}
+                {isSubmitting ? 'Verifying...' : 'Confirm OTP'}
+                {!isSubmitting && <Check size={17} />}
               </button>
               <button
                 type="button"
@@ -816,7 +811,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
           )}
         </section>
 
-        <section className="relative hidden min-h-[500px] overflow-hidden bg-slate-900 lg:block">
+        <section className="relative hidden min-h-[540px] overflow-hidden bg-slate-900 lg:block">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(20,184,166,0.34),transparent_30%),radial-gradient(circle_at_58%_36%,rgba(168,85,247,0.38),transparent_32%),linear-gradient(145deg,rgba(15,23,42,1),rgba(17,24,39,1)_42%,rgba(88,28,135,0.55))]" />
           <div className="absolute inset-x-0 top-16 mx-auto h-64 w-64 rounded-full bg-cyan-400/18 blur-3xl" />
           <div className="absolute bottom-10 right-4 h-64 w-64 rounded-full bg-violet-500/18 blur-3xl" />

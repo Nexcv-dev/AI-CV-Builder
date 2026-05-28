@@ -49,7 +49,7 @@ describe('Server Utils', () => {
   describe('email verification rate limits', () => {
     it('should keep resend and verify OTP limits intentionally strict', () => {
       expect(EMAIL_VERIFICATION_RESEND_LIMIT).toBe(3);
-      expect(EMAIL_VERIFICATION_RESEND_WINDOW_MS).toBe(60 * 60 * 1000);
+      expect(EMAIL_VERIFICATION_RESEND_WINDOW_MS).toBe(15 * 60 * 1000);
       expect(EMAIL_VERIFICATION_ATTEMPT_LIMIT).toBe(5);
       expect(EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS).toBe(10 * 60 * 1000);
     });

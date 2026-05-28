@@ -3,7 +3,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Options } from 'express-rate-limit';
 import { MongoRateLimitStore } from '../server-utils/mongoRateLimitStore';
 
-export const EMAIL_VERIFICATION_RESEND_LIMIT = 6;
+export const EMAIL_VERIFICATION_RESEND_LIMIT = 3;
 export const EMAIL_VERIFICATION_RESEND_WINDOW_MS = 15 * 60 * 1000;
 export const EMAIL_VERIFICATION_ATTEMPT_LIMIT = 5;
 export const EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;

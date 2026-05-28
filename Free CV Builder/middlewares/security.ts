@@ -4,11 +4,11 @@ import cors from 'cors';
 
 const productionCspDirectives = {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'"],
+    scriptSrc: ["'self'", 'https://cloud.umami.is'],
     styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
     fontSrc: ["'self'", 'https://fonts.gstatic.com'],
     imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-    connectSrc: ["'self'"],
+    connectSrc: ["'self'", 'https://cloud.umami.is'],
     objectSrc: ["'none'"],
     baseUri: ["'self'"],
     formAction: ["'self'", 'https://sandbox.payhere.lk', 'https://www.payhere.lk'],

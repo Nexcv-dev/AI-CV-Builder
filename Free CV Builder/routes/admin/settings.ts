@@ -277,14 +277,9 @@ function maskedValue(value: unknown) {
 }
 
 function emailSettingsSummary(settings: any, deps: { isEmailServiceConfigured: () => boolean; getAppEmailFrom: () => string }) {
-    const hasGmailApi = Boolean(
-        (process.env.GMAIL_CLIENT_ID?.trim() || process.env.GOOGLE_CLIENT_ID?.trim()) &&
-        (process.env.GMAIL_CLIENT_SECRET?.trim() || process.env.GOOGLE_CLIENT_SECRET?.trim()) &&
-        process.env.GMAIL_REFRESH_TOKEN?.trim()
-    );
     const hasResend = Boolean(process.env.RESEND_API_KEY?.trim());
     const hasSmtp = Boolean(process.env.EMAIL_USER?.trim() && process.env.EMAIL_PASS?.trim());
-    const provider = hasGmailApi ? 'Gmail API' : hasResend ? 'Resend' : hasSmtp ? 'SMTP' : 'Not configured';
+    const provider = hasResend ? 'Resend' : hasSmtp ? 'SMTP' : 'Not configured';
 
     return {
         configured: deps.isEmailServiceConfigured(),
@@ -295,7 +290,6 @@ function emailSettingsSummary(settings: any, deps: { isEmailServiceConfigured: (
         smtpHost: process.env.SMTP_HOST?.trim() || (hasSmtp ? 'smtp.gmail.com' : ''),
         smtpPort: process.env.SMTP_PORT?.trim() || (hasSmtp ? '587' : ''),
         checks: [
-            { key: 'gmail_api', label: 'Gmail API', configured: hasGmailApi },
             { key: 'resend', label: 'Resend API', configured: hasResend },
             { key: 'smtp_credentials', label: 'SMTP Credentials', configured: hasSmtp },
             { key: 'email_from', label: 'Sender From', configured: Boolean(deps.getAppEmailFrom()) },
@@ -305,7 +299,6 @@ function emailSettingsSummary(settings: any, deps: { isEmailServiceConfigured: (
             emailUser: maskedValue(process.env.EMAIL_USER),
             emailPass: maskedValue(process.env.EMAIL_PASS),
             resendApiKey: maskedValue(process.env.RESEND_API_KEY),
-            gmailRefreshToken: maskedValue(process.env.GMAIL_REFRESH_TOKEN),
         },
     };
 }

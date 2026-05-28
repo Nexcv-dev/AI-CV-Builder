@@ -242,9 +242,10 @@ export default function Dashboard() {
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase text-emerald-200">Free plan</p>
-                  <h2 className="mt-1 font-montserrat text-lg font-black leading-tight text-white min-[380px]:text-xl sm:text-2xl">Unlock more CVs, premium templates, and AI help</h2>
-                  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-300 max-[639px]:text-[13px] max-[639px]:leading-5">
-                    Free includes the basics. Upgrade when you need more saves, more PDF downloads, premium designs, and faster CV polishing.
+                  <h2 className="mt-1 font-montserrat text-lg font-extrabold leading-tight text-white sm:text-2xl">Need more CVs?</h2>
+                  <p className="mt-2 max-w-2xl text-sm font-medium leading-5 text-slate-300 sm:font-semibold sm:leading-6">
+                    <span className="sm:hidden">Upgrade for more saves, templates, and PDF downloads.</span>
+                    <span className="hidden sm:inline">Free includes the basics. Upgrade when you need more saves, more PDF downloads, premium designs, and faster CV polishing.</span>
                   </p>
                 </div>
               </div>

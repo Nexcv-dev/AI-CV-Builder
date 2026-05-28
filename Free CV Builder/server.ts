@@ -632,6 +632,10 @@ app.use(express.static(distPath, {
 
 app.use('/admin', requireAdminPageAllowedIp);
 
+app.get('/assets/*', (_req: Request, res: Response) => {
+    res.status(404).type('text/plain').send('Asset not found');
+});
+
 // Catch-all: serve index.html for any non-API route (React Router support)
 app.get('*', (_req: Request, res: Response) => {
     res.sendFile(path.join(distPath, 'index.html'));
