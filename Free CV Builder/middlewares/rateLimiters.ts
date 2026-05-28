@@ -29,20 +29,12 @@ const createRateLimitStore = (prefix: string) => useSharedRateLimitStore()
     ? new MongoRateLimitStore(prefix)
     : undefined;
 
-const lazyRateLimit = (prefix: string, options: Partial<Options>): RequestHandler => {
-    let limiter: RequestHandler | null = null;
-    return (req, res, next) => {
-        if (!limiter) {
-            limiter = rateLimit({
-                ...options,
-                store: createRateLimitStore(prefix),
-            });
-        }
-        return limiter(req, res, next);
-    };
-};
+const createRateLimiter = (prefix: string, options: Partial<Options>): RequestHandler => rateLimit({
+    ...options,
+    store: createRateLimitStore(prefix),
+});
 
-export const apiLimiter = lazyRateLimit('api', {
+export const apiLimiter = createRateLimiter('api', {
     windowMs: 15 * 60 * 1000,
     max: 150,
     standardHeaders: true,
@@ -50,7 +42,7 @@ export const apiLimiter = lazyRateLimit('api', {
     message: { error: 'Too many requests. Please try again later.' },
 });
 
-export const pdfLimiter = lazyRateLimit('pdf', {
+export const pdfLimiter = createRateLimiter('pdf', {
     windowMs: 15 * 60 * 1000,
     max: 10,
     standardHeaders: true,
@@ -58,7 +50,7 @@ export const pdfLimiter = lazyRateLimit('pdf', {
     message: { error: 'PDF generation limit reached. Please wait a few minutes before trying again.' },
 });
 
-export const authLimiter = lazyRateLimit('auth', {
+export const authLimiter = createRateLimiter('auth', {
     windowMs: 15 * 60 * 1000,
     max: 8,
     standardHeaders: true,
@@ -67,7 +59,7 @@ export const authLimiter = lazyRateLimit('auth', {
     message: { error: 'Too many login attempts. Please wait a few minutes before trying again.' },
 });
 
-export const passwordResetLimiter = lazyRateLimit('password-reset', {
+export const passwordResetLimiter = createRateLimiter('password-reset', {
     windowMs: 60 * 60 * 1000,
     max: 3,
     standardHeaders: true,
@@ -75,7 +67,7 @@ export const passwordResetLimiter = lazyRateLimit('password-reset', {
     message: { error: 'Too many password reset attempts. Please wait an hour before trying again.' },
 });
 
-export const emailVerificationLimiter = lazyRateLimit('email-verification-send-v2', {
+export const emailVerificationLimiter = createRateLimiter('email-verification-send-v2', {
     windowMs: EMAIL_VERIFICATION_RESEND_WINDOW_MS,
     max: EMAIL_VERIFICATION_RESEND_LIMIT,
     standardHeaders: true,
@@ -85,7 +77,7 @@ export const emailVerificationLimiter = lazyRateLimit('email-verification-send-v
     message: { error: 'Too many OTP requests. Please wait 15 minutes before trying again.' },
 });
 
-export const emailVerificationAttemptLimiter = lazyRateLimit('email-verification-attempt', {
+export const emailVerificationAttemptLimiter = createRateLimiter('email-verification-attempt', {
     windowMs: EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS,
     max: EMAIL_VERIFICATION_ATTEMPT_LIMIT,
     standardHeaders: true,

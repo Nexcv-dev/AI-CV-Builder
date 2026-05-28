@@ -1389,6 +1389,7 @@ export default function Home() {
           redirectTo={authRedirectTo}
           onAuthenticated={(user) => {
             setCurrentUser(user);
+            setAuthModalOpen(false);
             if (authRedirectTo.includes('download=1') && user.emailVerified) {
               if (user.plan === 'free' && isTemplatePaid(template)) {
                 openUpgradePrompt('download', 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.', 'Premium template download');
