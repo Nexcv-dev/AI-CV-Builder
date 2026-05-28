@@ -344,7 +344,7 @@ export default function LandingPage() {
     revealItems.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, []);
+  }, [cmsContent, templates.length]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
