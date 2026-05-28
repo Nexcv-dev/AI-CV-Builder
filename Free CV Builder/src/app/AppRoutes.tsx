@@ -5,6 +5,7 @@ import { PageLoadingOverlay, RouteLoadingFallback } from './loading';
 import { AdminProtectedRoute, ProtectedRoute } from './routeGuards';
 import { AdminDisabledPage, MaintenancePage, NotFound } from './systemPages';
 import type { PublicAppSettings } from './types';
+import { SeoHead } from '../components/SeoHead';
 
 const Home = lazy(() => import('../pages/Home'));
 const LandingPage = lazy(() => import('../pages/LandingPage'));
@@ -94,6 +95,7 @@ export function AppRoutes() {
 
   return (
     <>
+      <SeoHead />
       <PageLoadingOverlay />
       {publicSettings && <PublicAnnouncement settings={publicSettings} />}
       <Suspense fallback={<RouteLoadingFallback />}>

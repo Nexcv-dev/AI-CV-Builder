@@ -97,7 +97,7 @@ export const DEFAULT_CMS_CONTENT: CmsContent = {
     pricingTitle: 'Start free. Upgrade only when you need more.',
     faqEyebrow: 'FAQ',
     faqTitle: 'Questions before you start?',
-    faqDescription: 'Quick answers about creating, styling, and exporting your CV with NexCV.',
+    faqDescription: 'Quick answers about building an ATS-friendly CV, using AI resume tools, choosing templates, and exporting your final PDF.',
     testimonialsEyebrow: 'Testimonials',
     testimonialsTitle: 'Loved by resume builders',
   },
@@ -140,11 +140,12 @@ export const DEFAULT_CMS_CONTENT: CmsContent = {
     },
   ],
   faqs: [
-    { question: 'Is NexCV free to use?', answer: 'Yes. You can build, preview, and download your CV without paying.' },
-    { question: 'Can AI help improve my CV content?', answer: 'Yes. The builder can polish rough notes into clearer resume wording while you stay in control of every section.' },
-    { question: 'Can I change templates after adding details?', answer: 'Yes. Your information stays in the builder, so you can switch between available templates and adjust the design.' },
-    { question: 'Does the final CV download as a PDF?', answer: 'Yes. Once your CV is ready, you can export a clean PDF for job applications.' },
-    { question: 'Do I need design experience?', answer: 'No. NexCV gives you ready-made templates, live preview, and simple controls for colors, fonts, and layout.' },
+    { question: 'Is NexCV a free CV builder?', answer: 'Yes. You can start for free, build your CV with guided sections, preview it live, and export one watermarked PDF before upgrading.' },
+    { question: 'Can NexCV create an ATS-friendly resume?', answer: 'NexCV helps you use clear sections, readable templates, and job-relevant wording so your resume is easier for recruiters and applicant tracking systems to understand.' },
+    { question: 'Can AI help write or improve my CV?', answer: 'Yes. AI tools can turn rough notes into stronger resume wording, refine summaries, and improve bullet points while you stay in control of the final content.' },
+    { question: 'Can I change CV templates after entering my details?', answer: 'Yes. Your details stay in the builder, so you can switch templates, compare styles, and adjust the design without rewriting your CV.' },
+    { question: 'Can I download my finished CV as a PDF?', answer: 'Yes. Once your CV is ready, you can export a polished PDF for job applications, email attachments, and online submissions.' },
+    { question: 'Do I need resume design experience?', answer: 'No. NexCV gives you ready-made templates, live preview, and simple controls for layout, colors, fonts, and sections.' },
   ],
   legal: {
     privacy: {

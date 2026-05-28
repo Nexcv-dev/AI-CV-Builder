@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /builder
+Disallow: /checkout
+Disallow: /dashboard
+Disallow: /forgot-password
+Disallow: /my-cvs
+Disallow: /print
+Disallow: /profile
+Disallow: /reset-password
+Disallow: /settings
+Disallow: /verify-email
+Sitemap: https://free-ai-cv-builder.onrender.com/sitemap.xml

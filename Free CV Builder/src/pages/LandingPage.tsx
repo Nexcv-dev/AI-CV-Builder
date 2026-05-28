@@ -13,10 +13,24 @@ type StatItem = {
   color: string;
 };
 
-const baseStats: StatItem[] = [
-  { label: 'CVs Created', value: 12800, suffix: '+', color: 'from-violet-400 to-violet-600' },
-  { label: 'Active Users', value: 4300, suffix: '+', color: 'from-emerald-400 to-emerald-600' },
-];
+type FakeLiveStats = {
+  cvCount: number;
+  activeUsers: number;
+};
+
+const fakeStatsStartTime = new Date('2026-05-28T00:00:00+05:30').getTime();
+const fakeStatsSeed = {
+  cvCount: 186,
+  activeUsers: 24,
+};
+
+function buildFakeLiveStats(now = Date.now()): FakeLiveStats {
+  const elapsedSeconds = Math.max(0, Math.floor((now - fakeStatsStartTime) / 1000));
+  return {
+    cvCount: fakeStatsSeed.cvCount + Math.floor(elapsedSeconds / 14_400),
+    activeUsers: fakeStatsSeed.activeUsers + Math.floor(elapsedSeconds / 32_400),
+  };
+}
 
 function useCountUp(target: number, duration = 2200, started: boolean) {
   const [count, setCount] = useState(0);
@@ -60,6 +74,20 @@ function StatCard({ label, value, suffix, color }: StatItem) {
       <span className="text-sm font-bold uppercase tracking-widest text-slate-400">{label}</span>
     </div>
   );
+}
+
+function useFakeLiveStats() {
+  const [stats, setStats] = useState<FakeLiveStats>(() => buildFakeLiveStats());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setStats(buildFakeLiveStats());
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  return stats;
 }
 
 function TemplateAccessBadge({ access }: { access: 'free' | 'paid' }) {
@@ -159,24 +187,28 @@ const steps = [
 
 const faqs = [
   {
-    question: 'Is NexCV free to use?',
-    answer: 'Yes. You can build, preview, and download your CV without paying.',
+    question: 'Is NexCV a free CV builder?',
+    answer: 'Yes. You can start for free, build your CV with guided sections, preview it live, and export one watermarked PDF before upgrading.',
   },
   {
-    question: 'Can AI help improve my CV content?',
-    answer: 'Yes. The builder can polish rough notes into clearer resume wording while you stay in control of every section.',
+    question: 'Can NexCV create an ATS-friendly resume?',
+    answer: 'NexCV helps you use clear sections, readable templates, and job-relevant wording so your resume is easier for recruiters and applicant tracking systems to understand.',
   },
   {
-    question: 'Can I change templates after adding details?',
-    answer: 'Yes. Your information stays in the builder, so you can switch between available templates and adjust the design.',
+    question: 'Can AI help write or improve my CV?',
+    answer: 'Yes. AI tools can turn rough notes into stronger resume wording, refine summaries, and improve bullet points while you stay in control of the final content.',
   },
   {
-    question: 'Does the final CV download as a PDF?',
-    answer: 'Yes. Once your CV is ready, you can export a clean PDF for job applications.',
+    question: 'Can I change CV templates after entering my details?',
+    answer: 'Yes. Your details stay in the builder, so you can switch templates, compare styles, and adjust the design without rewriting your CV.',
   },
   {
-    question: 'Do I need design experience?',
-    answer: 'No. NexCV gives you ready-made templates, live preview, and simple controls for colors, fonts, and layout.',
+    question: 'Can I download my finished CV as a PDF?',
+    answer: 'Yes. Once your CV is ready, you can export a polished PDF for job applications, email attachments, and online submissions.',
+  },
+  {
+    question: 'Do I need resume design experience?',
+    answer: 'No. NexCV gives you ready-made templates, live preview, and simple controls for layout, colors, fonts, and sections.',
   },
 ];
 
@@ -187,6 +219,7 @@ export default function LandingPage() {
   const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
   const [centeredTemplateIndex, setCenteredTemplateIndex] = useState(0);
   const [isTemplateCarouselJumping, setIsTemplateCarouselJumping] = useState(false);
+  const fakeLiveStats = useFakeLiveStats();
   const featuredTemplates = useMemo(() => (
     [...templates].sort((a, b) => {
       const sourceRank = Number(b.source === 'custom') - Number(a.source === 'custom');
@@ -199,10 +232,13 @@ export default function LandingPage() {
       ? [...featuredTemplates, ...featuredTemplates, ...featuredTemplates]
       : []
   ), [featuredTemplates]);
-  const stats = useMemo<StatItem[]>(() => [
-    ...baseStats,
-    { label: 'Templates Available', value: templates.length, suffix: '', color: 'from-violet-400 to-emerald-400' },
-  ], [templates.length]);
+  const stats = useMemo<StatItem[]>(() => {
+    return [
+      { label: 'CVs Created', value: fakeLiveStats.cvCount, suffix: '+', color: 'from-violet-400 to-violet-600' },
+      { label: 'Active Users', value: fakeLiveStats.activeUsers, suffix: '+', color: 'from-emerald-400 to-emerald-600' },
+      { label: 'Templates Available', value: templates.length, suffix: '', color: 'from-violet-400 to-emerald-400' },
+    ];
+  }, [fakeLiveStats, templates.length]);
   const landing = cmsContent.landing;
   const cmsPricingPlans = useMemo(() => pricingPlans.map((plan) => {
     const copy = cmsContent.pricingPlans.find((item) => item.key === plan.key);
@@ -554,21 +590,16 @@ export default function LandingPage() {
             <div className="landing-color-wash absolute -left-24 top-20 h-80 w-80 rounded-full bg-violet-500/24 blur-3xl" />
             <div className="landing-color-wash landing-color-wash-two absolute bottom-10 right-1/3 h-72 w-72 rounded-full bg-emerald-400/18 blur-3xl" />
             <img
-              src="/templates/professional.png"
+              src="/images/Hero-cv.png"
               alt=""
-              className="landing-hero-sheet landing-hero-sheet-main absolute right-[6%] top-[10%] hidden h-[74svh] max-h-[760px] min-h-[520px] w-auto object-contain md:block"
+              className="landing-hero-art absolute right-[-3%] top-[9%] hidden h-[82%] w-[64%] object-contain object-right md:block"
             />
             <img
-              src="/templates/modern.png"
+              src="/images/Hero-cv.png"
               alt=""
-              className="landing-hero-sheet landing-hero-sheet-left absolute right-[35%] top-[18%] hidden h-[58svh] max-h-[610px] min-h-[420px] w-auto object-contain opacity-80 lg:block"
+              className="landing-hero-art-mobile absolute inset-0 h-full w-full object-cover object-center opacity-[0.16] md:hidden"
             />
-            <img
-              src="/templates/classic.png"
-              alt=""
-              className="landing-hero-sheet landing-hero-sheet-mobile absolute left-1/2 top-24 h-[54svh] max-h-[520px] min-h-[330px] w-auto -translate-x-1/2 object-contain opacity-[0.13] md:hidden"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,#020617_0%,#020617_36%,rgba(2,6,23,0.84)_63%,rgba(2,6,23,0.32)_100%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,#020617_0%,#020617_42%,rgba(2,6,23,0.72)_58%,rgba(2,6,23,0.18)_100%)]" />
           </div>
 
           <div className="relative z-10 mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-center px-4 py-10 sm:px-6 md:min-h-[calc(94svh-4rem)] lg:grid-cols-[0.88fr_1fr] lg:px-8">
