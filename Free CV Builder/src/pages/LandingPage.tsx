@@ -408,7 +408,7 @@ export default function LandingPage() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3" onClick={closeMobileMenu}>
             <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-950 shadow-lg shadow-violet-900/20 sm:h-11 sm:w-11">
-              <img src="/brand/faviconblack.png" alt="" className="h-8 w-8 rounded-xl sm:h-9 sm:w-9" />
+              <img src="/brand/faviconblack.webp" alt="" className="h-8 w-8 rounded-xl sm:h-9 sm:w-9" />
             </span>
             <span className="font-montserrat text-xl font-black text-white sm:text-2xl">NexCV</span>
           </Link>
@@ -590,12 +590,12 @@ export default function LandingPage() {
             <div className="landing-color-wash absolute -left-24 top-20 h-80 w-80 rounded-full bg-violet-500/24 blur-3xl" />
             <div className="landing-color-wash landing-color-wash-two absolute bottom-10 right-1/3 h-72 w-72 rounded-full bg-emerald-400/18 blur-3xl" />
             <img
-              src="/images/Hero-cv.png"
+              src="/images/Hero-cv.webp"
               alt=""
               className="landing-hero-art absolute right-[-3%] top-[9%] hidden h-[82%] w-[64%] object-contain object-right md:block"
             />
             <img
-              src="/images/Hero-cv.png"
+              src="/images/Hero-cv.webp"
               alt=""
               className="landing-hero-art-mobile absolute inset-0 h-full w-full object-cover object-center opacity-[0.16] md:hidden"
             />

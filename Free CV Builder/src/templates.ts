@@ -2,14 +2,14 @@ export const CV_TEMPLATES = [
   {
     key: 'classic',
     label: 'Classic',
-    image: '/templates/classic.png',
+    image: '/templates/classic.webp',
     access: 'free',
     surfaceColorRole: 'none',
   },
   {
     key: 'modern',
     label: 'Modern',
-    image: '/templates/modern.png',
+    image: '/templates/modern.webp',
     access: 'paid',
     surfaceColorRole: 'sidebar',
     surfaceColorLabel: 'Sidebar Background',
@@ -17,7 +17,7 @@ export const CV_TEMPLATES = [
   {
     key: 'professional',
     label: 'Professional',
-    image: '/templates/professional.png',
+    image: '/templates/professional.webp',
     access: 'paid',
     surfaceColorRole: 'none',
   },

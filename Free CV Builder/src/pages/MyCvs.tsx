@@ -339,7 +339,7 @@ function FilterButton({ active, onClick, label, count }: { active: boolean; onCl
 
 function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, onEdit, onDownload, onDelete }: { document: SavedDocument; templateMap: Map<string, TemplateConfigItem>; deleting: boolean; menuOpen: boolean; onToggleMenu: () => void; onEdit: () => void; onDownload: () => void; onDelete: () => void }) {
   const meta = templateMap.get(document.template as any);
-  const image = meta?.thumbnail || '/templates/professional.png';
+  const image = meta?.thumbnail || '/templates/professional.webp';
   const templateLabel = meta?.label || document.template;
 
   return (

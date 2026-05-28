@@ -1,8 +1,35 @@
 import React, { FormEvent, useEffect, useState } from 'react';
-import { ArrowRight, Lock, Eye, EyeOff } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, Lock } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { PasswordResetFooter } from '../components/PasswordResetFooter';
+
+function ResetPasswordStateCard({
+  title,
+  message,
+  isLoading = false,
+}: {
+  title: string;
+  message: string;
+  isLoading?: boolean;
+}) {
+  return (
+    <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 text-center shadow-2xl shadow-black/40 sm:p-8">
+      <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${isLoading ? 'bg-violet-400/10 text-violet-300' : 'bg-red-400/10 text-red-300'}`}>
+        {isLoading ? <Loader2 size={28} className="animate-spin" aria-hidden="true" /> : <AlertCircle size={30} aria-hidden="true" />}
+      </span>
+      <h2 className="mt-5 font-montserrat text-2xl font-black text-white">{title}</h2>
+      <p className="mt-3 text-sm font-semibold leading-6 text-slate-300">{message}</p>
+      {!isLoading && (
+        <Link
+          to="/forgot-password"
+          className="mt-7 inline-flex items-center justify-center rounded-xl bg-violet-600 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500"
+        >
+          Request a new link
+        </Link>
+      )}
+    </div>
+  );
+}
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -102,24 +129,20 @@ export default function ResetPassword() {
 
   if (isValidatingToken) {
     return (
-      <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">Checking Link</h2>
-          <p className="text-slate-400">Please wait while we validate your password reset link.</p>
-        </div>
-        <PasswordResetFooter />
+      <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <ResetPasswordStateCard
+          title="Checking Link"
+          message="Please wait while we validate your password reset link."
+          isLoading
+        />
       </div>
     );
   }
 
   if (tokenError) {
     return (
-      <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">Invalid Link</h2>
-          <p className="text-slate-400">{tokenError}</p>
-        </div>
-        <PasswordResetFooter />
+      <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <ResetPasswordStateCard title="Invalid Link" message={tokenError} />
       </div>
     );
   }
@@ -197,7 +220,6 @@ export default function ResetPassword() {
           </form>
         </div>
       </div>
-      <PasswordResetFooter />
     </div>
   );
 }

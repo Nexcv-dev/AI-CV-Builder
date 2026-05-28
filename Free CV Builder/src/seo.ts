@@ -9,7 +9,7 @@ export type SeoRoute = {
 
 export const SITE_NAME = 'NexCV';
 export const DEFAULT_SITE_URL = 'https://free-ai-cv-builder.onrender.com';
-export const DEFAULT_OG_IMAGE = '/brand/logo.png';
+export const DEFAULT_OG_IMAGE = '/brand/logo.webp';
 
 export const PUBLIC_SEO_ROUTES: SeoRoute[] = [
   {
@@ -54,7 +54,7 @@ export const PUBLIC_SEO_ROUTES: SeoRoute[] = [
     description:
       'Browse professional, modern, creative, and ATS-friendly CV templates for job applications, career changes, and polished resume downloads.',
     keywords: ['CV templates', 'resume templates', 'professional CV templates', 'ATS CV template'],
-    image: '/templates/professional.png',
+    image: '/templates/professional.webp',
     structuredData: {
       '@type': 'CollectionPage',
       '@id': '#templates',
@@ -94,7 +94,7 @@ export const PUBLIC_SEO_ROUTES: SeoRoute[] = [
     description:
       'Learn how to write a stronger CV, improve ATS compatibility, choose resume templates, and present your experience with confidence.',
     keywords: ['resume writing tips', 'ATS resume guide', 'how to write a CV', 'CV writing guide'],
-    image: '/images/resume_tips_hero.png',
+    image: '/images/resume_tips_hero.webp',
     structuredData: {
       '@type': 'Article',
       '@id': '#resume-guide',

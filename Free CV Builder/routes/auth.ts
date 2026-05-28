@@ -470,7 +470,8 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             // Generate token
             const token = randomBytes(20).toString('hex');
-            user.resetPasswordToken = hashToken(token);
+            const tokenHash = hashToken(token);
+            user.resetPasswordToken = tokenHash;
             user.resetPasswordExpires = new Date(Date.now() + PASSWORD_RESET_EXPIRES_MS);
             await user.save();
     
@@ -496,9 +497,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             try {
                 await sendAppEmail(mailOptions);
             } catch (emailError) {
-                user.resetPasswordToken = undefined;
-                user.resetPasswordExpires = undefined;
-                await user.save();
+                await User.updateOne(
+                    { _id: user._id, resetPasswordToken: tokenHash },
+                    { $unset: { resetPasswordToken: '', resetPasswordExpires: '' } }
+                );
                 throw emailError;
             }
     

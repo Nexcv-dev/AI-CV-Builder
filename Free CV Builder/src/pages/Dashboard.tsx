@@ -582,7 +582,7 @@ function RecentCvRow({
 }) {
   const meta = templateMap.get(document.template as any);
   const templateLabel = meta?.label || document.template;
-  const image = meta?.thumbnail || '/templates/professional.png';
+  const image = meta?.thumbnail || '/templates/professional.webp';
 
   return (
     <article className="relative grid gap-3 px-3 py-4 pr-14 transition hover:bg-white/[0.035] sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4 sm:px-5">

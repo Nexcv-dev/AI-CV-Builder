@@ -52,6 +52,7 @@ interface CVFormProps {
   onFinish?: () => void;
   showImportPromptOnMount?: boolean;
   showTemplatesOnMount?: boolean;
+  skipTemplatesAfterImport?: boolean;
   isFreePlan?: boolean;
   onUpgradeRequired?: (source: 'save' | 'download' | 'ai') => void;
 }
@@ -64,7 +65,7 @@ function FormChunkFallback({ isDarkMode = false }: { isDarkMode?: boolean }) {
   );
 }
 
-export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, isFreePlan = false, onUpgradeRequired }: CVFormProps) {
+export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, skipTemplatesAfterImport = false, isFreePlan = false, onUpgradeRequired }: CVFormProps) {
   const { templates, isTemplatePaid, getTemplateLabel } = useTemplateConfig();
   const templateDefaults = useMemo(() => Object.fromEntries(templates.map((item) => [item.key, item.defaultThemeColor || '#000000'])), [templates]);
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design' | 'templates'>(showTemplatesOnMount ? 'templates' : 'content');
@@ -112,12 +113,18 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
   const [showInitialPrompt, setShowInitialPrompt] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const hasHandledLoginImportPrompt = useRef(false);
-  const shouldOpenTemplatesAfterImport = useRef(showImportPromptOnMount);
+  const shouldOpenTemplatesAfterImport = useRef(showImportPromptOnMount && !skipTemplatesAfterImport);
 
   const completeLoginImportStep = useCallback(() => {
     if (!shouldOpenTemplatesAfterImport.current) return;
     shouldOpenTemplatesAfterImport.current = false;
     setActiveMainTab('templates');
+  }, []);
+
+  const scrollFormToTop = useCallback(() => {
+    const scrollToTop = () => formContainerRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+    scrollToTop();
+    window.requestAnimationFrame(scrollToTop);
   }, []);
 
   useEffect(() => {
@@ -927,6 +934,7 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
                         setTemplate(pendingTemplate);
                         setPendingTemplate(null);
                         setActiveMainTab('content');
+                        scrollFormToTop();
                       }}
                       className="inline-flex items-center justify-center rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.98]"
                     >
