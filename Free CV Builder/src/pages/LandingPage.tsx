@@ -408,7 +408,7 @@ export default function LandingPage() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3" onClick={closeMobileMenu}>
             <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-950 shadow-lg shadow-violet-900/20 sm:h-11 sm:w-11">
-              <img src="/brand/faviconblack.webp" alt="" className="h-8 w-8 rounded-xl sm:h-9 sm:w-9" />
+              <img src="/brand/faviconblack.svg" alt="" className="h-8 w-8 rounded-xl sm:h-9 sm:w-9" />
             </span>
             <span className="font-montserrat text-xl font-black text-white sm:text-2xl">NexCV</span>
           </Link>

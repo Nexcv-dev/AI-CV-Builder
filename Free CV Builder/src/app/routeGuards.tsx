@@ -36,7 +36,7 @@ export function AdminProtectedRoute({ children }: { children: React.ReactElement
   if (status === 'guest') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-6 text-center text-white">
-        <img src="/brand/faviconblack.webp" alt="NexCV" className="h-14 w-14 rounded-2xl shadow-2xl shadow-violet-950/40" />
+        <img src="/brand/faviconblack.svg" alt="NexCV" className="h-14 w-14 rounded-2xl shadow-2xl shadow-violet-950/40" />
         <h1 className="mt-6 font-montserrat text-3xl font-black">Admin sign in required</h1>
         <p className="mt-3 max-w-md text-sm font-semibold leading-6 text-slate-400">
           Use an authorized admin account to continue.
