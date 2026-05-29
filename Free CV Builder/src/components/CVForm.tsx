@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { CVData, Experience, Education, Skill, Course, Language, Project, Award, Reference } from '../types';
 import { TemplateName } from '../templates';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
+import { useBuilderStore } from '../stores/useBuilderStore';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
@@ -43,10 +44,10 @@ const DesignPanel = lazy(() => import('./form/DesignPanel').then((module) => ({ 
 const ImportModals = lazy(() => import('./form/ImportModals').then((module) => ({ default: module.ImportModals })));
 
 interface CVFormProps {
-  cvData: CVData;
-  setCvData: React.Dispatch<React.SetStateAction<CVData>>;
-  template: TemplateName;
-  setTemplate: (template: TemplateName) => void;
+  cvData?: CVData;
+  setCvData?: React.Dispatch<React.SetStateAction<CVData>>;
+  template?: TemplateName;
+  setTemplate?: (template: TemplateName) => void;
   isDarkMode?: boolean;
   onPopupVisibleChange?: (visible: boolean) => void;
   onFinish?: () => void;
@@ -65,8 +66,16 @@ function FormChunkFallback({ isDarkMode = false }: { isDarkMode?: boolean }) {
   );
 }
 
-export default function CVForm({ cvData, setCvData, template, setTemplate, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, skipTemplatesAfterImport = false, isFreePlan = false, onUpgradeRequired }: CVFormProps) {
+export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, template: templateProp, setTemplate: setTemplateProp, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, skipTemplatesAfterImport = false, isFreePlan = false, onUpgradeRequired }: CVFormProps) {
   const { templates, isTemplatePaid, getTemplateLabel } = useTemplateConfig();
+  const storeCvData = useBuilderStore((state) => state.cvData);
+  const storeSetCvData = useBuilderStore((state) => state.setCvData);
+  const storeTemplate = useBuilderStore((state) => state.template);
+  const storeSetTemplate = useBuilderStore((state) => state.setTemplate);
+  const cvData = cvDataProp || storeCvData;
+  const setCvData = setCvDataProp || storeSetCvData;
+  const template = templateProp || storeTemplate;
+  const setTemplate = setTemplateProp || storeSetTemplate;
   const templateDefaults = useMemo(() => Object.fromEntries(templates.map((item) => [item.key, item.defaultThemeColor || '#000000'])), [templates]);
   const [activeMainTab, setActiveMainTab] = useState<'content' | 'design' | 'templates'>(showTemplatesOnMount ? 'templates' : 'content');
   const [pendingTemplate, setPendingTemplate] = useState<TemplateName | null>(null);
@@ -838,9 +847,6 @@ export default function CVForm({ cvData, setCvData, template, setTemplate, isDar
         ) : activeMainTab === 'design' ? (
           <Suspense fallback={<FormChunkFallback isDarkMode={isDarkMode} />}>
             <DesignPanel
-              cvData={cvData}
-              setCvData={setCvData}
-              template={template}
               templateDefaultThemeColor={templateDefaults[template]}
               isDarkMode={isDarkMode}
               fileInputRef={fileInputRef}

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
+import express from 'express';
+import type { Server } from 'node:http';
 import {
   EMAIL_VERIFICATION_ATTEMPT_LIMIT,
   EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS,
@@ -14,10 +16,12 @@ import {
   resolvePayHerePaymentContext,
   renderCvTemplateString,
   sanitizeContextField,
+  sanitizeCvDataForStorage,
   sanitizeTextForPrompt,
   verifyPayHereMd5Signature,
   requireAdminPermission,
 } from '../server';
+import { registerPaymentRoutes } from '../routes/payment';
 import { isSuperAdminEmail, roleForEmail, syncUserRoleFromAllowlist } from '../server-models/userRole';
 import { hasAdminPermission } from '../src/adminAccess';
 import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
@@ -64,6 +68,49 @@ describe('Server Utils', () => {
   });
 
   describe('PayHere IPN verification', () => {
+    it('should reject client-side billing activation without updating the user', async () => {
+      const app = express();
+      const router = express.Router();
+      const User = { findById: vi.fn() };
+
+      app.use(express.json());
+      registerPaymentRoutes(router, {
+        User,
+        billingQuoteLimiter: (_req: any, _res: any, next: any) => next(),
+        currentUserId: vi.fn(() => '507f1f77bcf86cd799439011'),
+        logEvent: vi.fn(),
+        requireAdminPermission: vi.fn(() => (_req: any, res: any) => res.status(403).json({ error: 'Admin permission required.' })),
+        requireAuth: (req: any, _res: any, next: any) => {
+          req.user = { _id: '507f1f77bcf86cd799439011' };
+          next();
+        },
+      });
+      app.use(router);
+
+      const server = await new Promise<Server>((resolve) => {
+        const listeningServer = app.listen(0, '127.0.0.1', () => resolve(listeningServer));
+      });
+      const address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not bind to a TCP port.');
+
+      try {
+        const response = await fetch(`http://127.0.0.1:${address.port}/api/billing/activate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: 'monthly' }),
+        });
+        const body = await response.json() as { error: string };
+
+        expect(response.status).toBe(403);
+        expect(body.error).toContain('Admin permission required');
+        expect(User.findById).not.toHaveBeenCalled();
+      } finally {
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => error ? reject(error) : resolve());
+        });
+      }
+    });
+
     it('should build PayHere checkout hashes without exposing the merchant secret to the client', () => {
       const payload = {
         merchant_id: '1232679',
@@ -506,6 +553,70 @@ describe('Server Utils', () => {
     it('should truncate long fields to 200 chars', () => {
       const input = 'b'.repeat(250);
       expect(sanitizeContextField(input).length).toBe(200);
+    });
+  });
+
+  describe('sanitizeCvDataForStorage', () => {
+    it('should keep only the supported CV shape before saving', () => {
+      const sanitized = sanitizeCvDataForStorage({
+        personalInfo: {
+          fullName: '  Jane Doe  ',
+          email: ' jane@example.com ',
+          unusedNested: { huge: 'payload' },
+        },
+        experience: [
+          { id: ' exp-1 ', company: ' Acme ', position: ' Engineer ', startDate: '', endDate: '', description: ' Built things ', junk: 'drop me' },
+          { id: 'empty-row', company: ' ', position: '', description: '', junk: 'drop me too' },
+        ],
+        skills: [
+          { id: 'skill-1', name: 'TypeScript', level: 99, category: 'Frontend', extra: 'drop me' },
+          { id: 'blank-skill', name: ' ', level: 5 },
+        ],
+        themeColor: 'not-a-color',
+        sidebarColor: '#123abc',
+        templateThemeColors: {
+          modern: '#abcdef',
+          '<script>': '#000000',
+          broken: 'red',
+        },
+        sectionOrder: ['experience', 'unknown', 'skills', 'experience'],
+        hiddenSections: ['references', 'unknown'],
+        extraRoot: { should: 'not be saved' },
+      });
+
+      expect(sanitized).toMatchObject({
+        personalInfo: {
+          fullName: 'Jane Doe',
+          email: 'jane@example.com',
+          phone: '',
+        },
+        experience: [
+          {
+            id: 'exp-1',
+            company: 'Acme',
+            position: 'Engineer',
+            description: 'Built things',
+          },
+        ],
+        skills: [
+          {
+            id: 'skill-1',
+            name: 'TypeScript',
+            level: 5,
+            category: 'Frontend',
+          },
+        ],
+        themeColor: '#000000',
+        sidebarColor: '#123abc',
+        templateThemeColors: {
+          modern: '#abcdef',
+        },
+        sectionOrder: ['experience', 'skills'],
+        hiddenSections: ['references'],
+      });
+      expect(sanitized).not.toHaveProperty('extraRoot');
+      expect(sanitized.experience[0]).not.toHaveProperty('junk');
+      expect(sanitized.personalInfo).not.toHaveProperty('unusedNested');
     });
   });
 });

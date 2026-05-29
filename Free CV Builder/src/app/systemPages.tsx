@@ -24,7 +24,7 @@ export function MaintenancePage({ supportEmail }: { supportEmail: string }) {
     <div className="flex min-h-screen flex-col bg-slate-950 text-white">
       <main className="flex flex-1 items-center justify-center px-5 py-12">
         <section className="w-full max-w-2xl text-center">
-          <img src="/brand/faviconblack.webp" alt="NexCV" className="mx-auto h-16 w-16 rounded-2xl shadow-2xl shadow-violet-950/40" />
+          <img src="/brand/faviconblack.svg" alt="NexCV" className="mx-auto h-16 w-16 rounded-2xl shadow-2xl shadow-violet-950/40" />
           <p className="mt-8 text-sm font-black uppercase tracking-widest text-violet-300">Maintenance mode</p>
           <h1 className="mt-4 font-montserrat text-3xl font-black leading-tight sm:text-5xl">
             NexCV is getting a quick upgrade

@@ -1,22 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Palette, Upload, ChevronDown, Check, Image as ImageIcon, MoveHorizontal, MoveVertical, Layout, Type, RotateCcw } from 'lucide-react';
-import { CVData } from '../../types';
-import { getTemplateSurfaceColorFallback, getTemplateSurfaceColorLabel, TemplateName } from '../../templates';
+import { getTemplateSurfaceColorFallback, getTemplateSurfaceColorLabel } from '../../templates';
 import { resolveTemplateSurfaceColorForData, resolveTemplateThemeColor, resolveTemplateThemeColorForData } from '../../utils/templateData';
+import { useBuilderStore } from '../../stores/useBuilderStore';
 import { fonts, DESIGN_CARD_CLASS, DESIGN_CARD_LIGHT, DESIGN_CARD_DARK, DESIGN_SECTION_TITLE_CLASS, DESIGN_ICON_CLASS } from './constants';
 
 interface DesignPanelProps {
-  cvData: CVData;
-  setCvData: React.Dispatch<React.SetStateAction<CVData>>;
-  template: TemplateName;
   templateDefaultThemeColor?: string;
   isDarkMode?: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const DesignPanel = React.memo(({ cvData, setCvData, template, templateDefaultThemeColor, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
+export const DesignPanel = React.memo(({ templateDefaultThemeColor, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
+  const cvData = useBuilderStore((state) => state.cvData);
+  const setCvData = useBuilderStore((state) => state.setCvData);
+  const template = useBuilderStore((state) => state.template);
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
   const templateSurfaceColorLabel = getTemplateSurfaceColorLabel(template);

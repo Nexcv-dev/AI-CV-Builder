@@ -2,7 +2,7 @@ import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, FileText, LayoutTemplate, Lock, Mail, Palette, RotateCcw, ShieldCheck, Sparkles, User, Wand2, X, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { ApiError, AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
+import { AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
 
 type AuthMode = 'login' | 'signup';
 type WizardStep = 'choice' | 'email' | 'password' | 'name' | 'signup-password' | 'otp';
@@ -300,30 +300,10 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     setIsSubmitting(true);
     try {
       if (isLogin) {
-        const data = await apiFetch<{ exists: boolean; method: 'password' | 'otp' }>('/api/auth/email/check', {
-          method: 'POST',
-          body: JSON.stringify({ email: normalizedEmail }),
-        });
-        if (data.method === 'otp') {
-          await startEmailOtp('', false, 'login');
-          return;
-        }
         setPassword('');
         setStep('password');
         window.setTimeout(() => document.getElementById('auth-password')?.focus(), 0);
       } else {
-        try {
-          await apiFetch<{ exists: boolean; method: 'password' | 'otp' }>('/api/auth/email/check', {
-            method: 'POST',
-            body: JSON.stringify({ email: normalizedEmail }),
-          });
-          setError('An account already exists for this email. Please login instead.');
-          return;
-        } catch (err) {
-          if (!(err instanceof ApiError) || err.status !== 404) {
-            throw err;
-          }
-        }
         setDisplayName('');
         setAcceptedTerms(false);
         setStep('name');
@@ -537,8 +517,8 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
             <form className="auth-mode-fade space-y-5" onSubmit={handleEmailSubmit}>
               <p className="max-w-md text-base font-semibold leading-7 text-slate-300">
                 {isLogin
-                  ? 'Enter your email first. If the account exists, we will ask for your password.'
-                  : 'Enter your email first. If it is new, we will continue account creation.'}
+                  ? 'Enter your email to continue to password sign-in.'
+                  : 'Enter your email to continue account creation.'}
               </p>
               <label className="block">
                 <span className="mb-3 block text-sm font-black text-slate-200">Email address</span>
@@ -816,7 +796,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
           <div className="absolute inset-x-0 top-16 mx-auto h-64 w-64 rounded-full bg-cyan-400/18 blur-3xl" />
           <div className="absolute bottom-10 right-4 h-64 w-64 rounded-full bg-violet-500/18 blur-3xl" />
           <div className="absolute left-1/2 top-[45%] flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white shadow-2xl shadow-violet-950/40 backdrop-blur">
-            <img src="/brand/faviconblack.webp" alt="" className="h-18 w-18 rounded-3xl" />
+            <img src="/brand/faviconblack.svg" alt="" className="h-18 w-18 rounded-3xl" />
           </div>
           {visualItems.map(({ icon: Icon, className }, index) => (
             <div

@@ -118,7 +118,7 @@ const connectDB = async () => {
     logEvent('info', 'mongodb.connected', { host: conn.connection.host, ...dbPoolOptions() });
   } catch (error: any) {
     logError('mongodb.connection_failed', error);
-    process.exit(1);
+    throw error;
   }
 };
 

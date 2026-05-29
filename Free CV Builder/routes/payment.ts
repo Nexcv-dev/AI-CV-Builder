@@ -11,14 +11,13 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         Coupon,
         PaymentTransaction,
         PAYHERE_PLAN_PRICES,
+        billingQuoteLimiter,
         User,
         buildPayHereCheckoutHash,
         createPlanExpiry,
         currentUserId,
         generateTransactionId,
         getApiOrigin,
-        getCvCreationQuota,
-        getDownloadQuota,
         getFrontendOrigin,
         getPayHereCheckoutUrl,
         getPayHereMerchantConfig,
@@ -30,8 +29,8 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         normalizeEmail,
         payHereAmountToCents,
         planDisplayName,
-        publicUser,
         quoteCheckout,
+        requireAdminPermission,
         requireAuth,
         requireVerifiedEmail,
         resolvePayHerePaymentContext,
@@ -81,7 +80,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         }
     });
 
-    router.post('/api/billing/quote', async (req: Request, res: Response) => {
+    router.post('/api/billing/quote', billingQuoteLimiter, async (req: Request, res: Response) => {
         try {
             const plan = req.body.plan as BillingPlan;
             if (plan !== 'payg' && plan !== 'monthly') {
@@ -533,45 +532,13 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         }
     });
 
-    router.post('/api/billing/activate', requireAuth, async (req: Request, res: Response) => {
-        try {
-            if (!requireVerifiedEmail(req, res)) {
-                return;
-            }
-
-            const plan = req.body.plan as BillingPlan;
-            if (plan !== 'payg' && plan !== 'monthly') {
-                return res.status(400).json({ error: 'Choose a valid paid plan.' });
-            }
-
-            const user = await User.findById(currentUserId(req));
-            if (!user) {
-                return res.status(404).json({ error: 'User not found.' });
-            }
-
-            user.plan = plan;
-            user.planStartedAt = new Date();
-            user.planExpiresAt = createPlanExpiry(plan);
-            if (plan === 'payg') {
-                user.paygCvSaveCredits = (user.paygCvSaveCredits || 0) + 1;
-            }
-            await user.save();
-
-            const transactionId = typeof req.body.transactionId === 'string' && req.body.transactionId.trim()
-                ? sanitizeProfileField(req.body.transactionId, 80)
-                : generateTransactionId();
-            await sendBillingSuccessNotifications({
-                user,
-                plan,
-                transactionId,
-                planExpiresAt: user.planExpiresAt,
-            });
-
-            const quota = await getCvCreationQuota(user);
-            const downloadQuota = await getDownloadQuota(user);
-            return res.json({ user: publicUser(user), quota, downloadQuota, transactionId });
-        } catch (error) {
-            return sendError(res, 500, 'Could not activate this plan.', error);
-        }
+    router.post('/api/billing/activate', requireAuth, requireAdminPermission('billing.write'), async (req: Request, res: Response) => {
+        logEvent('warn', 'payment.client_activation_blocked', {
+            userId: currentUserId(req),
+            requestedPlan: req.body?.plan,
+        });
+        return res.status(410).json({
+            error: 'Client-side plan activation is disabled. Paid plans are activated only after a verified PayHere IPN.',
+        });
     });
 }

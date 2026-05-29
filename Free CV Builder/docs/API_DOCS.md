@@ -62,10 +62,11 @@ PDF generation requires authentication and is subject to quota, plan, and premiu
 | `GET` | `/api/billing/plans` | Return public billing plan configuration. |
 | `POST` | `/api/billing/quote` | Quote a plan/coupon combination. |
 | `POST` | `/api/billing/payhere-checkout` | Create PayHere checkout data for the authenticated user. |
-| `POST` | `/api/billing/activate` | Activate a plan after a verified flow. |
+| `POST` | `/api/billing/activate` | Deprecated, admin-restricted, and disabled; normal users receive `403`, admins receive `410`. Paid plans are activated only by verified PayHere IPN processing. |
 | `POST` | `/api/payhere/ipn` | PayHere Instant Payment Notification webhook. |
 
 Do not wrap `/api/payhere/ipn` in session authentication. It must be reachable by PayHere and verified by signature/merchant data.
+Do not activate a paid plan from browser-submitted plan, order, or transaction data.
 
 ## Admin Routes
 

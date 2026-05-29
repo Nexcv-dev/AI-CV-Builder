@@ -55,7 +55,7 @@ export const Footer = () => {
           <div>
             <Link to="/" className="inline-flex items-center gap-3">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/20">
-                <img src="/brand/faviconblack.webp" alt="" className="h-10 w-10 rounded-xl" />
+                <img src="/brand/faviconblack.svg" alt="" className="h-10 w-10 rounded-xl" />
               </span>
               <span className="font-montserrat text-2xl font-black">NexCV</span>
             </Link>

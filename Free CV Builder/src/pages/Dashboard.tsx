@@ -25,22 +25,7 @@ import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 import { useTemplateConfig, type TemplateConfigItem } from '../hooks/useTemplateConfig';
-
-interface SavedDocument {
-  id: string;
-  title: string;
-  template: string;
-  status?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface CvCreationQuota {
-  limit: number | null;
-  used: number;
-  remaining: number | null;
-  reached: boolean;
-}
+import { useDocumentsQuery, useRemoveDocumentFromCache, type SavedDocument } from '../hooks/useDocumentsQuery';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
@@ -65,15 +50,22 @@ function latestUpdate(documents: SavedDocument[]) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { templateMap } = useTemplateConfig();
+  const {
+    data: documentsData,
+    isPending: documentsLoading,
+    error: documentsError,
+  } = useDocumentsQuery();
+  const removeDocumentFromCache = useRemoveDocumentFromCache();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [documents, setDocuments] = useState<SavedDocument[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [userLoading, setUserLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<SavedDocument | null>(null);
   const [openActionsDocumentId, setOpenActionsDocumentId] = useState<string | null>(null);
-  const [quota, setQuota] = useState<CvCreationQuota | null>(null);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [verificationBannerDismissed, setVerificationBannerDismissed] = useState(false);
+  const documents = documentsData?.documents ?? [];
+  const quota = documentsData?.quota ?? null;
+  const isLoading = userLoading || documentsLoading;
 
   useEffect(() => {
     clearPageScrollLock();
@@ -81,33 +73,30 @@ export default function Dashboard() {
 
     let ignore = false;
 
-    async function loadDashboard() {
+    async function loadUser() {
       try {
-        const [currentUser, documentsData] = await Promise.all([
-          getCurrentUser(),
-          apiFetch<{ documents: SavedDocument[]; quota: CvCreationQuota }>('/api/documents'),
-        ]);
-
-        if (!ignore) {
-          setUser(currentUser);
-          setDocuments(documentsData.documents);
-          setQuota(documentsData.quota);
-        }
+        const currentUser = await getCurrentUser();
+        if (!ignore) setUser(currentUser);
       } catch (err) {
         if (!ignore) {
           const message = err instanceof Error ? err.message : 'Could not load dashboard.';
           toast.error(message);
         }
       } finally {
-        if (!ignore) setIsLoading(false);
+        if (!ignore) setUserLoading(false);
       }
     }
 
-    loadDashboard();
+    loadUser();
     return () => {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!documentsError) return;
+    toast.error(documentsError instanceof Error ? documentsError.message : 'Could not load dashboard.');
+  }, [documentsError]);
 
   const recentDocuments = useMemo(() => documents.slice(0, 3), [documents]);
   const templatesUsed = useMemo(() => new Set(documents.map((document) => document.template)).size, [documents]);
@@ -161,7 +150,7 @@ export default function Dashboard() {
     setDeletingId(id);
     try {
       await apiFetch(`/api/documents/${id}`, { method: 'DELETE' });
-      setDocuments((items) => items.filter((item) => item.id !== id));
+      removeDocumentFromCache(id);
       setDocumentToDelete(null);
       toast.success('CV deleted successfully.');
     } catch (err) {
