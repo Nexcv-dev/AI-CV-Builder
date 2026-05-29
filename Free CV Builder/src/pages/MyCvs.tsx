@@ -24,22 +24,7 @@ import { AppSidebar } from '../components/AppSidebar';
 import { apiFetch, setDashboardNotification } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 import { useTemplateConfig, type TemplateConfigItem } from '../hooks/useTemplateConfig';
-
-interface SavedDocument {
-  id: string;
-  title: string;
-  template: string;
-  status?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface CvCreationQuota {
-  limit: number | null;
-  used: number;
-  remaining: number | null;
-  reached: boolean;
-}
+import { useDocumentsQuery, useRemoveDocumentFromCache, type SavedDocument } from '../hooks/useDocumentsQuery';
 
 type FilterTab = 'all' | 'recent' | 'drafts' | 'archived';
 
@@ -57,9 +42,14 @@ function formatRelativeTime(value: string) {
 export default function MyCvs() {
   const navigate = useNavigate();
   const { templateMap } = useTemplateConfig();
-  const [documents, setDocuments] = useState<SavedDocument[]>([]);
-  const [quota, setQuota] = useState<CvCreationQuota | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    data: documentsData,
+    isPending: isLoading,
+    error: documentsError,
+  } = useDocumentsQuery();
+  const removeDocumentFromCache = useRemoveDocumentFromCache();
+  const documents = documentsData?.documents ?? [];
+  const quota = documentsData?.quota ?? null;
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [documentToDelete, setDocumentToDelete] = useState<SavedDocument | null>(null);
@@ -69,25 +59,12 @@ export default function MyCvs() {
   useEffect(() => {
     clearPageScrollLock();
     setDashboardNotification(false);
-    let ignore = false;
-
-    apiFetch<{ documents: SavedDocument[]; quota: CvCreationQuota }>('/api/documents')
-      .then((data) => {
-        if (ignore) return;
-        setDocuments(data.documents);
-        setQuota(data.quota);
-      })
-      .catch((error) => {
-        toast.error(error instanceof Error ? error.message : 'Could not load your CVs.');
-      })
-      .finally(() => {
-        if (!ignore) setIsLoading(false);
-      });
-
-    return () => {
-      ignore = true;
-    };
   }, []);
+
+  useEffect(() => {
+    if (!documentsError) return;
+    toast.error(documentsError instanceof Error ? documentsError.message : 'Could not load your CVs.');
+  }, [documentsError]);
 
   const stats = useMemo(() => {
     const drafts = documents.filter((doc) => doc.status === 'draft').length;
@@ -117,7 +94,7 @@ export default function MyCvs() {
     setDeletingId(id);
     try {
       await apiFetch(`/api/documents/${id}`, { method: 'DELETE' });
-      setDocuments((items) => items.filter((item) => item.id !== id));
+      removeDocumentFromCache(id);
       setDocumentToDelete(null);
       toast.success('CV deleted successfully.');
     } catch (err) {

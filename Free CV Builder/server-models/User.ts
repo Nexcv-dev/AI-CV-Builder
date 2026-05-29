@@ -21,6 +21,7 @@ export interface IUser extends Document {
   emailVerificationExpires?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  sessionVersion: number;
   authProvider: 'google' | 'email';
   plan: BillingPlan;
   planStartedAt?: Date;
@@ -49,6 +50,7 @@ const UserSchema: Schema = new Schema(
     emailVerificationExpires: { type: Date },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
+    sessionVersion: { type: Number, default: 0, min: 0, required: true },
     authProvider: { type: String, enum: ['google', 'email'], default: 'email', required: true },
     plan: { type: String, enum: ['free', 'payg', 'monthly'], default: 'free', required: true },
     planStartedAt: { type: Date },

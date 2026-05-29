@@ -29,21 +29,7 @@ import { AppSidebar } from '../components/AppSidebar';
 import { AuthUser, apiFetch, getCurrentUser, notifyAuthUserChanged } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 import { compressAndResizeImage } from '../utils/imageUtils';
-
-interface SavedDocument {
-  id: string;
-  title: string;
-  template: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface CvCreationQuota {
-  limit: number | null;
-  used: number;
-  remaining: number | null;
-  reached: boolean;
-}
+import { useDocumentsQuery } from '../hooks/useDocumentsQuery';
 
 type ProfileTab = 'personal' | 'security' | 'account';
 
@@ -75,8 +61,12 @@ function formatRelativeTime(value?: string) {
 
 export default function Profile() {
   const navigate = useNavigate();
+  const {
+    data: documentsData,
+    isPending: documentsLoading,
+    error: documentsError,
+  } = useDocumentsQuery();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [documents, setDocuments] = useState<SavedDocument[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
   const [form, setForm] = useState({
@@ -91,9 +81,11 @@ export default function Profile() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [userLoading, setUserLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const documents = documentsData?.documents ?? [];
+  const isLoading = userLoading || documentsLoading;
 
   useEffect(() => {
     clearPageScrollLock();
@@ -101,14 +93,10 @@ export default function Profile() {
 
     async function loadProfile() {
       try {
-        const [currentUser, documentsData] = await Promise.all([
-          getCurrentUser(),
-          apiFetch<{ documents: SavedDocument[]; quota: CvCreationQuota }>('/api/documents'),
-        ]);
+        const currentUser = await getCurrentUser();
 
         if (ignore) return;
         setUser(currentUser);
-        setDocuments(documentsData.documents);
         setForm({
           displayName: currentUser.displayName || '',
           profileImage: currentUser.profileImage || '',
@@ -122,7 +110,7 @@ export default function Profile() {
         const message = err instanceof Error ? err.message : 'Could not load profile.';
         toast.error(message);
       } finally {
-        if (!ignore) setIsLoading(false);
+        if (!ignore) setUserLoading(false);
       }
     }
 
@@ -131,6 +119,11 @@ export default function Profile() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!documentsError) return;
+    toast.error(documentsError instanceof Error ? documentsError.message : 'Could not load profile.');
+  }, [documentsError]);
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));

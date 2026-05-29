@@ -4,11 +4,14 @@
  */
 
 import React, { Suspense, lazy, useState, useRef, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
 import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
+import { documentsQueryKey, documentsStaleTime, fetchDocuments } from '../hooks/useDocumentsQuery';
+import { initialBuilderCvData, useBuilderStore } from '../stores/useBuilderStore';
 import { ApiError, AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import { AccountMenu } from '../components/AccountMenu';
 import { EmailVerificationModal } from '../components/EmailVerificationModal';
@@ -21,7 +24,6 @@ const VERIFY_BANNER_DISMISSED_KEY = 'nexcv-verify-banner-dismissed';
 const BUILDER_LOADING_MIN_MS = 350;
 const DEFAULT_A4_PREVIEW_WIDTH_PX = 794;
 const DEFAULT_A4_PREVIEW_HEIGHT_PX = 1122;
-const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
 const AuthModal = lazy(() => import('../components/AuthModal').then((module) => ({ default: module.AuthModal })));
 const CVForm = lazy(() => import('../components/CVForm'));
 const CVPreview = lazy(() => import('../components/CVPreview'));
@@ -65,43 +67,9 @@ function downloadLimitMessage(quota?: DownloadQuota | null) {
   return 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.';
 }
 
-const initialData: CVData = {
-  personalInfo: {
-    fullName: '',
-    email: '',
-    phone: '',
-    address: '',
-    summary: '',
-    dob: '',
-    nic: '',
-    gender: '',
-    nationality: '',
-    religion: '',
-    maritalStatus: '',
-  },
-  experience: [],
-  education: [],
-  skills: [],
-  courses: [],
-  languages: [],
-  projects: [],
-  awards: [],
-  references: [],
-  themeColor: '#000000',
-  fontFamily: 'Inter',
-  profileImage: '',
-  imageZoom: 1,
-  imageX: 0,
-  imageY: 0,
-  sidebarColor: '#1e293b', // Default slate-800
-  lineSpacing: 1.5,
-  sectionGap: 2,
-  sectionOrder: DEFAULT_SECTION_ORDER,
-  hiddenSections: [],
-};
-
 export default function Home() {
   const { isTemplatePaid } = useTemplateConfig();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const showImportPromptOnLoad = useRef(searchParams.get('import') === '1');
   const showDownloadAfterAuthOnLoad = useRef(searchParams.get('download') === '1');
@@ -110,22 +78,17 @@ export default function Home() {
   const hasTemplateSelectionOnLoad = useRef(searchParams.has('template'));
   const shouldScrollTopOnLoad = useRef(hasTemplateSelectionOnLoad.current);
   const initialDocumentId = useRef(searchParams.get('document'));
-  const [cvData, setCvData] = useState<CVData>(() => {
-    if (!initialDocumentId.current) {
-      try {
-        const saved = localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
-        if (saved) return JSON.parse(saved);
-      } catch {}
-    }
-    return initialData;
-  });
+  const cvData = useBuilderStore((state) => state.cvData);
+  const setCvData = useBuilderStore((state) => state.setCvData);
+  const template = useBuilderStore((state) => state.template);
+  const setTemplate = useBuilderStore((state) => state.setTemplate);
+  const resetBuilder = useBuilderStore((state) => state.resetBuilder);
   const [debouncedCvData, setDebouncedCvData] = useState<CVData>(cvData);
-  const [template, setTemplate] = useState<TemplateName>(DEFAULT_TEMPLATE);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const [cloudSaveStatus, setCloudSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const lastSavedDataRef = useRef<string>(JSON.stringify({ cvData: initialData, template: DEFAULT_TEMPLATE, title: 'Untitled CV' }));
+  const lastSavedDataRef = useRef<string>(JSON.stringify({ cvData: initialBuilderCvData, template: DEFAULT_TEMPLATE, title: 'Untitled CV' }));
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
@@ -168,6 +131,21 @@ export default function Home() {
   const rafRef = useRef<number | null>(null);
   const saveInFlightRef = useRef(false);
   const pdfInFlightRef = useRef(false);
+
+  useEffect(() => {
+    if (initialDocumentId.current) return;
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setCvData(parsed);
+        setDebouncedCvData(parsed);
+        return;
+      }
+    } catch {}
+    resetBuilder();
+    setDebouncedCvData(initialBuilderCvData);
+  }, [resetBuilder, setCvData]);
 
   const renderMobileUpgradeActions = (plan: 'free' | 'payg' | 'monthly') => (
     <div className="mt-3 grid gap-2 sm:hidden">
@@ -230,11 +208,15 @@ export default function Home() {
     }
 
     let ignore = false;
-    apiFetch<{ documents: unknown[]; quota: CvCreationQuota; downloadQuota?: DownloadQuota }>('/api/documents')
+    queryClient.fetchQuery({
+      queryKey: documentsQueryKey,
+      queryFn: fetchDocuments,
+      staleTime: documentsStaleTime,
+    })
       .then((data) => {
         if (!ignore) {
           setCreationQuota(data.quota);
-          setDownloadQuota(data.downloadQuota || null);
+          setDownloadQuota((data.downloadQuota as DownloadQuota | undefined) || null);
         }
       })
       .catch((error) => {
@@ -244,7 +226,7 @@ export default function Home() {
     return () => {
       ignore = true;
     };
-  }, [currentUser]);
+  }, [currentUser, queryClient]);
 
   const dismissVerificationBanner = useCallback(() => {
     setVerificationBannerDismissed(true);
@@ -498,6 +480,7 @@ export default function Home() {
       setDocumentId(data.document.id);
       setDocumentTitle(data.document.title);
       if (data.quota) setCreationQuota(data.quota);
+      queryClient.invalidateQueries({ queryKey: documentsQueryKey });
       
       if (!isSilent) {
         setCloudSaveStatus('saved');
@@ -529,7 +512,7 @@ export default function Home() {
       saveInFlightRef.current = false;
       if (isSilent) setIsAutoSaving(false);
     }
-  }, [currentUser, cvData, documentId, documentTitle, openUpgradePrompt, template]);
+  }, [currentUser, cvData, documentId, documentTitle, openUpgradePrompt, queryClient, template]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -966,10 +949,6 @@ export default function Home() {
                 }
               >
                 <CVForm
-                  cvData={cvData}
-                  setCvData={setCvData}
-                  template={template}
-                  setTemplate={setTemplate}
                   isDarkMode={isDarkMode}
                   onPopupVisibleChange={setIsPopupVisible}
                   onFinish={requestDownload}

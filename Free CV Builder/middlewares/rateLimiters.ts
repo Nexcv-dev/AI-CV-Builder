@@ -43,11 +43,21 @@ export const apiLimiter = createRateLimiter('api', {
 });
 
 export const pdfLimiter = createRateLimiter('pdf', {
-    windowMs: 15 * 60 * 1000,
-    max: 10,
+    windowMs: 60 * 1000,
+    max: 5,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'PDF generation limit reached. Please wait a few minutes before trying again.' },
+    keyGenerator: getAuthenticatedRateLimitKey,
+    message: { error: 'PDF generation limit reached. Please wait a minute before trying again.' },
+});
+
+export const aiLimiter = createRateLimiter('ai', {
+    windowMs: 60 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: getAuthenticatedRateLimitKey,
+    message: { error: 'AI request limit reached. Please wait an hour before trying again.' },
 });
 
 export const authLimiter = createRateLimiter('auth', {
@@ -65,6 +75,22 @@ export const passwordResetLimiter = createRateLimiter('password-reset', {
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many password reset attempts. Please wait an hour before trying again.' },
+});
+
+export const publicFormLimiter = createRateLimiter('public-form', {
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many form submissions. Please wait 15 minutes before trying again.' },
+});
+
+export const billingQuoteLimiter = createRateLimiter('billing-quote', {
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many quote attempts. Please wait 15 minutes before trying again.' },
 });
 
 export const emailVerificationLimiter = createRateLimiter('email-verification-send-v2', {
@@ -89,8 +115,5 @@ export const emailVerificationAttemptLimiter = createRateLimiter('email-verifica
 
 export const configureRateLimiters = (app: Express) => {
     app.use('/api/', apiLimiter);
-    app.use('/api/generate-pdf', pdfLimiter);
-    app.use('/api/auth/login', authLimiter);
-    app.use('/api/auth/signup', authLimiter);
     app.use('/api/auth/signup', emailVerificationLimiter);
 };

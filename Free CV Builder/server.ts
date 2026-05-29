@@ -2,13 +2,14 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dns from 'node:dns';
-import { readFileSync } from 'fs';
+import { readFile } from 'fs/promises';
 import * as dotenv from 'dotenv';
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import mongoose from 'mongoose';
 import connectDB from './server-models/db';
 import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
+import CvCreationQuota from './server-models/CvCreationQuotaModel';
 import DownloadQuota from './server-models/DownloadQuotaModel';
 import PaymentTransaction from './server-models/PaymentTransaction';
 import BillingPlanSetting from './server-models/BillingPlanSetting';
@@ -24,6 +25,8 @@ import { configurePassportAuth, passport } from './middlewares/passportAuth';
 import { configureRequestTimeout } from './middlewares/requestTimeout';
 import {
     authLimiter,
+    aiLimiter,
+    billingQuoteLimiter,
     configureRateLimiters,
     emailVerificationAttemptLimiter,
     emailVerificationLimiter,
@@ -33,6 +36,8 @@ import {
     EMAIL_VERIFICATION_RESEND_WINDOW_MS,
     getAuthenticatedRateLimitKey,
     passwordResetLimiter,
+    pdfLimiter,
+    publicFormLimiter,
 } from './middlewares/rateLimiters';
 import {
     buildPasswordResetTransportOptions,
@@ -150,6 +155,7 @@ export {
     buildPasswordResetTransportOptions,
     generateCVHTML,
     renderCvTemplateString,
+    sanitizeCvDataForStorage,
     PAYHERE_PLAN_PRICES,
     buildPayHereCheckoutHash,
     buildPayHereMd5Signature,
@@ -167,7 +173,10 @@ initSentry();
 // Connect to MongoDB
 const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
 if (mongoUri) {
-    connectDB();
+    connectDB().catch((error) => {
+        logError('mongodb.startup_connection_failed', error);
+        process.exit(1);
+    });
 } else {
     logEvent('warn', 'mongodb.config_missing', { message: 'MongoDB URI not found. MongoDB connection skipped.' });
 }
@@ -208,6 +217,37 @@ app.use(async (req: Request, _res: Response, next: NextFunction) => {
         (req as any).appSettings = null;
     }
     next();
+});
+
+const sessionVersionForUser = (user: any) => Math.max(0, Math.floor(Number(user?.sessionVersion || 0)));
+
+const markSessionCurrent = (req: Request, user: any) => {
+    if (req.session) {
+        (req.session as any).authSessionVersion = sessionVersionForUser(user);
+    }
+};
+
+const invalidateUserSessions = (user: any) => {
+    user.sessionVersion = sessionVersionForUser(user) + 1;
+};
+
+const isSessionCurrent = (req: Request, user: any) => {
+    const currentVersion = sessionVersionForUser(user);
+    if (currentVersion <= 0) return true;
+    return (req.session as any)?.authSessionVersion === currentVersion;
+};
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+    if (!req.path.startsWith('/api') || !req.isAuthenticated?.() || !req.user) return next();
+    if (isSessionCurrent(req, req.user)) return next();
+
+    req.logout((logoutError) => {
+        if (logoutError) return next(logoutError);
+        req.session.destroy(() => {
+            res.clearCookie(process.env.SESSION_COOKIE_NAME || 'nexcv.sid');
+            return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+        });
+    });
 });
 
 const isMaintenanceBypassRoute = (req: Request) => {
@@ -368,7 +408,10 @@ const requirePaidPlan = (req: Request, res: Response) => {
 };
 
 const getCvCreationQuota = async (user: any) => {
-    const used = await CVDocument.countDocuments({ userId: user._id || user.id });
+    const userId = user._id || user.id;
+    const quotaRecord = await CvCreationQuota.findOne({ userId, day: 'lifetime' });
+    const documentCount = await CVDocument.countDocuments({ userId });
+    const used = Math.max(quotaRecord?.count || 0, documentCount);
     const quota = buildCvCreationQuota(user, used);
     const settings = await getAppSettings().catch(() => null);
     if (quota.plan !== 'free' || !settings) return quota;
@@ -382,7 +425,40 @@ const getCvCreationQuota = async (user: any) => {
 };
 
 const incrementCvCreationQuota = async (user: any) => {
-    return getCvCreationQuota(user);
+    const userId = user._id || user.id;
+    const currentQuota = await getCvCreationQuota(user);
+    if (currentQuota.limit === null) return { ...currentQuota, reserved: true };
+    if (currentQuota.reached) return { ...currentQuota, reserved: false };
+
+    const existingUsed = currentQuota.used;
+    try {
+        await CvCreationQuota.updateOne(
+            { userId, day: 'lifetime' },
+            { $setOnInsert: { userId, day: 'lifetime', count: existingUsed } },
+            { upsert: true }
+        );
+    } catch (error: any) {
+        if (error?.code !== 11000) throw error;
+    }
+
+    const reserved = await CvCreationQuota.findOneAndUpdate(
+        { userId, day: 'lifetime', count: { $lt: currentQuota.limit } },
+        { $inc: { count: 1 } },
+        { new: true }
+    );
+
+    if (!reserved) {
+        return { ...currentQuota, remaining: 0, reached: true, reserved: false };
+    }
+
+    return { ...(await getCvCreationQuota(user)), reserved: true };
+};
+
+const rollbackCvCreationQuota = async (user: any) => {
+    await CvCreationQuota.updateOne(
+        { userId: user._id || user.id, day: 'lifetime', count: { $gt: 0 } },
+        { $inc: { count: -1 } }
+    );
 };
 
 const getDownloadQuota = async (user: any) => {
@@ -484,6 +560,118 @@ const titleFromCvData = (cvData: any) => {
     return fullName ? `${fullName} CV` : 'Untitled CV';
 };
 
+const CV_SECTION_KEYS = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
+const CV_STRING_FIELDS = {
+    personalInfo: ['fullName', 'email', 'phone', 'address', 'summary', 'dob', 'nic', 'gender', 'nationality', 'religion', 'maritalStatus'],
+    experience: ['company', 'position', 'startDate', 'endDate', 'description'],
+    education: ['institution', 'degree', 'startDate', 'endDate', 'description'],
+    skills: ['name', 'category'],
+    courses: ['name', 'institution', 'startDate', 'endDate'],
+    languages: ['name', 'proficiency'],
+    projects: ['name', 'description', 'link'],
+    awards: ['name', 'date', 'issuer'],
+    references: ['name', 'position', 'company', 'email', 'phone'],
+} as const;
+const MAX_STORED_CV_ITEMS = 50;
+const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
+
+const cleanStoredString = (value: unknown) => typeof value === 'string' ? sanitizeCvData(value).trim() : '';
+
+const cleanStoredNumber = (value: unknown, fallback: number, min: number, max: number) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
+};
+
+const cleanStoredHexColor = (value: unknown, fallback: string) => {
+    const color = cleanStoredString(value);
+    return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+};
+
+const cleanStoredColorMap = (value: unknown) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const colors = Object.entries(value as Record<string, unknown>).reduce<Record<string, string>>((acc, [key, color]) => {
+        if (!/^[a-z0-9_-]{1,80}$/i.test(key)) return acc;
+        const safeColor = cleanStoredHexColor(color, '');
+        if (safeColor) acc[key] = safeColor;
+        return acc;
+    }, {});
+    return Object.keys(colors).length ? colors : undefined;
+};
+
+const cleanStoredStringArray = (value: unknown, allowedValues?: readonly string[]) => {
+    if (!Array.isArray(value)) return [];
+    const allowed = allowedValues ? new Set(allowedValues) : null;
+    return Array.from(new Set(value
+        .map((item) => cleanStoredString(item))
+        .filter((item) => item && (!allowed || allowed.has(item)))))
+        .slice(0, MAX_STORED_CV_ITEMS);
+};
+
+const cleanStoredItems = (items: unknown, fields: readonly string[], options: { withSkillLevel?: boolean } = {}) => {
+    if (!Array.isArray(items)) return [];
+
+    return items.slice(0, MAX_STORED_CV_ITEMS)
+        .map((item) => {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+            const input = item as Record<string, unknown>;
+            const output: Record<string, unknown> = {};
+
+            const id = cleanStoredString(input.id);
+            if (id) output.id = id;
+
+            for (const field of fields) {
+                output[field] = cleanStoredString(input[field]);
+            }
+
+            if (options.withSkillLevel) {
+                output.level = cleanStoredNumber(input.level, 3, 1, 5);
+            }
+
+            const hasMeaningfulValue = fields.some((field) => Boolean(output[field]));
+            return hasMeaningfulValue ? output : null;
+        })
+        .filter(Boolean);
+};
+
+function sanitizeCvDataForStorage(cvData: any) {
+    const safe = sanitizeCvData(cvData || {});
+    const personalInfo = CV_STRING_FIELDS.personalInfo.reduce<Record<string, string>>((acc, field) => {
+        acc[field] = cleanStoredString(safe?.personalInfo?.[field]);
+        return acc;
+    }, {});
+
+    const templateThemeColors = cleanStoredColorMap(safe.templateThemeColors);
+    const templateSurfaceColors = cleanStoredColorMap(safe.templateSurfaceColors);
+
+    return {
+        personalInfo,
+        experience: cleanStoredItems(safe.experience, CV_STRING_FIELDS.experience),
+        education: cleanStoredItems(safe.education, CV_STRING_FIELDS.education),
+        skills: cleanStoredItems(safe.skills, CV_STRING_FIELDS.skills, { withSkillLevel: true }),
+        courses: cleanStoredItems(safe.courses, CV_STRING_FIELDS.courses),
+        languages: cleanStoredItems(safe.languages, CV_STRING_FIELDS.languages),
+        projects: cleanStoredItems(safe.projects, CV_STRING_FIELDS.projects),
+        awards: cleanStoredItems(safe.awards, CV_STRING_FIELDS.awards),
+        references: cleanStoredItems(safe.references, CV_STRING_FIELDS.references),
+        themeColor: cleanStoredHexColor(safe.themeColor, '#000000'),
+        ...(templateThemeColors ? { templateThemeColors } : {}),
+        fontFamily: cleanStoredString(safe.fontFamily) || 'Inter',
+        profileImage: cleanStoredString(safe.profileImage),
+        imageZoom: cleanStoredNumber(safe.imageZoom, 1, 0.5, 3),
+        imageX: cleanStoredNumber(safe.imageX, 0, -120, 120),
+        imageY: cleanStoredNumber(safe.imageY, 0, -120, 120),
+        sidebarColor: cleanStoredHexColor(safe.sidebarColor, '#1e293b'),
+        templateSurfaceColor: cleanStoredHexColor(safe.templateSurfaceColor, ''),
+        ...(templateSurfaceColors ? { templateSurfaceColors } : {}),
+        sectionOrder: cleanStoredStringArray(safe.sectionOrder, CV_SECTION_KEYS).length
+            ? cleanStoredStringArray(safe.sectionOrder, CV_SECTION_KEYS)
+            : DEFAULT_SECTION_ORDER,
+        lineSpacing: cleanStoredNumber(safe.lineSpacing, 1.5, 1, 2.5),
+        sectionGap: cleanStoredNumber(safe.sectionGap, 2, 0.5, 4),
+        hiddenSections: cleanStoredStringArray(safe.hiddenSections, CV_SECTION_KEYS),
+    };
+}
+
 const startOfUtcDay = (date = new Date()) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 
 const formatUtcDay = (date: Date) => date.toISOString().slice(0, 10);
@@ -569,11 +757,11 @@ const adminSupportTicketSummary = (ticket: any) => ({
 // â”€â”€â”€ API Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const routeDeps = {
-    User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, AppSetting, AdminAuditLog,
+    User, CVDocument, CvCreationQuota, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, AppSetting, AdminAuditLog,
     CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan,
     requireAuth, requireSuperAdmin, requireAdminPermission, sendError, passport,
     adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser,
-    authLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter,
+    authLimiter, aiLimiter, billingQuoteLimiter, pdfLimiter, passwordResetLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter,
     getRequestOrigin, isAllowedOrigin,
     clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
     generateCVHTML, generatePdfDocument, sanitizeCvData,
@@ -590,8 +778,9 @@ const routeDeps = {
     PAYHERE_PLAN_PRICES, payHereAmountToCents, getPayHereMerchantConfig, getPayHereCheckoutUrl,
     buildPayHereCheckoutHash, verifyPayHereMd5Signature, resolvePayHerePaymentContext,
     generateTransactionId, planDisplayName, createPlanExpiry, getEffectivePlan, isPaidPlan,
-    documentSummary, documentDetails, titleFromCvData, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
-    getCvCreationQuota, incrementCvCreationQuota, buildCvCreationQuota, buildDownloadQuota,
+    markSessionCurrent, invalidateUserSessions,
+    documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
+    getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, buildCvCreationQuota, buildDownloadQuota,
     requireVerifiedEmail, requirePaidPlan,
     startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, adminPaymentSummary,
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,
@@ -676,9 +865,17 @@ function buildRobotsTxt() {
     ].join('\n');
 }
 
-function renderSeoIndexHtml(req: Request) {
-    const indexPath = path.join(distPath, 'index.html');
-    const html = readFileSync(indexPath, 'utf-8');
+let indexHtmlPromise: Promise<string> | null = null;
+
+const getIndexHtml = () => {
+    if (!indexHtmlPromise) {
+        indexHtmlPromise = readFile(path.join(distPath, 'index.html'), 'utf-8');
+    }
+    return indexHtmlPromise;
+};
+
+async function renderSeoIndexHtml(req: Request) {
+    const html = await getIndexHtml();
     const route = getSeoRoute(req.path);
     const noIndex = shouldNoIndexPath(req.path) || !isPublicSeoPath(req.path);
     const canonicalPath = isPublicSeoPath(req.path) ? route.path : '/';
@@ -755,13 +952,43 @@ app.get('/assets/*', (_req: Request, res: Response) => {
 });
 
 // Catch-all: serve index.html for any non-API route (React Router support)
-app.get('*', (req: Request, res: Response) => {
+app.get('*', async (req: Request, res: Response) => {
     try {
-        res.type('html').send(renderSeoIndexHtml(req));
+        res.type('html').send(await renderSeoIndexHtml(req));
     } catch (error) {
         logError('server.seo_index_render_failed', error, { path: req.path });
         res.sendFile(path.join(distPath, 'index.html'));
     }
+});
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (res.headersSent) return next(err);
+
+    const rawStatus = Number(err?.status || err?.statusCode);
+    const status = Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus < 600
+        ? rawStatus
+        : err?.message === 'Cross-Origin Request Blocked by Security Policy'
+            ? 403
+            : 500;
+    const requestId = req.header('x-request-id') || undefined;
+    logError('server.unhandled_request_error', err, {
+        path: req.path,
+        method: req.method,
+        status,
+        requestId,
+    });
+
+    const message = status === 403
+        ? 'Request blocked by security policy.'
+        : status === 404
+            ? 'Not found.'
+            : 'Something went wrong. Please try again later.';
+
+    if (req.path.startsWith('/api/') || req.accepts(['json', 'html']) === 'json') {
+        return res.status(status).json({ error: message, ...(requestId ? { requestId } : {}) });
+    }
+
+    return res.status(status).type('text/plain').send(message);
 });
 
 if (process.env.NODE_ENV !== 'test') {
@@ -772,15 +999,31 @@ if (process.env.NODE_ENV !== 'test') {
     server.headersTimeout = Number.parseInt(process.env.SERVER_HEADERS_TIMEOUT_MS || '15000', 10) || 15000;
     server.keepAliveTimeout = Number.parseInt(process.env.SERVER_KEEP_ALIVE_TIMEOUT_MS || '65000', 10) || 65000;
 
-    const shutdown = (signal: string) => {
-        logEvent('info', 'server.shutdown_started', { signal });
-        server.close(() => {
+    let shutdownStarted = false;
+    const shutdown = (signal: string, exitCode = 0) => {
+        if (shutdownStarted) return;
+        shutdownStarted = true;
+        logEvent('info', 'server.shutdown_started', { signal, exitCode });
+
+        const forceExitTimer = setTimeout(() => {
+            logEvent('error', 'server.shutdown_timeout', { signal, exitCode });
+            process.exit(exitCode || 1);
+        }, Number.parseInt(process.env.GRACEFUL_SHUTDOWN_TIMEOUT_MS || '10000', 10) || 10000);
+        forceExitTimer.unref();
+
+        server.close((serverCloseError) => {
+            if (serverCloseError) {
+                logError('server.http_close_failed', serverCloseError, { signal });
+            }
+
             mongoose.connection.close(false)
                 .then(() => {
-                    logEvent('info', 'server.shutdown_completed', { signal });
-                    process.exit(0);
+                    clearTimeout(forceExitTimer);
+                    logEvent('info', 'server.shutdown_completed', { signal, exitCode });
+                    process.exit(exitCode);
                 })
                 .catch((error) => {
+                    clearTimeout(forceExitTimer);
                     logError('server.shutdown_failed', error, { signal });
                     process.exit(1);
                 });
@@ -789,6 +1032,14 @@ if (process.env.NODE_ENV !== 'test') {
 
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('unhandledRejection', (reason) => {
+        logError('server.unhandled_rejection', reason);
+        shutdown('unhandledRejection', 1);
+    });
+    process.on('uncaughtException', (error) => {
+        logError('server.uncaught_exception', error);
+        shutdown('uncaughtException', 1);
+    });
 }
 
 

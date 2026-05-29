@@ -48,6 +48,9 @@ const validateAuthEmail = (email: string, isValidEmail: (value: string) => boole
     return getAuthEmailDomainError(email);
 };
 
+const genericSignupError = 'Could not create your account. Please check your details and try again.';
+const genericPasswordResetMessage = 'If an account exists for this email, we will send password reset instructions.';
+
 export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     const {
         CVDocument,
@@ -65,6 +68,8 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         isMongoDuplicateKeyError,
         isMongoValidationError,
         isValidEmail,
+        invalidateUserSessions,
+        markSessionCurrent,
         mergeEmailTemplates,
         mongoose,
         normalizeEmail,
@@ -88,7 +93,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         verifyPassword,
     } = bindDeps(deps);
 
-    router.post('/api/auth/signup', async (req: Request, res: Response, next: NextFunction) => {
+    router.post('/api/auth/signup', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
         try {
             if (mongoose.connection.readyState !== 1) {
                 return res.status(503).json({ error: 'Database is not connected. Check MongoDB settings and try again.' });
@@ -123,7 +128,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             const existingUser = await User.findOne({ email });
             if (existingUser) {
-                return res.status(409).json({ error: 'An account already exists for this email.' });
+                return res.status(400).json({ error: genericSignupError });
             }
     
             const verification = generateEmailVerificationOtp();
@@ -145,6 +150,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             req.login(user, (err) => {
                 if (err) return next(err);
+                markSessionCurrent(req, user);
                 return res.status(201).json({
                     user: publicUser(user),
                     message: verificationEmailSent
@@ -154,7 +160,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             });
         } catch (error) {
             if (isMongoDuplicateKeyError(error)) {
-                return res.status(409).json({ error: 'An account already exists for this email.' });
+                return res.status(400).json({ error: genericSignupError });
             }
     
             if (isMongoValidationError(error)) {
@@ -166,7 +172,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.post('/api/auth/login', async (req: Request, res: Response, next: NextFunction) => {
+    router.post('/api/auth/login', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
         try {
             const email = normalizeEmail(req.body.email);
             const password = typeof req.body.password === 'string' ? req.body.password : '';
@@ -185,6 +191,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             req.login(user, (err) => {
                 if (err) return next(err);
+                markSessionCurrent(req, user);
                 return res.json({ user: publicUser(user) });
             });
         } catch (error) {
@@ -202,12 +209,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 return res.status(400).json({ error: emailError });
             }
 
-            const user = await User.findOne({ email });
-            if (!user) {
-                return res.status(404).json({ error: 'No account found for this email. Please sign up first.' });
-            }
-
-            return res.json({ exists: true, method: user.passwordHash ? 'password' : 'otp' });
+            return res.json({ exists: true, method: 'password' });
         } catch (error) {
             return sendError(res, 500, 'Could not check this email.', error);
         }
@@ -239,7 +241,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const isNewUser = !user;
 
             if (intent === 'signup' && user && user.emailVerified !== false) {
-                return res.status(409).json({ error: 'An account already exists for this email. Please login instead.' });
+                return res.json({
+                    needsName: false,
+                    message: 'If this email can continue, we will send an OTP.',
+                });
             }
 
             if (!displayName && isNewUser) {
@@ -341,6 +346,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
 
             req.login(user, (err) => {
                 if (err) return next(err);
+                markSessionCurrent(req, user);
                 return res.json({ user: publicUser(user), message: 'Logged in successfully.' });
             });
         } catch (error) {
@@ -408,7 +414,9 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             user.passwordHash = hashPassword(newPassword);
             user.authProvider = user.authProvider || 'email';
+            invalidateUserSessions(user);
             await user.save();
+            markSessionCurrent(req, user);
     
             res.json({ message: 'Password updated successfully.' });
         } catch (error) {
@@ -451,12 +459,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             if (emailError) {
                 return res.status(400).json({ error: emailError });
             }
-    
-            const user = await User.findOne({ email });
-            if (!user) {
-                return res.status(404).json({ error: 'No account found for this email address.' });
-            }
-    
+
             const resendApiKey = process.env.RESEND_API_KEY?.trim();
             const emailUser = process.env.EMAIL_USER?.trim();
             const emailPass = process.env.EMAIL_PASS?.trim();
@@ -466,6 +469,11 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const emailFrom = normalizeEmailFrom(process.env.EMAIL_FROM, emailFromFallback);
             if (!emailFrom || (!resendApiKey && (!emailUser || !emailPass))) {
                 return res.status(500).json({ error: 'Email service is not configured.' });
+            }
+
+            const user = await User.findOne({ email });
+            if (!user) {
+                return res.json({ message: genericPasswordResetMessage });
             }
     
             // Generate token
@@ -504,7 +512,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 throw emailError;
             }
     
-            res.json({ message: 'Reset link sent! Please check your email inbox.' });
+            res.json({ message: genericPasswordResetMessage });
         } catch (error) {
             return sendError(res, 500, 'Could not send reset password email.', error);
         }
@@ -553,6 +561,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             user.passwordHash = hashPassword(newPassword);
             user.resetPasswordToken = undefined;
             user.resetPasswordExpires = undefined;
+            invalidateUserSessions(user);
             await user.save();
     
             res.json({ message: 'Password has been successfully reset.' });
@@ -650,6 +659,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                     console.error('Google Auth session error:', loginErr?.message || loginErr);
                     return res.redirect('/?auth=failed&reason=session_error');
                 }
+                markSessionCurrent(req, user);
                 // Successful authentication
                 if ((user as any).wasNewlyCreated) {
                     void sendNewAccountNotification(user);

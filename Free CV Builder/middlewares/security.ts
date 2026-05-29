@@ -133,6 +133,7 @@ export const configureSecurityMiddleware = (app: Express) => {
             if (isAllowedOrigin(origin)) return callback(null, true);
             callback(new Error('Cross-Origin Request Blocked by Security Policy'));
         },
+        credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
         allowedHeaders: ['Content-Type', 'X-App-Source'],
     }));
