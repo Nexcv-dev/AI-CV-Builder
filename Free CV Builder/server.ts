@@ -2,7 +2,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dns from 'node:dns';
-import { readFile } from 'fs/promises';
+import { readFile, readdir } from 'fs/promises';
 import * as dotenv from 'dotenv';
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import mongoose from 'mongoose';
@@ -36,6 +36,7 @@ import {
     EMAIL_VERIFICATION_RESEND_WINDOW_MS,
     getAuthenticatedRateLimitKey,
     getEmailVerificationAttemptRateLimitKey,
+    passwordResetDailyLimiter,
     passwordResetLimiter,
     pdfLimiter,
     publicFormLimiter,
@@ -109,6 +110,7 @@ import {
 } from './server-utils/payHere';
 import {
     createLemonSqueezyCheckout,
+    getLemonSqueezyConfigIssues,
     getMissingLemonSqueezyConfigKeys,
     isLemonSqueezyConfigured,
     verifyLemonSqueezySignature,
@@ -819,7 +821,7 @@ const routeDeps = {
     CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan,
     requireAuth, requireSuperAdmin, requireAdminPermission, sendError, passport,
     adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser,
-    authLimiter, aiLimiter, billingQuoteLimiter, pdfLimiter, passwordResetLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter,
+    authLimiter, aiLimiter, billingQuoteLimiter, pdfLimiter, passwordResetLimiter, passwordResetDailyLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter,
     getRequestOrigin, isAllowedOrigin,
     clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
     generateCVHTML, generatePdfDocument, sanitizeCvData,
@@ -835,7 +837,7 @@ const routeDeps = {
     normalizeCouponCode, isPaidBillingPlan, getPublicBillingPlans, getAdminBillingPlans, quoteCheckout, getPlanPrice, resolveBillingMarket,
     PAYHERE_PLAN_PRICES, payHereAmountToCents, getPayHereMerchantConfig, getPayHereCheckoutUrl,
     buildPayHereCheckoutHash, verifyPayHereMd5Signature, resolvePayHerePaymentContext,
-    createLemonSqueezyCheckout, getMissingLemonSqueezyConfigKeys, isLemonSqueezyConfigured, verifyLemonSqueezySignature,
+    createLemonSqueezyCheckout, getLemonSqueezyConfigIssues, getMissingLemonSqueezyConfigKeys, isLemonSqueezyConfigured, verifyLemonSqueezySignature,
     generateTransactionId, planDisplayName, createPlanExpiry, getEffectivePlan, isPaidPlan,
     markSessionCurrent, invalidateUserSessions,
     documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
@@ -878,6 +880,7 @@ setupSentryExpressErrorHandler(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, 'dist');
+const distAssetsPath = path.join(distPath, 'assets');
 const siteUrl = normalizeSiteUrl(process.env.FRONTEND_URL || process.env.ALLOWED_ORIGIN || DEFAULT_SITE_URL);
 
 function buildSitemapXml() {
@@ -925,12 +928,25 @@ function buildRobotsTxt() {
 }
 
 let indexHtmlPromise: Promise<string> | null = null;
+let currentAssetManifestPromise: Promise<{ css?: string; js?: string }> | null = null;
 
 const getIndexHtml = () => {
     if (!indexHtmlPromise) {
         indexHtmlPromise = readFile(path.join(distPath, 'index.html'), 'utf-8');
     }
     return indexHtmlPromise;
+};
+
+const getCurrentAssetManifest = async () => {
+    if (!currentAssetManifestPromise) {
+        currentAssetManifestPromise = readdir(distAssetsPath)
+            .then((files) => ({
+                css: files.find((file) => /^index-.*\.css$/i.test(file)),
+                js: files.find((file) => /^index-.*\.js$/i.test(file)),
+            }))
+            .catch(() => ({}));
+    }
+    return currentAssetManifestPromise;
 };
 
 async function renderSeoIndexHtml(req: Request) {
@@ -1006,16 +1022,32 @@ app.use(express.static(distPath, {
 
 app.use('/admin', requireAdminPageAllowedIp);
 
-app.get('/assets/*', (_req: Request, res: Response) => {
-    res.status(404).type('text/plain').send('Asset not found');
+app.get('/assets/*', async (req: Request, res: Response) => {
+    const requested = path.basename(req.path);
+    const manifest = await getCurrentAssetManifest();
+
+    if (/^index-.*\.css$/i.test(requested) && manifest.css) {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.redirect(302, `/assets/${manifest.css}`);
+    }
+    if (/^index-.*\.js$/i.test(requested) && manifest.js) {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.redirect(302, `/assets/${manifest.js}`);
+    }
+
+    return res.status(404).type('text/plain').send('Asset not found');
 });
 
 // Catch-all: serve index.html for any non-API route (React Router support)
 app.get('*', async (req: Request, res: Response) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
         res.type('html').send(await renderSeoIndexHtml(req));
     } catch (error) {
         logError('server.seo_index_render_failed', error, { path: req.path });
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
         res.sendFile(path.join(distPath, 'index.html'));
     }
 });

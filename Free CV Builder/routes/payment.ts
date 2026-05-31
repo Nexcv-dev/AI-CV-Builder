@@ -19,6 +19,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         createLemonSqueezyCheckout,
         getApiOrigin,
         getFrontendOrigin,
+        getLemonSqueezyConfigIssues,
         getMissingLemonSqueezyConfigKeys,
         getPayHereCheckoutUrl,
         getPayHereMerchantConfig,
@@ -30,6 +31,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         normalizeEmail,
         payHereAmountToCents,
         planDisplayName,
+        publicUser,
         isLemonSqueezyConfigured,
         quoteCheckout,
         requireAdminPermission,
@@ -546,9 +548,12 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             }
 
             if (!isLemonSqueezyConfigured()) {
+                const issues = getLemonSqueezyConfigIssues();
+                logEvent('error', 'payment.lemonsqueezy_config_invalid', { issues });
                 return res.status(500).json({
                     error: 'Lemon Squeezy checkout is not configured.',
                     missing: getMissingLemonSqueezyConfigKeys(),
+                    issues,
                 });
             }
 
@@ -611,7 +616,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
 
     router.post('/api/lemonsqueezy/webhook', express.raw({ type: 'application/json', limit: '1mb' }), async (req: Request, res: Response) => {
         const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
-        const eventName = String(req.get('X-Event-Name') || '');
+        let eventName = String(req.get('X-Event-Name') || '');
         try {
             if (!verifyLemonSqueezySignature(rawBody, req.get('X-Signature'))) {
                 logEvent('warn', 'payment.lemonsqueezy_webhook_signature_failed', { eventName });
@@ -619,6 +624,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             }
 
             const payload = JSON.parse(rawBody.toString('utf8'));
+            eventName = eventName || String(payload?.meta?.event_name || '');
             const customData = payload?.meta?.custom_data || {};
             const orderId = String(customData.order_id || '');
             const userId = String(customData.user_id || '');
@@ -777,6 +783,40 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         } catch (error) {
             logError('payment.lemonsqueezy_webhook_failed', error, { eventName });
             return sendError(res, 500, 'Could not process Lemon Squeezy webhook.', error);
+        }
+    });
+
+    router.get('/api/billing/checkout/:orderId/status', requireAuth, async (req: Request, res: Response) => {
+        try {
+            const orderId = typeof req.params.orderId === 'string' ? req.params.orderId.trim() : '';
+            if (!orderId) return res.status(400).json({ error: 'Missing checkout order.' });
+
+            const checkoutSession = await CheckoutSession.findOne({
+                orderId,
+                userId: currentUserId(req),
+            });
+
+            if (!checkoutSession) {
+                return res.status(404).json({ error: 'Checkout session not found.' });
+            }
+
+            const user = await User.findById(currentUserId(req));
+            const planActive = Boolean(
+                user &&
+                (user.plan === checkoutSession.plan || user.plan === 'unlimited') &&
+                (!user.planExpiresAt || user.planExpiresAt > new Date())
+            );
+
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.setHeader('Pragma', 'no-cache');
+            return res.json({
+                status: checkoutSession.status,
+                plan: checkoutSession.plan,
+                planActive,
+                user: user ? publicUser(user) : undefined,
+            });
+        } catch (error) {
+            return sendError(res, 500, 'Could not load checkout status.', error);
         }
     });
 

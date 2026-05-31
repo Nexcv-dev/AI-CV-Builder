@@ -98,6 +98,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         normalizeEmailFrom,
         passport,
         passwordPolicyMessage,
+        passwordResetDailyLimiter,
         passwordResetLimiter,
         publicUser,
         randomBytes,
@@ -471,7 +472,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     });
 
 
-    router.post('/api/auth/forgot-password', passwordResetLimiter, async (req: Request, res: Response) => {
+    router.post('/api/auth/forgot-password', passwordResetLimiter, passwordResetDailyLimiter, async (req: Request, res: Response) => {
         try {
             const email = normalizeEmail(req.body.email);
             const emailError = validateAuthEmail(email, isValidEmail);

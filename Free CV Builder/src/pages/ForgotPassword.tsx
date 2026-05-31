@@ -38,7 +38,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <main className="password-reset-page flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-12 text-white sm:px-6 lg:px-8">
       {sentMessage ? (
         <div className="w-full max-w-md rounded-2xl border border-emerald-300/20 bg-slate-900 p-6 text-center shadow-2xl shadow-black/40 sm:p-8">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-400/10 text-emerald-300">
@@ -104,6 +104,6 @@ export default function ForgotPassword() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

@@ -37,6 +37,13 @@ interface LemonSqueezyCheckoutResponse {
   quote: CheckoutQuote;
 }
 
+interface CheckoutStatusResponse {
+  status: 'pending' | 'paid' | 'failed' | 'expired' | 'cancelled';
+  plan: CheckoutPlanKey;
+  planActive: boolean;
+  user?: AuthUser;
+}
+
 interface BillingPlanPrice {
   plan: CheckoutPlanKey;
   amount: string;
@@ -194,6 +201,21 @@ export default function CheckoutPage() {
   const countrySearchRef = useRef('');
   const countrySearchTimerRef = useRef<number | null>(null);
   const checkoutInFlightRef = useRef(false);
+  const confirmingReturnRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const resetCheckoutLoadingState = () => {
+      checkoutInFlightRef.current = false;
+      setSubmitting(false);
+    };
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) resetCheckoutLoadingState();
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -337,22 +359,48 @@ export default function CheckoutPage() {
     if (paymentStatus !== 'return') return;
 
     let ignore = false;
-    const toastId = toast.loading('Confirming your payment...');
+    const orderId = searchParams.get('order') || 'unknown-order';
+    const confirmationKey = `${selectedPlan.key}:${orderId}`;
+    if (confirmingReturnRef.current === confirmationKey) return;
+    confirmingReturnRef.current = confirmationKey;
+    const toastId = 'payment-confirmation';
+    toast.loading('Confirming your payment...', { id: toastId });
 
     async function finishPaymentReturn() {
       let refreshedUser: AuthUser | null = null;
+      let planActive = false;
+      let checkoutStatus: CheckoutStatusResponse['status'] | null = null;
 
-      for (let attempt = 0; attempt < 5; attempt += 1) {
+      for (let attempt = 0; attempt < 30; attempt += 1) {
         try {
+          if (orderId && orderId !== 'unknown-order') {
+            const status = await apiFetch<CheckoutStatusResponse>(
+              `/api/billing/checkout/${encodeURIComponent(orderId)}/status`,
+              { cache: 'no-store' }
+            );
+            checkoutStatus = status.status;
+            if (status.user) {
+              refreshedUser = status.user;
+            }
+            if (status.planActive || status.status === 'paid') {
+              planActive = true;
+              break;
+            }
+            if (status.status === 'failed' || status.status === 'expired' || status.status === 'cancelled') {
+              break;
+            }
+          }
+
           refreshedUser = await getCurrentUser();
           if (refreshedUser.plan === selectedPlan.key || refreshedUser.plan === 'unlimited') {
+            planActive = true;
             break;
           }
         } catch {
-          // Keep retrying briefly; PayHere can redirect before the IPN has refreshed the plan.
+          // Keep retrying briefly; gateways can redirect before the webhook has refreshed the plan.
         }
 
-        await new Promise((resolve) => window.setTimeout(resolve, 900));
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
       }
 
       if (ignore) return;
@@ -364,13 +412,23 @@ export default function CheckoutPage() {
 
       sessionStorage.removeItem('nexcv-pending-checkout');
       toast.dismiss(toastId);
-      navigate('/builder?payment=success', { replace: true });
+      if (planActive) {
+        navigate('/builder?payment=success', { replace: true });
+        return;
+      }
+
+      const pendingMessage = checkoutStatus === 'failed' || checkoutStatus === 'expired' || checkoutStatus === 'cancelled'
+        ? 'Payment was not confirmed by the gateway. Please contact support if money was deducted.'
+        : 'Payment is still being confirmed. Please refresh in a moment.';
+      toast(pendingMessage, { id: 'payment-confirmation-pending' });
+      setSearchParams({ plan: selectedPlan.key }, { replace: true });
     }
 
     void finishPaymentReturn();
 
     return () => {
       ignore = true;
+      confirmingReturnRef.current = null;
     };
   }, [navigate, searchParams, selectedPlan.key, setSearchParams]);
 
@@ -626,7 +684,7 @@ export default function CheckoutPage() {
                     {countryMenuOpen && (
                       <div
                         role="listbox"
-                        className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-72 overflow-y-auto overscroll-contain rounded-xl border border-violet-300/40 bg-slate-950 py-2 shadow-2xl shadow-black/40"
+                        className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 max-h-72 overflow-y-auto overscroll-contain rounded-xl border border-violet-300/40 bg-slate-950 py-2 shadow-2xl shadow-black/40"
                       >
                         {COUNTRIES.map((country) => {
                           const selected = country.code === (form.countryCode || resolvedCountry);

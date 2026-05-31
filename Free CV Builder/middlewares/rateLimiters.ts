@@ -35,6 +35,13 @@ export const getEmailVerificationAttemptRateLimitKey = (req: Request) => {
     return `ip:${ipKeyGenerator(req.ip)}`;
 };
 
+export const getPasswordResetRateLimitKey = (req: Request) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    if (email) return `email:${email}`;
+
+    return `ip:${ipKeyGenerator(req.ip)}`;
+};
+
 const useSharedRateLimitStore = () => Boolean((process.env.MONGO_URI || process.env.MONGODB_URI || '').trim());
 const createRateLimitStore = (prefix: string) => useSharedRateLimitStore()
     ? new MongoRateLimitStore(prefix)
@@ -81,11 +88,21 @@ export const authLimiter = createRateLimiter('auth', {
 });
 
 export const passwordResetLimiter = createRateLimiter('password-reset', {
-    windowMs: 60 * 60 * 1000,
+    windowMs: 15 * 60 * 1000,
     max: 3,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Too many password reset attempts. Please wait an hour before trying again.' },
+    keyGenerator: getPasswordResetRateLimitKey,
+    message: { error: 'Too many password reset attempts. Please wait 15 minutes before trying again.' },
+});
+
+export const passwordResetDailyLimiter = createRateLimiter('password-reset-daily', {
+    windowMs: 24 * 60 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: getPasswordResetRateLimitKey,
+    message: { error: 'Daily password reset limit reached. Please try again tomorrow.' },
 });
 
 export const publicFormLimiter = createRateLimiter('public-form', {
