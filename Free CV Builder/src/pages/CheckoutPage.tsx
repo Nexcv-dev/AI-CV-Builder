@@ -227,11 +227,6 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!countryMenuOpen) return;
 
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    const previousBodyOverflow = document.body.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (target && countryDropdownRef.current?.contains(target)) return;
@@ -272,8 +267,6 @@ export default function CheckoutPage() {
       countrySearchRef.current = '';
       countrySearchTimerRef.current = null;
       setCountrySearchIndex(null);
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      document.body.style.overflow = previousBodyOverflow;
     };
   }, [countryMenuOpen]);
 
@@ -633,7 +626,7 @@ export default function CheckoutPage() {
                     {countryMenuOpen && (
                       <div
                         role="listbox"
-                        className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-72 overflow-y-auto rounded-xl border border-violet-300/40 bg-slate-950 py-2 shadow-2xl shadow-black/40"
+                        className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-72 overflow-y-auto overscroll-contain rounded-xl border border-violet-300/40 bg-slate-950 py-2 shadow-2xl shadow-black/40"
                       >
                         {COUNTRIES.map((country) => {
                           const selected = country.code === (form.countryCode || resolvedCountry);
