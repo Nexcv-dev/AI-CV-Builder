@@ -96,6 +96,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         mongoose,
         normalizeEmail,
         normalizeEmailFrom,
+        buildBrandedEmailHtml,
         passport,
         passwordPolicyMessage,
         passwordResetDailyLimiter,
@@ -520,6 +521,13 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 from: emailFrom,
                 subject: passwordResetTemplate.subject,
                 text: passwordResetTemplate.text,
+                html: await buildBrandedEmailHtml({
+                    subject: passwordResetTemplate.subject,
+                    text: passwordResetTemplate.text,
+                    badge: 'Password reset',
+                    ctaLabel: 'Reset password',
+                    ctaUrl: resetUrl,
+                }),
             };
     
             try {

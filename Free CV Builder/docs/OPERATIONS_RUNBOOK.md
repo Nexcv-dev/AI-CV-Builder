@@ -60,6 +60,30 @@ Resolution:
 - Review failed/pending transactions in admin billing.
 - Keep a reconciliation note for later cleanup.
 
+## Lemon Squeezy Payments Not Activating
+
+Symptoms:
+
+- User paid through Lemon Squeezy but plan did not upgrade.
+- User returns to checkout and sees payment confirmation pending.
+- Sentry or logs show webhook errors.
+
+Diagnosis:
+
+- Check logs for `POST /api/lemonsqueezy/webhook`.
+- Search logs for `payment.lemonsqueezy_webhook_failed`, `payment.lemonsqueezy_webhook_signature_failed`, `payment.lemonsqueezy_webhook_amount_mismatch`, or `payment.lemonsqueezy_webhook_context_missing`.
+- Confirm the webhook URL is `https://your-domain.example/api/lemonsqueezy/webhook`.
+- Confirm `LEMON_SQUEEZY_WEBHOOK_SECRET` matches the Lemon Squeezy webhook signing secret.
+- Confirm `LEMON_SQUEEZY_STORE_ID` and variant IDs are numeric and from the same test/live store.
+- Confirm the checkout was started from the same environment users return to. Localhost tests need `FRONTEND_URL=http://localhost:3000`; production tests need the production domain.
+
+Resolution:
+
+- Fix env values or webhook URL, then resend the webhook from Lemon Squeezy.
+- Review the checkout session/payment transaction in admin billing.
+- Manually correct affected users only after verifying the payment in Lemon Squeezy.
+- Keep a reconciliation note with the Lemon Squeezy order/payment ID.
+
 ## Admin Panel Inaccessible
 
 Symptoms:
@@ -74,6 +98,7 @@ Diagnosis:
 - Check `SUPER_ADMIN_EMAILS` for bootstrap access.
 - Check `ADMIN_ALLOWED_IPS` in production.
 - Confirm the user's current public IP.
+- Confirm the app is resolving real client IPs through the host/proxy. Render should work with Express `trust proxy`; the allowlist must contain the public client IP, not an internal container IP.
 
 Resolution:
 
@@ -94,12 +119,14 @@ Diagnosis:
 - Search logs for `email.gmail_api_failed`, `email.resend_failed`, `email.smtp_failed`, or `email.notification_failed`.
 - Check `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_FROM`, SMTP variables, `RESEND_API_KEY`, or Gmail OAuth variables.
 - Check provider rate limits and spam/bounce logs.
+- For HTML design issues, remember the app sends React Email generated `html` plus plain `text`. Resend delivers the HTML as provided; it does not automatically redesign plain text.
 
 Resolution:
 
 - Fix credentials or sender domain setup.
 - Rotate app passwords/API keys if exposed or expired.
 - Use a verified sender domain before launch.
+- Keep plain text content sensible in admin email templates because it remains the fallback and is wrapped into the branded HTML design.
 
 ## Maintenance Mode
 
