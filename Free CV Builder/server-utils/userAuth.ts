@@ -116,6 +116,7 @@ export const publicUser = (user: any) => ({
     displayName: user.displayName,
     role: user.role || 'user',
     emailVerified: isEmailVerified(user),
+    hasPassword: Boolean(user.passwordHash),
     profileImage: user.profileImage,
     phone: user.phone,
     address: user.address,

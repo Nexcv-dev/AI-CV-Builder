@@ -57,6 +57,7 @@ export function AppRoutes() {
   const location = useLocation();
   const [publicSettings, setPublicSettings] = useState<PublicAppSettings | null>(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const isRecoveryRoute = location.pathname === '/forgot-password' || location.pathname === '/reset-password';
 
   useEffect(() => {
     let ignore = false;
@@ -75,7 +76,7 @@ export function AppRoutes() {
     };
   }, []);
 
-  if (!settingsLoaded) {
+  if (!settingsLoaded && !isRecoveryRoute) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm font-bold text-slate-400">
         Loading NexCV...

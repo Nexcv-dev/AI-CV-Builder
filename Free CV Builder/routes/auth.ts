@@ -70,6 +70,40 @@ const loginWithRegeneratedSession = (
     });
 };
 
+const GOOGLE_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
+type TokenHasher = (value: string) => string;
+type RandomBytesFactory = (size: number) => { toString(encoding: 'hex'): string };
+
+const createGoogleOAuthState = (
+    req: Request,
+    randomBytes: RandomBytesFactory,
+    hashToken: TokenHasher,
+) => {
+    const state = randomBytes(32).toString('hex');
+    (req.session as any).googleOAuthState = {
+        value: hashToken(state),
+        createdAt: Date.now(),
+    };
+    return state;
+};
+
+const consumeGoogleOAuthState = (
+    req: Request,
+    state: unknown,
+    hashToken: TokenHasher,
+) => {
+    const stored = (req.session as any)?.googleOAuthState;
+    delete (req.session as any).googleOAuthState;
+
+    if (!stored || typeof state !== 'string' || !state) return false;
+    if (typeof stored.createdAt !== 'number' || Date.now() - stored.createdAt > GOOGLE_OAUTH_STATE_TTL_MS) {
+        return false;
+    }
+
+    return stored.value === hashToken(state);
+};
+
 const genericSignupError = 'Could not create your account. Please check your details and try again.';
 const genericPasswordResetMessage = 'If an account exists for this email, we will send password reset instructions.';
 
@@ -429,7 +463,11 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 return res.status(404).json({ error: 'User not found.' });
             }
     
-            if (user.passwordHash && !verifyPassword(currentPassword, user.passwordHash)) {
+            if (!user.passwordHash) {
+                return res.status(400).json({ error: 'This account does not have a password yet. Use forgot password to create one securely.' });
+            }
+
+            if (!verifyPassword(currentPassword, user.passwordHash)) {
                 return res.status(401).json({ error: 'Current password is incorrect.' });
             }
     
@@ -455,7 +493,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             req.logout((err) => {
                 if (err) return next(err);
                 req.session.destroy(() => {
-                    res.clearCookie('connect.sid');
+                    res.clearCookie(process.env.SESSION_COOKIE_NAME || 'nexcv.sid');
                     res.json({ message: 'Account deleted successfully.' });
                 });
             });
@@ -664,15 +702,19 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             nextTarget === 'download' ? '/builder?download=1' :
                 nextTarget === 'builder' ? '/builder' :
                     '/builder?import=1';
+        (req as any).googleOAuthState = createGoogleOAuthState(req, randomBytes, hashToken);
         next();
-    }, passport.authenticate('google', {
-        scope: ['profile', 'email']
-    }));
+    }, (req: Request, res: Response, next: NextFunction) => passport.authenticate('google', {
+        scope: ['profile', 'email'],
+        state: (req as any).googleOAuthState,
+    })(req, res, next));
     
-    // Google Auth Callback
-
-
     router.get('/api/auth/google/callback', (req: Request, res: Response, next: NextFunction) => {
+        if (!consumeGoogleOAuthState(req, req.query.state, hashToken)) {
+            console.warn('Google Auth callback rejected: invalid OAuth state');
+            return res.redirect('/?auth=failed&reason=invalid_state');
+        }
+
         passport.authenticate('google', (err: any, user: any, info: any) => {
             if (err) {
                 console.error('Google Auth callback error:', err?.message || err);
@@ -720,7 +762,11 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     router.post('/api/auth/logout', (req: Request, res: Response, next: NextFunction) => {
         req.logout((err) => {
             if (err) { return next(err); }
-            res.json({ message: 'Logged out successfully' });
+            req.session.destroy((destroyError) => {
+                if (destroyError) return next(destroyError);
+                res.clearCookie(process.env.SESSION_COOKIE_NAME || 'nexcv.sid');
+                res.json({ message: 'Logged out successfully' });
+            });
         });
     });
 
