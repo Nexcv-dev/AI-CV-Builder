@@ -3,11 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #200 from bimanthaperera-lab/test/overview (40f48b5) - Bimantha Perera, 10 seconds ago
-* Update CheckoutPage.tsx (cf1b6a2) - Bimantha Perera, 4 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (1ef6f52) - bimanthaperera-lab, 75 minutes ago
-* Merge pull request #199 from bimanthaperera-lab/test/overview (5d80a3c) - Bimantha Perera, 76 minutes ago
-* fix security issues and add lemon squeezy (5bae982) - Bimantha Perera, 2 hours ago
+* Merge pull request #201 from bimanthaperera-lab/test/overview (65fd8c3) - Bimantha Perera, 9 seconds ago
+* fix payment issues and bugs (d7f6d2d) - Bimantha Perera, 3 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (2d63a1d) - bimanthaperera-lab, 3 hours ago
+* Merge pull request #200 from bimanthaperera-lab/test/overview (40f48b5) - Bimantha Perera, 3 hours ago
+* Update CheckoutPage.tsx (cf1b6a2) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (1ef6f52) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #199 from bimanthaperera-lab/test/overview (5d80a3c) - Bimantha Perera, 4 hours ago
+* fix security issues and add lemon squeezy (5bae982) - Bimantha Perera, 4 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (a51753b) - bimanthaperera-lab, 2 days ago
 * Merge pull request #198 from bimanthaperera-lab/test/overview (3d5af3b) - Bimantha Perera, 2 days ago
 * improve security and bug fixing (2ff8fcc) - Bimantha Perera, 2 days ago
