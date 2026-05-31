@@ -12,7 +12,7 @@ import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { documentsQueryKey, documentsStaleTime, fetchDocuments } from '../hooks/useDocumentsQuery';
 import { initialBuilderCvData, useBuilderStore } from '../stores/useBuilderStore';
-import { ApiError, AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
+import { ApiError, AuthUser, apiFetch, csrfFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
 import { AccountMenu } from '../components/AccountMenu';
 import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import toast from 'react-hot-toast';
@@ -244,7 +244,7 @@ export default function Home() {
       setTemplate(paramTemplate);
     }
     if (showPaymentSuccessOnLoad.current) {
-      toast.success('Payment successful. Your premium tools are ready.');
+      toast.success('Payment successful. Your premium tools are ready.', { id: 'payment-success' });
     }
     // Remove one-time query params so they do not persist on manual refresh.
     if (searchParams.has('template') || searchParams.has('import') || searchParams.has('download') || searchParams.has('templates') || searchParams.has('payment')) {
@@ -633,11 +633,10 @@ export default function Home() {
     setIsGeneratingPDF(true);
 
     try {
-      const response = await fetch('/api/generate-pdf', {
+      const response = await csrfFetch('/api/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-App-Source': 'cv-builder-app',
         },
         body: JSON.stringify({ cvData, template }),
       });

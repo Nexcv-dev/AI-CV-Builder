@@ -48,7 +48,8 @@ export function formatNumber(value: number) {
 }
 
 export function formatCurrency(cents: number, currency: string) {
-  return `${currency} ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(cents / 100))}`;
+  const fractionDigits = currency === 'USD' ? 2 : 0;
+  return `${currency} ${new Intl.NumberFormat(undefined, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(cents / 100)}`;
 }
 
 export function formatDate(value: string) {

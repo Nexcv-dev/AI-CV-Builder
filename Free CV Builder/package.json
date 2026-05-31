@@ -58,6 +58,7 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.15.1",
     "react-simple-wysiwyg": "^3.4.1",
+    "world-countries": "^5.1.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

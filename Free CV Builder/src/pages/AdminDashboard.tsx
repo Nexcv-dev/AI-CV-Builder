@@ -484,6 +484,7 @@ export default function AdminDashboard() {
         method: 'PATCH',
         body: JSON.stringify({
           label: draft.label,
+          market: plan.market,
           amountCents,
           promotionActive: draft.promotionActive,
           promotionLabel: draft.promotionLabel,
@@ -493,7 +494,7 @@ export default function AdminDashboard() {
             : Number(draft.promotionDiscountValue),
         }),
       });
-      setBillingPlans((items) => items.map((item) => item.plan === data.plan.plan ? data.plan : item));
+      setBillingPlans((items) => items.map((item) => item.plan === data.plan.plan && item.market === data.plan.market ? data.plan : item));
       toast.success('Plan price updated.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not update plan price.');

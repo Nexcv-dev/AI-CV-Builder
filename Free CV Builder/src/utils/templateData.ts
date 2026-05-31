@@ -117,6 +117,14 @@ const templateFontMap: Record<string, string> = {
   'JetBrains Mono': "'JetBrains Mono', monospace",
 };
 
+const sanitizeTemplateFontFamily = (value: unknown) => {
+  if (typeof value !== 'string') return 'Inter';
+  const fontFamily = value.trim();
+  return Object.prototype.hasOwnProperty.call(templateFontMap, fontFamily) ? fontFamily : 'Inter';
+};
+
+const googleFontFamilyParam = (fontFamily: string) => fontFamily.replace(/\s+/g, '+');
+
 const formatDateInline = (startDate?: string, endDate?: string) =>
   [startDate || '', endDate || ''].filter(Boolean).join(startDate && endDate ? ' - ' : '');
 
@@ -146,7 +154,7 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
   const startupHeaderBackground = cvData?.templateSurfaceColor
     ? templateSurfaceColor
     : `linear-gradient(135deg, ${themeColor} 0%, #047857 100%)`;
-  const fontFamily = cvData?.fontFamily || 'Inter';
+  const fontFamily = sanitizeTemplateFontFamily(cvData?.fontFamily);
   const imageCss = profileImageCss(cvData);
   const profileImage = cvData?.profileImage || '';
   const lineSpacing = safeNumber(cvData?.lineSpacing, 1.5, 1, 2.5);
@@ -251,8 +259,8 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
       startupHeaderMutedColor,
       startupHeaderBackground,
       fontFamily,
-      fontFamilyCSS: templateFontMap[fontFamily] || "'Inter', sans-serif",
-      googleFontName: String(fontFamily || 'Inter').replace(/\s+/g, '+'),
+      fontFamilyCSS: templateFontMap[fontFamily],
+      googleFontName: googleFontFamilyParam(fontFamily),
       lineSpacing,
       sectionGap,
       sectionGapRem: `${sectionGap}rem`,

@@ -4,13 +4,13 @@ import { ArrowRight, Check, Crown, Download, FileText, Sparkles, Zap, type Lucid
 import { SiteHeader } from '../components/SiteHeader';
 import { usePublicContent } from '../hooks/usePublicContent';
 import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
+import { detectClientBillingCountry } from '../utils/countries';
 
 type PlanKey = 'free' | 'payg' | 'monthly';
 
 const plans: Array<{
   key: PlanKey;
   name: string;
-  price: string;
   duration: string;
   description: string;
   cta?: string;
@@ -22,7 +22,6 @@ const plans: Array<{
   {
     key: 'free',
     name: 'Free',
-    price: 'LKR 0',
     duration: 'starter access',
     description: 'Try the builder with a single saved CV and one watermarked export.',
     icon: FileText,
@@ -36,7 +35,6 @@ const plans: Array<{
   {
     key: 'payg',
     name: 'Pay As You Go',
-    price: 'LKR 499',
     duration: '7 days (One-time payment)',
     description: 'Perfect when you need one polished CV ready for applications this week.',
     icon: Zap,
@@ -53,7 +51,6 @@ const plans: Array<{
   {
     key: 'monthly',
     name: 'Monthly',
-    price: 'LKR 2199',
     duration: '30 days (One-time payment)',
     description: 'For active job searches with multiple CV versions and unlimited exports.',
     icon: Crown,
@@ -79,7 +76,11 @@ export default function PricingPage() {
     promotionLabel?: string;
     discountBadge?: string;
     currency: string;
+    provider?: string;
+    market?: 'local' | 'global';
   }> | null>(null);
+  const [resolvedCountry, setResolvedCountry] = useState('GLOBAL');
+  const [billingCurrency, setBillingCurrency] = useState('USD');
 
   useEffect(() => {
     let ignore = false;
@@ -101,9 +102,13 @@ export default function PricingPage() {
 
   useEffect(() => {
     let ignore = false;
-    apiFetch<{ plans: Array<{ plan: string; cents: number; baseAmountCents: number; promotionActive: boolean; promotionLabel?: string; discountBadge?: string; currency: string }> }>('/api/billing/plans')
+    const country = detectClientBillingCountry();
+    const suffix = country ? `?country=${encodeURIComponent(country)}` : '';
+    apiFetch<{ country: string; market: 'local' | 'global'; plans: Array<{ plan: string; cents: number; baseAmountCents: number; promotionActive: boolean; promotionLabel?: string; discountBadge?: string; currency: string; provider?: string; market?: 'local' | 'global' }> }>(`/api/billing/plans${suffix}`, { cache: 'no-store' })
       .then((data) => {
         if (!ignore) {
+          setResolvedCountry(data.country);
+          setBillingCurrency(data.market === 'local' ? 'LKR' : 'USD');
           setPlanPrices(data.plans.reduce((acc, plan) => ({ ...acc, [plan.plan]: plan }), {} as Record<string, {
             cents: number;
             baseAmountCents: number;
@@ -111,6 +116,8 @@ export default function PricingPage() {
             promotionLabel?: string;
             discountBadge?: string;
             currency: string;
+            provider?: string;
+            market?: 'local' | 'global';
           }>));
         }
       })
@@ -132,7 +139,16 @@ export default function PricingPage() {
     return copy ? { ...plan, ...copy } : plan;
   }), [cmsContent.pricingPlans]);
 
-  const formatPrice = (cents: number, currency = 'LKR') => `${currency} ${new Intl.NumberFormat().format(Math.round(cents / 100))}`;
+  const formatPrice = (cents: number, currency = 'LKR') => {
+    const amount = cents / 100;
+    const fractionDigits = currency === 'USD' ? 2 : 0;
+    return `${currency} ${new Intl.NumberFormat(undefined, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(amount)}`;
+  };
+
+  const displayPlanPrice = (plan: { key: PlanKey }) => {
+    if (plan.key === 'free') return formatPrice(0, billingCurrency);
+    return planPrices?.[plan.key] ? formatPrice(planPrices[plan.key].cents, planPrices[plan.key].currency) : 'Loading...';
+  };
 
   return (
     <>
@@ -167,7 +183,8 @@ export default function PricingPage() {
         </section>
 
         <section className="bg-slate-900 py-10 sm:py-14">
-          <div className="mx-auto grid max-w-7xl gap-4 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-4 lg:grid-cols-3">
             {cmsPlans.map((plan) => {
               const Icon = plan.icon;
               const isCurrentPlan = user?.plan === plan.key || (plan.key === 'free' && (!user || user.plan === 'free'));
@@ -202,7 +219,7 @@ export default function PricingPage() {
                       </div>
                     )}
                     <div className={`text-4xl font-black ${planPrices?.[plan.key]?.promotionActive ? 'text-emerald-300' : ''}`}>
-                      {planPrices?.[plan.key] ? formatPrice(planPrices[plan.key].cents, planPrices[plan.key].currency) : plan.price}
+                      {displayPlanPrice(plan)}
                     </div>
                     {planPrices?.[plan.key]?.promotionLabel && (
                       <div className="mt-2 text-xs font-black uppercase text-emerald-200">{planPrices[plan.key].promotionLabel}</div>
@@ -232,7 +249,7 @@ export default function PricingPage() {
                       </Link>
                     ) : (
                       <Link
-                        to={`/checkout?plan=${plan.key}`}
+                        to={`/checkout?plan=${plan.key}&country=${encodeURIComponent(resolvedCountry)}`}
                         className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-black transition active:scale-[0.98] ${
                           plan.highlighted ? 'bg-violet-500 text-white hover:bg-violet-400' : 'bg-white text-slate-950 hover:bg-slate-200'
                         }`}
@@ -245,6 +262,7 @@ export default function PricingPage() {
                 </article>
               );
             })}
+            </div>
           </div>
         </section>
       </main>

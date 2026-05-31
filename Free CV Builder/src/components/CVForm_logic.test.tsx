@@ -42,12 +42,21 @@ vi.mock('react-hot-toast', () => ({
 }));
 
 // Mock fetch globally with a small delay to allow testing intermediate states
-vi.stubGlobal('fetch', vi.fn(() => 
-  new Promise(resolve => setTimeout(() => resolve({ 
+vi.stubGlobal('fetch', vi.fn((input: any) => {
+  const urlStr = typeof input === 'string' ? input : (input?.url || '');
+  if (urlStr.includes('csrf-token')) {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ csrfToken: 'mock-token' }),
+      text: () => Promise.resolve('{"csrfToken": "mock-token"}')
+    });
+  }
+  return new Promise(resolve => setTimeout(() => resolve({ 
     ok: true, 
-    json: () => Promise.resolve({ summary: 'Mocked summary' }) 
-  }), 100))
-));
+    json: () => Promise.resolve({ summary: 'Mocked summary' }),
+    text: () => Promise.resolve(JSON.stringify({ summary: 'Mocked summary' }))
+  }), 100));
+}));
 
 // Mock alert to prevent jsdom "Not implemented" errors
 vi.stubGlobal('alert', vi.fn());
@@ -271,13 +280,22 @@ describe('CVForm Logic', () => {
   });
 
   it('extracts error from JSON and displays toast on API failure', async () => {
-    // Mock fetch to return a JSON error
-    vi.stubGlobal('fetch', vi.fn(() => 
-      Promise.resolve({ 
+    // Mock fetch to return a JSON error, but succeed for csrf-token
+    vi.stubGlobal('fetch', vi.fn((input: any) => {
+      const urlStr = typeof input === 'string' ? input : (input?.url || '');
+      if (urlStr.includes('csrf-token')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ csrfToken: 'mock-token' }),
+          text: () => Promise.resolve('{"csrfToken": "mock-token"}')
+        });
+      }
+      return Promise.resolve({ 
         ok: false, 
+        json: () => Promise.resolve({ error: 'Mocked server error message' }),
         text: () => Promise.resolve(JSON.stringify({ error: 'Mocked server error message' })) 
-      })
-    ));
+      });
+    }));
 
     const toast = (await import('react-hot-toast')).default;
 

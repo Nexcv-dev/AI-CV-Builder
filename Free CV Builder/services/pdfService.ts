@@ -16,6 +16,15 @@ const DOMPurify = createDOMPurify(window);
 const MAX_TEXT_LENGTH = 10000;
 const MAX_IMAGE_DATA_URI_LENGTH = 2 * 1024 * 1024;
 const SAFE_IMAGE_DATA_URI = /^data:image\/(?:png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i;
+const PDF_FONT_MAP: Record<string, string> = {
+    'Inter': "'Inter', sans-serif",
+    'Lora': "'Lora', serif",
+    'Roboto': "'Roboto', sans-serif",
+    'Montserrat': "'Montserrat', sans-serif",
+    'Merriweather': "'Merriweather', serif",
+    'Playfair Display': "'Playfair Display', serif",
+    'JetBrains Mono': "'JetBrains Mono', monospace",
+};
 
 const sanitizePdfImageSource = (value: unknown) => {
     if (typeof value !== 'string') return '';
@@ -24,6 +33,15 @@ const sanitizePdfImageSource = (value: unknown) => {
     if (!SAFE_IMAGE_DATA_URI.test(source)) return '';
     return source.replace(/\s/g, '');
 };
+
+const sanitizePdfFontFamily = (value: unknown) => {
+    if (typeof value !== 'string') return 'Inter';
+    const fontFamily = value.trim();
+    return Object.prototype.hasOwnProperty.call(PDF_FONT_MAP, fontFamily) ? fontFamily : 'Inter';
+};
+
+const googleFontFamilyParam = (fontFamily: string) => fontFamily.replace(/\s+/g, '+');
+
 const PDF_ICONS = {
     email: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
     phone: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
@@ -52,7 +70,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
         cvData.templateSurfaceColor,
         getTemplateSurfaceColorFallback(safeTemplate, { themeColor, sidebarColor })
     );
-    const fontFamily = cvData.fontFamily || 'Inter';
+    const fontFamily = sanitizePdfFontFamily(cvData.fontFamily);
     const lineSpacing = safeNumber(cvData.lineSpacing, 1.5, 1, 2.5);
     const sectionGap = safeNumber(cvData.sectionGap, 2, 0.5, 4);
     const profileImage = sanitizePdfImageSource(cvData.profileImage);
@@ -643,18 +661,8 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
     </div>`;
     }
 
-    const fontMap: Record<string, string> = {
-        'Inter': "'Inter', sans-serif",
-        'Lora': "'Lora', serif",
-        'Roboto': "'Roboto', sans-serif",
-        'Montserrat': "'Montserrat', sans-serif",
-        'Merriweather': "'Merriweather', serif",
-        'Playfair Display': "'Playfair Display', serif",
-        'JetBrains Mono': "'JetBrains Mono', monospace",
-    };
-
-    const fontFamilyCSS = fontMap[fontFamily] || "'Inter', sans-serif";
-    const googleFontName = (fontFamily || 'Inter').replace(/\s+/g, '+');
+    const fontFamilyCSS = PDF_FONT_MAP[fontFamily];
+    const googleFontName = googleFontFamilyParam(fontFamily);
     const watermarkHtml = options.watermark ? `
       <div class="nexcv-watermark" aria-hidden="true">
         <div>Created with NexCV Free</div>

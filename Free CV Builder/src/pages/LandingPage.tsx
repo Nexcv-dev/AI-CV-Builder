@@ -5,6 +5,7 @@ import { AuthModal } from '../components/AuthModal';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { usePublicContent } from '../hooks/usePublicContent';
 import { apiFetch } from '../utils/api';
+import { detectClientBillingCountry } from '../utils/countries';
 
 type StatItem = {
   label: string;
@@ -260,13 +261,19 @@ export default function LandingPage() {
     promotionLabel?: string;
     discountBadge?: string;
     currency: string;
+    provider?: string;
+    market?: 'local' | 'global';
   }> | null>(null);
+  const [billingCurrency, setBillingCurrency] = useState('USD');
 
   useEffect(() => {
     let ignore = false;
-    apiFetch<{ plans: Array<{ plan: string; cents: number; baseAmountCents: number; promotionActive: boolean; promotionLabel?: string; discountBadge?: string; currency: string }> }>('/api/billing/plans')
+    const country = detectClientBillingCountry();
+    const suffix = country ? `?country=${encodeURIComponent(country)}` : '';
+    apiFetch<{ market: 'local' | 'global'; plans: Array<{ plan: string; cents: number; baseAmountCents: number; promotionActive: boolean; promotionLabel?: string; discountBadge?: string; currency: string; provider?: string; market?: 'local' | 'global' }> }>(`/api/billing/plans${suffix}`, { cache: 'no-store' })
       .then((data) => {
         if (!ignore) {
+          setBillingCurrency(data.market === 'local' ? 'LKR' : 'USD');
           setPlanPrices(data.plans.reduce((acc, plan) => ({ ...acc, [plan.plan]: plan }), {} as Record<string, {
             cents: number;
             baseAmountCents: number;
@@ -274,6 +281,8 @@ export default function LandingPage() {
             promotionLabel?: string;
             discountBadge?: string;
             currency: string;
+            provider?: string;
+            market?: 'local' | 'global';
           }>));
         }
       })
@@ -283,7 +292,16 @@ export default function LandingPage() {
     };
   }, []);
 
-  const formatPrice = (cents: number, currency = 'LKR') => `${currency} ${new Intl.NumberFormat().format(Math.round(cents / 100))}`;
+  const formatPrice = (cents: number, currency = 'LKR') => {
+    const amount = cents / 100;
+    const fractionDigits = currency === 'USD' ? 2 : 0;
+    return `${currency} ${new Intl.NumberFormat(undefined, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(amount)}`;
+  };
+
+  const displayPlanPrice = (plan: { key: string; price: string }) => {
+    if (plan.key === 'free') return formatPrice(0, billingCurrency);
+    return planPrices?.[plan.key] ? formatPrice(planPrices[plan.key].cents, planPrices[plan.key].currency) : plan.price;
+  };
 
   const normalizeTemplateIndex = (index: number) => (
     featuredTemplates.length ? ((index % featuredTemplates.length) + featuredTemplates.length) % featuredTemplates.length : 0
@@ -851,7 +869,7 @@ export default function LandingPage() {
                         </div>
                       )}
                       <div className={`text-4xl font-black ${planPrices?.[plan.key]?.promotionActive ? 'text-emerald-300' : ''}`}>
-                        {planPrices?.[plan.key] ? formatPrice(planPrices[plan.key].cents, planPrices[plan.key].currency) : plan.price}
+                        {displayPlanPrice(plan)}
                       </div>
                       {planPrices?.[plan.key]?.promotionLabel && (
                         <div className="mt-2 text-xs font-black uppercase text-emerald-200">{planPrices[plan.key].promotionLabel}</div>

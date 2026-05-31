@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 import type { BillingPlan } from './userPlan';
 
 export interface IPaymentTransaction extends Document {
-  provider: 'payhere';
+  provider: 'payhere' | 'lemonsqueezy';
   paymentId: string;
   orderId: string;
   userId?: mongoose.Types.ObjectId;
@@ -28,7 +28,7 @@ export interface IPaymentTransaction extends Document {
 
 const PaymentTransactionSchema = new Schema<IPaymentTransaction>(
   {
-    provider: { type: String, enum: ['payhere'], default: 'payhere', required: true },
+    provider: { type: String, enum: ['payhere', 'lemonsqueezy'], default: 'payhere', required: true },
     paymentId: { type: String, required: true },
     orderId: { type: String, required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },

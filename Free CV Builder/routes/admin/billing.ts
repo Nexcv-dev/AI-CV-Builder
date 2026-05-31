@@ -4,7 +4,7 @@ import type { BillingPlan } from '../../server-models/userPlan';
 
 
 export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
-    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, recordAdminAuditLog } = bindDeps(deps);
+    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getAdminBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, recordAdminAuditLog } = bindDeps(deps);
 
     const markExpiredPendingCheckouts = async () => {
         await CheckoutSession.updateMany(
@@ -30,9 +30,10 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
 
     const adminCheckoutReviewSummary = (checkout: any) => {
         const user = checkout.userId && typeof checkout.userId === 'object' ? checkout.userId : null;
+        const currency = String(checkout.currency || 'LKR').toUpperCase();
         return {
             id: checkout._id?.toString?.() || checkout.id,
-            provider: 'payhere',
+            provider: currency === 'USD' ? 'lemonsqueezy' : 'payhere',
             paymentId: checkout.status === 'failed' ? 'Failed checkout' : 'Checkout review',
             orderId: checkout.orderId,
             reviewType: 'checkout',
@@ -52,7 +53,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             discountCents: checkout.discountCents || 0,
             finalAmountCents: checkout.finalAmountCents || 0,
             couponCode: checkout.couponCode || '',
-            currency: checkout.currency || 'LKR',
+            currency,
             statusCode: checkout.status,
             processed: false,
             rawPayload: {
@@ -119,7 +120,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
     router.get('/api/admin/billing/config', requireAdminPermission('billing.read'), async (_req: Request, res: Response) => {
         try {
             const [plans, coupons] = await Promise.all([
-                getPublicBillingPlans(),
+                getAdminBillingPlans(),
                 Coupon.find().sort({ createdAt: -1 }),
             ]);
             return res.json({ plans, coupons: coupons.map(adminCouponSummary) });
@@ -133,26 +134,62 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
         try {
             const plan = req.params.plan as BillingPlan;
             if (plan !== 'payg' && plan !== 'monthly') return res.status(400).json({ error: 'Choose a valid paid plan.' });
+            const market = req.body.market === 'global' ? 'global' : 'local';
             const amountCents = Math.round(Number(req.body.amountCents));
             if (!Number.isFinite(amountCents) || amountCents < 100) {
                 return res.status(400).json({ error: 'Enter a valid price in cents.' });
             }
             const label = sanitizeProfileField(req.body.label, 80) || planDisplayName(plan);
             const previousSetting = await BillingPlanSetting.findOne({ plan });
+            const previousPrices = Array.isArray(previousSetting?.prices) ? previousSetting.prices : [];
+            const promotionDiscountType = req.body.promotionDiscountType === 'percent' ? 'percent' : 'fixed';
+            const promotionDiscountValue = promotionDiscountType === 'percent'
+                ? Math.min(Math.max(Math.round(Number(req.body.promotionDiscountValue) || 0), 1), 100)
+                : Math.max(Math.round(Number(req.body.promotionDiscountValue) || 0), 1);
+            const nextPrice = {
+                market,
+                amountCents,
+                currency: market === 'local' ? 'LKR' : 'USD',
+                provider: market === 'local' ? 'payhere' : 'lemonsqueezy',
+                active: req.body.active !== false,
+                promotionActive: Boolean(req.body.promotionActive),
+                promotionLabel: sanitizeProfileField(req.body.promotionLabel, 80),
+                promotionDiscountType,
+                promotionDiscountValue,
+            };
+            const prices = [
+                ...previousPrices.filter((price: any) => price.market !== market).map((price: any) => ({
+                    market: price.market,
+                    amountCents: price.amountCents,
+                    currency: price.currency,
+                    provider: price.provider,
+                    active: price.active !== false,
+                    promotionActive: Boolean(price.promotionActive),
+                    promotionLabel: price.promotionLabel,
+                    promotionDiscountType: price.promotionDiscountType,
+                    promotionDiscountValue: price.promotionDiscountValue,
+                })),
+                nextPrice,
+            ];
             const setting = await BillingPlanSetting.findOneAndUpdate(
                 { plan },
                 {
                     plan,
                     label,
-                    amountCents,
+                    amountCents: market === 'local' ? amountCents : (previousSetting?.amountCents || (plan === 'payg' ? 49900 : 219900)),
                     currency: 'LKR',
+                    prices,
                     active: req.body.active !== false,
-                    promotionActive: Boolean(req.body.promotionActive),
-                    promotionLabel: sanitizeProfileField(req.body.promotionLabel, 80),
-                    promotionDiscountType: req.body.promotionDiscountType === 'percent' ? 'percent' : 'fixed',
-                    promotionDiscountValue: req.body.promotionDiscountType === 'percent'
-                        ? Math.min(Math.max(Math.round(Number(req.body.promotionDiscountValue) || 0), 1), 100)
-                        : Math.max(Math.round(Number(req.body.promotionDiscountValue) || 0), 1),
+                    promotionActive: market === 'local' ? Boolean(req.body.promotionActive) : Boolean(previousSetting?.promotionActive),
+                    promotionLabel: market === 'local'
+                        ? sanitizeProfileField(req.body.promotionLabel, 80)
+                        : previousSetting?.promotionLabel,
+                    promotionDiscountType: market === 'local'
+                        ? promotionDiscountType
+                        : previousSetting?.promotionDiscountType,
+                    promotionDiscountValue: market === 'local'
+                        ? promotionDiscountValue
+                        : previousSetting?.promotionDiscountValue,
                     updatedBy: currentUserId(req),
                 },
                 { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
@@ -165,13 +202,14 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 targetLabel: label,
                 metadata: {
                     previousAmountCents: previousSetting?.amountCents,
-                    nextAmountCents: setting.amountCents,
+                    nextAmountCents: amountCents,
+                    market,
                     promotionActive: setting.promotionActive,
                 },
                 ip: req.ip,
                 userAgent: req.get('user-agent'),
             });
-            return res.json({ plan: await getPlanPrice(setting.plan) });
+            return res.json({ plan: await getPlanPrice(setting.plan, market) });
         } catch (error) {
             return sendError(res, 500, 'Could not update plan price.', error);
         }
@@ -288,7 +326,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             if (['payg', 'monthly'].includes(plan)) {
                 filter.plan = plan;
             }
-            if (provider === 'payhere') {
+            if (provider === 'payhere' || provider === 'lemonsqueezy') {
                 filter.provider = provider;
             }
             if (status === 'processed') {
@@ -318,6 +356,8 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             if (status === 'review') {
                 const checkoutFilter: any = { status: 'failed', billingReviewStatus: { $ne: 'resolved' } };
                 if (['payg', 'monthly'].includes(plan)) checkoutFilter.plan = plan;
+                if (provider === 'payhere') checkoutFilter.currency = 'LKR';
+                if (provider === 'lemonsqueezy') checkoutFilter.currency = 'USD';
                 if (search) {
                     const pattern = new RegExp(escapeRegex(search), 'i');
                     const matchedUsers = await User.find({ $or: [{ email: pattern }, { displayName: pattern }] }).select('_id');
@@ -338,14 +378,38 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 checkoutReviewCount,
                 failedPaymentCount,
             ] = await Promise.all([
-                PaymentTransaction.find({ processed: true }).select('amount currency plan createdAt'),
+                PaymentTransaction.find({ processed: true }).select('amount currency provider plan createdAt'),
                 CheckoutSession.countDocuments({ status: 'pending' }),
                 CheckoutSession.countDocuments({ status: 'failed', billingReviewStatus: { $ne: 'resolved' } }),
                 PaymentTransaction.countDocuments({ processed: false, billingReviewStatus: { $ne: 'resolved' } }),
             ]);
     
-            const revenueCents = allProcessedPayments.reduce((sum, payment) => sum + parsePaymentAmountCents(payment.amount), 0);
-            const revenueByPlan = allProcessedPayments.reduce((acc: Record<string, number>, payment) => {
+            const revenueByCurrency: Record<string, { cents: number; count: number }> = {};
+            const revenueByProvider: Record<string, { count: number; byCurrency: Record<string, { cents: number; count: number }> }> = {};
+            const revenueByPlanCurrency: Record<string, Record<string, number>> = {};
+            const addCurrencyRevenue = (bucket: Record<string, { cents: number; count: number }>, currency: string, cents: number) => {
+                bucket[currency] = bucket[currency] || { cents: 0, count: 0 };
+                bucket[currency].cents += cents;
+                bucket[currency].count += 1;
+            };
+
+            allProcessedPayments.forEach((payment: any) => {
+                const cents = parsePaymentAmountCents(payment.amount);
+                const currency = String(payment.currency || 'LKR').toUpperCase();
+                const providerKey = payment.provider || (currency === 'USD' ? 'lemonsqueezy' : 'payhere');
+                const planKey = payment.plan || 'unknown';
+
+                addCurrencyRevenue(revenueByCurrency, currency, cents);
+                revenueByProvider[providerKey] = revenueByProvider[providerKey] || { count: 0, byCurrency: {} };
+                revenueByProvider[providerKey].count += 1;
+                addCurrencyRevenue(revenueByProvider[providerKey].byCurrency, currency, cents);
+                revenueByPlanCurrency[planKey] = revenueByPlanCurrency[planKey] || {};
+                revenueByPlanCurrency[planKey][currency] = (revenueByPlanCurrency[planKey][currency] || 0) + cents;
+            });
+
+            const localProcessedPayments = allProcessedPayments.filter((payment: any) => String(payment.currency || 'LKR').toUpperCase() === 'LKR');
+            const revenueCents = revenueByCurrency.LKR?.cents || 0;
+            const revenueByPlan = localProcessedPayments.reduce((acc: Record<string, number>, payment: any) => {
                 const key = payment.plan || 'unknown';
                 acc[key] = (acc[key] || 0) + parsePaymentAmountCents(payment.amount);
                 return acc;
@@ -353,16 +417,28 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             const sevenDaysAgo = startOfUtcDay();
             sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6);
             const revenueByDay = new Map<string, number>();
-            allProcessedPayments.forEach((payment) => {
+            const revenueByDayCurrency = new Map<string, Record<string, number>>();
+            allProcessedPayments.forEach((payment: any) => {
                 if (!payment.createdAt || payment.createdAt < sevenDaysAgo) return;
                 const day = formatUtcDay(payment.createdAt);
-                revenueByDay.set(day, (revenueByDay.get(day) || 0) + parsePaymentAmountCents(payment.amount));
+                const cents = parsePaymentAmountCents(payment.amount);
+                const currency = String(payment.currency || 'LKR').toUpperCase();
+                if (currency === 'LKR') revenueByDay.set(day, (revenueByDay.get(day) || 0) + cents);
+                const dayCurrencies = revenueByDayCurrency.get(day) || {};
+                dayCurrencies[currency] = (dayCurrencies[currency] || 0) + cents;
+                revenueByDayCurrency.set(day, dayCurrencies);
             });
             const dailyRevenue = Array.from({ length: 7 }, (_, index) => {
                 const date = new Date(sevenDaysAgo);
                 date.setUTCDate(sevenDaysAgo.getUTCDate() + index);
                 const day = formatUtcDay(date);
                 return { day, cents: revenueByDay.get(day) || 0 };
+            });
+            const dailyRevenueByCurrency = Array.from({ length: 7 }, (_, index) => {
+                const date = new Date(sevenDaysAgo);
+                date.setUTCDate(sevenDaysAgo.getUTCDate() + index);
+                const day = formatUtcDay(date);
+                return { day, currencies: revenueByDayCurrency.get(day) || {} };
             });
     
             return res.json({
@@ -385,6 +461,10 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                     failedPaymentCount,
                     revenueByPlan,
                     dailyRevenue,
+                    revenueByCurrency,
+                    revenueByProvider,
+                    revenueByPlanCurrency,
+                    dailyRevenueByCurrency,
                 },
             });
         } catch (error) {

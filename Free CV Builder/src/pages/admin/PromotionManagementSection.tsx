@@ -29,19 +29,23 @@ export default function PromotionManagementSection({
   const [savingId, setSavingId] = useState<string | null>(null);
   const [couponSearch, setCouponSearch] = useState('');
 
+  const draftKeyForPlan = (plan: AdminBillingPlan) => `${plan.plan}:${plan.market}`;
+
   const setPlanDraftField = (plan: AdminBillingPlan, field: keyof AdminBillingPlanDraft, value: string | boolean) => {
+    const draftKey = draftKeyForPlan(plan);
     setPlanDrafts((current) => ({
       ...current,
-      [plan.plan]: {
-        ...(current[plan.plan] || billingPlanDraftFromPlan(plan)),
+      [draftKey]: {
+        ...(current[draftKey] || billingPlanDraftFromPlan(plan)),
         [field]: value,
       },
     }));
   };
 
   const handleUpdatePlanPrice = async (plan: AdminBillingPlan) => {
-    const draft = planDrafts[plan.plan] || billingPlanDraftFromPlan(plan);
-    setSavingId(plan.plan);
+    const draftKey = draftKeyForPlan(plan);
+    const draft = planDrafts[draftKey] || billingPlanDraftFromPlan(plan);
+    setSavingId(draftKey);
     await onUpdatePlanPrice(plan, draft).finally(() => setSavingId(null));
   };
 
@@ -69,11 +73,12 @@ export default function PromotionManagementSection({
         <h2 className="font-montserrat text-lg font-black">Package Prices</h2>
         <div className="mt-4 grid gap-4">
           {billingPlans.map((plan) => {
-            const draft = planDrafts[plan.plan] || billingPlanDraftFromPlan(plan);
+            const draftKey = draftKeyForPlan(plan);
+            const draft = planDrafts[draftKey] || billingPlanDraftFromPlan(plan);
             return (
-              <div key={plan.plan} className="grid gap-4 rounded-xl border border-white/10 bg-slate-950/50 p-4">
+              <div key={draftKey} className="grid gap-4 rounded-xl border border-white/10 bg-slate-950/50 p-4">
                 <div>
-                  <p className="text-sm font-black text-slate-100">{plan.label}</p>
+                  <p className="text-sm font-black text-slate-100">{plan.label} <span className="text-slate-500">({plan.market === 'local' ? 'Sri Lanka' : 'Global'})</span></p>
                   <p className="mt-1 text-xs font-bold text-slate-500">{plan.plan} · {plan.source}</p>
                 </div>
                 <div className="flex flex-wrap items-end gap-3">
@@ -82,13 +87,13 @@ export default function PromotionManagementSection({
                     <input value={draft.promotionLabel} onChange={(event) => setPlanDraftField(plan, 'promotionLabel', event.target.value)} placeholder="Limited offer" className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
                   </label>
                   <label className="grid min-w-[120px] flex-1 gap-1 text-xs font-black text-slate-400">
-                    Price LKR
+                    Price {plan.currency}
                     <input value={draft.amount} onChange={(event) => setPlanDraftField(plan, 'amount', event.target.value)} className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
                   </label>
                   <label className="grid min-w-[120px] flex-1 gap-1 text-xs font-black text-slate-400">
                     Promo type
                     <select value={draft.promotionDiscountType} onChange={(event) => setPlanDraftField(plan, 'promotionDiscountType', event.target.value as 'fixed' | 'percent')} className="h-10 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-                      <option value="fixed">LKR off</option>
+                      <option value="fixed">{plan.currency} off</option>
                       <option value="percent">% off</option>
                     </select>
                   </label>
@@ -100,9 +105,9 @@ export default function PromotionManagementSection({
                     type="button"
                     disabled={isAnySaving}
                     onClick={() => handleUpdatePlanPrice(plan)}
-                    className={`h-10 min-w-[100px] shrink-0 rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 disabled:cursor-not-allowed ${savingId === plan.plan ? 'opacity-50' : ''}`}
+                    className={`h-10 min-w-[100px] shrink-0 rounded-xl bg-violet-600 px-4 text-sm font-black text-white transition hover:bg-violet-500 disabled:cursor-not-allowed ${savingId === draftKey ? 'opacity-50' : ''}`}
                   >
-                    {savingId === plan.plan ? 'Saving...' : 'Save'}
+                    {savingId === draftKey ? 'Saving...' : 'Save'}
                   </button>
                 </div>
                 <div className="flex items-center justify-between gap-4 flex-wrap">

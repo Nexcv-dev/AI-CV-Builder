@@ -320,6 +320,14 @@ const templateFontMap: Record<string, string> = {
   'JetBrains Mono': "'JetBrains Mono', monospace",
 };
 
+const sanitizePdfFontFamily = (value: unknown) => {
+  if (typeof value !== 'string') return 'Inter';
+  const fontFamily = value.trim();
+  return Object.prototype.hasOwnProperty.call(templateFontMap, fontFamily) ? fontFamily : 'Inter';
+};
+
+const googleFontFamilyParam = (fontFamily: string) => fontFamily.replace(/\s+/g, '+');
+
 const formatDateInline = (startDate?: string, endDate?: string) =>
   [startDate || '', endDate || ''].filter(Boolean).join(startDate && endDate ? ' - ' : '');
 
@@ -349,7 +357,7 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
   const startupHeaderBackground = cvData?.templateSurfaceColor
     ? templateSurfaceColor
     : `linear-gradient(135deg, ${themeColor} 0%, #047857 100%)`;
-  const fontFamily = cvData?.fontFamily || 'Inter';
+  const fontFamily = sanitizePdfFontFamily(cvData?.fontFamily);
   const imageCss = profileImageCss(cvData);
   const profileImage = sanitizePdfImageSource(cvData?.profileImage);
   const lineSpacing = safeNumber(cvData?.lineSpacing, 1.5, 1, 2.5);
@@ -454,8 +462,8 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
       startupHeaderMutedColor,
       startupHeaderBackground,
       fontFamily,
-      fontFamilyCSS: templateFontMap[fontFamily] || "'Inter', sans-serif",
-      googleFontName: String(fontFamily || 'Inter').replace(/\s+/g, '+'),
+      fontFamilyCSS: templateFontMap[fontFamily],
+      googleFontName: googleFontFamilyParam(fontFamily),
       lineSpacing,
       sectionGap,
       sectionGapRem: `${sectionGap}rem`,
@@ -629,7 +637,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
         cvData.templateSurfaceColor,
         getTemplateSurfaceColorFallback(safeTemplate, { themeColor, sidebarColor })
     );
-    const fontFamily = cvData.fontFamily || 'Inter';
+    const fontFamily = sanitizePdfFontFamily(cvData.fontFamily);
     const lineSpacing = safeNumber(cvData.lineSpacing, 1.5, 1, 2.5);
     const sectionGap = safeNumber(cvData.sectionGap, 2, 0.5, 4);
     const profileImage = sanitizePdfImageSource(cvData.profileImage);
@@ -1220,18 +1228,8 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
     </div>`;
     }
 
-    const fontMap: Record<string, string> = {
-        'Inter': "'Inter', sans-serif",
-        'Lora': "'Lora', serif",
-        'Roboto': "'Roboto', sans-serif",
-        'Montserrat': "'Montserrat', sans-serif",
-        'Merriweather': "'Merriweather', serif",
-        'Playfair Display': "'Playfair Display', serif",
-        'JetBrains Mono': "'JetBrains Mono', monospace",
-    };
-
-    const fontFamilyCSS = fontMap[fontFamily] || "'Inter', sans-serif";
-    const googleFontName = (fontFamily || 'Inter').replace(/\s+/g, '+');
+    const fontFamilyCSS = templateFontMap[fontFamily];
+    const googleFontName = googleFontFamilyParam(fontFamily);
     const watermarkHtml = options.watermark ? `
       <div class="nexcv-watermark" aria-hidden="true">
         <div>Created with NexCV Free</div>

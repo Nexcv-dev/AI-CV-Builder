@@ -2,6 +2,7 @@ import React, { FormEvent, useEffect, useState } from 'react';
 import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, Lock } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { csrfFetch } from '../utils/api';
 
 function ResetPasswordStateCard({
   title,
@@ -58,11 +59,10 @@ export default function ResetPassword() {
       setTokenError('');
 
       try {
-        const response = await fetch('/api/auth/validate-reset-token', {
+        const response = await csrfFetch('/api/auth/validate-reset-token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-App-Source': 'cv-builder-app',
           },
           body: JSON.stringify({ token }),
         });
@@ -103,11 +103,10 @@ export default function ResetPassword() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await csrfFetch('/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-App-Source': 'cv-builder-app',
         },
         body: JSON.stringify({ token, password }),
       });

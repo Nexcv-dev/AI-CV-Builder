@@ -35,6 +35,7 @@ import {
     EMAIL_VERIFICATION_RESEND_LIMIT,
     EMAIL_VERIFICATION_RESEND_WINDOW_MS,
     getAuthenticatedRateLimitKey,
+    getEmailVerificationAttemptRateLimitKey,
     passwordResetLimiter,
     pdfLimiter,
     publicFormLimiter,
@@ -93,6 +94,7 @@ import {
     generateTransactionId,
     getPayHereCheckoutUrl,
     getPayHereMerchantConfig,
+    getAdminBillingPlans,
     getPlanPrice,
     getPublicBillingPlans,
     isPaidBillingPlan,
@@ -101,9 +103,16 @@ import {
     payHereAmountToCents,
     planDisplayName,
     quoteCheckout,
+    resolveBillingMarket,
     resolvePayHerePaymentContext,
     verifyPayHereMd5Signature,
 } from './server-utils/payHere';
+import {
+    createLemonSqueezyCheckout,
+    getMissingLemonSqueezyConfigKeys,
+    isLemonSqueezyConfigured,
+    verifyLemonSqueezySignature,
+} from './server-utils/lemonSqueezy';
 import {
     emailGreetingName,
     generateEmailVerificationOtp,
@@ -152,6 +161,7 @@ export {
     EMAIL_VERIFICATION_RESEND_LIMIT,
     EMAIL_VERIFICATION_RESEND_WINDOW_MS,
     getAuthenticatedRateLimitKey,
+    getEmailVerificationAttemptRateLimitKey,
     buildPasswordResetTransportOptions,
     generateCVHTML,
     renderCvTemplateString,
@@ -199,7 +209,7 @@ const adminTemplateJsonParser = express.json({ limit: '6mb' });
 
 // Default JSON limit for most endpoints. Larger payloads are allowed only on specific routes.
 app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf' || req.path.startsWith('/api/admin/templates')) {
+    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf' || req.path === '/api/lemonsqueezy/webhook' || req.path.startsWith('/api/admin/templates')) {
         return next();
     }
     return defaultJsonParser(req, res, next);
@@ -485,12 +495,60 @@ const getDownloadQuota = async (user: any) => {
 const incrementDownloadQuota = async (user: any) => {
     const plan = getEffectivePlan(user);
     const day = plan === 'payg' || plan === 'monthly' ? getUtcDayKey() : 'free-lifetime';
-    const record = await DownloadQuota.findOneAndUpdate(
+    await DownloadQuota.findOneAndUpdate(
         { userId: user._id || user.id, day },
         { $inc: { count: 1 } },
         { new: true, upsert: true, setDefaultsOnInsert: true }
     );
     return getDownloadQuota(user);
+};
+
+const consumeDownloadQuota = async (user: any) => {
+    const userId = user._id || user.id;
+    const currentQuota = await getDownloadQuota(user);
+    if (currentQuota.limit === null) return { ...currentQuota, reserved: true };
+    if (currentQuota.reached) return { ...currentQuota, reserved: false };
+
+    const plan = getEffectivePlan(user);
+    const usesDailyDownloadQuota = plan === 'payg' || plan === 'monthly';
+    const day = usesDailyDownloadQuota ? getUtcDayKey() : 'free-lifetime';
+
+    try {
+        await DownloadQuota.updateOne(
+            { userId, day },
+            { $setOnInsert: { userId, day, count: currentQuota.used } },
+            { upsert: true }
+        );
+    } catch (error: any) {
+        if (error?.code !== 11000) throw error;
+    }
+
+    const reserved = await DownloadQuota.findOneAndUpdate(
+        { userId, day, count: { $lt: currentQuota.limit } },
+        { $inc: { count: 1 } },
+        { new: true }
+    );
+
+    if (!reserved) {
+        return {
+            ...currentQuota,
+            used: currentQuota.limit,
+            remaining: 0,
+            reached: true,
+            reserved: false,
+        };
+    }
+
+    return { ...(await getDownloadQuota(user)), reserved: true };
+};
+
+const rollbackDownloadQuota = async (user: any) => {
+    const plan = getEffectivePlan(user);
+    const day = plan === 'payg' || plan === 'monthly' ? getUtcDayKey() : 'free-lifetime';
+    await DownloadQuota.updateOne(
+        { userId: user._id || user.id, day, count: { $gt: 0 } },
+        { $inc: { count: -1 } }
+    );
 };
 
 const isValidDocumentId = (id: unknown) => (
@@ -765,7 +823,7 @@ const routeDeps = {
     getRequestOrigin, isAllowedOrigin,
     clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
     generateCVHTML, generatePdfDocument, sanitizeCvData,
-    getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey,
+    getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey,
     sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail,
     validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser,
     isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage,
@@ -774,9 +832,10 @@ const routeDeps = {
     adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory,
     sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload,
     TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH,
-    normalizeCouponCode, isPaidBillingPlan, getPublicBillingPlans, quoteCheckout, getPlanPrice,
+    normalizeCouponCode, isPaidBillingPlan, getPublicBillingPlans, getAdminBillingPlans, quoteCheckout, getPlanPrice, resolveBillingMarket,
     PAYHERE_PLAN_PRICES, payHereAmountToCents, getPayHereMerchantConfig, getPayHereCheckoutUrl,
     buildPayHereCheckoutHash, verifyPayHereMd5Signature, resolvePayHerePaymentContext,
+    createLemonSqueezyCheckout, getMissingLemonSqueezyConfigKeys, isLemonSqueezyConfigured, verifyLemonSqueezySignature,
     generateTransactionId, planDisplayName, createPlanExpiry, getEffectivePlan, isPaidPlan,
     markSessionCurrent, invalidateUserSessions,
     documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,

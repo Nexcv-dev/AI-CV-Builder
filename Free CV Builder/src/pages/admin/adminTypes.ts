@@ -136,7 +136,9 @@ export interface AdminBillingPlan {
   promotionDiscountType?: 'fixed' | 'percent';
   promotionDiscountValue?: number;
   discountBadge?: string;
-  currency: 'LKR';
+  currency: 'LKR' | 'USD';
+  market: 'local' | 'global';
+  provider: 'payhere' | 'lemonsqueezy';
   source: string;
   updatedAt?: string;
 }
@@ -172,6 +174,13 @@ export interface AdminPaymentSummary {
   failedPaymentCount: number;
   revenueByPlan: Record<string, number>;
   dailyRevenue: Array<{ day: string; cents: number }>;
+  revenueByCurrency?: Record<string, { cents: number; count: number }>;
+  revenueByProvider?: Record<string, {
+    count: number;
+    byCurrency: Record<string, { cents: number; count: number }>;
+  }>;
+  revenueByPlanCurrency?: Record<string, Record<string, number>>;
+  dailyRevenueByCurrency?: Array<{ day: string; currencies: Record<string, number> }>;
 }
 
 export interface AdminSupportTicket {
