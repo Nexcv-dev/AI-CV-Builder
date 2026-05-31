@@ -692,10 +692,6 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                                 ...baseTransaction,
                                 processed: false,
                             },
-                            $set: {
-                                statusCode: eventName,
-                                rawPayload: payload,
-                            },
                         },
                         { upsert: true, new: true, setDefaultsOnInsert: true }
                     );
