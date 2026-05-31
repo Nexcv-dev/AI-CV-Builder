@@ -1,15 +1,22 @@
 import type { NextFunction, Request, Response } from 'express';
+import { isIP } from 'net';
 
 const normalizeClientIp = (value: unknown) => {
     if (typeof value !== 'string') return '';
     let trimmed = value.trim();
     if (!trimmed) return '';
-    trimmed = trimmed.replace(/^\[/, '').replace(/\]$/, '');
+    const bracketedIpv6 = trimmed.match(/^\[([^\]]+)\](?::\d+)?$/);
+    if (bracketedIpv6) {
+        trimmed = bracketedIpv6[1];
+    } else {
+        trimmed = trimmed.replace(/^\[/, '').replace(/\]$/, '');
+    }
     if (/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(trimmed)) {
         trimmed = trimmed.slice(0, trimmed.lastIndexOf(':'));
     }
     if (trimmed === '::1') return '127.0.0.1';
-    return trimmed.replace(/^::ffff:/, '');
+    trimmed = trimmed.replace(/^::ffff:/, '');
+    return isIP(trimmed) ? trimmed : '';
 };
 
 const getAllowedAdminIps = () => (
@@ -21,33 +28,39 @@ const getAllowedAdminIps = () => (
 
 const hasConfiguredAdminIpAllowlist = () => getAllowedAdminIps().length > 0;
 
-const getRequestIpCandidates = (req: Request) => {
-    const forwardedFor = (req.header('x-forwarded-for') || '')
+const getTrustedAdminProxyIps = () => (
+    (process.env.ADMIN_TRUSTED_PROXY_IPS || '')
         .split(',')
         .map(normalizeClientIp)
-        .filter(Boolean);
+        .filter(Boolean)
+);
 
-    return new Set([
-        normalizeClientIp(req.ip),
-        normalizeClientIp(req.socket?.remoteAddress),
-        normalizeClientIp(req.header('x-real-ip')),
-        normalizeClientIp(req.header('cf-connecting-ip')),
-        normalizeClientIp(req.header('true-client-ip')),
-        normalizeClientIp(req.header('fly-client-ip')),
-        normalizeClientIp(req.header('x-client-ip')),
-        ...((req.ips || []).map(normalizeClientIp)),
-        ...forwardedFor,
-    ].filter(Boolean));
+export const resolveAdminClientIp = (req: Request) => {
+    const remoteIp = normalizeClientIp(req.socket?.remoteAddress);
+    const trustedProxyIps = getTrustedAdminProxyIps();
+    if (!remoteIp || !trustedProxyIps.includes(remoteIp)) {
+        return remoteIp;
+    }
+
+    const proxyResolvedIp = (req.ips || []).map(normalizeClientIp).find(Boolean);
+    if (proxyResolvedIp) return proxyResolvedIp;
+
+    const forwardedClientIp = (req.header('x-forwarded-for') || '').split(',')[0];
+    return normalizeClientIp(forwardedClientIp) || remoteIp;
+};
+
+const isLocalDevelopmentIp = (ip: string) => {
+    return process.env.NODE_ENV !== 'production' && (ip === '127.0.0.1' || ip === '::1');
 };
 
 export const isAdminIpAllowed = (req: Request) => {
     const allowedIps = getAllowedAdminIps();
     if (!allowedIps.length) return false;
-    const candidates = getRequestIpCandidates(req);
-    if (process.env.NODE_ENV !== 'production' && (candidates.has('127.0.0.1') || candidates.has('localhost'))) {
+    const clientIp = resolveAdminClientIp(req);
+    if (isLocalDevelopmentIp(clientIp)) {
         return true;
     }
-    return allowedIps.some((ip) => candidates.has(ip));
+    return allowedIps.includes(clientIp);
 };
 
 export const requireAdminAllowedIp = (req: Request, res: Response, next: NextFunction) => {

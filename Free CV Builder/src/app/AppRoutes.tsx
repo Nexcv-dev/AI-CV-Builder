@@ -5,6 +5,7 @@ import { PageLoadingOverlay, RouteLoadingFallback } from './loading';
 import { AdminProtectedRoute, ProtectedRoute } from './routeGuards';
 import { AdminDisabledPage, MaintenancePage, NotFound } from './systemPages';
 import type { PublicAppSettings } from './types';
+import { CookieConsentBanner } from '../components/CookieConsentBanner';
 import { SeoHead } from '../components/SeoHead';
 import ForgotPassword from '../pages/ForgotPassword';
 
@@ -98,6 +99,7 @@ export function AppRoutes() {
       <SeoHead />
       <PageLoadingOverlay />
       {publicSettings && <PublicAnnouncement settings={publicSettings} />}
+      <CookieConsentBanner />
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           <Route path="/print" element={<PrintView />} />

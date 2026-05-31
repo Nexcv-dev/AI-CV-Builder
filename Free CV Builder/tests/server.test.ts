@@ -12,6 +12,7 @@ import {
   buildPasswordResetTransportOptions,
   generateCVHTML,
   getAuthenticatedRateLimitKey,
+  getEmailVerificationAttemptRateLimitKey,
   payHereAmountToCents,
   resolvePayHerePaymentContext,
   renderCvTemplateString,
@@ -21,6 +22,7 @@ import {
   verifyPayHereMd5Signature,
   requireAdminPermission,
 } from '../server';
+import { registerCvRoutes } from '../routes/cv';
 import { registerPaymentRoutes } from '../routes/payment';
 import { isSuperAdminEmail, roleForEmail, syncUserRoleFromAllowlist } from '../server-models/userRole';
 import { hasAdminPermission } from '../src/adminAccess';
@@ -64,6 +66,27 @@ describe('Server Utils', () => {
 
       const ipOnlyKey = getAuthenticatedRateLimitKey({ user: null, ip: '203.0.113.10' } as any);
       expect(ipOnlyKey).toContain('203.0.113.10');
+    });
+
+    it('should rate-limit OTP verification attempts by account email across IPs', () => {
+      const firstIpKey = getEmailVerificationAttemptRateLimitKey({
+        user: null,
+        body: { email: 'User@Example.com' },
+        ip: '203.0.113.10',
+      } as any);
+      const secondIpKey = getEmailVerificationAttemptRateLimitKey({
+        user: null,
+        body: { email: ' user@example.com ' },
+        ip: '198.51.100.20',
+      } as any);
+
+      expect(firstIpKey).toBe('email:user@example.com');
+      expect(secondIpKey).toBe(firstIpKey);
+      expect(getEmailVerificationAttemptRateLimitKey({
+        user: { _id: { toString: () => 'user-123' } },
+        body: { email: 'user@example.com' },
+        ip: '203.0.113.10',
+      } as any)).toBe('user:user-123');
     });
   });
 
@@ -431,6 +454,80 @@ describe('Server Utils', () => {
     it('should calculate the next UTC download reset time', () => {
       expect(getNextUtcDayResetAt(new Date('2026-05-13T18:30:00.000Z'))).toBe('2026-05-14T00:00:00.000Z');
     });
+
+    it('should reserve download quota before generating PDFs', async () => {
+      const app = express();
+      const router = express.Router();
+      const user = { _id: '507f1f77bcf86cd799439011', role: 'user', plan: 'free', emailVerified: true, authProvider: 'email' };
+      const generatePdfDocument = vi.fn().mockResolvedValue({
+        buffer: Buffer.from('%PDF-1.4'),
+        renderer: 'test',
+        templateSource: 'built-in',
+      });
+      const consumeDownloadQuota = vi.fn()
+        .mockResolvedValueOnce({ limit: 1, used: 1, remaining: 0, reached: true, plan: 'free', reserved: true })
+        .mockResolvedValueOnce({ limit: 1, used: 1, remaining: 0, reached: true, plan: 'free', reserved: false });
+
+      registerCvRoutes(router, {
+        aiLimiter: (_req: any, _res: any, next: any) => next(),
+        CV_TEMPLATES: [{ key: 'classic' }],
+        cvImportJsonParser: express.json({ limit: '1mb' }),
+        DEFAULT_TEMPLATE: 'classic',
+        TemplateSetting: { findOne: vi.fn() },
+        consumeDownloadQuota,
+        currentUserId: vi.fn(() => user._id),
+        fetchS3Text: vi.fn(),
+        generateCVHTML: vi.fn(() => '<html></html>'),
+        generatePdfDocument,
+        generateS3CVHTML: vi.fn().mockResolvedValue(null),
+        getActiveTemplateForKey: vi.fn().mockResolvedValue({ key: 'classic', access: 'free' }),
+        getDownloadQuota: vi.fn().mockResolvedValue({ limit: 1, used: 0, remaining: 1, reached: false, plan: 'free' }),
+        logError: vi.fn(),
+        logEvent: vi.fn(),
+        pdfJsonParser: express.json({ limit: '1mb' }),
+        pdfLimiter: (_req: any, _res: any, next: any) => next(),
+        renderCvTemplateString: vi.fn(),
+        requireAuth: (req: any, _res: any, next: any) => {
+          req.user = user;
+          next();
+        },
+        rollbackDownloadQuota: vi.fn(),
+        sanitizeCvData: vi.fn((value) => value),
+        sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
+        templateRequiresPaidPlan: vi.fn(() => false),
+      });
+      app.use(router);
+
+      const server = await new Promise<Server>((resolve) => {
+        const listeningServer = app.listen(0, '127.0.0.1', () => resolve(listeningServer));
+      });
+      const address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not bind to a TCP port.');
+
+      try {
+        const first = await fetch(`http://127.0.0.1:${address.port}/api/generate-pdf`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cvData: { personalInfo: { fullName: 'Jane' } }, template: 'classic' }),
+        });
+        const second = await fetch(`http://127.0.0.1:${address.port}/api/generate-pdf`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cvData: { personalInfo: { fullName: 'Jane' } }, template: 'classic' }),
+        });
+        const secondBody = await second.json() as { error: string; upgradeRequired: boolean };
+
+        expect(first.status).toBe(200);
+        expect(second.status).toBe(403);
+        expect(secondBody.upgradeRequired).toBe(true);
+        expect(consumeDownloadQuota).toHaveBeenCalledTimes(2);
+        expect(generatePdfDocument).toHaveBeenCalledTimes(1);
+      } finally {
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => error ? reject(error) : resolve());
+        });
+      }
+    });
   });
 
   describe('billing plans', () => {
@@ -672,6 +769,20 @@ describe('generateCVHTML', () => {
     const html = generateCVHTML(maliciousData, 'classic');
     expect(html).toContain('John &lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt; Doe');
     expect(html).not.toContain('<script>');
+  });
+
+  it('should reject malicious fontFamily values in PDF HTML', () => {
+    const maliciousData = {
+      ...mockCVData,
+      fontFamily: `Inter');}body{background:url(https://evil.example/x)}/*`
+    };
+
+    const html = generateCVHTML(maliciousData, 'classic');
+
+    expect(html).toContain('family=Inter:wght@400;500;600;700;800');
+    expect(html).toContain("font-family: 'Inter', sans-serif");
+    expect(html).not.toContain('evil.example');
+    expect(html).not.toContain("Inter');}body");
   });
 });
 

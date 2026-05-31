@@ -24,6 +24,17 @@ export const getEmailVerificationSendRateLimitKey = (req: Request) => {
     return `ip:${ipKeyGenerator(req.ip)}`;
 };
 
+export const getEmailVerificationAttemptRateLimitKey = (req: Request) => {
+    const user = req.user as any;
+    const userId = user?._id?.toString?.() || user?.id?.toString?.();
+    if (userId) return `user:${userId}`;
+
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    if (email) return `email:${email}`;
+
+    return `ip:${ipKeyGenerator(req.ip)}`;
+};
+
 const useSharedRateLimitStore = () => Boolean((process.env.MONGO_URI || process.env.MONGODB_URI || '').trim());
 const createRateLimitStore = (prefix: string) => useSharedRateLimitStore()
     ? new MongoRateLimitStore(prefix)
@@ -103,13 +114,13 @@ export const emailVerificationLimiter = createRateLimiter('email-verification-se
     message: { error: 'Too many OTP requests. Please wait 15 minutes before trying again.' },
 });
 
-export const emailVerificationAttemptLimiter = createRateLimiter('email-verification-attempt', {
+export const emailVerificationAttemptLimiter = createRateLimiter('email-verification-attempt-v2', {
     windowMs: EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS,
     max: EMAIL_VERIFICATION_ATTEMPT_LIMIT,
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true,
-    keyGenerator: getAuthenticatedRateLimitKey,
+    keyGenerator: getEmailVerificationAttemptRateLimitKey,
     message: { error: 'Too many OTP verification attempts. Please wait 10 minutes before trying again.' },
 });
 

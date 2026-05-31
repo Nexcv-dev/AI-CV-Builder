@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import { randomBytes } from 'crypto';
 
 const productionCspDirectives = {
     defaultSrc: ["'self'"],
@@ -95,11 +96,19 @@ const isTrustedRequestOrigin = (req: Request) => {
     return requestOrigin === sameOrigin || isAllowedOrigin(requestOrigin);
 };
 
+const getCsrfToken = (req: Request) => {
+    const session = req.session as any;
+    if (!session.csrfToken) {
+        session.csrfToken = randomBytes(32).toString('hex');
+    }
+    return session.csrfToken;
+};
+
 export const integrityCheck = (req: Request, res: Response, next: NextFunction) => {
     if (!req.path.startsWith('/api/') || !['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
         return next();
     }
-    if (req.path === '/api/payhere/ipn') {
+    if (req.path === '/api/payhere/ipn' || req.path === '/api/lemonsqueezy/webhook') {
         return next();
     }
 
@@ -110,6 +119,12 @@ export const integrityCheck = (req: Request, res: Response, next: NextFunction) 
 
     if (!isTrustedRequestOrigin(req)) {
         return res.status(403).json({ error: 'Untrusted request origin' });
+    }
+
+    const sessionToken = (req.session as any)?.csrfToken;
+    const requestToken = req.header('X-CSRF-Token');
+    if (!sessionToken || !requestToken || requestToken !== sessionToken) {
+        return res.status(403).json({ error: 'Invalid CSRF token', code: 'CSRF_TOKEN_INVALID' });
     }
 
     return next();
@@ -123,7 +138,7 @@ export const configureSecurityMiddleware = (app: Express) => {
     }));
 
     app.use((_req: Request, res: Response, next: NextFunction) => {
-        res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+        res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self)');
         next();
     });
 
@@ -135,8 +150,13 @@ export const configureSecurityMiddleware = (app: Express) => {
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-        allowedHeaders: ['Content-Type', 'X-App-Source'],
+        allowedHeaders: ['Content-Type', 'X-App-Source', 'X-CSRF-Token'],
     }));
+
+    app.get('/api/csrf-token', (req: Request, res: Response) => {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ csrfToken: getCsrfToken(req) });
+    });
 
     app.use(integrityCheck);
 };

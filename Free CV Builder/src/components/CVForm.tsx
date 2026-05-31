@@ -14,6 +14,7 @@ import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
 import { applyTemplateColorDefaults } from '../utils/templateData';
+import { csrfFetch } from '../utils/api';
 
 import {
   ALL_STEPS,
@@ -212,9 +213,9 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
     aiRequestIdsRef.current.add('summary');
     setRefining('summary', true);
     try {
-      const res = await fetch('/api/generate-summary', {
+      const res = await csrfFetch('/api/generate-summary', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-App-Source': 'cv-builder-app' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           experience: cvData.experience,
           education: cvData.education,
@@ -265,9 +266,9 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
     aiRequestIdsRef.current.add(id);
     setRefining(id, true);
     try {
-      const res = await fetch('/api/refine-text', {
+      const res = await csrfFetch('/api/refine-text', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-App-Source': 'cv-builder-app' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: plainText, sectionType, context }),
         signal: abortControllerRef.current.signal,
       });
@@ -337,9 +338,9 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
           const base64Data = (reader.result as string).split(',')[1];
           const mimeType = file.type || "application/pdf";
 
-          const parseResponse = await fetch('/api/parse-cv', {
+          const parseResponse = await csrfFetch('/api/parse-cv', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-App-Source': 'cv-builder-app' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ base64Data, mimeType }),
             signal: importAbortControllerRef.current.signal,
           });

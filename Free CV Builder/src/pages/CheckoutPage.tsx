@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
   Crown,
   Lock,
   Loader2,
@@ -18,6 +19,7 @@ import {
 import { SiteHeader } from '../components/SiteHeader';
 import { AuthModal } from '../components/AuthModal';
 import { AuthUser, apiFetch, getCurrentUser, notifyAuthUserChanged } from '../utils/api';
+import { COUNTRIES, countryFromCode, countryNameFromCode, detectClientBillingCountry } from '../utils/countries';
 
 type CheckoutPlanKey = 'payg' | 'monthly';
 
@@ -25,6 +27,13 @@ interface PayHereCheckoutResponse {
   actionUrl: string;
   orderId: string;
   fields: Record<string, string>;
+  quote: CheckoutQuote;
+}
+
+interface LemonSqueezyCheckoutResponse {
+  checkoutId: string;
+  checkoutUrl: string;
+  orderId: string;
   quote: CheckoutQuote;
 }
 
@@ -37,12 +46,17 @@ interface BillingPlanPrice {
   promotionActive: boolean;
   promotionLabel?: string;
   discountBadge?: string;
-  currency: 'LKR';
+  currency: 'LKR' | 'USD';
+  provider?: 'payhere' | 'lemonsqueezy';
+  market?: 'local' | 'global';
 }
 
 interface CheckoutQuote {
   plan: CheckoutPlanKey;
-  currency: 'LKR';
+  currency: 'LKR' | 'USD';
+  provider?: 'payhere' | 'lemonsqueezy';
+  market?: 'local' | 'global';
+  country?: string;
   baseAmountCents: number;
   discountCents: number;
   promotionDiscountCents?: number;
@@ -58,7 +72,6 @@ interface CheckoutQuote {
 const checkoutPlans: Record<CheckoutPlanKey, {
   key: CheckoutPlanKey;
   name: string;
-  price: string;
   duration: string;
   summary: string;
   icon: LucideIcon;
@@ -67,7 +80,6 @@ const checkoutPlans: Record<CheckoutPlanKey, {
   payg: {
     key: 'payg',
     name: 'Pay As You Go',
-    price: 'LKR 499',
     duration: '7 days (One-time payment)',
     summary: 'One polished CV with unlimited edits and downloads for a focused application window.',
     icon: Zap,
@@ -83,7 +95,6 @@ const checkoutPlans: Record<CheckoutPlanKey, {
   monthly: {
     key: 'monthly',
     name: 'Monthly',
-    price: 'LKR 2199',
     duration: '30 days (One-time payment)',
     summary: 'Best for active job searches with multiple CV versions and repeated exports.',
     icon: Crown,
@@ -120,10 +131,38 @@ function submitPayHereForm(actionUrl: string, fields: Record<string, string>) {
   form.submit();
 }
 
+const paymentMethods = [
+  { name: 'Visa', src: '/payment-methods/visa.svg' },
+  { name: 'Mastercard', src: '/payment-methods/mastercard.svg' },
+  { name: 'American Express', src: '/payment-methods/amex.svg' },
+  { name: 'Discover', src: '/payment-methods/discover.svg' },
+  { name: 'UnionPay', src: '/payment-methods/unionpay.svg' },
+  { name: 'Apple Pay', src: '/payment-methods/apple-pay.svg' },
+  { name: 'Google Pay', src: '/payment-methods/google-pay.svg' },
+  { name: 'PayPal', src: '/payment-methods/paypal.svg' },
+];
+
+function PaymentMethodLogos({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className={`flex flex-wrap items-center justify-center ${compact ? 'gap-2' : 'gap-3'}`} aria-label="Supported payment methods">
+      {paymentMethods.map((method) => (
+        <div
+          key={method.name}
+          className={`${compact ? 'h-8 w-12 rounded-md' : 'h-10 w-16 rounded-lg'} flex items-center justify-center overflow-hidden border border-white/10 bg-white shadow-sm`}
+          title={method.name}
+        >
+          <img src={method.src} alt={method.name} className="h-full w-full object-contain" loading="lazy" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedPlanKey = getPlanFromQuery(searchParams.get('plan'));
+  const initialCountry = searchParams.get('country') || detectClientBillingCountry();
   const selectedPlan = checkoutPlans[selectedPlanKey];
   const PlanIcon = selectedPlan.icon;
 
@@ -135,6 +174,7 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState('');
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteRefreshKey, setQuoteRefreshKey] = useState(0);
   const [showCouponInput, setShowCouponInput] = useState(false);
   const [form, setForm] = useState({
     firstName: '',
@@ -143,8 +183,16 @@ export default function CheckoutPage() {
     phone: '',
     address: '',
     city: '',
-    country: 'Sri Lanka',
+    countryCode: initialCountry,
+    country: initialCountry ? countryNameFromCode(initialCountry) : 'Sri Lanka',
   });
+  const [resolvedCountry, setResolvedCountry] = useState(initialCountry || 'LK');
+  const [billingMarket, setBillingMarket] = useState<'local' | 'global'>('local');
+  const [countryMenuOpen, setCountryMenuOpen] = useState(false);
+  const [countrySearchIndex, setCountrySearchIndex] = useState<number | null>(null);
+  const countryDropdownRef = useRef<HTMLSpanElement>(null);
+  const countrySearchRef = useRef('');
+  const countrySearchTimerRef = useRef<number | null>(null);
   const checkoutInFlightRef = useRef(false);
 
   useEffect(() => {
@@ -177,10 +225,73 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
+    if (!countryMenuOpen) return;
+
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && countryDropdownRef.current?.contains(target)) return;
+      setCountryMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setCountryMenuOpen(false);
+        return;
+      }
+
+      if (event.key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) return;
+      const nextSearch = `${countrySearchRef.current}${event.key}`.toLowerCase();
+      const matchIndex = COUNTRIES.findIndex((country) => country.name.toLowerCase().startsWith(nextSearch));
+      const fallbackIndex = COUNTRIES.findIndex((country) => country.name.toLowerCase().startsWith(event.key.toLowerCase()));
+      const nextIndex = matchIndex >= 0 ? matchIndex : fallbackIndex;
+      if (nextIndex < 0) return;
+
+      event.preventDefault();
+      countrySearchRef.current = matchIndex >= 0 ? nextSearch : event.key.toLowerCase();
+      setCountrySearchIndex(nextIndex);
+      document.getElementById(`country-option-${COUNTRIES[nextIndex].code}`)?.scrollIntoView({ block: 'nearest' });
+
+      if (countrySearchTimerRef.current) window.clearTimeout(countrySearchTimerRef.current);
+      countrySearchTimerRef.current = window.setTimeout(() => {
+        countrySearchRef.current = '';
+      }, 900);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+      if (countrySearchTimerRef.current) window.clearTimeout(countrySearchTimerRef.current);
+      countrySearchRef.current = '';
+      countrySearchTimerRef.current = null;
+      setCountrySearchIndex(null);
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [countryMenuOpen]);
+
+  useEffect(() => {
     let ignore = false;
-    apiFetch<{ plans: BillingPlanPrice[] }>('/api/billing/plans')
+    const suffix = form.countryCode ? `?country=${encodeURIComponent(form.countryCode)}` : '';
+    apiFetch<{ country: string; market: 'local' | 'global'; provider: 'payhere' | 'lemonsqueezy'; plans: BillingPlanPrice[] }>(`/api/billing/plans${suffix}`, { cache: 'no-store' })
       .then((data) => {
         if (ignore) return;
+        setResolvedCountry(data.country);
+        setBillingMarket(data.market);
+        if (!form.countryCode && data.country && data.country !== 'GLOBAL') {
+          setForm((current) => ({
+            ...current,
+            countryCode: data.country,
+            country: countryNameFromCode(data.country),
+          }));
+        }
         const next = data.plans.reduce((acc, plan) => ({ ...acc, [plan.plan]: plan }), {} as Record<CheckoutPlanKey, BillingPlanPrice>);
         setPlanPrices(next);
       })
@@ -188,7 +299,7 @@ export default function CheckoutPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [form.countryCode]);
 
   useEffect(() => {
     let ignore = false;
@@ -196,7 +307,7 @@ export default function CheckoutPage() {
       setQuoteLoading(true);
       apiFetch<{ quote: CheckoutQuote }>('/api/billing/quote', {
         method: 'POST',
-        body: JSON.stringify({ plan: selectedPlan.key, couponCode: couponCode.trim() }),
+        body: JSON.stringify({ plan: selectedPlan.key, couponCode: couponCode.trim(), country: form.countryCode }),
       })
         .then((data) => {
           if (!ignore) setQuote(data.quote);
@@ -215,7 +326,7 @@ export default function CheckoutPage() {
       ignore = true;
       window.clearTimeout(timer);
     };
-  }, [couponCode, selectedPlan.key]);
+  }, [couponCode, selectedPlan.key, form.countryCode, quoteRefreshKey]);
 
   useEffect(() => {
     const paymentStatus = searchParams.get('payment');
@@ -276,12 +387,26 @@ export default function CheckoutPage() {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
+  const updateCountry = (countryCode: string) => {
+    const country = countryNameFromCode(countryCode);
+    setForm((current) => ({ ...current, countryCode, country }));
+    setQuote(null);
+    setSearchParams({ plan: selectedPlan.key, country: countryCode }, { replace: true });
+  };
+
+  const selectedCountry = countryFromCode(form.countryCode || (resolvedCountry === 'GLOBAL' ? 'OTHER' : resolvedCountry));
+  const checkoutProviderLabel = billingMarket === 'local' ? 'PayHere' : 'Lemon Squeezy';
+
   const selectPlan = (plan: CheckoutPlanKey) => {
     setSearchParams({ plan });
     setQuote(null);
   };
 
-  const formatCents = (cents: number, currency = 'LKR') => `${currency} ${new Intl.NumberFormat().format(Math.round(cents / 100))}`;
+  const formatCents = (cents: number, currency = 'LKR') => {
+    const amount = cents / 100;
+    const fractionDigits = currency === 'USD' ? 2 : 0;
+    return `${currency} ${new Intl.NumberFormat(undefined, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(amount)}`;
+  };
 
   const completeCheckout = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -322,12 +447,29 @@ export default function CheckoutPage() {
         address: form.address.trim(),
         city: form.city.trim(),
         country: form.country.trim(),
+        countryCode: form.countryCode,
       },
+      country: form.countryCode,
     };
 
     checkoutInFlightRef.current = true;
     setSubmitting(true);
     try {
+      if (billingMarket === 'global') {
+        const checkout = await apiFetch<LemonSqueezyCheckoutResponse>('/api/billing/lemonsqueezy-checkout', {
+          method: 'POST',
+          body: JSON.stringify(checkoutPayload),
+        });
+        sessionStorage.setItem('nexcv-pending-checkout', JSON.stringify({
+          ...checkoutPayload,
+          orderId: checkout.orderId,
+          provider: 'lemonsqueezy',
+          checkoutId: checkout.checkoutId,
+        }));
+        window.location.assign(checkout.checkoutUrl);
+        return;
+      }
+
       const checkout = await apiFetch<PayHereCheckoutResponse>('/api/billing/payhere-checkout', {
         method: 'POST',
         body: JSON.stringify(checkoutPayload),
@@ -335,10 +477,11 @@ export default function CheckoutPage() {
       sessionStorage.setItem('nexcv-pending-checkout', JSON.stringify({
         ...checkoutPayload,
         orderId: checkout.orderId,
+        provider: 'payhere',
       }));
       submitPayHereForm(checkout.actionUrl, checkout.fields);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not open PayHere checkout.');
+      toast.error(error instanceof Error ? error.message : 'Could not open checkout.');
       checkoutInFlightRef.current = false;
       setSubmitting(false);
     }
@@ -473,22 +616,65 @@ export default function CheckoutPage() {
 
                 <label className="grid gap-2 text-sm font-black text-slate-200">
                   Country
-                  <select
-                    value={form.country}
-                    onChange={(event) => updateField('country', event.target.value)}
-                    className="h-12 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-base font-bold text-white outline-none transition focus:border-violet-400"
-                    autoComplete="country-name"
-                  >
-                    <option>Sri Lanka</option>
-                    <option>India</option>
-                    <option>United Arab Emirates</option>
-                    <option>United Kingdom</option>
-                    <option>United States</option>
-                    <option>Australia</option>
-                    <option>Canada</option>
-                    <option>Other</option>
-                  </select>
+                  <span ref={countryDropdownRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setCountryMenuOpen((open) => !open)}
+                      className="flex h-12 w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-900 px-3 text-left text-base font-bold text-white outline-none transition focus:border-violet-400"
+                      aria-haspopup="listbox"
+                      aria-expanded={countryMenuOpen}
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        {selectedCountry.flag && <span className="shrink-0 text-lg leading-none">{selectedCountry.flag}</span>}
+                        <span className="truncate">{selectedCountry.name}</span>
+                      </span>
+                      <ChevronDown size={18} className={`shrink-0 text-slate-400 transition ${countryMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {countryMenuOpen && (
+                      <div
+                        role="listbox"
+                        className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-72 overflow-y-auto rounded-xl border border-violet-300/40 bg-slate-950 py-2 shadow-2xl shadow-black/40"
+                      >
+                        {COUNTRIES.map((country) => {
+                          const selected = country.code === (form.countryCode || resolvedCountry);
+                          const searchMatch = countrySearchIndex !== null && COUNTRIES[countrySearchIndex]?.code === country.code;
+                          return (
+                            <button
+                              key={country.code}
+                              id={`country-option-${country.code}`}
+                              type="button"
+                              role="option"
+                              aria-selected={selected}
+                              onClick={() => {
+                                updateCountry(country.code);
+                                setCountryMenuOpen(false);
+                              }}
+                              className={`block w-full px-4 py-2 text-left text-sm font-bold transition ${
+                                selected || searchMatch ? 'bg-violet-500/20 text-violet-100' : 'text-slate-100 hover:bg-white/8'
+                              }`}
+                            >
+                              <span className="flex items-center gap-3">
+                                {country.flag && <span className="w-6 shrink-0 text-lg leading-none">{country.flag}</span>}
+                                <span>{country.name}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </span>
                 </label>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/6 p-4">
+                <p className="text-sm font-black text-white">
+                  {billingMarket === 'local' ? 'Sri Lanka checkout' : 'International checkout'}
+                </p>
+                <p className="mt-1 text-xs font-bold leading-5 text-slate-400">
+                  {billingMarket === 'local'
+                    ? 'Your price is shown in LKR and payment continues through PayHere.'
+                    : 'Your price is shown in USD and payment continues through Lemon Squeezy.'}
+                </p>
               </div>
 
               <button
@@ -497,22 +683,15 @@ export default function CheckoutPage() {
                 className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-violet-500 px-4 text-sm font-black text-white shadow-lg shadow-violet-950/30 transition hover:bg-violet-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-65"
               >
                 {submitting ? <Loader2 size={18} className="mr-2 animate-spin" /> : <Lock size={17} className="mr-2" />}
-                {user ? 'Purchase plan' : 'Sign in to continue'}
+                {user ? `Continue to ${checkoutProviderLabel}` : 'Sign in to continue'}
               </button>
 
               <p className="mt-4 text-center text-xs font-bold leading-5 text-slate-500">
                 Card details are handled by the payment gateway after redirect.
               </p>
-              
-              <div className="mt-8 flex justify-center">
-                <a href="https://www.payhere.lk" target="_blank" rel="noopener noreferrer" className="block transition hover:scale-[1.01] w-full max-w-[500px]">
-                  <img 
-                    src="https://www.payhere.lk/downloads/images/payhere_long_banner_dark.png" 
-                    alt="PayHere" 
-                    width="500"
-                    className="h-auto w-full" 
-                  />
-                </a>
+
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4">
+                <PaymentMethodLogos />
               </div>
             </form>
 
@@ -532,7 +711,10 @@ export default function CheckoutPage() {
 
                 <div className="mt-6 border-y border-white/10 py-5">
                   <div className={`text-4xl font-black ${planPrices?.[selectedPlan.key]?.promotionActive ? 'text-emerald-300' : ''}`}>
-                    {quote ? formatCents(quote.finalAmountCents, quote.currency) : planPrices?.[selectedPlan.key] ? formatCents(planPrices[selectedPlan.key].cents, planPrices[selectedPlan.key].currency) : selectedPlan.price}
+                    {quote ? formatCents(quote.finalAmountCents, quote.currency) : planPrices?.[selectedPlan.key] ? formatCents(planPrices[selectedPlan.key].cents, planPrices[selectedPlan.key].currency) : 'Loading...'}
+                  </div>
+                  <div className="mt-2 text-xs font-black uppercase text-slate-500">
+                    {billingMarket === 'local' ? 'Local LKR price' : 'Global USD price'} - {countryNameFromCode(resolvedCountry)}
                   </div>
                   <div className="mt-1 text-sm font-bold text-slate-400">{selectedPlan.duration}</div>
                   {planPrices?.[selectedPlan.key]?.promotionActive && (
@@ -614,7 +796,7 @@ export default function CheckoutPage() {
                         </span>
                         <span className="text-right text-xs font-black text-slate-400">
                           {planPrices?.[plan.key]?.promotionActive && <span className="mr-1 text-slate-600 line-through">{formatCents(planPrices[plan.key].baseAmountCents, planPrices[plan.key].currency)}</span>}
-                          {planPrices?.[plan.key] ? formatCents(planPrices[plan.key].cents, planPrices[plan.key].currency) : plan.price}
+                          {planPrices?.[plan.key] ? formatCents(planPrices[plan.key].cents, planPrices[plan.key].currency) : 'Loading...'}
                         </span>
                       </button>
                     );
@@ -668,17 +850,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 
-                {/* Payment Methods */}
-                <div className="flex flex-col items-center">
-                  <a href="https://www.payhere.lk" target="_blank" rel="noopener noreferrer" className="block transition hover:scale-[1.02]">
-                    <img 
-                      src="https://www.payhere.lk/downloads/images/payhere_short_banner_dark.png" 
-                      alt="PayHere" 
-                      width="250"
-                      className="h-auto"
-                    />
-                  </a>
-                </div>
+                <PaymentMethodLogos compact />
               </div>
               <p className="mt-6 text-center text-[11px] font-bold text-slate-500 max-w-[200px]">
                 Your transactions are encrypted and processed securely.
@@ -721,6 +893,8 @@ export default function CheckoutPage() {
         onClose={() => setAuthModalOpen(false)}
         onAuthenticated={(currentUser) => {
           setUser(currentUser);
+          setQuote(null);
+          setQuoteRefreshKey((key) => key + 1);
           const [firstName, ...restName] = (currentUser.displayName || '').trim().split(' ').filter(Boolean);
           setForm((current) => ({
             ...current,

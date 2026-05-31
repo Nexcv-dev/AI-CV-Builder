@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #111827; margin: 0; display: flex; justify-content: center; padding: 40px 0; }
+    .page { width: 210mm; background: white; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); padding: 18mm 18mm 18mm 18mm; }
+    a { color: inherit; text-decoration: none; }
+    ul { padding-left: 20px; margin: 4px 0; }
+    li { margin-bottom: 4px; }
+    h1, h2, h3 { margin: 0; }
+
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 24px; border-bottom: 1px solid #e5e7eb; margin-bottom: 36px; }
+    .header-left { }
+    .color-bar { width: 64px; height: 6px; background: #10b981; margin-bottom: 16px; border-radius: 3px; }
+    .name { font-size: 2.45rem; font-weight: 900; letter-spacing: -0.025em; color: #030712; line-height: 1.1; margin-bottom: 12px; }
+    .contact-items { display: flex; flex-wrap: wrap; gap: 14px; }
+    .contact-item { font-size: 0.75rem; color: #6b7280; display: flex; align-items: center; gap: 5px; }
+    .contact-icon { width: 13px; height: 13px; flex-shrink: 0; fill: #9ca3af; }
+
+    /* Sections */
+    .section { margin-bottom: 28px; }
+    .section-heading { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .section-heading-text { font-size: 0.6875rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.22em; color: #10b981; white-space: nowrap; }
+    .section-heading-line { flex: 1; height: 1px; background: #e5e7eb; }
+
+    /* Timeline rows */
+    .timeline-row { display: grid; grid-template-columns: 104px 1fr; margin-bottom: 22px; }
+    .timeline-row:last-child { margin-bottom: 0; }
+    .timeline-date { font-size: 0.6875rem; color: #6b7280; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 2px; }
+    .timeline-content { border-left: 1px solid #e5e7eb; padding-left: 20px; position: relative; padding-bottom: 4px; }
+    .timeline-dot { position: absolute; left: -5px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #10b981; border: 2px solid white; box-shadow: 0 0 0 1px #e5e7eb; }
+    .timeline-title { font-size: 0.875rem; font-weight: 700; color: #1f2937; margin-bottom: 2px; }
+    .timeline-subtitle { font-size: 0.75rem; color: #6b7280; margin-bottom: 6px; }
+    .timeline-bullets { padding-left: 16px; margin: 4px 0 0 0; }
+    .timeline-bullets li { font-size: 0.75rem; color: #374151; margin-bottom: 3px; line-height: 1.5; }
+
+    /* Summary */
+    .summary-text { font-size: 0.8125rem; color: #374151; line-height: 1.7; }
+
+    /* Skills */
+    .skills-row { display: grid; grid-template-columns: 104px 1fr; margin-bottom: 12px; align-items: flex-start; }
+    .skills-row:last-child { margin-bottom: 0; }
+    .skills-category { font-size: 0.6875rem; color: #6b7280; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 4px; }
+    .skills-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { font-size: 0.75rem; font-weight: 600; padding: 4px 10px; background: #f3f4f6; color: #374151; border-radius: 6px; border: 1px solid #e5e7eb; }
+
+    /* Languages */
+    .languages-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .language-item { }
+    .language-name { font-size: 0.875rem; font-weight: 700; color: #1f2937; }
+    .language-proficiency { font-size: 0.75rem; color: #6b7280; }
+
+    /* Courses timeline */
+    .course-title { font-size: 0.8125rem; font-weight: 600; color: #1f2937; }
+    .course-org { font-size: 0.75rem; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="color-bar"></div>
+        <div class="name">Dilshan Rajapaksa</div>
+        <div class="contact-items">
+          <span class="contact-item">
+            <svg class="contact-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+            dilshan.r@tech.lk
+          </span>
+          <span class="contact-item">
+            <svg class="contact-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+            +94 70 567 8901
+          </span>
+          <span class="contact-item">
+            <svg class="contact-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+            Galle, Sri Lanka
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="section">
+      <div class="section-heading">
+        <span class="section-heading-text">Summary</span>
+        <span class="section-heading-line"></span>
+      </div>
+      <p class="summary-text">DevOps Engineer with 6+ years of experience in cloud infrastructure, CI/CD automation, and container orchestration. AWS and GCP certified, passionate about building resilient, scalable systems.</p>
+    </div>
+
+    <!-- Experience -->
+    <div class="section">
+      <div class="section-heading">
+        <span class="section-heading-text">Experience</span>
+        <span class="section-heading-line"></span>
+      </div>
+
+      <div class="timeline-row">
+        <div class="timeline-date">Feb 2021 —<br>Present</div>
+        <div class="timeline-content">
+          <div class="timeline-dot"></div>
+          <div class="timeline-title">Senior DevOps Engineer</div>
+          <div class="timeline-subtitle">WSO2</div>
+          <ul class="timeline-bullets">
+            <li>Architected Kubernetes clusters handling 10K+ requests/second across 3 availability zones</li>
+            <li>Reduced infrastructure costs by 30% through auto-scaling and spot instance optimization</li>
+            <li>Built GitOps workflows with ArgoCD for 20+ microservices</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="timeline-row">
+        <div class="timeline-date">Jul 2018 —<br>Jan 2021</div>
+        <div class="timeline-content">
+          <div class="timeline-dot"></div>
+          <div class="timeline-title">Cloud Engineer</div>
+          <div class="timeline-subtitle">Pearson Lanka</div>
+          <ul class="timeline-bullets">
+            <li>Migrated legacy on-premise infrastructure to AWS, achieving 99.99% uptime</li>
+            <li>Automated deployment pipelines reducing release cycles from weekly to daily</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="timeline-row">
+        <div class="timeline-date">Jan 2017 —<br>Jun 2018</div>
+        <div class="timeline-content">
+          <div class="timeline-dot"></div>
+          <div class="timeline-title">Junior Systems Administrator</div>
+          <div class="timeline-subtitle">Dialog Axiata</div>
+          <ul class="timeline-bullets">
+            <li>Managed Linux server fleet of 200+ servers</li>
+            <li>Implemented monitoring with Prometheus and Grafana</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Education -->
+    <div class="section">
+      <div class="section-heading">
+        <span class="section-heading-text">Education</span>
+        <span class="section-heading-line"></span>
+      </div>
+
+      <div class="timeline-row">
+        <div class="timeline-date">2012 —<br>2016</div>
+        <div class="timeline-content">
+          <div class="timeline-dot"></div>
+          <div class="timeline-title">BSc in Computer Engineering</div>
+          <div class="timeline-subtitle">University of Peradeniya</div>
+          <ul class="timeline-bullets">
+            <li>Second Class Upper Division</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills -->
+    <div class="section">
+      <div class="section-heading">
+        <span class="section-heading-text">Skills</span>
+        <span class="section-heading-line"></span>
+      </div>
+
+      <div class="skills-row">
+        <div class="skills-category">Cloud</div>
+        <div class="skills-chips">
+          <span class="chip">AWS</span>
+          <span class="chip">GCP</span>
+          <span class="chip">Azure</span>
+        </div>
+      </div>
+
+      <div class="skills-row">
+        <div class="skills-category">Containers</div>
+        <div class="skills-chips">
+          <span class="chip">Docker</span>
+          <span class="chip">Kubernetes</span>
+          <span class="chip">Helm</span>
+        </div>
+      </div>
+
+      <div class="skills-row">
+        <div class="skills-category">CI/CD</div>
+        <div class="skills-chips">
+          <span class="chip">Jenkins</span>
+          <span class="chip">GitHub Actions</span>
+          <span class="chip">ArgoCD</span>
+        </div>
+      </div>
+
+      <div class="skills-row">
+        <div class="skills-category">Monitoring</div>
+        <div class="skills-chips">
+          <span class="chip">Prometheus</span>
+          <span class="chip">Grafana</span>
+          <span class="chip">ELK Stack</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Languages -->
+    <div class="section">
+      <div class="section-heading">
+        <span class="section-heading-text">Languages</span>
+        <span class="section-heading-line"></span>
+      </div>
+      <div class="languages-grid">
+        <div class="language-item">
+          <div class="language-name">Sinhala</div>
+          <div class="language-proficiency">Native</div>
+        </div>
+        <div class="language-item">
+          <div class="language-name">English</div>
+          <div class="language-proficiency">Fluent</div>
+        </div>
+        <div class="language-item">
+          <div class="language-name">Japanese</div>
+          <div class="language-proficiency">Elementary</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Courses -->
+    <div class="section">
+      <div class="section-heading">
+        <span class="section-heading-text">Courses &amp; Certifications</span>
+        <span class="section-heading-line"></span>
+      </div>
+
+      <div class="timeline-row">
+        <div class="timeline-date">2022</div>
+        <div class="timeline-content">
+          <div class="timeline-dot"></div>
+          <div class="course-title">AWS Solutions Architect Professional</div>
+          <div class="course-org">Amazon</div>
+        </div>
+      </div>
+
+      <div class="timeline-row">
+        <div class="timeline-date">2021</div>
+        <div class="timeline-content">
+          <div class="timeline-dot"></div>
+          <div class="course-title">Certified Kubernetes Administrator</div>
+          <div class="course-org">CNCF</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

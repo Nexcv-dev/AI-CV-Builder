@@ -29,19 +29,77 @@ export class ApiError extends Error {
   }
 }
 
+let csrfToken: string | null = null;
+let csrfTokenPromise: Promise<string> | null = null;
+
+const isUnsafeMethod = (method?: string) => {
+  const normalized = (method || 'GET').toUpperCase();
+  return normalized !== 'GET' && normalized !== 'HEAD' && normalized !== 'OPTIONS';
+};
+
+async function getCsrfToken(forceRefresh = false) {
+  if (csrfToken && !forceRefresh) return csrfToken;
+  if (!csrfTokenPromise || forceRefresh) {
+    csrfTokenPromise = fetch('/api/csrf-token', {
+      credentials: 'include',
+      cache: 'no-store',
+      headers: { 'X-App-Source': 'cv-builder-app' },
+    })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || typeof data.csrfToken !== 'string') {
+          throw new Error(data.error || 'Could not prepare a secure request.');
+        }
+        csrfToken = data.csrfToken;
+        return csrfToken;
+      })
+      .finally(() => {
+        csrfTokenPromise = null;
+      });
+  }
+  return csrfTokenPromise;
+}
+
+async function isCsrfFailure(response: Response) {
+  if (response.status !== 403) return false;
+  const data = await response.clone().json().catch(() => ({}));
+  return data.code === 'CSRF_TOKEN_INVALID';
+}
+
+export async function csrfFetch(input: RequestInfo | URL, options: RequestInit = {}): Promise<Response> {
+  const unsafe = isUnsafeMethod(options.method);
+  const headers = new Headers(options.headers);
+
+  if (unsafe) {
+    headers.set('X-App-Source', 'cv-builder-app');
+    headers.set('X-CSRF-Token', await getCsrfToken());
+  }
+
+  const requestOptions: RequestInit = {
+    ...options,
+    headers,
+    credentials: 'include',
+  };
+
+  let response = await fetch(input, requestOptions);
+  if (unsafe && await isCsrfFailure(response)) {
+    csrfToken = null;
+    headers.set('X-CSRF-Token', await getCsrfToken(true));
+    response = await fetch(input, { ...requestOptions, headers });
+  }
+
+  return response;
+}
+
 export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   if (options.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  if (options.method && options.method !== 'GET') {
-    headers.set('X-App-Source', 'cv-builder-app');
-  }
 
-  const response = await fetch(url, {
+  const response = await csrfFetch(url, {
     ...options,
     headers,
-    credentials: 'include',
   });
 
   const data = await response.json().catch(() => ({}));

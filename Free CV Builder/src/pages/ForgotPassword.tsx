@@ -2,6 +2,7 @@ import React, { FormEvent, useState } from 'react';
 import { ArrowRight, CheckCircle2, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { csrfFetch } from '../utils/api';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -13,11 +14,10 @@ export default function ForgotPassword() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/auth/forgot-password', {
+      const response = await csrfFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-App-Source': 'cv-builder-app',
         },
         body: JSON.stringify({ email }),
       });

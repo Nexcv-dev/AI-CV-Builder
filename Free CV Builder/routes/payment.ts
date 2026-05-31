@@ -1,7 +1,6 @@
 import express, { Router, Request, Response } from 'express';
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
-import { getOrSetCachedValue, parseCacheTtlMs } from '../server-utils/ttlCache';
 
 type RouteDeps = Record<string, any>;
 
@@ -17,8 +16,10 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         createPlanExpiry,
         currentUserId,
         generateTransactionId,
+        createLemonSqueezyCheckout,
         getApiOrigin,
         getFrontendOrigin,
+        getMissingLemonSqueezyConfigKeys,
         getPayHereCheckoutUrl,
         getPayHereMerchantConfig,
         getPublicBillingPlans,
@@ -29,15 +30,18 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         normalizeEmail,
         payHereAmountToCents,
         planDisplayName,
+        isLemonSqueezyConfigured,
         quoteCheckout,
         requireAdminPermission,
         requireAuth,
         requireVerifiedEmail,
+        resolveBillingMarket,
         resolvePayHerePaymentContext,
         sanitizeProfileField,
         sendBillingAlertNotification,
         sendBillingSuccessNotifications,
         sendError,
+        verifyLemonSqueezySignature,
         verifyPayHereMd5Signature,
     } = bindDeps(deps);
 
@@ -66,15 +70,14 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         });
     };
 
-    router.get('/api/billing/plans', async (_req: Request, res: Response) => {
+    router.get('/api/billing/plans', async (req: Request, res: Response) => {
         try {
-            const plans = await getOrSetCachedValue(
-                'public:billing:plans',
-                parseCacheTtlMs(process.env.BILLING_PLANS_CACHE_TTL_MS, 60_000),
-                getPublicBillingPlans
-            );
-            res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=60');
-            return res.json({ plans });
+            const billingContext = resolveBillingMarket(req.query.country, req);
+            const plans = await getPublicBillingPlans(billingContext.market);
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Vary', 'CF-IPCountry, X-Vercel-IP-Country, X-Country-Code, X-AppEngine-Country');
+            return res.json({ ...billingContext, plans });
         } catch (error) {
             return sendError(res, 500, 'Could not load billing plans.', error);
         }
@@ -86,9 +89,10 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             if (plan !== 'payg' && plan !== 'monthly') {
                 return res.status(400).json({ error: 'Choose a valid paid plan.' });
             }
-            const quote = await quoteCheckout(plan, req.body.couponCode);
+            const billingContext = resolveBillingMarket(req.body.country, req);
+            const quote = await quoteCheckout(plan, req.body.couponCode, billingContext.market);
             if ('error' in quote) return res.status(400).json({ error: quote.error });
-            return res.json({ quote });
+            return res.json({ quote: { ...quote, country: billingContext.country, countrySource: billingContext.source } });
         } catch (error) {
             return sendError(res, 500, 'Could not calculate checkout total.', error);
         }
@@ -225,6 +229,24 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 ? { currency: checkoutSession.currency, cents: checkoutSession.finalAmountCents }
                 : PAYHERE_PLAN_PRICES[context.plan!];
             const paidCents = payHereAmountToCents(payload.payhere_amount);
+            if (paidCents === null) {
+                logEvent('warn', 'payment.payhere_ipn_amount_invalid', {
+                    orderId: payload.order_id,
+                    paymentId: payload.payment_id,
+                    plan: checkoutSession?.plan || context.plan,
+                    paidAmount: payload.payhere_amount,
+                    paidCurrency: payload.payhere_currency,
+                    expectedCurrency: expectedPrice.currency,
+                    expectedCents: expectedPrice.cents,
+                });
+                await alertPayHereIpnFailure(
+                    'payment.payhere_ipn_amount_invalid',
+                    'IPN payhere_amount could not be parsed as a decimal amount.',
+                    payload,
+                    { plan: checkoutSession?.plan || context.plan }
+                );
+                return res.status(400).send('Invalid payment amount.');
+            }
             if (payload.payhere_currency.toUpperCase() !== expectedPrice.currency || paidCents !== expectedPrice.cents) {
                 logEvent('warn', 'payment.payhere_ipn_amount_mismatch', {
                     orderId: payload.order_id,
@@ -274,7 +296,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 currency: payload.payhere_currency,
                 baseAmountCents: checkoutSession?.baseAmountCents,
                 discountCents: checkoutSession?.discountCents,
-                finalAmountCents: checkoutSession?.finalAmountCents || paidCents || undefined,
+                finalAmountCents: checkoutSession?.finalAmountCents ?? paidCents,
                 couponCode: checkoutSession?.couponCode,
                 statusCode: payload.status_code,
                 rawPayload: payload,
@@ -401,7 +423,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 paymentId: payload.payment_id,
                 userId: processedUser._id,
                 plan: purchasedPlan,
-                finalAmountCents: checkoutSession?.finalAmountCents || paidCents || undefined,
+                finalAmountCents: checkoutSession?.finalAmountCents ?? paidCents,
             });
 
             return res.status(200).send('OK');
@@ -429,6 +451,10 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             if (plan !== 'payg' && plan !== 'monthly') {
                 return res.status(400).json({ error: 'Choose a valid paid plan.' });
             }
+            const billingContext = resolveBillingMarket(req.body.country || req.body.customer?.countryCode, req);
+            if (billingContext.market !== 'local') {
+                return res.status(501).json({ error: 'International checkout is not connected yet. Please switch to Sri Lanka for PayHere checkout.' });
+            }
 
             const customer = req.body.customer || {};
             const firstName = sanitizeProfileField(customer.firstName, 80);
@@ -448,7 +474,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             }
 
             const userId = currentUserId(req).toString();
-            const quote = await quoteCheckout(plan, req.body.couponCode);
+            const quote = await quoteCheckout(plan, req.body.couponCode, billingContext.market);
             if ('error' in quote) return res.status(400).json({ error: quote.error });
             await markExpiredPendingCheckouts();
             const orderId = `${generateTransactionId()}-${userId}-${plan}`;
@@ -500,6 +526,257 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             });
         } catch (error) {
             return sendError(res, 500, 'Could not start PayHere checkout.', error);
+        }
+    });
+
+    router.post('/api/billing/lemonsqueezy-checkout', requireAuth, async (req: Request, res: Response) => {
+        try {
+            if (!requireVerifiedEmail(req, res)) {
+                return;
+            }
+
+            const plan = req.body.plan as BillingPlan;
+            if (plan !== 'payg' && plan !== 'monthly') {
+                return res.status(400).json({ error: 'Choose a valid paid plan.' });
+            }
+
+            const billingContext = resolveBillingMarket(req.body.country || req.body.customer?.countryCode, req);
+            if (billingContext.market !== 'global') {
+                return res.status(400).json({ error: 'Lemon Squeezy checkout is only available for global USD pricing.' });
+            }
+
+            if (!isLemonSqueezyConfigured()) {
+                return res.status(500).json({
+                    error: 'Lemon Squeezy checkout is not configured.',
+                    missing: getMissingLemonSqueezyConfigKeys(),
+                });
+            }
+
+            const userId = currentUserId(req).toString();
+            const user = req.user as any;
+            const customer = req.body.customer || {};
+            const email = normalizeEmail(customer.email || user?.email);
+            const firstName = sanitizeProfileField(customer.firstName, 80);
+            const lastName = sanitizeProfileField(customer.lastName, 80);
+            const displayName = sanitizeProfileField([firstName, lastName].filter(Boolean).join(' ') || user?.displayName, 120);
+            const quote = await quoteCheckout(plan, req.body.couponCode, billingContext.market);
+            if ('error' in quote) return res.status(400).json({ error: quote.error });
+
+            const orderId = `${generateTransactionId()}-${userId}-${plan}-ls`;
+            await markExpiredPendingCheckouts();
+            await CheckoutSession.create({
+                orderId,
+                userId,
+                plan,
+                currency: quote.currency,
+                baseAmountCents: quote.baseAmountCents,
+                discountCents: quote.discountCents,
+                finalAmountCents: quote.finalAmountCents,
+                couponCode: quote.couponCode || undefined,
+                status: 'pending',
+                expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+            });
+            const frontendOrigin = getFrontendOrigin(req);
+            const checkout = await createLemonSqueezyCheckout({
+                plan,
+                checkoutData: {
+                    email,
+                    name: displayName,
+                    redirectUrl: `${frontendOrigin}/checkout?plan=${plan}&payment=return&provider=lemonsqueezy&order=${encodeURIComponent(orderId)}`,
+                    custom: {
+                        user_id: userId,
+                        plan,
+                        order_id: orderId,
+                        country: billingContext.country,
+                        detected_country: billingContext.detectedCountry,
+                    },
+                },
+            });
+
+            const checkoutUrl = checkout.data?.attributes?.url;
+            if (!checkoutUrl) {
+                return res.status(502).json({ error: 'Lemon Squeezy did not return a checkout URL.' });
+            }
+
+            return res.json({
+                checkoutId: checkout.data?.id || '',
+                checkoutUrl,
+                orderId,
+                quote,
+            });
+        } catch (error) {
+            return sendError(res, 500, 'Could not start Lemon Squeezy checkout.', error);
+        }
+    });
+
+    router.post('/api/lemonsqueezy/webhook', express.raw({ type: 'application/json', limit: '1mb' }), async (req: Request, res: Response) => {
+        const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
+        const eventName = String(req.get('X-Event-Name') || '');
+        try {
+            if (!verifyLemonSqueezySignature(rawBody, req.get('X-Signature'))) {
+                logEvent('warn', 'payment.lemonsqueezy_webhook_signature_failed', { eventName });
+                return res.status(400).send('Invalid signature.');
+            }
+
+            const payload = JSON.parse(rawBody.toString('utf8'));
+            const customData = payload?.meta?.custom_data || {};
+            const orderId = String(customData.order_id || '');
+            const userId = String(customData.user_id || '');
+            const plan = customData.plan as BillingPlan;
+            const lemonId = String(payload?.data?.id || payload?.data?.attributes?.identifier || '');
+            const attributes = payload?.data?.attributes || {};
+            const paymentId = lemonId || `${eventName}-${orderId}`;
+
+            if (eventName !== 'order_created') {
+                logEvent('info', 'payment.lemonsqueezy_webhook_ignored', { eventName, orderId, paymentId });
+                return res.status(200).send('OK');
+            }
+
+            if (!orderId || !userId || (plan !== 'payg' && plan !== 'monthly') || !paymentId) {
+                logEvent('warn', 'payment.lemonsqueezy_webhook_context_missing', { eventName, orderId, userId, plan, paymentId });
+                return res.status(400).send('Invalid payment context.');
+            }
+
+            await markExpiredPendingCheckouts();
+            const checkoutSession = await CheckoutSession.findOne({ orderId });
+            const expectedCents = checkoutSession?.finalAmountCents;
+            const paidCents = Number(attributes.total || attributes.total_usd || 0);
+            const currency = String(attributes.currency || checkoutSession?.currency || 'USD').toUpperCase();
+            if (checkoutSession && (currency !== checkoutSession.currency || paidCents !== expectedCents)) {
+                logEvent('warn', 'payment.lemonsqueezy_webhook_amount_mismatch', {
+                    orderId,
+                    paymentId,
+                    paidCents,
+                    currency,
+                    expectedCents,
+                    expectedCurrency: checkoutSession.currency,
+                });
+                return res.status(400).send('Invalid payment amount.');
+            }
+
+            const user = await User.findById(checkoutSession?.userId || userId);
+            if (!user) {
+                logEvent('warn', 'payment.lemonsqueezy_webhook_user_missing', { orderId, paymentId, userId, plan });
+                return res.status(404).send('User not found.');
+            }
+
+            const transactionFilter = { provider: 'lemonsqueezy' as const, paymentId };
+            const purchasedPlan = checkoutSession?.plan || plan;
+            const baseTransaction = {
+                provider: 'lemonsqueezy',
+                paymentId,
+                orderId,
+                userId: user._id,
+                plan: purchasedPlan,
+                amount: (paidCents / 100).toFixed(2),
+                currency,
+                baseAmountCents: checkoutSession?.baseAmountCents,
+                discountCents: checkoutSession?.discountCents,
+                finalAmountCents: checkoutSession?.finalAmountCents ?? paidCents,
+                couponCode: checkoutSession?.couponCode,
+                statusCode: eventName,
+                rawPayload: payload,
+            };
+            const upsertReceivedTransaction = async () => {
+                try {
+                    return await PaymentTransaction.findOneAndUpdate(
+                        transactionFilter,
+                        {
+                            $setOnInsert: {
+                                ...baseTransaction,
+                                processed: false,
+                            },
+                            $set: {
+                                statusCode: eventName,
+                                rawPayload: payload,
+                            },
+                        },
+                        { upsert: true, new: true, setDefaultsOnInsert: true }
+                    );
+                } catch (error) {
+                    if (!isMongoDuplicateKeyError(error)) throw error;
+                    const transaction = await PaymentTransaction.findOne(transactionFilter);
+                    if (!transaction) throw error;
+                    return transaction;
+                }
+            };
+            const receivedTransaction = await upsertReceivedTransaction();
+            if (receivedTransaction.processed) {
+                logEvent('info', 'payment.lemonsqueezy_webhook_duplicate_processed', { orderId, paymentId });
+                return res.status(200).send('OK');
+            }
+
+            const staleProcessingBefore = new Date(Date.now() - 10 * 60 * 1000);
+            const processingStartedAt = new Date();
+            const claimedTransaction = await PaymentTransaction.findOneAndUpdate(
+                {
+                    ...transactionFilter,
+                    processed: false,
+                    $or: [
+                        { processingStartedAt: { $exists: false } },
+                        { processingStartedAt: { $lt: staleProcessingBefore } },
+                    ],
+                },
+                { $set: { processingStartedAt } },
+                { new: true }
+            );
+            if (!claimedTransaction) {
+                logEvent('info', 'payment.lemonsqueezy_webhook_duplicate_in_progress', { orderId, paymentId });
+                return res.status(200).send('OK');
+            }
+
+            const session = await mongoose.startSession();
+            let processedUser = user;
+            try {
+                await session.withTransaction(async () => {
+                    const userUpdate: Record<string, unknown> = {
+                        $set: {
+                            plan: purchasedPlan,
+                            planStartedAt: new Date(),
+                            planExpiresAt: createPlanExpiry(purchasedPlan),
+                        },
+                    };
+                    if (purchasedPlan === 'payg') {
+                        userUpdate.$inc = { paygCvSaveCredits: 1 };
+                    }
+
+                    const updatedUser = await User.findByIdAndUpdate(user._id, userUpdate, { new: true, session });
+                    if (!updatedUser) throw new Error('User not found while processing Lemon Squeezy transaction.');
+                    processedUser = updatedUser;
+
+                    if (checkoutSession) {
+                        await CheckoutSession.updateOne({ _id: checkoutSession._id }, { $set: { status: 'paid' } }, { session });
+                    }
+                    if (checkoutSession?.couponCode) {
+                        await Coupon.updateOne({ code: checkoutSession.couponCode }, { $inc: { redeemedCount: 1 } }, { session });
+                    }
+
+                    await PaymentTransaction.findOneAndUpdate(
+                        transactionFilter,
+                        {
+                            ...baseTransaction,
+                            userId: updatedUser._id,
+                            processed: true,
+                            processedAt: new Date(),
+                        },
+                        { upsert: true, new: true, setDefaultsOnInsert: true, session }
+                    );
+                });
+            } finally {
+                await session.endSession();
+            }
+
+            await sendBillingSuccessNotifications({
+                user: processedUser,
+                plan: checkoutSession?.plan || plan,
+                transactionId: paymentId,
+                planExpiresAt: processedUser.planExpiresAt,
+            });
+            logEvent('info', 'payment.lemonsqueezy_webhook_processed', { orderId, paymentId, userId: processedUser._id, plan });
+            return res.status(200).send('OK');
+        } catch (error) {
+            logError('payment.lemonsqueezy_webhook_failed', error, { eventName });
+            return sendError(res, 500, 'Could not process Lemon Squeezy webhook.', error);
         }
     });
 

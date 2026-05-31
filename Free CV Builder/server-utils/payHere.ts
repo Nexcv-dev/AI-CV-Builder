@@ -15,6 +15,80 @@ export const PAYHERE_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount:
     monthly: { amount: '2199.00', cents: 219900, currency: 'LKR' },
 };
 
+export const GLOBAL_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount: string; cents: number; currency: 'USD' }> = {
+    payg: { amount: '4.99', cents: 499, currency: 'USD' },
+    monthly: { amount: '9.99', cents: 999, currency: 'USD' },
+};
+
+export type BillingMarket = 'local' | 'global';
+export type BillingProvider = 'payhere' | 'lemonsqueezy';
+
+const normalizeCountryCode = (value: unknown) => (
+    typeof value === 'string'
+        ? (() => {
+            const normalized = value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+            return normalized === 'GLOBAL' || normalized === 'OTHER' ? '' : normalized.slice(0, 2);
+        })()
+        : ''
+);
+
+const isLocalDevelopmentRequest = (request?: { headers?: any; ip?: string }) => {
+    if (process.env.NODE_ENV === 'production') return false;
+    const host = String(
+        request?.headers?.host ||
+        request?.headers?.['x-forwarded-host'] ||
+        ''
+    ).toLowerCase();
+    if (host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.startsWith('[::1]')) return true;
+
+    const ip = String(
+        request?.headers?.['x-forwarded-for'] ||
+        request?.headers?.['x-real-ip'] ||
+        request?.ip ||
+        ''
+    ).split(',')[0].trim();
+    return !ip || ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.');
+};
+
+export const resolveBillingCountry = (country?: unknown, request?: { headers?: any; ip?: string }) => {
+    const selectedCountry = normalizeCountryCode(country);
+    const headerCountry = normalizeCountryCode(
+        request?.headers?.['cf-ipcountry'] ||
+        request?.headers?.['x-vercel-ip-country'] ||
+        request?.headers?.['x-country-code'] ||
+        request?.headers?.['x-appengine-country']
+    );
+    const detectedCountry = headerCountry && headerCountry !== 'XX'
+        ? headerCountry
+        : isLocalDevelopmentRequest(request) ? 'LK' : '';
+
+    if (selectedCountry) {
+        return {
+            country: selectedCountry,
+            detectedCountry: detectedCountry || 'GLOBAL',
+            source: 'selected' as const,
+        };
+    }
+
+    if (detectedCountry) {
+        return {
+            country: detectedCountry,
+            detectedCountry,
+            source: detectedCountry === 'LK' && isLocalDevelopmentRequest(request) ? 'dev' as const : 'ip' as const,
+        };
+    }
+
+    return { country: 'GLOBAL', detectedCountry: 'GLOBAL', source: 'fallback' as const };
+};
+
+export const resolveBillingMarket = (country?: unknown, request?: { headers?: any; ip?: string }) => {
+    const resolved = resolveBillingCountry(country, request);
+    const market: BillingMarket = resolved.country === 'LK' && resolved.detectedCountry === 'LK' ? 'local' : 'global';
+    const provider: BillingProvider = market === 'local' ? 'payhere' : 'lemonsqueezy';
+    const currency = market === 'local' ? 'LKR' as const : 'USD' as const;
+    return { ...resolved, market, provider, currency };
+};
+
 const centsToPayHereAmount = (cents: number) => (Math.max(0, cents) / 100).toFixed(2);
 
 const calculateDiscountCents = (amountCents: number, discountType?: string, discountValue?: number) => {
@@ -37,12 +111,19 @@ export const planDisplayName = (plan: BillingPlan) => (
             'Free'
 );
 
-export const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>) => {
+export const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>, market: BillingMarket = 'local') => {
     const setting = await BillingPlanSetting.findOne({ plan, active: true });
-    const fallback = PAYHERE_PLAN_PRICES[plan];
-    const baseAmountCents = setting?.amountCents ?? fallback.cents;
-    const promotionDiscountCents = setting?.promotionActive
-        ? calculateDiscountCents(baseAmountCents, setting.promotionDiscountType, setting.promotionDiscountValue)
+    const fallback = market === 'global' ? GLOBAL_PLAN_PRICES[plan] : PAYHERE_PLAN_PRICES[plan];
+    const marketPrice = setting?.prices?.find((price) => price.market === market && price.active !== false);
+    const baseAmountCents = marketPrice?.amountCents ?? (market === 'local' ? setting?.amountCents : undefined) ?? fallback.cents;
+    const currency = marketPrice?.currency || fallback.currency;
+    const provider: BillingProvider = market === 'local' ? 'payhere' : 'lemonsqueezy';
+    const promotionActive = Boolean(marketPrice?.promotionActive ?? (market === 'local' ? setting?.promotionActive : false));
+    const promotionLabel = marketPrice?.promotionLabel ?? (market === 'local' ? setting?.promotionLabel : '');
+    const promotionDiscountType = marketPrice?.promotionDiscountType ?? (market === 'local' ? setting?.promotionDiscountType : undefined);
+    const promotionDiscountValue = marketPrice?.promotionDiscountValue ?? (market === 'local' ? setting?.promotionDiscountValue : undefined);
+    const promotionDiscountCents = promotionActive
+        ? calculateDiscountCents(baseAmountCents, promotionDiscountType, promotionDiscountValue)
         : 0;
     const finalAmountCents = Math.max(baseAmountCents - promotionDiscountCents, 100);
     return {
@@ -53,29 +134,41 @@ export const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>) => {
         baseAmountCents,
         promotionDiscountCents,
         promotionActive: promotionDiscountCents > 0,
-        promotionLabel: promotionDiscountCents > 0 ? (setting?.promotionLabel || 'Limited offer') : '',
-        promotionDiscountType: setting?.promotionDiscountType || 'fixed',
-        promotionDiscountValue: setting?.promotionDiscountValue || 0,
+        promotionLabel: promotionDiscountCents > 0 ? (promotionLabel || 'Limited offer') : '',
+        promotionDiscountType: promotionDiscountType || 'fixed',
+        promotionDiscountValue: promotionDiscountValue || 0,
         discountBadge: promotionDiscountCents > 0
-            ? (setting?.promotionDiscountType === 'percent'
-                ? `${setting.promotionDiscountValue}% OFF`
-                : `${setting?.currency || fallback.currency} ${Math.round(promotionDiscountCents / 100)} OFF`)
+            ? (promotionDiscountType === 'percent'
+                ? `${promotionDiscountValue}% OFF`
+                : `${currency} ${Math.round(promotionDiscountCents / 100)} OFF`)
             : '',
-        currency: (setting?.currency || fallback.currency) as 'LKR',
-        source: setting ? 'admin' : 'default',
+        currency,
+        market,
+        provider,
+        source: marketPrice ? 'admin' : (setting && market === 'local') ? 'admin' : 'default',
         updatedAt: setting?.updatedAt,
     };
 };
 
-export const getPublicBillingPlans = async () => {
-    const [payg, monthly] = await Promise.all([getPlanPrice('payg'), getPlanPrice('monthly')]);
+export const getPublicBillingPlans = async (market: BillingMarket = 'local') => {
+    const [payg, monthly] = await Promise.all([getPlanPrice('payg', market), getPlanPrice('monthly', market)]);
     return [payg, monthly];
 };
 
-export const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCode?: string) => {
-    const price = await getPlanPrice(plan);
+export const getAdminBillingPlans = async () => {
+    const [localPayg, localMonthly, globalPayg, globalMonthly] = await Promise.all([
+        getPlanPrice('payg', 'local'),
+        getPlanPrice('monthly', 'local'),
+        getPlanPrice('payg', 'global'),
+        getPlanPrice('monthly', 'global'),
+    ]);
+    return [localPayg, localMonthly, globalPayg, globalMonthly];
+};
+
+export const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCode?: string, market: BillingMarket = 'local') => {
+    const price = await getPlanPrice(plan, market);
     let coupon: any = null;
-    let discountCents = 0;
+    let couponDiscountCents = 0;
     const code = normalizeCouponCode(couponCode);
     const now = new Date();
     if (code) {
@@ -87,22 +180,29 @@ export const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCo
         if (!coupon || !planAllowed || !started || !notExpired || !underLimit) {
             return { error: 'Coupon is not valid for this plan.' };
         }
-        discountCents = calculateDiscountCents(price.cents, coupon.discountType, coupon.discountValue);
+        couponDiscountCents = calculateDiscountCents(price.baseAmountCents, coupon.discountType, coupon.discountValue);
     }
-    const finalAmountCents = Math.max(price.cents - discountCents, 100);
+    const promotionDiscountCents = price.promotionDiscountCents || 0;
+    const couponWins = couponDiscountCents > promotionDiscountCents;
+    const effectivePromotionDiscountCents = couponWins ? 0 : promotionDiscountCents;
+    const effectiveCouponDiscountCents = couponWins ? couponDiscountCents : 0;
+    const discountCents = effectivePromotionDiscountCents + effectiveCouponDiscountCents;
+    const finalAmountCents = Math.max(price.baseAmountCents - discountCents, 100);
     return {
         plan,
         currency: price.currency,
+        market: price.market,
+        provider: price.provider,
         baseAmountCents: price.baseAmountCents,
-        promotionDiscountCents: price.promotionDiscountCents,
-        discountCents: price.promotionDiscountCents + discountCents,
-        couponDiscountCents: discountCents,
+        promotionDiscountCents: effectivePromotionDiscountCents,
+        discountCents,
+        couponDiscountCents: effectiveCouponDiscountCents,
         finalAmountCents,
         amount: centsToPayHereAmount(finalAmountCents),
-        couponCode: coupon?.code || '',
-        couponLabel: coupon?.label || '',
-        promotionLabel: price.promotionLabel,
-        discountBadge: price.discountBadge,
+        couponCode: effectiveCouponDiscountCents > 0 ? coupon?.code || '' : '',
+        couponLabel: effectiveCouponDiscountCents > 0 ? coupon?.label || '' : '',
+        promotionLabel: effectivePromotionDiscountCents > 0 ? price.promotionLabel : '',
+        discountBadge: effectivePromotionDiscountCents > 0 ? price.discountBadge : '',
     };
 };
 

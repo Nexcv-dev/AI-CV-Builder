@@ -48,6 +48,28 @@ const validateAuthEmail = (email: string, isValidEmail: (value: string) => boole
     return getAuthEmailDomainError(email);
 };
 
+const loginWithRegeneratedSession = (
+    req: Request,
+    user: any,
+    next: NextFunction,
+    onSuccess: () => void,
+) => {
+    const authRedirect = (req.session as any)?.authRedirect;
+
+    req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) return next(regenerateErr);
+
+        if (authRedirect) {
+            (req.session as any).authRedirect = authRedirect;
+        }
+
+        req.login(user, (loginErr) => {
+            if (loginErr) return next(loginErr);
+            return onSuccess();
+        });
+    });
+};
+
 const genericSignupError = 'Could not create your account. Please check your details and try again.';
 const genericPasswordResetMessage = 'If an account exists for this email, we will send password reset instructions.';
 
@@ -148,8 +170,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.code);
             void sendNewAccountNotification(user);
     
-            req.login(user, (err) => {
-                if (err) return next(err);
+            loginWithRegeneratedSession(req, user, next, () => {
                 markSessionCurrent(req, user);
                 return res.status(201).json({
                     user: publicUser(user),
@@ -189,8 +210,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             await syncUserRoleFromAllowlist(user);
     
-            req.login(user, (err) => {
-                if (err) return next(err);
+            loginWithRegeneratedSession(req, user, next, () => {
                 markSessionCurrent(req, user);
                 return res.json({ user: publicUser(user) });
             });
@@ -344,8 +364,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             await syncUserRoleFromAllowlist(user);
             await user.save();
 
-            req.login(user, (err) => {
-                if (err) return next(err);
+            loginWithRegeneratedSession(req, user, next, () => {
                 markSessionCurrent(req, user);
                 return res.json({ user: publicUser(user), message: 'Logged in successfully.' });
             });
@@ -652,13 +671,13 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             }
             if (!user) {
                 console.warn('Google Auth failed:', info?.message || 'No user returned');
-                return res.redirect('/?auth=failed&reason=denied');
+                const reason = info?.message?.includes('already exists') ? 'account_exists' : 'denied';
+                return res.redirect(`/?auth=failed&reason=${reason}`);
             }
-            req.login(user, (loginErr) => {
-                if (loginErr) {
-                    console.error('Google Auth session error:', loginErr?.message || loginErr);
-                    return res.redirect('/?auth=failed&reason=session_error');
-                }
+            loginWithRegeneratedSession(req, user, (loginErr) => {
+                console.error('Google Auth session error:', loginErr?.message || loginErr);
+                return res.redirect('/?auth=failed&reason=session_error');
+            }, () => {
                 markSessionCurrent(req, user);
                 // Successful authentication
                 if ((user as any).wasNewlyCreated) {

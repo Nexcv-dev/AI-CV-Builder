@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexCV Template Previews - Screenshot Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 40px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.875rem;
+      margin-bottom: 48px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #334155;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .card-preview {
+      width: 100%;
+      aspect-ratio: 210/297;
+      overflow: hidden;
+      position: relative;
+      background: #f8fafc;
+    }
+    .card-preview iframe {
+      width: 210mm;
+      height: 297mm;
+      border: none;
+      transform-origin: top left;
+      transform: scale(0.42);
+      pointer-events: none;
+    }
+    .card-info {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #f1f5f9;
+    }
+    .card-badge {
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+    .badge-free {
+      background: #065f46;
+      color: #6ee7b7;
+    }
+    .badge-paid {
+      background: #3730a3;
+      color: #a5b4fc;
+    }
+    .card-link {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: #6366f1;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .card-link:hover { text-decoration: underline; }
+    .instructions {
+      max-width: 800px;
+      margin: 48px auto 0;
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid #334155;
+    }
+    .instructions h2 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #e2e8f0;
+    }
+    .instructions ol {
+      padding-left: 20px;
+      color: #94a3b8;
+      font-size: 0.875rem;
+      line-height: 1.8;
+    }
+    .instructions code {
+      background: #0f172a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #6ee7b7;
+    }
+  </style>
+</head>
+<body>
+  <h1>NexCV Template Previews</h1>
+  <p class="subtitle">Open each template individually to screenshot at full A4 resolution for thumbnail generation</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-preview">
+        <iframe src="classic.html" loading="lazy"></iframe>
+      </div>
+      <div class="card-info">
+        <div>
+          <div class="card-name">Classic</div>
+          <a href="classic.html" target="_blank" class="card-link">Open full size &rarr;</a>
+        </div>
+        <span class="card-badge badge-free">Free</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-preview">
+        <iframe src="modern.html" loading="lazy"></iframe>
+      </div>
+      <div class="card-info">
+        <div>
+          <div class="card-name">Modern</div>
+          <a href="modern.html" target="_blank" class="card-link">Open full size &rarr;</a>
+        </div>
+        <span class="card-badge badge-paid">Paid</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-preview">
+        <iframe src="professional.html" loading="lazy"></iframe>
+      </div>
+      <div class="card-info">
+        <div>
+          <div class="card-name">Professional</div>
+          <a href="professional.html" target="_blank" class="card-link">Open full size &rarr;</a>
+        </div>
+        <span class="card-badge badge-paid">Paid</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-preview">
+        <iframe src="timeline.html" loading="lazy"></iframe>
+      </div>
+      <div class="card-info">
+        <div>
+          <div class="card-name">Timeline</div>
+          <a href="timeline.html" target="_blank" class="card-link">Open full size &rarr;</a>
+        </div>
+        <span class="card-badge badge-paid">Paid</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-preview">
+        <iframe src="minimalist.html" loading="lazy"></iframe>
+      </div>
+      <div class="card-info">
+        <div>
+          <div class="card-name">Minimalist</div>
+          <a href="minimalist.html" target="_blank" class="card-link">Open full size &rarr;</a>
+        </div>
+        <span class="card-badge badge-paid">Paid</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-preview">
+        <iframe src="startup.html" loading="lazy"></iframe>
+      </div>
+      <div class="card-info">
+        <div>
+          <div class="card-name">Startup</div>
+          <a href="startup.html" target="_blank" class="card-link">Open full size &rarr;</a>
+        </div>
+        <span class="card-badge badge-paid">Paid</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <h2>📸 How to Generate Thumbnail Images</h2>
+    <ol>
+      <li>Open each template HTML file individually in Chrome (click "Open full size")</li>
+      <li>Use Chrome DevTools → <code>Ctrl+Shift+P</code> → "Capture full size screenshot"</li>
+      <li>Or use the Node.js screenshot script: <code>node screenshot.js</code></li>
+      <li>Convert PNG screenshots to WebP: <code>cwebp -q 85 classic.png -o classic.webp</code></li>
+      <li>Replace the files in <code>/public/templates/</code></li>
+      <li>Update <code>templates.ts</code> to point all templates to <code>.webp</code> files</li>
+    </ol>
+  </div>
+</body>
+</html>

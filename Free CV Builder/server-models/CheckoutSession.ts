@@ -5,7 +5,7 @@ export interface ICheckoutSession extends Document {
   orderId: string;
   userId: mongoose.Types.ObjectId;
   plan: Exclude<BillingPlan, 'free'>;
-  currency: 'LKR';
+  currency: 'LKR' | 'USD';
   baseAmountCents: number;
   discountCents: number;
   finalAmountCents: number;
@@ -27,7 +27,7 @@ const CheckoutSessionSchema = new Schema<ICheckoutSession>(
     orderId: { type: String, required: true, unique: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     plan: { type: String, enum: ['payg', 'monthly'], required: true },
-    currency: { type: String, enum: ['LKR'], default: 'LKR', required: true },
+    currency: { type: String, enum: ['LKR', 'USD'], default: 'LKR', required: true },
     baseAmountCents: { type: Number, required: true, min: 0 },
     discountCents: { type: Number, required: true, min: 0 },
     finalAmountCents: { type: Number, required: true, min: 0 },
