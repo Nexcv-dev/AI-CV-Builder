@@ -55,13 +55,32 @@ export default function BillingManagementSection({
   onMarkReviewed: (payment: AdminPaymentItem) => void;
 }) {
   const needsReviewCount = (summary?.checkoutReviewCount || 0) + (summary?.failedPaymentCount || 0);
+  const payHereRevenueCents = summary?.revenueByProvider?.payhere?.byCurrency?.LKR?.cents
+    ?? summary?.revenueByCurrency?.LKR?.cents
+    ?? summary?.totalRevenueCents
+    ?? 0;
+  const payHerePaymentCount = summary?.revenueByProvider?.payhere?.byCurrency?.LKR?.count
+    ?? summary?.revenueByCurrency?.LKR?.count
+    ?? 0;
+  const lemonSqueezyRevenueCents = summary?.revenueByProvider?.lemonsqueezy?.byCurrency?.USD?.cents
+    ?? summary?.revenueByCurrency?.USD?.cents
+    ?? 0;
+  const lemonSqueezyPaymentCount = summary?.revenueByProvider?.lemonsqueezy?.byCurrency?.USD?.count
+    ?? summary?.revenueByCurrency?.USD?.count
+    ?? 0;
+  const monthlyLkrRevenueCents = summary?.revenueByPlanCurrency?.monthly?.LKR ?? summary?.revenueByPlan.monthly ?? 0;
+  const monthlyUsdRevenueCents = summary?.revenueByPlanCurrency?.monthly?.USD ?? 0;
+  const providerLabel = (provider: string) => provider === 'lemonsqueezy' ? 'Lemon Squeezy' : 'PayHere';
+  const providerTone = (provider: string) => provider === 'lemonsqueezy'
+    ? 'bg-blue-400/10 text-blue-200 ring-blue-300/20'
+    : 'bg-emerald-400/10 text-emerald-200 ring-emerald-300/20';
 
   return (
     <section className="mt-6">
       <div className="grid gap-4 md:grid-cols-5">
-        <AdminStat icon={<CreditCard size={19} />} label="Total Revenue" value={summary ? formatCurrency(summary.totalRevenueCents, summary.currency) : 'LKR 0'} />
+        <AdminStat icon={<CreditCard size={19} />} label="PayHere Revenue" value={formatCurrency(payHereRevenueCents, 'LKR')} />
+        <AdminStat icon={<CreditCard size={19} />} label="Lemon Squeezy Revenue" value={formatCurrency(lemonSqueezyRevenueCents, 'USD')} />
         <AdminStat icon={<Check size={19} />} label="Processed Payments" value={String(summary?.processedCount || 0)} />
-        <AdminStat icon={<Crown size={19} />} label="Monthly Revenue" value={formatCurrency(summary?.revenueByPlan.monthly || 0, summary?.currency || 'LKR')} />
         <AdminStat icon={<Clock3 size={19} />} label="Pending Checkouts" value={String(summary?.pendingCheckoutCount || 0)} />
         <button
           type="button"
@@ -73,6 +92,41 @@ export default function BillingManagementSection({
         </button>
       </div>
 
+      <section className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-xl shadow-black/10">
+        <div className="grid grid-cols-[1fr_110px_130px_130px_120px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-md:hidden">
+          <span>Gateway</span>
+          <span>Currency</span>
+          <span>Total</span>
+          <span>Monthly</span>
+          <span>Payments</span>
+        </div>
+        {[
+          {
+            provider: 'payhere',
+            currency: 'LKR',
+            total: payHereRevenueCents,
+            monthly: monthlyLkrRevenueCents,
+            count: payHerePaymentCount,
+          },
+          {
+            provider: 'lemonsqueezy',
+            currency: 'USD',
+            total: lemonSqueezyRevenueCents,
+            monthly: monthlyUsdRevenueCents,
+            count: lemonSqueezyPaymentCount,
+          },
+        ].map((item) => (
+          <div key={item.provider} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 md:grid-cols-[1fr_110px_130px_130px_120px] md:items-center md:px-5">
+            <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${providerTone(item.provider)}`}>
+              {providerLabel(item.provider)}
+            </span>
+            <span className="text-sm font-black text-slate-100">{item.currency}</span>
+            <span className="text-sm font-black text-slate-100">{formatCurrency(item.total, item.currency)}</span>
+            <span className="text-sm font-black text-slate-100">{formatCurrency(item.monthly, item.currency)}</span>
+            <span className="text-sm font-bold text-slate-300">{item.count}</span>
+          </div>
+        ))}
+      </section>
 
       <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 md:grid-cols-[1fr_180px_180px]">
         <label className="relative block">
@@ -98,8 +152,9 @@ export default function BillingManagementSection({
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/15">
-        <div className="grid grid-cols-[1.2fr_150px_110px_120px_100px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
+        <div className="grid grid-cols-[1.2fr_130px_150px_110px_120px_100px] gap-3 border-b border-white/10 px-5 py-3 text-xs font-black uppercase text-slate-500 max-lg:hidden">
           <span>Transaction</span>
+          <span>Provider</span>
           <span>User</span>
           <span>Plan</span>
           <span>Amount</span>
@@ -115,12 +170,15 @@ export default function BillingManagementSection({
           <div className="px-5 py-8 text-center text-sm font-bold text-slate-500">No payments match these filters.</div>
         )}
         {!loading && payments.map((payment) => (
-          <article key={payment.id} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_150px_110px_120px_100px] lg:items-center lg:px-5">
+          <article key={payment.id} className="grid gap-3 border-b border-white/10 px-4 py-4 last:border-b-0 lg:grid-cols-[1.2fr_130px_150px_110px_120px_100px] lg:items-center lg:px-5">
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-slate-100">{payment.paymentId}</p>
               <p className="mt-1 truncate text-xs font-semibold text-slate-500">{payment.orderId}</p>
               <p className="mt-1 text-xs font-bold text-slate-600">{formatDate(payment.createdAt)}</p>
             </div>
+            <span className={`w-fit rounded-full px-3 py-1 text-xs font-black ring-1 ${providerTone(payment.provider)}`}>
+              {providerLabel(payment.provider)}
+            </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-bold text-slate-200">{payment.user?.displayName || 'Unknown'}</p>
               <p className="mt-1 truncate text-xs font-semibold text-slate-500">{payment.user?.email || 'No linked user'}</p>
@@ -148,8 +206,15 @@ export default function BillingManagementSection({
         <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
           <h2 className="font-montserrat text-lg font-black">Daily Revenue</h2>
           <div className="mt-4 grid gap-2 sm:grid-cols-7">
-            {summary.dailyRevenue.map((item) => (
-              <MiniRow key={item.day} label={item.day.slice(5)} value={formatCurrency(item.cents, summary.currency)} />
+            {(summary.dailyRevenueByCurrency || summary.dailyRevenue.map((item) => ({ day: item.day, currencies: { [summary.currency]: item.cents } }))).map((item) => (
+              <MiniRow
+                key={item.day}
+                label={item.day.slice(5)}
+                value={[
+                  item.currencies.LKR ? formatCurrency(item.currencies.LKR, 'LKR') : '',
+                  item.currencies.USD ? formatCurrency(item.currencies.USD, 'USD') : '',
+                ].filter(Boolean).join(' / ') || '0'}
+              />
             ))}
           </div>
         </section>

@@ -12,6 +12,11 @@ export interface LemonSqueezyConfig {
     variantIds: Record<LemonSqueezyPaidPlan, string>;
 }
 
+export interface LemonSqueezyConfigIssue {
+    key: string;
+    reason: string;
+}
+
 export interface LemonSqueezyCheckoutOptions {
     plan: LemonSqueezyPaidPlan;
     checkoutData?: {
@@ -50,8 +55,37 @@ export const getMissingLemonSqueezyConfigKeys = (config = getLemonSqueezyConfig(
     return missing;
 };
 
+export const getLemonSqueezyConfigIssues = (config = getLemonSqueezyConfig()) => {
+    const issues: LemonSqueezyConfigIssue[] = getMissingLemonSqueezyConfigKeys(config).map((key) => ({
+        key,
+        reason: 'missing',
+    }));
+    const numericIdPattern = /^\d+$/;
+
+    if (config.storeId && !numericIdPattern.test(config.storeId)) {
+        issues.push({
+            key: 'LEMON_SQUEEZY_STORE_ID',
+            reason: 'must be the numeric Lemon Squeezy store id, not the store domain or URL',
+        });
+    }
+    if (config.variantIds.payg && !numericIdPattern.test(config.variantIds.payg)) {
+        issues.push({
+            key: 'LEMON_SQUEEZY_PAYG_VARIANT_ID',
+            reason: 'must be a numeric Lemon Squeezy variant id',
+        });
+    }
+    if (config.variantIds.monthly && !numericIdPattern.test(config.variantIds.monthly)) {
+        issues.push({
+            key: 'LEMON_SQUEEZY_MONTHLY_VARIANT_ID',
+            reason: 'must be a numeric Lemon Squeezy variant id',
+        });
+    }
+
+    return issues;
+};
+
 export const isLemonSqueezyConfigured = (config = getLemonSqueezyConfig()) => (
-    getMissingLemonSqueezyConfigKeys(config).length === 0
+    getLemonSqueezyConfigIssues(config).length === 0
 );
 
 export const getLemonSqueezyVariantId = (plan: LemonSqueezyPaidPlan, config = getLemonSqueezyConfig()) => (
@@ -73,9 +107,9 @@ export const verifyLemonSqueezySignature = (rawBody: Buffer, signature: unknown,
 
 export const createLemonSqueezyCheckout = async (options: LemonSqueezyCheckoutOptions) => {
     const config = getLemonSqueezyConfig();
-    const missing = getMissingLemonSqueezyConfigKeys(config);
-    if (missing.length) {
-        throw new Error(`Lemon Squeezy is missing configuration: ${missing.join(', ')}`);
+    const configIssues = getLemonSqueezyConfigIssues(config);
+    if (configIssues.length) {
+        throw new Error(`Lemon Squeezy is misconfigured: ${configIssues.map((issue) => `${issue.key} ${issue.reason}`).join('; ')}`);
     }
 
     const variantId = getLemonSqueezyVariantId(options.plan, config);
@@ -123,7 +157,10 @@ export const createLemonSqueezyCheckout = async (options: LemonSqueezyCheckoutOp
         const detail = Array.isArray(payload?.errors)
             ? payload.errors.map((error: any) => error?.detail || error?.title).filter(Boolean).join('; ')
             : '';
-        throw new Error(detail || 'Could not create Lemon Squeezy checkout.');
+        const configHint = detail.toLowerCase().includes('related resource does not exist')
+            ? ' Check that the store id and both variant ids belong to the same Lemon Squeezy test/live store.'
+            : '';
+        throw new Error(`${detail || 'Could not create Lemon Squeezy checkout.'}${configHint}`);
     }
 
     return payload as {

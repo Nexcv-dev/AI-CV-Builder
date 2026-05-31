@@ -113,7 +113,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
 }
 
 export async function getCurrentUser() {
-  const data = await apiFetch<{ user: AuthUser }>('/api/auth/current-user');
+  const data = await apiFetch<{ user: AuthUser }>('/api/auth/current-user', { cache: 'no-store' });
   return data.user;
 }
 

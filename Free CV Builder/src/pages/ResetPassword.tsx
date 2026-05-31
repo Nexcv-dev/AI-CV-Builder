@@ -128,26 +128,26 @@ export default function ResetPassword() {
 
   if (isValidatingToken) {
     return (
-      <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <main className="password-reset-page flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-12 text-white sm:px-6 lg:px-8">
         <ResetPasswordStateCard
           title="Checking Link"
           message="Please wait while we validate your password reset link."
           isLoading
         />
-      </div>
+      </main>
     );
   }
 
   if (tokenError) {
     return (
-      <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <main className="password-reset-page flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-12 text-white sm:px-6 lg:px-8">
         <ResetPasswordStateCard title="Invalid Link" message={tokenError} />
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="password-reset-page flex min-h-[calc(100vh-64px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <main className="password-reset-page flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-12 text-white sm:px-6 lg:px-8">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/40 overflow-hidden">
         <div className="h-1 w-full bg-linear-to-r from-violet-600 to-emerald-500" />
         
@@ -219,6 +219,6 @@ export default function ResetPassword() {
           </form>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -28,13 +28,10 @@ const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard'));
 
 function PublicAnnouncement({ settings }: { settings: PublicAppSettings }) {
-  const location = useLocation();
   const text = settings.announcementText || settings.announcement?.text;
   const shouldShow =
     settings.announcementEnabled &&
-    text &&
-    !location.pathname.startsWith('/admin') &&
-    location.pathname !== '/builder';
+    text;
 
   if (!shouldShow) return null;
 
@@ -98,7 +95,7 @@ export function AppRoutes() {
     <>
       <SeoHead />
       <PageLoadingOverlay />
-      {publicSettings && <PublicAnnouncement settings={publicSettings} />}
+      {publicSettings && location.pathname === '/' && <PublicAnnouncement settings={publicSettings} />}
       <CookieConsentBanner />
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
