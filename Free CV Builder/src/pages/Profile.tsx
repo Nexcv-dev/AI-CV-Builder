@@ -36,8 +36,9 @@ type ProfileTab = 'personal' | 'security' | 'account';
 const passwordPolicyHint = '8+ characters with uppercase, lowercase, number, and symbol.';
 
 function getPlanLabel(plan?: AuthUser['plan']) {
-  if (plan === 'payg') return 'Pay As You Go';
-  if (plan === 'monthly') return 'Monthly';
+  if (plan === 'payg') return 'Single CV Pass';
+  if (plan === 'monthly') return 'Monthly Pro';
+  if (plan === 'quarterly') return 'Pro Quarterly';
   if (plan === 'unlimited') return 'Admin';
   return 'Free';
 }

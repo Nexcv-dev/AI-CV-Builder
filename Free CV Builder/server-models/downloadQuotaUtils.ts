@@ -39,7 +39,7 @@ export function getNextUtcDayResetAt(now = new Date()) {
 
 export function buildDownloadQuota(user: Pick<IUser, 'authProvider' | 'emailVerified' | 'role' | 'plan' | 'planExpiresAt'>, usedToday: number): DownloadQuotaState {
   const plan = getEffectivePlan(user);
-  if (plan === 'payg' || plan === 'monthly') {
+  if (plan === 'payg' || plan === 'monthly' || plan === 'quarterly') {
     const limit = plan === 'payg' ? getPaygDailyDownloadLimit() : getMonthlyDailyDownloadLimit();
     const remaining = Math.max(limit - usedToday, 0);
     return {

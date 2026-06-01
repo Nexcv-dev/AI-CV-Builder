@@ -72,10 +72,6 @@ export const requireAdminAllowedIp = (req: Request, res: Response, next: NextFun
     return res.status(403).json({ error: 'Admin access is not allowed from this network.' });
 };
 
-export const requireAdminPageAllowedIp = (req: Request, res: Response, next: NextFunction) => {
-    if (!hasConfiguredAdminIpAllowlist()) {
-        return res.status(404).send('Not found');
-    }
-    if (isAdminIpAllowed(req)) return next();
-    return res.status(404).send('Not found');
+export const requireAdminPageAllowedIp = (_req: Request, _res: Response, next: NextFunction) => {
+    return next();
 };

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { integrityCheck, sendError, generateCVHTML } from '../server';
-import { isAdminIpAllowed, resolveAdminClientIp } from '../server-utils/adminIpAllowlist';
+import { isAdminIpAllowed, requireAdminPageAllowedIp, resolveAdminClientIp } from '../server-utils/adminIpAllowlist';
 import User from '../server-models/User';
 import { GOOGLE_EMAIL_CONFLICT_MESSAGE, resolveGoogleOAuthUser } from '../server-models/passportSetup';
 
@@ -172,6 +172,18 @@ describe('Advanced Server Security', () => {
   });
 
   describe('admin IP allowlist', () => {
+    it('should let admin page requests reach the React 404/admin-disabled flow', () => {
+      const req = {} as any;
+      const res = { status: vi.fn().mockReturnThis(), send: vi.fn() } as any;
+      const next = vi.fn();
+
+      requireAdminPageAllowedIp(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(res.send).not.toHaveBeenCalled();
+    });
+
     it('should not trust spoofable client IP headers from direct clients', () => {
       const originalAllowedIps = process.env.ADMIN_ALLOWED_IPS;
       const originalTrustedProxyIps = process.env.ADMIN_TRUSTED_PROXY_IPS;

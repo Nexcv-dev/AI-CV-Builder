@@ -62,7 +62,7 @@ export const rollbackCvCreationQuota = async (user: any) => {
 
 export const getDownloadQuota = async (user: any) => {
     const plan = getEffectivePlan(user);
-    const usesDailyDownloadQuota = plan === 'payg' || plan === 'monthly';
+    const usesDailyDownloadQuota = plan === 'payg' || plan === 'monthly' || plan === 'quarterly';
     const day = usesDailyDownloadQuota ? getUtcDayKey() : 'free-lifetime';
     const record = await DownloadQuota.findOne({ userId: user._id || user.id, day });
     const used = record?.count || 0;
@@ -83,7 +83,7 @@ export const getDownloadQuota = async (user: any) => {
 
 export const incrementDownloadQuota = async (user: any) => {
     const plan = getEffectivePlan(user);
-    const day = plan === 'payg' || plan === 'monthly' ? getUtcDayKey() : 'free-lifetime';
+    const day = plan === 'payg' || plan === 'monthly' || plan === 'quarterly' ? getUtcDayKey() : 'free-lifetime';
     await DownloadQuota.findOneAndUpdate(
         { userId: user._id || user.id, day },
         { $inc: { count: 1 } },
@@ -99,7 +99,7 @@ export const consumeDownloadQuota = async (user: any) => {
     if (currentQuota.reached) return { ...currentQuota, reserved: false };
 
     const plan = getEffectivePlan(user);
-    const usesDailyDownloadQuota = plan === 'payg' || plan === 'monthly';
+    const usesDailyDownloadQuota = plan === 'payg' || plan === 'monthly' || plan === 'quarterly';
     const day = usesDailyDownloadQuota ? getUtcDayKey() : 'free-lifetime';
 
     try {
@@ -133,7 +133,7 @@ export const consumeDownloadQuota = async (user: any) => {
 
 export const rollbackDownloadQuota = async (user: any) => {
     const plan = getEffectivePlan(user);
-    const day = plan === 'payg' || plan === 'monthly' ? getUtcDayKey() : 'free-lifetime';
+    const day = plan === 'payg' || plan === 'monthly' || plan === 'quarterly' ? getUtcDayKey() : 'free-lifetime';
     await DownloadQuota.updateOne(
         { userId: user._id || user.id, day, count: { $gt: 0 } },
         { $inc: { count: -1 } }

@@ -42,6 +42,7 @@ export const getLemonSqueezyConfig = (): LemonSqueezyConfig => ({
     variantIds: {
         payg: envValue('LEMON_SQUEEZY_PAYG_VARIANT_ID', 'LEMONSQUEEZY_PAYG_VARIANT_ID'),
         monthly: envValue('LEMON_SQUEEZY_MONTHLY_VARIANT_ID', 'LEMONSQUEEZY_MONTHLY_VARIANT_ID'),
+        quarterly: envValue('LEMON_SQUEEZY_QUARTERLY_VARIANT_ID', 'LEMONSQUEEZY_QUARTERLY_VARIANT_ID'),
     },
 });
 
@@ -52,6 +53,7 @@ export const getMissingLemonSqueezyConfigKeys = (config = getLemonSqueezyConfig(
     if (!config.webhookSecret) missing.push('LEMON_SQUEEZY_WEBHOOK_SECRET');
     if (!config.variantIds.payg) missing.push('LEMON_SQUEEZY_PAYG_VARIANT_ID');
     if (!config.variantIds.monthly) missing.push('LEMON_SQUEEZY_MONTHLY_VARIANT_ID');
+    if (!config.variantIds.quarterly) missing.push('LEMON_SQUEEZY_QUARTERLY_VARIANT_ID');
     return missing;
 };
 
@@ -77,6 +79,12 @@ export const getLemonSqueezyConfigIssues = (config = getLemonSqueezyConfig()) =>
     if (config.variantIds.monthly && !numericIdPattern.test(config.variantIds.monthly)) {
         issues.push({
             key: 'LEMON_SQUEEZY_MONTHLY_VARIANT_ID',
+            reason: 'must be a numeric Lemon Squeezy variant id',
+        });
+    }
+    if (config.variantIds.quarterly && !numericIdPattern.test(config.variantIds.quarterly)) {
+        issues.push({
+            key: 'LEMON_SQUEEZY_QUARTERLY_VARIANT_ID',
             reason: 'must be a numeric Lemon Squeezy variant id',
         });
     }

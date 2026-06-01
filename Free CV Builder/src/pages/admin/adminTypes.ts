@@ -9,6 +9,7 @@ export interface AdminSummary {
     premiumSubscribers: number;
     totalCvsCreated: number;
     revenue: { cents: number; currency: string };
+    revenueByCurrency?: Record<string, { cents: number; count: number }>;
     supportTickets: Record<'open' | 'pending' | 'resolved' | 'closed', number>;
   };
   recentRegistrations: Array<{
@@ -24,6 +25,7 @@ export interface AdminSummary {
     userGrowth: Array<{ day: string; count: number }>;
     cvSavesPerDay: Array<{ day: string; count: number }>;
     subscriptionRevenue: Array<{ day: string; cents: number }>;
+    subscriptionRevenueByCurrency?: Array<{ day: string; currencies: Record<string, number> }>;
     cvDownloadsPerDay: Array<{ day: string; count: number }>;
     checkoutConversion: Array<{ day: string; started: number; paid: number }>;
     templateUsage: Array<{ template: string; count: number }>;
@@ -43,8 +45,8 @@ export interface AdminUserListItem {
   email: string;
   displayName: string;
   role: UserRole;
-  plan: 'free' | 'payg' | 'monthly' | 'unlimited';
-  rawPlan: 'free' | 'payg' | 'monthly';
+  plan: 'free' | 'payg' | 'monthly' | 'quarterly' | 'unlimited';
+  rawPlan: 'free' | 'payg' | 'monthly' | 'quarterly';
   planExpiresAt?: string;
   emailVerified: boolean;
   authProvider: 'email' | 'google';
@@ -107,7 +109,7 @@ export interface AdminPaymentItem {
   reviewedAt?: string;
   reviewNote?: string;
   user: { id: string; email: string; displayName: string } | null;
-  plan: 'payg' | 'monthly' | null;
+  plan: 'payg' | 'monthly' | 'quarterly' | null;
   amount: string;
   amountCents: number;
   baseAmountCents?: number;
@@ -125,7 +127,7 @@ export interface AdminPaymentItem {
 }
 
 export interface AdminBillingPlan {
-  plan: 'payg' | 'monthly';
+  plan: 'payg' | 'monthly' | 'quarterly';
   label: string;
   amount: string;
   cents: number;
@@ -150,7 +152,7 @@ export interface AdminCoupon {
   discountType: 'fixed' | 'percent';
   discountValue: number;
   active: boolean;
-  appliesTo: Array<'payg' | 'monthly'>;
+  appliesTo: Array<'payg' | 'monthly' | 'quarterly'>;
   expiresAt?: string;
   maxRedemptions?: number | null;
   redeemedCount: number;

@@ -19,6 +19,16 @@ type FakeLiveStats = {
   activeUsers: number;
 };
 
+type FeaturedCoupon = {
+  code: string;
+  label: string;
+  discountType: 'fixed' | 'percent';
+  discountValue: number;
+  appliesTo: Array<'payg' | 'monthly' | 'quarterly'>;
+  redeemedCount: number;
+  maxRedemptions: number | null;
+};
+
 const fakeStatsStartTime = new Date('2026-05-28T00:00:00+05:30').getTime();
 const fakeStatsSeed = {
   cvCount: 186,
@@ -123,20 +133,20 @@ const pricingPlans = [
   },
   {
     key: 'payg',
-    name: 'Pay As You Go',
+    name: 'Single CV Pass',
     price: 'LKR 499',
     duration: '7 days (One-time payment)',
     description: 'One CV with any template, AI tools, unlimited edits and downloads.',
     icon: Zap,
     href: '/pricing',
-    cta: 'Choose PAYG',
-    badge: 'Popular',
-    highlighted: true,
+    cta: 'Choose pass',
+    badge: '',
+    highlighted: false,
     features: ['1 extra saved CV per purchase', 'Any template', 'Unlimited edits for 7 days', 'Unlimited downloads for 7 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
   },
   {
     key: 'monthly',
-    name: 'Monthly',
+    name: 'Monthly Pro',
     price: 'LKR 2199',
     duration: '30 days (One-time payment)',
     description: 'Unlimited CV creation, saves, downloads, and AI features.',
@@ -146,6 +156,19 @@ const pricingPlans = [
     badge: '',
     highlighted: false,
     features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 30 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
+  },
+  {
+    key: 'quarterly',
+    name: 'Pro Quarterly',
+    price: 'LKR 4999',
+    duration: '90 days (One-time payment)',
+    description: 'Everything you need for a focused 3-month job search.',
+    icon: Crown,
+    href: '/pricing',
+    cta: 'Get Pro Quarterly',
+    badge: 'Most popular',
+    highlighted: true,
+    features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 90 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
   },
 ];
 
@@ -265,6 +288,7 @@ export default function LandingPage() {
     market?: 'local' | 'global';
   }> | null>(null);
   const [billingCurrency, setBillingCurrency] = useState('USD');
+  const [featuredCoupon, setFeaturedCoupon] = useState<FeaturedCoupon | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -292,6 +316,18 @@ export default function LandingPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+    apiFetch<{ coupon: FeaturedCoupon | null }>('/api/billing/featured-coupon', { cache: 'no-store' })
+      .then((data) => {
+        if (!ignore) setFeaturedCoupon(data.coupon);
+      })
+      .catch(() => undefined);
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const formatPrice = (cents: number, currency = 'LKR') => {
     const amount = cents / 100;
     const fractionDigits = currency === 'USD' ? 2 : 0;
@@ -302,6 +338,12 @@ export default function LandingPage() {
     if (plan.key === 'free') return formatPrice(0, billingCurrency);
     return planPrices?.[plan.key] ? formatPrice(planPrices[plan.key].cents, planPrices[plan.key].currency) : plan.price;
   };
+
+  const featuredCouponText = featuredCoupon
+    ? featuredCoupon.discountType === 'percent'
+      ? `${featuredCoupon.discountValue}% off`
+      : `${formatPrice(featuredCoupon.discountValue, 'LKR')} off`
+    : '';
 
   const normalizeTemplateIndex = (index: number) => (
     featuredTemplates.length ? ((index % featuredTemplates.length) + featuredTemplates.length) % featuredTemplates.length : 0
@@ -839,7 +881,23 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            <div className="mt-8 grid gap-4 sm:mt-10 lg:grid-cols-3">
+            {featuredCoupon && (
+              <div className="landing-scroll-reveal mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 px-4 py-4 shadow-xl shadow-emerald-950/20 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase text-emerald-200">{featuredCoupon.maxRedemptions ? `First ${featuredCoupon.maxRedemptions} users` : 'Limited offer'}</p>
+                  <p className="mt-1 text-sm font-bold text-white">
+                    Use code <span className="font-black text-emerald-200">{featuredCoupon.code}</span> for {featuredCouponText} on Monthly Pro or Pro Quarterly.
+                  </p>
+                </div>
+                {featuredCoupon.maxRedemptions && (
+                  <p className="mt-3 shrink-0 rounded-full bg-emerald-300 px-3 py-1 text-xs font-black text-slate-950 sm:mt-0">
+                    {Math.max(featuredCoupon.maxRedemptions - featuredCoupon.redeemedCount, 0)} left
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="mt-8 grid gap-4 sm:mt-10 md:grid-cols-2 xl:grid-cols-4">
               {cmsPricingPlans.map((plan, index) => {
                 const Icon = plan.icon;
                 return (

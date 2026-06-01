@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import type { BillingPlan } from './userPlan';
+import { PAID_BILLING_PLANS, type BillingPlan } from './userPlan';
 
 export interface IBillingPlanSetting extends Document {
   plan: Exclude<BillingPlan, 'free'>;
@@ -29,7 +29,7 @@ export interface IBillingPlanSetting extends Document {
 
 const BillingPlanSettingSchema = new Schema<IBillingPlanSetting>(
   {
-    plan: { type: String, enum: ['payg', 'monthly'], required: true, unique: true, index: true },
+    plan: { type: String, enum: PAID_BILLING_PLANS, required: true, unique: true, index: true },
     label: { type: String, required: true, trim: true, maxlength: 80 },
     amountCents: { type: Number, required: true, min: 100, max: 10_000_000 },
     currency: { type: String, enum: ['LKR'], default: 'LKR', required: true },

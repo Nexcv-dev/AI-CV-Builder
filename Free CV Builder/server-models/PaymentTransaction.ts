@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import type { BillingPlan } from './userPlan';
+import { PAID_BILLING_PLANS, type BillingPlan } from './userPlan';
 
 export interface IPaymentTransaction extends Document {
   provider: 'payhere' | 'lemonsqueezy';
@@ -32,7 +32,7 @@ const PaymentTransactionSchema = new Schema<IPaymentTransaction>(
     paymentId: { type: String, required: true },
     orderId: { type: String, required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
-    plan: { type: String, enum: ['payg', 'monthly'] },
+    plan: { type: String, enum: PAID_BILLING_PLANS },
     amount: { type: String },
     currency: { type: String },
     baseAmountCents: { type: Number },

@@ -25,6 +25,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         getPayHereMerchantConfig,
         getPublicBillingPlans,
         isMongoDuplicateKeyError,
+        isPaidBillingPlan,
         logError,
         logEvent,
         mongoose,
@@ -85,10 +86,46 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         }
     });
 
+    router.get('/api/billing/featured-coupon', async (_req: Request, res: Response) => {
+        try {
+            const now = new Date();
+            const coupon = await Coupon.findOne({
+                active: true,
+                appliesTo: { $in: ['monthly', 'quarterly'] },
+                $and: [
+                    { $or: [{ startsAt: { $exists: false } }, { startsAt: { $lte: now } }] },
+                    { $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gte: now } }] },
+                    {
+                        $or: [
+                            { maxRedemptions: { $exists: false } },
+                            { $expr: { $lt: ['$redeemedCount', '$maxRedemptions'] } },
+                        ],
+                    },
+                ],
+            }).sort({ updatedAt: -1 });
+
+            if (!coupon) return res.json({ coupon: null });
+
+            return res.json({
+                coupon: {
+                    code: coupon.code,
+                    label: coupon.label,
+                    discountType: coupon.discountType,
+                    discountValue: coupon.discountValue,
+                    appliesTo: coupon.appliesTo,
+                    redeemedCount: coupon.redeemedCount || 0,
+                    maxRedemptions: coupon.maxRedemptions || null,
+                },
+            });
+        } catch (error) {
+            return sendError(res, 500, 'Could not load featured coupon.', error);
+        }
+    });
+
     router.post('/api/billing/quote', billingQuoteLimiter, async (req: Request, res: Response) => {
         try {
             const plan = req.body.plan as BillingPlan;
-            if (plan !== 'payg' && plan !== 'monthly') {
+            if (!isPaidBillingPlan(plan)) {
                 return res.status(400).json({ error: 'Choose a valid paid plan.' });
             }
             const billingContext = resolveBillingMarket(req.body.country, req);
@@ -450,7 +487,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             }
 
             const plan = req.body.plan as BillingPlan;
-            if (plan !== 'payg' && plan !== 'monthly') {
+            if (!isPaidBillingPlan(plan)) {
                 return res.status(400).json({ error: 'Choose a valid paid plan.' });
             }
             const billingContext = resolveBillingMarket(req.body.country || req.body.customer?.countryCode, req);
@@ -538,7 +575,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             }
 
             const plan = req.body.plan as BillingPlan;
-            if (plan !== 'payg' && plan !== 'monthly') {
+            if (!isPaidBillingPlan(plan)) {
                 return res.status(400).json({ error: 'Choose a valid paid plan.' });
             }
 
@@ -638,7 +675,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.status(200).send('OK');
             }
 
-            if (!orderId || !userId || (plan !== 'payg' && plan !== 'monthly') || !paymentId) {
+            if (!orderId || !userId || !isPaidBillingPlan(plan) || !paymentId) {
                 logEvent('warn', 'payment.lemonsqueezy_webhook_context_missing', { eventName, orderId, userId, plan, paymentId });
                 return res.status(400).send('Invalid payment context.');
             }

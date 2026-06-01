@@ -11,7 +11,7 @@ export function useAdminUsers({ enabled }: { enabled: boolean }) {
   const [roleFilter, setRoleFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
   const [selectedUserDocuments, setSelectedUserDocuments] = useState<AdminUserDocument[]>([]);
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'payg' | 'monthly'>('free');
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'payg' | 'monthly' | 'quarterly'>('free');
   const [detailLoading, setDetailLoading] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
 

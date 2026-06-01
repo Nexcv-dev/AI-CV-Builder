@@ -40,10 +40,10 @@ export default function UserManagementSection({
   onOpenUser: (id: string) => void;
   selectedUser: AdminUserDetail | null;
   selectedUserDocuments: AdminUserDocument[];
-  selectedPlan: 'free' | 'payg' | 'monthly';
+  selectedPlan: 'free' | 'payg' | 'monthly' | 'quarterly';
   savingPlan: boolean;
   canUpdatePlan: boolean;
-  onSelectedPlanChange: (value: 'free' | 'payg' | 'monthly') => void;
+  onSelectedPlanChange: (value: 'free' | 'payg' | 'monthly' | 'quarterly') => void;
   onSavePlan: () => void;
   onCloseDetail: () => void;
 }) {
@@ -66,8 +66,9 @@ export default function UserManagementSection({
         >
           <option value="all">All plans</option>
           <option value="free">Free</option>
-          <option value="payg">Pay As You Go</option>
-          <option value="monthly">Monthly</option>
+          <option value="payg">Single CV Pass</option>
+          <option value="monthly">Monthly Pro</option>
+          <option value="quarterly">Pro Quarterly</option>
         </select>
         <select
           value={roleFilter}
@@ -160,12 +161,13 @@ export default function UserManagementSection({
                 <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
                   <select
                     value={selectedPlan}
-                    onChange={(event) => onSelectedPlanChange(event.target.value as 'free' | 'payg' | 'monthly')}
+                    onChange={(event) => onSelectedPlanChange(event.target.value as 'free' | 'payg' | 'monthly' | 'quarterly')}
                     className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400"
                   >
                     <option value="free">Free</option>
-                    <option value="payg">Pay As You Go</option>
-                    <option value="monthly">Monthly</option>
+                    <option value="payg">Single CV Pass</option>
+                    <option value="monthly">Monthly Pro</option>
+                    <option value="quarterly">Pro Quarterly</option>
                   </select>
                   <button
                     type="button"
@@ -177,7 +179,7 @@ export default function UserManagementSection({
                   </button>
                 </div>
                 <p className="mt-3 text-xs font-semibold text-slate-500">
-                  Paid plans receive a fresh expiry window. PAYG keeps at least one save credit.
+                  Paid plans receive a fresh expiry window. Single CV Pass keeps at least one save credit.
                 </p>
               </section>
             )}

@@ -38,7 +38,7 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
             ] = await Promise.all([
                 User.countDocuments(),
                 User.countDocuments({ updatedAt: { $gte: todayStart } }),
-                User.countDocuments({ plan: { $in: ['payg', 'monthly'] }, planExpiresAt: { $gt: now } }),
+                User.countDocuments({ plan: { $in: ['payg', 'monthly', 'quarterly'] }, planExpiresAt: { $gt: now } }),
                 CVDocument.countDocuments(),
                 User.find().sort({ createdAt: -1 }).limit(6).select('email displayName role plan createdAt'),
                 CVDocument.aggregate([
@@ -72,18 +72,31 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
                     },
                     { $sort: { _id: 1 } },
                 ]),
-                PaymentTransaction.find({ processed: true }).sort({ createdAt: -1 }).limit(200).select('amount currency plan createdAt'),
+                PaymentTransaction.find({ processed: true }).sort({ createdAt: -1 }).limit(200).select('amount currency provider plan createdAt'),
                 SupportTicket.aggregate([
                     { $group: { _id: '$status', count: { $sum: 1 } } },
                 ]),
             ]);
     
-            const revenueCents = payments.reduce((sum, payment) => sum + parsePaymentAmountCents(payment.amount), 0);
+            const revenueByCurrency: Record<string, { cents: number; count: number }> = {};
             const revenueByDay = new Map<string, number>();
+            const revenueByDayCurrency = new Map<string, Record<string, number>>();
+            const resolvePaymentCurrency = (payment: any) => (
+                String(payment.currency || (payment.provider === 'lemonsqueezy' ? 'USD' : 'LKR')).toUpperCase()
+            );
             payments.forEach((payment) => {
+                const cents = parsePaymentAmountCents(payment.amount);
+                const currency = resolvePaymentCurrency(payment);
+                revenueByCurrency[currency] = revenueByCurrency[currency] || { cents: 0, count: 0 };
+                revenueByCurrency[currency].cents += cents;
+                revenueByCurrency[currency].count += 1;
+
                 if (!payment.createdAt || payment.createdAt < sevenDaysAgo) return;
                 const day = formatUtcDay(payment.createdAt);
-                revenueByDay.set(day, (revenueByDay.get(day) || 0) + parsePaymentAmountCents(payment.amount));
+                if (currency === 'LKR') revenueByDay.set(day, (revenueByDay.get(day) || 0) + cents);
+                const dayCurrencies = revenueByDayCurrency.get(day) || {};
+                dayCurrencies[currency] = (dayCurrencies[currency] || 0) + cents;
+                revenueByDayCurrency.set(day, dayCurrencies);
             });
     
             const growthByDay = new Map<string, number>(userGrowth.map((item: DailyCount) => [item._id, item.count]));
@@ -103,6 +116,7 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
                     users: growthByDay.get(day) || 0,
                     saves: savesByDay.get(day) || 0,
                     revenue: revenueByDay.get(day) || 0,
+                    revenueByCurrency: revenueByDayCurrency.get(day) || {},
                     downloads: downloadsByDay.get(day) || 0,
                     checkoutStarted: checkout.started || 0,
                     checkoutPaid: checkout.paid || 0,
@@ -129,9 +143,10 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
                     premiumSubscribers,
                     totalCvsCreated,
                     revenue: {
-                        cents: revenueCents,
+                        cents: revenueByCurrency.LKR?.cents || 0,
                         currency: 'LKR',
                     },
+                    revenueByCurrency,
                     supportTickets: {
                         open: supportCounts.get('open') || 0,
                         pending: supportCounts.get('pending') || 0,
@@ -155,6 +170,7 @@ export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
                     userGrowth: dailySeries.map(({ day, users }) => ({ day, count: users })),
                     cvSavesPerDay: dailySeries.map(({ day, saves }) => ({ day, count: saves })),
                     subscriptionRevenue: dailySeries.map(({ day, revenue }) => ({ day, cents: revenue })),
+                    subscriptionRevenueByCurrency: dailySeries.map(({ day, revenueByCurrency }) => ({ day, currencies: revenueByCurrency })),
                     cvDownloadsPerDay: dailySeries.map(({ day, downloads }) => ({ day, count: downloads })),
                     checkoutConversion: dailySeries.map(({ day, checkoutStarted, checkoutPaid }) => ({ day, started: checkoutStarted, paid: checkoutPaid })),
                     templateUsage: templateUsage.map((item: any) => ({ template: item._id || 'unknown', count: item.count })),

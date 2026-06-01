@@ -21,7 +21,7 @@ import { AuthModal } from '../components/AuthModal';
 import { AuthUser, apiFetch, getCurrentUser, notifyAuthUserChanged } from '../utils/api';
 import { COUNTRIES, countryFromCode, countryNameFromCode, detectClientBillingCountry } from '../utils/countries';
 
-type CheckoutPlanKey = 'payg' | 'monthly';
+type CheckoutPlanKey = 'payg' | 'monthly' | 'quarterly';
 
 interface PayHereCheckoutResponse {
   actionUrl: string;
@@ -86,7 +86,7 @@ const checkoutPlans: Record<CheckoutPlanKey, {
 }> = {
   payg: {
     key: 'payg',
-    name: 'Pay As You Go',
+    name: 'Single CV Pass',
     duration: '7 days (One-time payment)',
     summary: 'One polished CV with unlimited edits and downloads for a focused application window.',
     icon: Zap,
@@ -101,7 +101,7 @@ const checkoutPlans: Record<CheckoutPlanKey, {
   },
   monthly: {
     key: 'monthly',
-    name: 'Monthly',
+    name: 'Monthly Pro',
     duration: '30 days (One-time payment)',
     summary: 'Best for active job searches with multiple CV versions and repeated exports.',
     icon: Crown,
@@ -114,10 +114,25 @@ const checkoutPlans: Record<CheckoutPlanKey, {
       'AI import, summary, and refine tools',
     ],
   },
+  quarterly: {
+    key: 'quarterly',
+    name: 'Pro Quarterly',
+    duration: '90 days (One-time payment)',
+    summary: 'Everything you need for a focused 3-month job search.',
+    icon: Crown,
+    features: [
+      'Unlimited CV creation',
+      'Unlimited saved CVs',
+      'Any CV template',
+      'Unlimited downloads for 90 days',
+      'Faster warm PDF downloads',
+      'AI import, summary, and refine tools',
+    ],
+  },
 };
 
 function getPlanFromQuery(value: string | null): CheckoutPlanKey {
-  return value === 'monthly' ? 'monthly' : 'payg';
+  return value === 'monthly' || value === 'quarterly' ? value : 'payg';
 }
 
 function submitPayHereForm(actionUrl: string, fields: Record<string, string>) {
@@ -178,7 +193,7 @@ export default function CheckoutPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [planPrices, setPlanPrices] = useState<Record<CheckoutPlanKey, BillingPlanPrice> | null>(null);
-  const [couponCode, setCouponCode] = useState('');
+  const [couponCode, setCouponCode] = useState(searchParams.get('coupon') || '');
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteRefreshKey, setQuoteRefreshKey] = useState(0);
@@ -202,6 +217,7 @@ export default function CheckoutPage() {
   const countrySearchTimerRef = useRef<number | null>(null);
   const checkoutInFlightRef = useRef(false);
   const confirmingReturnRef = useRef<string | null>(null);
+  const handledCancelRef = useRef<string | null>(null);
 
   useEffect(() => {
     const resetCheckoutLoadingState = () => {
@@ -347,11 +363,16 @@ export default function CheckoutPage() {
     const paymentStatus = searchParams.get('payment');
     if (paymentStatus === 'cancel') {
       const orderId = searchParams.get('order');
+      const cancelKey = `${selectedPlan.key}:${orderId || 'no-order'}`;
+      if (handledCancelRef.current === cancelKey) return;
+      handledCancelRef.current = cancelKey;
       if (orderId) {
         void apiFetch(`/api/billing/checkout/${encodeURIComponent(orderId)}/cancel`, { method: 'POST' }).catch(() => undefined);
       }
       sessionStorage.removeItem('nexcv-pending-checkout');
-      toast.error('Payment cancelled. Your plan was not changed.');
+      checkoutInFlightRef.current = false;
+      setSubmitting(false);
+      toast.error('Payment cancelled. Your plan was not changed.', { id: 'payment-cancelled' });
       setSearchParams({ plan: selectedPlan.key }, { replace: true });
       return;
     }

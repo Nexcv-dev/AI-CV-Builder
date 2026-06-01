@@ -5,6 +5,20 @@ import { formatCurrency, formatDate, formatNumber } from './adminUtils';
 import { AdminStat, ChartBar, MiniRow } from './AdminSharedComponents';
 
 export function AdminOverviewSection({ summary, maxChartValue }: { summary: AdminSummary; maxChartValue: number }) {
+  const revenueByCurrency = summary.widgets.revenueByCurrency || {
+    [summary.widgets.revenue.currency]: {
+      cents: summary.widgets.revenue.cents,
+      count: 0,
+    },
+  };
+  const revenueCurrencies = [
+    ...new Set(['LKR', 'USD', ...Object.keys(revenueByCurrency)]),
+  ].map((currency) => [currency, revenueByCurrency[currency] || { cents: 0, count: 0 }] as const);
+  const dailyRevenueByCurrency = summary.charts.subscriptionRevenueByCurrency || summary.charts.subscriptionRevenue.map((item) => ({
+    day: item.day,
+    currencies: { [summary.widgets.revenue.currency]: item.cents },
+  }));
+
   return (
     <>
       <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -34,11 +48,24 @@ export function AdminOverviewSection({ summary, maxChartValue }: { summary: Admi
 
         <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
           <h2 className="font-montserrat text-lg font-black">Revenue Overview</h2>
-          <div className="mt-4 text-3xl font-black">{formatCurrency(summary.widgets.revenue.cents, summary.widgets.revenue.currency)}</div>
-          <p className="mt-1 text-sm font-semibold text-slate-400">Processed payment sample</p>
+          <div className="mt-4 grid gap-2">
+            {revenueCurrencies.length ? revenueCurrencies.map(([currency, value]) => (
+              <div key={currency} className="rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2">
+                <p className="text-[10px] font-black uppercase text-slate-500">{currency} revenue</p>
+                <p className="mt-1 text-2xl font-black text-slate-100">{formatCurrency(value.cents, currency)}</p>
+              </div>
+            )) : (
+              <div className="text-3xl font-black">{formatCurrency(0, summary.widgets.revenue.currency)}</div>
+            )}
+          </div>
+          <p className="mt-2 text-sm font-semibold text-slate-400">Processed payments by currency</p>
           <div className="mt-5 grid gap-2">
-            {summary.charts.subscriptionRevenue.map((item) => (
-              <MiniRow key={item.day} label={item.day.slice(5)} value={formatCurrency(item.cents, summary.widgets.revenue.currency)} />
+            {dailyRevenueByCurrency.map((item) => (
+              <MiniRow
+                key={item.day}
+                label={item.day.slice(5)}
+                value={`${formatCurrency(item.currencies.LKR || 0, 'LKR')} / ${formatCurrency(item.currencies.USD || 0, 'USD')}`}
+              />
             ))}
           </div>
         </article>

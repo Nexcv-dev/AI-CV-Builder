@@ -40,7 +40,7 @@ export function MiniRow({ label, value }: { label: string; value: string }) {
 }
 
 export function PlanBadge({ plan, expiresAt }: { plan: AdminUserListItem['plan']; expiresAt?: string }) {
-  const label = plan === 'payg' ? 'PAYG' : plan === 'monthly' ? 'Monthly' : plan === 'unlimited' ? 'Admin' : 'Free';
+  const label = plan === 'payg' ? 'Pass' : plan === 'monthly' ? 'Monthly' : plan === 'quarterly' ? 'Quarterly' : plan === 'unlimited' ? 'Admin' : 'Free';
   const tone = plan === 'free'
     ? 'bg-slate-900 text-slate-300 ring-white/10'
     : plan === 'payg'

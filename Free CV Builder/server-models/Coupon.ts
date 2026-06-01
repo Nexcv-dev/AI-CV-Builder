@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import type { BillingPlan } from './userPlan';
+import { PAID_BILLING_PLANS, type BillingPlan } from './userPlan';
 
 export interface ICoupon extends Document {
   code: string;
@@ -24,7 +24,7 @@ const CouponSchema = new Schema<ICoupon>(
     discountType: { type: String, enum: ['fixed', 'percent'], required: true },
     discountValue: { type: Number, required: true, min: 1 },
     active: { type: Boolean, default: true, required: true, index: true },
-    appliesTo: [{ type: String, enum: ['payg', 'monthly'] }],
+    appliesTo: [{ type: String, enum: PAID_BILLING_PLANS }],
     startsAt: { type: Date },
     expiresAt: { type: Date },
     maxRedemptions: { type: Number, min: 1 },

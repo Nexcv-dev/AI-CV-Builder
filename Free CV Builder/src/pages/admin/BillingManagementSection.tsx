@@ -140,8 +140,9 @@ export default function BillingManagementSection({
         </label>
         <select value={planFilter} onChange={(event) => onPlanFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
           <option value="all">All plans</option>
-          <option value="payg">Pay As You Go</option>
-          <option value="monthly">Monthly</option>
+          <option value="payg">Single CV Pass</option>
+          <option value="monthly">Monthly Pro</option>
+          <option value="quarterly">Pro Quarterly</option>
         </select>
         <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
           <option value="all">All statuses</option>

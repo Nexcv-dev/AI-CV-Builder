@@ -1,4 +1,4 @@
-export type PlanKey = 'free' | 'payg' | 'monthly';
+export type PlanKey = 'free' | 'payg' | 'monthly' | 'quarterly';
 
 export interface CmsPlanCopy {
   key: PlanKey;
@@ -120,23 +120,33 @@ export const DEFAULT_CMS_CONTENT: CmsContent = {
     },
     {
       key: 'payg',
-      name: 'Pay As You Go',
+      name: 'Single CV Pass',
       price: 'LKR 499',
       duration: '7 days (One-time payment)',
       description: 'One CV with any template, AI tools, unlimited edits and downloads.',
-      cta: 'Choose PAYG',
-      badge: 'Popular',
+      cta: 'Choose pass',
+      badge: '',
       features: ['1 extra saved CV per purchase', 'Any template', 'Unlimited edits for 7 days', 'Unlimited downloads for 7 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
     },
     {
       key: 'monthly',
-      name: 'Monthly',
+      name: 'Monthly Pro',
       price: 'LKR 2199',
       duration: '30 days (One-time payment)',
       description: 'Unlimited CV creation, saves, downloads, and AI features.',
       cta: 'Go monthly',
       badge: '',
       features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 30 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
+    },
+    {
+      key: 'quarterly',
+      name: 'Pro Quarterly',
+      price: 'LKR 4999',
+      duration: '90 days (One-time payment)',
+      description: 'Everything you need for a focused 3-month job search.',
+      cta: 'Get Pro Quarterly',
+      badge: 'Most popular',
+      features: ['Unlimited CV creation', 'Unlimited saved CVs', 'Any template', 'Unlimited downloads for 90 days', 'Faster warm PDF downloads', 'AI import, summary, and refine tools'],
     },
   ],
   faqs: [
@@ -194,6 +204,16 @@ function mergeObject<T extends object>(defaults: T, value: unknown): T {
   return isRecord(value) ? { ...defaults, ...value } : defaults;
 }
 
+function normalizePlanCopy(plan: CmsPlanCopy): CmsPlanCopy {
+  if (plan.key === 'payg' && plan.name === 'Pay As You Go') {
+    return { ...plan, name: 'Single CV Pass' };
+  }
+  if (plan.key === 'monthly' && plan.name === 'Monthly') {
+    return { ...plan, name: 'Monthly Pro' };
+  }
+  return plan;
+}
+
 export function mergeCmsContent(value: unknown): CmsContent {
   const source = isRecord(value) ? value : {};
   const landing = mergeObject(DEFAULT_CMS_CONTENT.landing, source.landing);
@@ -205,7 +225,7 @@ export function mergeCmsContent(value: unknown): CmsContent {
     const saved = Array.isArray(source.pricingPlans)
       ? source.pricingPlans.find((item) => isRecord(item) && item.key === plan.key)
       : undefined;
-    return mergeObject(plan, saved);
+    return normalizePlanCopy(mergeObject(plan, saved));
   });
   const faqs = Array.isArray(source.faqs) && source.faqs.length
     ? source.faqs.map((item) => mergeObject(DEFAULT_CMS_CONTENT.faqs[0], item))
