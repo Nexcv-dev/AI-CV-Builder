@@ -302,6 +302,17 @@ const safeNumber = (value: unknown, fallback: number, min: number, max: number) 
   return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
 };
 
+const resolveTextScale = (value: unknown) => safeNumber(value, 1, 0.85, 1.2);
+
+const scaleCssFontSizes = (html: string, textScale: unknown) => {
+  const scale = resolveTextScale(textScale);
+  if (Math.abs(scale - 1) < 0.001) return html;
+  return html.replace(
+    /(font-size\s*:\s*)(?!calc\()([0-9]*\.?[0-9]+)(px|rem|em)\b/gi,
+    (_match, prefix, size, unit) => `${prefix}calc(${size}${unit} * ${scale})`,
+  );
+};
+
 const getContrastColor = (hex: string) => {
   if (!hex || hex.length < 7) return '#ffffff';
   const r = parseInt(hex.slice(1, 3), 16);
@@ -320,7 +331,7 @@ const templateFontMap: Record<string, string> = {
   'JetBrains Mono': "'JetBrains Mono', monospace",
 };
 
-const sanitizePdfFontFamily = (value: unknown) => {
+const sanitizeTemplateFontFamily = (value: unknown) => {
   if (typeof value !== 'string') return 'Inter';
   const fontFamily = value.trim();
   return Object.prototype.hasOwnProperty.call(templateFontMap, fontFamily) ? fontFamily : 'Inter';
@@ -357,11 +368,12 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
   const startupHeaderBackground = cvData?.templateSurfaceColor
     ? templateSurfaceColor
     : `linear-gradient(135deg, ${themeColor} 0%, #047857 100%)`;
-  const fontFamily = sanitizePdfFontFamily(cvData?.fontFamily);
+  const fontFamily = sanitizeTemplateFontFamily(cvData?.fontFamily);
   const imageCss = profileImageCss(cvData);
   const profileImage = sanitizePdfImageSource(cvData?.profileImage);
   const lineSpacing = safeNumber(cvData?.lineSpacing, 1.5, 1, 2.5);
   const sectionGap = safeNumber(cvData?.sectionGap, 2, 0.5, 4);
+  const textScale = resolveTextScale(cvData?.textScale);
   const personalDetails = [
     personalInfo.dob ? { label: 'Date of Birth', value: personalInfo.dob } : null,
     personalInfo.nic ? { label: 'NIC', value: personalInfo.nic } : null,
@@ -467,6 +479,8 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
       lineSpacing,
       sectionGap,
       sectionGapRem: `${sectionGap}rem`,
+      textScale,
+      textScalePercent: `${Math.round(textScale * 100)}%`,
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: imageCss.transform,
@@ -496,6 +510,31 @@ const CV_TEMPLATE_PAGINATION_RULES = `
     html,
     body {
       overflow: visible !important;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+    }
+
+    @media screen {
+      html,
+      body {
+        margin: 0 !important;
+        width: 794px !important;
+        min-width: 794px !important;
+        min-height: 1122px !important;
+        overflow: visible !important;
+      }
+
+      .page,
+      .cv,
+      .resume,
+      .sheet,
+      .document,
+      .wrapper {
+        width: 794px !important;
+        min-width: 794px !important;
+        min-height: 1122px !important;
+        max-width: none !important;
+      }
     }
 
     .page,
@@ -625,11 +664,6 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
     const { personalInfo = {}, experience = [], education = [], skills = [], projects = [], courses = [], awards = [], languages = [], references = [] } = cvData;
     const safeHexColor = (value: unknown, fallback: string) =>
         typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
-    const safeNumber = (value: unknown, fallback: number, min: number, max: number) => {
-        const number = Number(value);
-        return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
-    };
-
     const safeTemplate = isTemplateName(template) ? template : DEFAULT_TEMPLATE;
     const themeColor = safeHexColor(cvData.themeColor, '#000000');
     const sidebarColor = safeHexColor(cvData.sidebarColor, '#111827');
@@ -637,9 +671,10 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
         cvData.templateSurfaceColor,
         getTemplateSurfaceColorFallback(safeTemplate, { themeColor, sidebarColor })
     );
-    const fontFamily = sanitizePdfFontFamily(cvData.fontFamily);
+    const fontFamily = sanitizeTemplateFontFamily(cvData.fontFamily);
     const lineSpacing = safeNumber(cvData.lineSpacing, 1.5, 1, 2.5);
     const sectionGap = safeNumber(cvData.sectionGap, 2, 0.5, 4);
+    const textScale = safeNumber(cvData.textScale, 1, 0.85, 1.2);
     const profileImage = sanitizePdfImageSource(cvData.profileImage);
     const imageZoom = Number.isFinite(Number(cvData.imageZoom)) ? Math.min(Math.max(Number(cvData.imageZoom), 0.5), 3) : 1;
     const imageX = Number.isFinite(Number(cvData.imageX)) ? Math.min(Math.max(Number(cvData.imageX), -120), 120) : 0;
@@ -1252,7 +1287,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
     }
   ` : '';
 
-    return `<!DOCTYPE html>
+    return scaleCssFontSizes(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -1293,26 +1328,29 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
     ${CV_TEMPLATE_PAGINATION_RULES}
     .nexcv-watermark {
       position: fixed;
-      inset: 0;
+      left: 12mm;
+      right: 12mm;
+      bottom: 6mm;
       z-index: 9999;
       pointer-events: none;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      color: rgba(15, 23, 42, 0.13);
+      gap: 6px;
+      color: rgba(15, 23, 42, 0.42);
       font-family: Arial, sans-serif;
-      font-size: 44px;
-      font-weight: 800;
+      font-size: 8.5px;
+      font-weight: 700;
       letter-spacing: 0;
-      text-transform: uppercase;
-      transform: rotate(-28deg);
+      line-height: 1;
       text-align: center;
     }
     .nexcv-watermark div + div {
-      font-size: 22px;
+      font-size: inherit;
       letter-spacing: 0;
+      border-left: 1px solid rgba(15, 23, 42, 0.28);
+      padding-left: 6px;
     }
     table, tbody, tr, td, th, thead, tfoot {
       page-break-inside: auto !important;
@@ -1328,7 +1366,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
             : `<div style="width:210mm;background:transparent;margin:0 auto;position:relative">${bodyContent}</div>`
         }
 </body>
-</html>`;
+</html>`, textScale);
 }
 
 function sanitizeCvData(obj: any, depth = 0): any {

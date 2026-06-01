@@ -22,9 +22,23 @@ export interface LemonSqueezyCheckoutOptions {
     checkoutData?: {
         email?: string;
         name?: string;
+        discountCode?: string;
         custom?: Record<string, string>;
         redirectUrl?: string;
     };
+}
+
+export interface LemonSqueezyDiscountSyncInput {
+    lemonSqueezyDiscountId?: string;
+    code: string;
+    label: string;
+    discountType: 'fixed' | 'percent';
+    discountValue: number;
+    active: boolean;
+    appliesTo?: LemonSqueezyPaidPlan[];
+    startsAt?: Date | string | null;
+    expiresAt?: Date | string | null;
+    maxRedemptions?: number | null;
 }
 
 const envValue = (...keys: string[]) => {
@@ -106,11 +120,146 @@ export const buildLemonSqueezyHeaders = (config = getLemonSqueezyConfig()) => ({
     Authorization: `Bearer ${config.apiKey}`,
 });
 
+const apiErrorMessage = (payload: any, fallback: string) => (
+    Array.isArray(payload?.errors)
+        ? payload.errors.map((error: any) => error?.detail || error?.title).filter(Boolean).join('; ') || fallback
+        : fallback
+);
+
+const isoDateOrNull = (value: Date | string | null | undefined) => {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+};
+
+const plansForDiscount = (plans: LemonSqueezyPaidPlan[] | undefined): LemonSqueezyPaidPlan[] => {
+    const allowed: LemonSqueezyPaidPlan[] = ['payg', 'monthly', 'quarterly'];
+    const selected = Array.isArray(plans) && plans.length
+        ? plans.filter((plan): plan is LemonSqueezyPaidPlan => allowed.includes(plan as LemonSqueezyPaidPlan))
+        : allowed;
+    return Array.from(new Set(selected));
+};
+
+const variantRelationshipsForPlans = (plans: LemonSqueezyPaidPlan[], config = getLemonSqueezyConfig()) => {
+    const missing = plans.filter((plan) => !config.variantIds[plan]);
+    if (missing.length) {
+        throw new Error(`Lemon Squeezy variant ids missing for: ${missing.join(', ')}`);
+    }
+    return plans.map((plan) => ({
+        type: 'variants',
+        id: config.variantIds[plan],
+    }));
+};
+
 export const verifyLemonSqueezySignature = (rawBody: Buffer, signature: unknown, config = getLemonSqueezyConfig()) => {
     if (!config.webhookSecret || typeof signature !== 'string' || !signature.trim()) return false;
     const digest = Buffer.from(createHmac('sha256', config.webhookSecret).update(rawBody).digest('hex'), 'utf8');
     const provided = Buffer.from(signature.trim(), 'utf8');
     return digest.length === provided.length && timingSafeEqual(digest, provided);
+};
+
+export const deleteLemonSqueezyDiscount = async (discountId?: string | null) => {
+    if (!discountId) return false;
+    const config = getLemonSqueezyConfig();
+    if (!config.apiKey) throw new Error('LEMON_SQUEEZY_API_KEY missing');
+    const response = await fetch(`${LEMON_API_BASE_URL}/discounts/${encodeURIComponent(discountId)}`, {
+        method: 'DELETE',
+        headers: buildLemonSqueezyHeaders(config),
+    });
+    if (response.status === 404) return false;
+    if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(apiErrorMessage(payload, 'Could not delete Lemon Squeezy discount.'));
+    }
+    return true;
+};
+
+export const findLemonSqueezyDiscountIdsByCode = async (code: string) => {
+    const cleanCode = code.trim().toUpperCase();
+    if (!cleanCode) return [];
+    const config = getLemonSqueezyConfig();
+    if (!config.apiKey) throw new Error('LEMON_SQUEEZY_API_KEY missing');
+    if (!config.storeId) throw new Error('LEMON_SQUEEZY_STORE_ID missing');
+    const url = new URL(`${LEMON_API_BASE_URL}/discounts`);
+    url.searchParams.set('filter[store_id]', config.storeId);
+    url.searchParams.set('page[size]', '100');
+    const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: buildLemonSqueezyHeaders(config),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(apiErrorMessage(payload, 'Could not list Lemon Squeezy discounts.'));
+    }
+    const discounts = Array.isArray(payload?.data) ? payload.data : [];
+    return discounts
+        .filter((item: any) => String(item?.attributes?.code || '').trim().toUpperCase() === cleanCode)
+        .map((item: any) => String(item?.id || '').trim())
+        .filter(Boolean);
+};
+
+export const deleteLemonSqueezyDiscountsByCode = async (code: string) => {
+    const ids = await findLemonSqueezyDiscountIdsByCode(code);
+    await Promise.all(ids.map((id) => deleteLemonSqueezyDiscount(id)));
+    return ids.length;
+};
+
+export const syncLemonSqueezyDiscount = async (discount: LemonSqueezyDiscountSyncInput) => {
+    const config = getLemonSqueezyConfig();
+    if (!config.apiKey) throw new Error('LEMON_SQUEEZY_API_KEY missing');
+    if (!config.storeId) throw new Error('LEMON_SQUEEZY_STORE_ID missing');
+    if (!/^\d+$/.test(config.storeId)) throw new Error('LEMON_SQUEEZY_STORE_ID must be numeric');
+
+    if (discount.lemonSqueezyDiscountId) {
+        await deleteLemonSqueezyDiscount(discount.lemonSqueezyDiscountId);
+    }
+
+    if (!discount.active) {
+        return { discountId: '', status: 'deleted' as const };
+    }
+
+    const plans = plansForDiscount(discount.appliesTo);
+    const variants = variantRelationshipsForPlans(plans, config);
+    const isLimitedRedemptions = Number.isFinite(Number(discount.maxRedemptions)) && Number(discount.maxRedemptions) > 0;
+    const attributes: Record<string, unknown> = {
+        name: discount.label || discount.code,
+        code: discount.code,
+        amount: discount.discountType === 'percent' ? Math.round(discount.discountValue) : Math.round(discount.discountValue),
+        amount_type: discount.discountType,
+        is_limited_to_products: true,
+        is_limited_redemptions: isLimitedRedemptions,
+        max_redemptions: isLimitedRedemptions ? Math.round(Number(discount.maxRedemptions)) : 0,
+        duration: 'once',
+        starts_at: isoDateOrNull(discount.startsAt),
+        expires_at: isoDateOrNull(discount.expiresAt),
+    };
+
+    const response = await fetch(`${LEMON_API_BASE_URL}/discounts`, {
+        method: 'POST',
+        headers: buildLemonSqueezyHeaders(config),
+        body: JSON.stringify({
+            data: {
+                type: 'discounts',
+                attributes,
+                relationships: {
+                    store: {
+                        data: {
+                            type: 'stores',
+                            id: config.storeId,
+                        },
+                    },
+                    variants: {
+                        data: variants,
+                    },
+                },
+            },
+        }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(apiErrorMessage(payload, 'Could not create Lemon Squeezy discount.'));
+    }
+    return { discountId: String(payload?.data?.id || ''), status: 'synced' as const };
 };
 
 export const createLemonSqueezyCheckout = async (options: LemonSqueezyCheckoutOptions) => {
@@ -125,6 +274,7 @@ export const createLemonSqueezyCheckout = async (options: LemonSqueezyCheckoutOp
         checkout_data: {
             email: options.checkoutData?.email,
             name: options.checkoutData?.name,
+            discount_code: options.checkoutData?.discountCode,
             custom: options.checkoutData?.custom,
         },
     };

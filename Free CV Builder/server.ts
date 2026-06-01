@@ -111,9 +111,12 @@ import {
 } from './server-utils/payHere';
 import {
     createLemonSqueezyCheckout,
+    deleteLemonSqueezyDiscount,
+    deleteLemonSqueezyDiscountsByCode,
     getLemonSqueezyConfigIssues,
     getMissingLemonSqueezyConfigKeys,
     isLemonSqueezyConfigured,
+    syncLemonSqueezyDiscount,
     verifyLemonSqueezySignature,
 } from './server-utils/lemonSqueezy';
 import {
@@ -838,7 +841,7 @@ const routeDeps = {
     normalizeCouponCode, isPaidBillingPlan, getPublicBillingPlans, getAdminBillingPlans, quoteCheckout, getPlanPrice, resolveBillingMarket,
     PAYHERE_PLAN_PRICES, payHereAmountToCents, getPayHereMerchantConfig, getPayHereCheckoutUrl,
     buildPayHereCheckoutHash, verifyPayHereMd5Signature, resolvePayHerePaymentContext,
-    createLemonSqueezyCheckout, getLemonSqueezyConfigIssues, getMissingLemonSqueezyConfigKeys, isLemonSqueezyConfigured, verifyLemonSqueezySignature,
+    createLemonSqueezyCheckout, deleteLemonSqueezyDiscount, deleteLemonSqueezyDiscountsByCode, getLemonSqueezyConfigIssues, getMissingLemonSqueezyConfigKeys, isLemonSqueezyConfigured, syncLemonSqueezyDiscount, verifyLemonSqueezySignature,
     generateTransactionId, planDisplayName, createPlanExpiry, getEffectivePlan, isPaidPlan,
     markSessionCurrent, invalidateUserSessions,
     documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,

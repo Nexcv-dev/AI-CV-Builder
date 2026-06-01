@@ -624,6 +624,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 checkoutData: {
                     email,
                     name: displayName,
+                    discountCode: quote.couponCode || undefined,
                     redirectUrl: `${frontendOrigin}/checkout?plan=${plan}&payment=return&provider=lemonsqueezy&order=${encodeURIComponent(orderId)}`,
                     custom: {
                         user_id: userId,

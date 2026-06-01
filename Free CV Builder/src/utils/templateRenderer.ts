@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify';
 import { injectCvTemplatePaginationRules } from './cvTemplateRules';
-import { prepareS3TemplateData, profileImageCss } from './templateData';
+import { prepareS3TemplateData, profileImageCss, scaleCssFontSizes } from './templateData';
 
 const getTemplateValue = (pathValue: string, context: any, root: any) => {
   const pathParts = pathValue.trim().split('.').filter(Boolean);
@@ -131,5 +131,6 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
     ));
   };
 
-  return injectCvTemplatePaginationRules(applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style));
+  const renderedHtml = applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style);
+  return injectCvTemplatePaginationRules(scaleCssFontSizes(renderedHtml, preparedData?.computed?.textScale));
 }

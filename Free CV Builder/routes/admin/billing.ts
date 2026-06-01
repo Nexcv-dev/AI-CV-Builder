@@ -4,7 +4,7 @@ import type { BillingPlan } from '../../server-models/userPlan';
 
 
 export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
-    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getAdminBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, isPaidBillingPlan, PAYHERE_PLAN_PRICES, recordAdminAuditLog } = bindDeps(deps);
+    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getAdminBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, isPaidBillingPlan, PAYHERE_PLAN_PRICES, recordAdminAuditLog, syncLemonSqueezyDiscount, deleteLemonSqueezyDiscount, deleteLemonSqueezyDiscountsByCode } = bindDeps(deps);
 
     const markExpiredPendingCheckouts = async () => {
         await CheckoutSession.updateMany(
@@ -25,8 +25,41 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
         expiresAt: coupon.expiresAt,
         maxRedemptions: coupon.maxRedemptions || null,
         redeemedCount: coupon.redeemedCount || 0,
+        lemonSqueezyDiscountId: coupon.lemonSqueezyDiscountId || '',
+        lemonSqueezySyncStatus: coupon.lemonSqueezySyncStatus || 'not_synced',
+        lemonSqueezySyncError: coupon.lemonSqueezySyncError || '',
+        lemonSqueezyLastSyncedAt: coupon.lemonSqueezyLastSyncedAt,
         updatedAt: coupon.updatedAt,
     });
+
+    const syncCouponDiscount = async (coupon: any) => {
+        try {
+            const result = await syncLemonSqueezyDiscount({
+                lemonSqueezyDiscountId: coupon.lemonSqueezyDiscountId,
+                code: coupon.code,
+                label: coupon.label,
+                discountType: coupon.discountType,
+                discountValue: coupon.discountValue,
+                active: Boolean(coupon.active),
+                appliesTo: coupon.appliesTo || [],
+                startsAt: coupon.startsAt,
+                expiresAt: coupon.expiresAt,
+                maxRedemptions: coupon.maxRedemptions,
+            });
+            coupon.lemonSqueezyDiscountId = result.discountId || undefined;
+            coupon.lemonSqueezySyncStatus = result.status;
+            coupon.lemonSqueezySyncError = '';
+            coupon.lemonSqueezyLastSyncedAt = new Date();
+            await coupon.save();
+            return coupon;
+        } catch (error) {
+            coupon.lemonSqueezySyncStatus = 'not_synced';
+            coupon.lemonSqueezySyncError = error instanceof Error ? error.message : 'Lemon Squeezy sync failed.';
+            coupon.lemonSqueezyLastSyncedAt = new Date();
+            await coupon.save();
+            throw error;
+        }
+    };
 
     const adminCheckoutReviewSummary = (checkout: any) => {
         const user = checkout.userId && typeof checkout.userId === 'object' ? checkout.userId : null;
@@ -244,6 +277,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 },
                 { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
             );
+            await syncCouponDiscount(coupon);
             await recordAdminAuditLog({
                 actorId: currentUserId(req),
                 action: 'billing.coupon.saved',
@@ -288,6 +322,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             coupon.maxRedemptions = req.body.maxRedemptions ? Math.max(1, Math.round(Number(req.body.maxRedemptions))) : undefined;
             coupon.updatedBy = currentUserId(req);
             await coupon.save();
+            await syncCouponDiscount(coupon);
             await recordAdminAuditLog({
                 actorId: currentUserId(req),
                 action: 'billing.coupon.updated',
@@ -309,6 +344,38 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             return res.json({ coupon: adminCouponSummary(coupon) });
         } catch (error) {
             return sendError(res, 500, 'Could not update coupon.', error);
+        }
+    });
+
+
+    router.delete('/api/admin/billing/coupons/:code', requireAdminPermission('billing.write'), async (req: Request, res: Response) => {
+        try {
+            const code = normalizeCouponCode(req.params.code);
+            const coupon = code ? await Coupon.findOne({ code }) : null;
+            if (!coupon) return res.status(404).json({ error: 'Coupon not found.' });
+            let lemonDeletedCount = 0;
+            if (coupon.lemonSqueezyDiscountId) {
+                lemonDeletedCount += await deleteLemonSqueezyDiscount(coupon.lemonSqueezyDiscountId) ? 1 : 0;
+            }
+            lemonDeletedCount += await deleteLemonSqueezyDiscountsByCode(coupon.code);
+            await Coupon.deleteOne({ _id: coupon._id });
+            await recordAdminAuditLog({
+                actorId: currentUserId(req),
+                action: 'billing.coupon.deleted',
+                targetType: 'coupon',
+                targetId: coupon.code,
+                targetLabel: coupon.label,
+                metadata: {
+                    lemonSqueezyDiscountId: coupon.lemonSqueezyDiscountId || '',
+                    lemonDeletedCount,
+                    appliesTo: coupon.appliesTo || [],
+                },
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
+            return res.status(204).send();
+        } catch (error) {
+            return sendError(res, 500, 'Could not delete coupon.', error);
         }
     });
 

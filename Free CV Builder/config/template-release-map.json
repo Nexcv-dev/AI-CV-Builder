@@ -91,6 +91,51 @@
     "defaultThemeColor": "#fca311"
   },
   {
+    "sourceFolder": "ats-clean-sample",
+    "targetKey": "ats-clean-sample",
+    "label": "ATS Clean Sample",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#2563eb"
+  },
+  {
+    "sourceFolder": "sidebar-ats",
+    "targetKey": "sidebar-ats",
+    "label": "Sidebar ATS",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#1d4ed8"
+  },
+  {
+    "sourceFolder": "ats-two-column",
+    "targetKey": "ats-two-column",
+    "label": "ATS Two Column",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#0f766e"
+  },
+  {
+    "sourceFolder": "sidebar-timeline",
+    "targetKey": "sidebar-timeline",
+    "label": "Sidebar Timeline",
+    "category": "Modern",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#2563eb"
+  },
+  {
+    "sourceFolder": "ats-timeline",
+    "targetKey": "ats-timeline",
+    "label": "ATS Timeline",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#2563eb"
+  },
+  {
     "sourceFolder": "modular-card",
     "targetKey": "modular-card",
     "label": "Modular Card",

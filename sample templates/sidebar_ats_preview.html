@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sidebar ATS Preview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #eef1f5;
+        color: #1f2937;
+        font-family: "Inter", "Segoe UI", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 24px auto;
+        background: #ffffff;
+        box-shadow: 0 18px 50px rgba(31, 41, 55, 0.16);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 68mm 1fr;
+        min-height: 297mm;
+      }
+
+      .sidebar {
+        padding: 18mm 9mm 16mm;
+        background: #f7f8fa;
+        border-right: 1px solid #d9dee7;
+      }
+
+      .main {
+        padding: 18mm 15mm 16mm;
+      }
+
+      .name {
+        margin: 0;
+        color: #111827;
+        font-size: 27px;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .role {
+        margin: 8px 0 0;
+        color: #1d4ed8;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .intro-line {
+        width: 34mm;
+        height: 3px;
+        margin: 13px 0 0;
+        background: #1d4ed8;
+      }
+
+      .side-section,
+      .section {
+        margin-top: 8mm;
+      }
+
+      .side-section:first-of-type {
+        margin-top: 11mm;
+      }
+
+      h2 {
+        margin: 0 0 8px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #cfd6e2;
+        color: #111827;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h3 {
+        margin: 0;
+        color: #111827;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.32;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .contact-list,
+      .detail-list,
+      .language-list {
+        display: grid;
+        gap: 7px;
+        color: #374151;
+        font-size: 10.6px;
+        font-weight: 600;
+        line-height: 1.45;
+      }
+
+      .label {
+        display: block;
+        margin-bottom: 1px;
+        color: #6b7280;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .skill-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .skill-list span {
+        display: inline-block;
+        padding: 4px 7px;
+        border: 1px solid #d4dae5;
+        background: #ffffff;
+        color: #374151;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.25;
+      }
+
+      .summary {
+        color: #374151;
+        font-size: 11.6px;
+        font-weight: 400;
+        line-height: 1.62;
+      }
+
+      .entry {
+        margin-bottom: 11px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .entry:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .entry-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 4px;
+      }
+
+      .company {
+        margin-top: 2px;
+        color: #1d4ed8;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .date {
+        flex: 0 0 30mm;
+        margin-top: 1px;
+        color: #6b7280;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.35;
+        text-align: right;
+      }
+
+      .description {
+        color: #374151;
+        font-size: 11px;
+        line-height: 1.55;
+      }
+
+      ul {
+        margin: 5px 0 0;
+        padding-left: 16px;
+      }
+
+      li {
+        margin-bottom: 3px;
+      }
+
+      .project-link {
+        color: #1d4ed8;
+        font-size: 10px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+        }
+
+        .page {
+          margin: 0;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="layout">
+        <aside class="sidebar">
+          <h1 class="name">Kasun Perera</h1>
+          <p class="role">Operations Coordinator</p>
+          <div class="intro-line"></div>
+
+          <section class="side-section">
+            <h2>Contact</h2>
+            <div class="contact-list">
+              <p><span class="label">Email</span>kasun.perera@email.com</p>
+              <p><span class="label">Phone</span>+94 77 123 4567</p>
+              <p><span class="label">Location</span>Colombo, Sri Lanka</p>
+              <p><span class="label">LinkedIn</span>linkedin.com/in/kasunperera</p>
+            </div>
+          </section>
+
+          <section class="side-section">
+            <h2>Skills</h2>
+            <div class="skill-list">
+              <span>Operations</span>
+              <span>MS Excel</span>
+              <span>Reporting</span>
+              <span>CRM</span>
+              <span>Scheduling</span>
+              <span>Customer Support</span>
+              <span>Documentation</span>
+              <span>Team Coordination</span>
+            </div>
+          </section>
+
+          <section class="side-section">
+            <h2>Languages</h2>
+            <div class="language-list">
+              <p><span class="label">Sinhala</span>Native</p>
+              <p><span class="label">English</span>Professional</p>
+              <p><span class="label">Tamil</span>Conversational</p>
+            </div>
+          </section>
+
+          <section class="side-section">
+            <h2>Details</h2>
+            <div class="detail-list">
+              <p><span class="label">Nationality</span>Sri Lankan</p>
+              <p><span class="label">Availability</span>Immediate</p>
+            </div>
+          </section>
+        </aside>
+
+        <section class="main">
+          <section class="section" style="margin-top: 0;">
+            <h2>Professional Summary</h2>
+            <p class="summary">
+              Detail-oriented operations professional with 4+ years of experience coordinating daily workflows,
+              maintaining accurate records, improving reporting processes, and supporting customer-facing teams.
+              Known for structured documentation, reliable follow-up, and clear communication across departments.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Professional Experience</h2>
+            <article class="entry">
+              <div class="entry-top">
+                <div>
+                  <h3>Operations Coordinator</h3>
+                  <p class="company">Nexora Business Services</p>
+                </div>
+                <p class="date">2022 - Present</p>
+              </div>
+              <div class="description">
+                <ul>
+                  <li>Coordinate daily operational tasks for a 20-member support and sales team.</li>
+                  <li>Prepare weekly performance reports using Excel dashboards and CRM exports.</li>
+                  <li>Reduced missed follow-ups by introducing a shared tracker and escalation checklist.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="entry">
+              <div class="entry-top">
+                <div>
+                  <h3>Administrative Assistant</h3>
+                  <p class="company">MetroCare Holdings</p>
+                </div>
+                <p class="date">2020 - 2022</p>
+              </div>
+              <div class="description">
+                <ul>
+                  <li>Maintained employee records, vendor documents, invoices, and monthly attendance logs.</li>
+                  <li>Supported appointment scheduling, customer inquiries, and internal meeting coordination.</li>
+                  <li>Improved document retrieval time by reorganizing digital folders and naming standards.</li>
+                </ul>
+              </div>
+            </article>
+          </section>
+
+          <section class="section">
+            <h2>Education</h2>
+            <article class="entry">
+              <div class="entry-top">
+                <div>
+                  <h3>Higher National Diploma in Business Management</h3>
+                  <p class="company">Sri Lanka Institute of Advanced Technological Education</p>
+                </div>
+                <p class="date">2018 - 2020</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="section">
+            <h2>Projects</h2>
+            <article class="entry">
+              <div class="entry-top">
+                <div>
+                  <h3>Operations Reporting Tracker</h3>
+                  <p class="company">Internal Process Improvement</p>
+                </div>
+                <a class="project-link" href="#">Project Link</a>
+              </div>
+              <p class="description">
+                Created a simple weekly tracker for pending customer requests, team ownership, status updates,
+                and handover notes, improving visibility for managers and reducing repeated manual follow-ups.
+              </p>
+            </article>
+          </section>
+
+          <section class="section">
+            <h2>Certifications</h2>
+            <article class="entry">
+              <div class="entry-top">
+                <div>
+                  <h3>Advanced Microsoft Excel for Business</h3>
+                  <p class="company">Online Professional Learning</p>
+                </div>
+                <p class="date">2023</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="section">
+            <h2>References</h2>
+            <article class="entry">
+              <h3>Available on request</h3>
+              <p class="description">Professional references can be provided after interview confirmation.</p>
+            </article>
+          </section>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

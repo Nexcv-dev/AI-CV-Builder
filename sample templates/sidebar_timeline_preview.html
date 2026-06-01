@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sidebar Timeline Preview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #edf0f4;
+        color: #1f2937;
+        font-family: "Inter", "Segoe UI", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 24px auto;
+        background: #ffffff;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 72mm 1fr;
+        min-height: 297mm;
+      }
+
+      .sidebar {
+        padding: 17mm 9mm 16mm;
+        background: #19324d;
+        color: #eef4fb;
+      }
+
+      .main {
+        padding: 17mm 15mm 16mm;
+      }
+
+      .avatar {
+        width: 31mm;
+        height: 31mm;
+        margin-bottom: 11mm;
+        border: 4px solid #ffffff;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #dbeafe, #93c5fd);
+      }
+
+      h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.04;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .role {
+        margin: 8px 0 0;
+        color: #bfdbfe;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.4;
+      }
+
+      .side-section {
+        margin-top: 9mm;
+      }
+
+      .section {
+        margin-top: 8mm;
+      }
+
+      .section:first-child {
+        margin-top: 0;
+      }
+
+      h2 {
+        margin: 0 0 8px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #d5dbe5;
+        color: #111827;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        line-height: 1.2;
+        text-transform: uppercase;
+      }
+
+      .sidebar h2 {
+        border-bottom-color: rgba(255, 255, 255, 0.28);
+        color: #ffffff;
+      }
+
+      h3 {
+        margin: 0;
+        color: #111827;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.32;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .summary {
+        color: #374151;
+        font-size: 11.6px;
+        line-height: 1.62;
+      }
+
+      .contact-list,
+      .language-list,
+      .detail-list {
+        display: grid;
+        gap: 8px;
+        font-size: 10.6px;
+        font-weight: 600;
+        line-height: 1.45;
+      }
+
+      .label {
+        display: block;
+        margin-bottom: 2px;
+        color: #93c5fd;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .skill-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .skill {
+        display: grid;
+        gap: 4px;
+      }
+
+      .skill-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        color: #f8fafc;
+        font-size: 10.4px;
+        font-weight: 800;
+      }
+
+      .track {
+        height: 5px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .bar {
+        display: block;
+        height: 100%;
+        background: #93c5fd;
+      }
+
+      .bar.level-5 { width: 100%; }
+      .bar.level-4 { width: 82%; }
+      .bar.level-3 { width: 64%; }
+
+      .timeline {
+        position: relative;
+        margin-left: 4px;
+        padding-left: 18px;
+        border-left: 2px solid #cbd5e1;
+      }
+
+      .item {
+        position: relative;
+        margin-bottom: 13px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .item::before {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: -25px;
+        width: 10px;
+        height: 10px;
+        border: 3px solid #ffffff;
+        border-radius: 999px;
+        background: #2563eb;
+        box-shadow: 0 0 0 2px #2563eb;
+      }
+
+      .item-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 4px;
+      }
+
+      .company {
+        margin-top: 2px;
+        color: #2563eb;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .date {
+        flex: 0 0 28mm;
+        margin-top: 1px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.35;
+        text-align: right;
+      }
+
+      .description {
+        color: #374151;
+        font-size: 11px;
+        line-height: 1.55;
+      }
+
+      ul {
+        margin: 5px 0 0;
+        padding-left: 16px;
+      }
+
+      li {
+        margin-bottom: 3px;
+      }
+
+      .project-card {
+        margin-bottom: 10px;
+        padding: 10px 11px;
+        border: 1px solid #d9dee7;
+        background: #f8fafc;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .project-card:last-child {
+        margin-bottom: 0;
+      }
+
+      .plain-entry {
+        margin-bottom: 9px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .plain-entry:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+        }
+
+        .page {
+          margin: 0;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="avatar" aria-hidden="true"></div>
+          <h1>Nethmi Silva</h1>
+          <p class="role">Digital Marketing Executive</p>
+
+          <section class="side-section">
+            <h2>Contact</h2>
+            <div class="contact-list">
+              <p><span class="label">Email</span>nethmi.silva@email.com</p>
+              <p><span class="label">Phone</span>+94 76 456 7890</p>
+              <p><span class="label">Location</span>Kandy, Sri Lanka</p>
+              <p><span class="label">Portfolio</span>nethmisilva.com</p>
+            </div>
+          </section>
+
+          <section class="side-section">
+            <h2>Skills</h2>
+            <div class="skill-list">
+              <div class="skill">
+                <div class="skill-head"><span>SEO</span><span>Expert</span></div>
+                <div class="track"><span class="bar level-5"></span></div>
+              </div>
+              <div class="skill">
+                <div class="skill-head"><span>Google Ads</span><span>Advanced</span></div>
+                <div class="track"><span class="bar level-4"></span></div>
+              </div>
+              <div class="skill">
+                <div class="skill-head"><span>Content Strategy</span><span>Advanced</span></div>
+                <div class="track"><span class="bar level-4"></span></div>
+              </div>
+              <div class="skill">
+                <div class="skill-head"><span>Analytics</span><span>Good</span></div>
+                <div class="track"><span class="bar level-3"></span></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="side-section">
+            <h2>Languages</h2>
+            <div class="language-list">
+              <p><span class="label">Sinhala</span>Native</p>
+              <p><span class="label">English</span>Fluent</p>
+            </div>
+          </section>
+
+          <section class="side-section">
+            <h2>Details</h2>
+            <div class="detail-list">
+              <p><span class="label">Availability</span>2 weeks</p>
+              <p><span class="label">Work mode</span>Hybrid / Remote</p>
+            </div>
+          </section>
+        </aside>
+
+        <section class="main">
+          <section class="section">
+            <h2>Profile</h2>
+            <p class="summary">
+              Digital marketing professional with 5 years of experience planning SEO campaigns, managing paid
+              media budgets, improving organic traffic, and creating content calendars for service-based brands.
+              Strong background in analytics, keyword research, campaign reporting, and cross-functional execution.
+            </p>
+          </section>
+
+          <section class="section">
+            <h2>Experience Timeline</h2>
+            <div class="timeline">
+              <article class="item">
+                <div class="item-top">
+                  <div>
+                    <h3>Digital Marketing Executive</h3>
+                    <p class="company">BrightLane Media</p>
+                  </div>
+                  <p class="date">2022 - Present</p>
+                </div>
+                <div class="description">
+                  <ul>
+                    <li>Managed SEO and Google Ads campaigns for 12 client accounts across retail and education.</li>
+                    <li>Increased average organic traffic by 38% through technical audits and content improvements.</li>
+                    <li>Prepared monthly campaign reports with insights, budget notes, and next-step recommendations.</li>
+                  </ul>
+                </div>
+              </article>
+
+              <article class="item">
+                <div class="item-top">
+                  <div>
+                    <h3>Marketing Coordinator</h3>
+                    <p class="company">Lanka Retail Group</p>
+                  </div>
+                  <p class="date">2020 - 2022</p>
+                </div>
+                <div class="description">
+                  <ul>
+                    <li>Supported product launch campaigns across email, social media, and in-store promotions.</li>
+                    <li>Tracked campaign performance and coordinated creative updates with design and sales teams.</li>
+                  </ul>
+                </div>
+              </article>
+
+              <article class="item">
+                <div class="item-top">
+                  <div>
+                    <h3>Marketing Intern</h3>
+                    <p class="company">Creative Hive Studio</p>
+                  </div>
+                  <p class="date">2019 - 2020</p>
+                </div>
+                <div class="description">
+                  <ul>
+                    <li>Assisted with content scheduling, competitor research, and weekly social media summaries.</li>
+                  </ul>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Education</h2>
+            <div class="timeline">
+              <article class="item">
+                <div class="item-top">
+                  <div>
+                    <h3>BSc in Marketing Management</h3>
+                    <p class="company">University of Sri Jayewardenepura</p>
+                  </div>
+                  <p class="date">2016 - 2020</p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Selected Projects</h2>
+            <article class="project-card">
+              <h3>SEO Content Refresh Program</h3>
+              <p class="company">Education Client Portfolio</p>
+              <p class="description">
+                Reworked 40 landing pages using keyword clustering, internal linking, and improved page metadata,
+                helping the client recover rankings for high-intent search terms.
+              </p>
+            </article>
+            <article class="project-card">
+              <h3>Paid Search Budget Dashboard</h3>
+              <p class="company">Agency Reporting System</p>
+              <p class="description">
+                Built a weekly tracking sheet for spend, conversions, cost per lead, and campaign status so account
+                managers could spot budget issues earlier.
+              </p>
+            </article>
+          </section>
+
+          <section class="section">
+            <h2>Certifications</h2>
+            <article class="plain-entry">
+              <div class="item-top">
+                <div>
+                  <h3>Google Ads Search Certification</h3>
+                  <p class="company">Google Skillshop</p>
+                </div>
+                <p class="date">2024</p>
+              </div>
+            </article>
+            <article class="plain-entry">
+              <div class="item-top">
+                <div>
+                  <h3>SEO Fundamentals</h3>
+                  <p class="company">Semrush Academy</p>
+                </div>
+                <p class="date">2023</p>
+              </div>
+            </article>
+          </section>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

@@ -546,6 +546,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const deleteCoupon = async (coupon: AdminCoupon) => {
+    setSavingBilling(true);
+    try {
+      await apiFetch(`/api/admin/billing/coupons/${coupon.code}`, {
+        method: 'DELETE',
+      });
+      setCoupons((items) => items.filter((item) => item.code !== coupon.code));
+      toast.success('Coupon deleted.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not delete coupon.');
+    } finally {
+      setSavingBilling(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="lg:flex lg:h-dvh lg:overflow-hidden">
@@ -667,6 +682,7 @@ export default function AdminDashboard() {
               onCouponFormChange={setCouponForm}
               onSaveCoupon={saveCoupon}
               onToggleCoupon={toggleCoupon}
+              onDeleteCoupon={deleteCoupon}
             />
           ) : isCmsPage ? (
             <SettingsManagementSection

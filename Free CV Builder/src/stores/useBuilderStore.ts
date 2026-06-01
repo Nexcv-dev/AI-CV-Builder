@@ -35,6 +35,7 @@ export const initialBuilderCvData: CVData = {
   sidebarColor: '#1e293b',
   lineSpacing: 1.5,
   sectionGap: 2,
+  textScale: 1,
   sectionOrder: DEFAULT_SECTION_ORDER,
   hiddenSections: [],
 };

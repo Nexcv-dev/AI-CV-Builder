@@ -197,7 +197,7 @@ export default function CheckoutPage() {
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteRefreshKey, setQuoteRefreshKey] = useState(0);
-  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [showCouponInput, setShowCouponInput] = useState(Boolean(searchParams.get('coupon')));
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -373,7 +373,9 @@ export default function CheckoutPage() {
       checkoutInFlightRef.current = false;
       setSubmitting(false);
       toast.error('Payment cancelled. Your plan was not changed.', { id: 'payment-cancelled' });
-      setSearchParams({ plan: selectedPlan.key }, { replace: true });
+      const nextParams: Record<string, string> = { plan: selectedPlan.key };
+      if (couponCode.trim()) nextParams.coupon = couponCode.trim();
+      setSearchParams(nextParams, { replace: true });
       return;
     }
 
@@ -442,7 +444,9 @@ export default function CheckoutPage() {
         ? 'Payment was not confirmed by the gateway. Please contact support if money was deducted.'
         : 'Payment is still being confirmed. Please refresh in a moment.';
       toast(pendingMessage, { id: 'payment-confirmation-pending' });
-      setSearchParams({ plan: selectedPlan.key }, { replace: true });
+      const nextParams: Record<string, string> = { plan: selectedPlan.key };
+      if (couponCode.trim()) nextParams.coupon = couponCode.trim();
+      setSearchParams(nextParams, { replace: true });
     }
 
     void finishPaymentReturn();
@@ -463,14 +467,19 @@ export default function CheckoutPage() {
     const country = countryNameFromCode(countryCode);
     setForm((current) => ({ ...current, countryCode, country }));
     setQuote(null);
-    setSearchParams({ plan: selectedPlan.key, country: countryCode }, { replace: true });
+    const nextParams: Record<string, string> = { plan: selectedPlan.key, country: countryCode };
+    if (couponCode.trim()) nextParams.coupon = couponCode.trim();
+    setSearchParams(nextParams, { replace: true });
   };
 
   const selectedCountry = countryFromCode(form.countryCode || (resolvedCountry === 'GLOBAL' ? 'OTHER' : resolvedCountry));
   const checkoutProviderLabel = billingMarket === 'local' ? 'PayHere' : 'Lemon Squeezy';
 
   const selectPlan = (plan: CheckoutPlanKey) => {
-    setSearchParams({ plan });
+    const nextParams: Record<string, string> = { plan };
+    if (form.countryCode) nextParams.country = form.countryCode;
+    if (couponCode.trim()) nextParams.coupon = couponCode.trim();
+    setSearchParams(nextParams);
     setQuote(null);
   };
 
@@ -961,7 +970,7 @@ export default function CheckoutPage() {
       <AuthModal
         isOpen={authModalOpen}
         initialMode="login"
-        redirectTo={`/checkout?plan=${selectedPlan.key}`}
+        redirectTo={`/checkout?plan=${selectedPlan.key}${couponCode.trim() ? `&coupon=${encodeURIComponent(couponCode.trim())}` : ''}`}
         onClose={() => setAuthModalOpen(false)}
         onAuthenticated={(currentUser) => {
           setUser(currentUser);

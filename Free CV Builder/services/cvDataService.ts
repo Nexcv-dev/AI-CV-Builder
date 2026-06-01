@@ -108,6 +108,7 @@ export function sanitizeCvDataForStorage(cvData: any) {
             : DEFAULT_SECTION_ORDER,
         lineSpacing: cleanStoredNumber(safe.lineSpacing, 1.5, 1, 2.5),
         sectionGap: cleanStoredNumber(safe.sectionGap, 2, 0.5, 4),
+        textScale: cleanStoredNumber(safe.textScale, 1, 0.85, 1.2),
         hiddenSections: cleanStoredStringArray(safe.hiddenSections, CV_SECTION_KEYS),
     };
 }

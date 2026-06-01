@@ -12,6 +12,10 @@ export interface ICoupon extends Document {
   expiresAt?: Date;
   maxRedemptions?: number;
   redeemedCount: number;
+  lemonSqueezyDiscountId?: string;
+  lemonSqueezyLastSyncedAt?: Date;
+  lemonSqueezySyncStatus?: 'synced' | 'not_synced' | 'deleted';
+  lemonSqueezySyncError?: string;
   updatedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +33,10 @@ const CouponSchema = new Schema<ICoupon>(
     expiresAt: { type: Date },
     maxRedemptions: { type: Number, min: 1 },
     redeemedCount: { type: Number, default: 0, min: 0, required: true },
+    lemonSqueezyDiscountId: { type: String, trim: true },
+    lemonSqueezyLastSyncedAt: { type: Date },
+    lemonSqueezySyncStatus: { type: String, enum: ['synced', 'not_synced', 'deleted'], default: 'not_synced' },
+    lemonSqueezySyncError: { type: String, trim: true, maxlength: 500 },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

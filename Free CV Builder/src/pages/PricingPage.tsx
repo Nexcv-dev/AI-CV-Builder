@@ -194,6 +194,16 @@ export default function PricingPage() {
       ? `${featuredCoupon.discountValue}% off`
       : `${formatPrice(featuredCoupon.discountValue, 'LKR')} off`
     : '';
+  const checkoutHrefFor = (plan: PlanKey) => {
+    const params = new URLSearchParams({
+      plan,
+      country: resolvedCountry,
+    });
+    if (featuredCoupon?.appliesTo.includes(plan as 'payg' | 'monthly' | 'quarterly')) {
+      params.set('coupon', featuredCoupon.code);
+    }
+    return `/checkout?${params.toString()}`;
+  };
 
   return (
     <>
@@ -309,7 +319,7 @@ export default function PricingPage() {
                       </Link>
                     ) : (
                       <Link
-                        to={`/checkout?plan=${plan.key}&country=${encodeURIComponent(resolvedCountry)}`}
+                        to={checkoutHrefFor(plan.key)}
                         className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-black transition active:scale-[0.98] ${
                           plan.highlighted ? 'bg-violet-500 text-white hover:bg-violet-400' : 'bg-white text-slate-950 hover:bg-slate-200'
                         }`}

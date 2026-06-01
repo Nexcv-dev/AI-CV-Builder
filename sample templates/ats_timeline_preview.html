@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ATS Timeline Preview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #f1f3f6;
+        color: #1f2937;
+        font-family: "Inter", "Segoe UI", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 24px auto;
+        background: #ffffff;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
+      }
+
+      .inner {
+        padding: 16mm 17mm;
+      }
+
+      .header {
+        padding-bottom: 9mm;
+        border-bottom: 2px solid #2563eb;
+      }
+
+      h1 {
+        margin: 0;
+        color: #111827;
+        font-size: 32px;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .role {
+        margin: 7px 0 0;
+        color: #2563eb;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .contact {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        margin-top: 9px;
+        color: #4b5563;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .contact span:not(:last-child)::after {
+        content: "";
+        display: inline-block;
+        width: 4px;
+        height: 4px;
+        margin-left: 12px;
+        border-radius: 999px;
+        background: #2563eb;
+        vertical-align: middle;
+      }
+
+      .section {
+        margin-top: 8mm;
+      }
+
+      h2 {
+        margin: 0 0 9px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #d1d5db;
+        color: #111827;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        line-height: 1.2;
+        text-transform: uppercase;
+      }
+
+      h3 {
+        margin: 0;
+        color: #111827;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.32;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .summary {
+        color: #374151;
+        font-size: 11.6px;
+        font-weight: 400;
+        line-height: 1.62;
+      }
+
+      .skill-line {
+        color: #374151;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.55;
+      }
+
+      .skill-line strong {
+        color: #111827;
+        font-weight: 800;
+      }
+
+      .timeline {
+        position: relative;
+        margin-left: 4px;
+        padding-left: 18px;
+        border-left: 2px solid #cbd5e1;
+      }
+
+      .item {
+        position: relative;
+        margin-bottom: 13px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .item::before {
+        content: "";
+        position: absolute;
+        top: 4px;
+        left: -25px;
+        width: 10px;
+        height: 10px;
+        border: 3px solid #ffffff;
+        border-radius: 999px;
+        background: #2563eb;
+        box-shadow: 0 0 0 2px #2563eb;
+      }
+
+      .item-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 4px;
+      }
+
+      .organization {
+        margin-top: 2px;
+        color: #2563eb;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .date {
+        flex: 0 0 31mm;
+        margin-top: 1px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.35;
+        text-align: right;
+      }
+
+      .description {
+        color: #374151;
+        font-size: 11px;
+        line-height: 1.55;
+      }
+
+      ul {
+        margin: 5px 0 0;
+        padding-left: 16px;
+      }
+
+      li {
+        margin-bottom: 3px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+      }
+
+      .simple-card {
+        padding: 10px 11px;
+        border: 1px solid #d9dee7;
+        background: #f8fafc;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .simple-card .organization {
+        margin-bottom: 5px;
+      }
+
+      .plain-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .plain-entry {
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e7eb;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .plain-entry:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+        }
+
+        .page {
+          margin: 0;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="inner">
+        <header class="header">
+          <h1>Dinuka Fernando</h1>
+          <p class="role">Software Quality Assurance Engineer</p>
+          <div class="contact">
+            <span>dinuka.fernando@email.com</span>
+            <span>+94 71 234 8899</span>
+            <span>Colombo, Sri Lanka</span>
+            <span>linkedin.com/in/dinukafernando</span>
+          </div>
+        </header>
+
+        <section class="section">
+          <h2>Professional Summary</h2>
+          <p class="summary">
+            QA engineer with 4+ years of experience testing web applications, mobile workflows, APIs, and
+            regression releases. Skilled in writing test cases, documenting defects, coordinating with developers,
+            and improving release confidence through structured manual and automation testing practices.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2>Core Skills</h2>
+          <p class="skill-line">
+            <strong>Testing:</strong> Manual Testing, Regression Testing, UAT, API Testing, Test Case Design,
+            Bug Reporting, Agile QA. <strong>Tools:</strong> Jira, Postman, Selenium, Cypress, Git, SQL, Chrome DevTools.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2>Experience Timeline</h2>
+          <div class="timeline">
+            <article class="item">
+              <div class="item-top">
+                <div>
+                  <h3>QA Engineer</h3>
+                  <p class="organization">CloudPeak Systems</p>
+                </div>
+                <p class="date">2022 - Present</p>
+              </div>
+              <div class="description">
+                <ul>
+                  <li>Test web and mobile release cycles for customer onboarding, payments, and reporting modules.</li>
+                  <li>Created reusable regression checklists that reduced missed verification steps before deployment.</li>
+                  <li>Validated REST APIs using Postman collections and documented defects with reproducible evidence.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="item">
+              <div class="item-top">
+                <div>
+                  <h3>Associate QA Analyst</h3>
+                  <p class="organization">BlueOrbit Technologies</p>
+                </div>
+                <p class="date">2020 - 2022</p>
+              </div>
+              <div class="description">
+                <ul>
+                  <li>Executed functional, smoke, and regression tests for SaaS dashboard features.</li>
+                  <li>Worked with developers and product owners to clarify acceptance criteria and edge cases.</li>
+                  <li>Maintained test cases in Jira and supported sprint demos with verified test data.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="item">
+              <div class="item-top">
+                <div>
+                  <h3>IT Support Intern</h3>
+                  <p class="organization">Metro Digital Services</p>
+                </div>
+                <p class="date">2019 - 2020</p>
+              </div>
+              <div class="description">
+                <ul>
+                  <li>Supported user issue triage, basic troubleshooting, ticket updates, and documentation tasks.</li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Education Timeline</h2>
+          <div class="timeline">
+            <article class="item">
+              <div class="item-top">
+                <div>
+                  <h3>BSc in Information Technology</h3>
+                  <p class="organization">University of Moratuwa</p>
+                </div>
+                <p class="date">2016 - 2020</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Projects</h2>
+          <div class="grid">
+            <article class="simple-card">
+              <h3>Regression Test Suite Cleanup</h3>
+              <p class="organization">Internal QA Initiative</p>
+              <p class="description">
+                Reorganized duplicate regression cases into a lean release checklist grouped by product area,
+                severity, and user flow.
+              </p>
+            </article>
+            <article class="simple-card">
+              <h3>API Smoke Testing Pack</h3>
+              <p class="organization">Payments Platform</p>
+              <p class="description">
+                Built Postman collections for critical payment, refund, and customer profile endpoints with
+                reusable environment variables.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Certifications</h2>
+          <div class="plain-list">
+            <article class="plain-entry">
+              <div class="item-top">
+                <div>
+                  <h3>ISTQB Foundation Level</h3>
+                  <p class="organization">International Software Testing Qualifications Board</p>
+                </div>
+                <p class="date">2023</p>
+              </div>
+            </article>
+            <article class="plain-entry">
+              <div class="item-top">
+                <div>
+                  <h3>Postman API Fundamentals Student Expert</h3>
+                  <p class="organization">Postman Academy</p>
+                </div>
+                <p class="date">2022</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

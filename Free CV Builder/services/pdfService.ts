@@ -42,6 +42,20 @@ const sanitizePdfFontFamily = (value: unknown) => {
 
 const googleFontFamilyParam = (fontFamily: string) => fontFamily.replace(/\s+/g, '+');
 
+const safeNumber = (value: unknown, fallback: number, min: number, max: number) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
+};
+
+const scaleCssFontSizes = (html: string, textScale: unknown) => {
+    const scale = safeNumber(textScale, 1, 0.85, 1.2);
+    if (Math.abs(scale - 1) < 0.001) return html;
+    return html.replace(
+        /(font-size\s*:\s*)(?!calc\()([0-9]*\.?[0-9]+)(px|rem|em)\b/gi,
+        (_match, prefix, size, unit) => `${prefix}calc(${size}${unit} * ${scale})`,
+    );
+};
+
 const PDF_ICONS = {
     email: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
     phone: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
@@ -58,11 +72,6 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
     const { personalInfo = {}, experience = [], education = [], skills = [], projects = [], courses = [], awards = [], languages = [], references = [] } = cvData;
     const safeHexColor = (value: unknown, fallback: string) =>
         typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
-    const safeNumber = (value: unknown, fallback: number, min: number, max: number) => {
-        const number = Number(value);
-        return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
-    };
-
     const safeTemplate = isTemplateName(template) ? template : DEFAULT_TEMPLATE;
     const themeColor = safeHexColor(cvData.themeColor, '#000000');
     const sidebarColor = safeHexColor(cvData.sidebarColor, '#111827');
@@ -73,6 +82,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
     const fontFamily = sanitizePdfFontFamily(cvData.fontFamily);
     const lineSpacing = safeNumber(cvData.lineSpacing, 1.5, 1, 2.5);
     const sectionGap = safeNumber(cvData.sectionGap, 2, 0.5, 4);
+    const textScale = safeNumber(cvData.textScale, 1, 0.85, 1.2);
     const profileImage = sanitizePdfImageSource(cvData.profileImage);
     const imageZoom = Number.isFinite(Number(cvData.imageZoom)) ? Math.min(Math.max(Number(cvData.imageZoom), 0.5), 3) : 1;
     const imageX = Number.isFinite(Number(cvData.imageX)) ? Math.min(Math.max(Number(cvData.imageX), -120), 120) : 0;
@@ -685,7 +695,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
     }
   ` : '';
 
-    return `<!DOCTYPE html>
+    return scaleCssFontSizes(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -726,26 +736,29 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
     ${CV_TEMPLATE_PAGINATION_RULES}
     .nexcv-watermark {
       position: fixed;
-      inset: 0;
+      left: 12mm;
+      right: 12mm;
+      bottom: 6mm;
       z-index: 9999;
       pointer-events: none;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      color: rgba(15, 23, 42, 0.13);
+      gap: 6px;
+      color: rgba(15, 23, 42, 0.42);
       font-family: Arial, sans-serif;
-      font-size: 44px;
-      font-weight: 800;
+      font-size: 8.5px;
+      font-weight: 700;
       letter-spacing: 0;
-      text-transform: uppercase;
-      transform: rotate(-28deg);
+      line-height: 1;
       text-align: center;
     }
     .nexcv-watermark div + div {
-      font-size: 22px;
+      font-size: inherit;
       letter-spacing: 0;
+      border-left: 1px solid rgba(15, 23, 42, 0.28);
+      padding-left: 6px;
     }
     table, tbody, tr, td, th, thead, tfoot {
       page-break-inside: auto !important;
@@ -761,7 +774,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
             : `<div style="width:210mm;background:transparent;margin:0 auto;position:relative">${bodyContent}</div>`
         }
 </body>
-</html>`;
+</html>`, textScale);
 }
 
 // AI Generate PDF via Puppeteer — using setContent() instead of page.goto()

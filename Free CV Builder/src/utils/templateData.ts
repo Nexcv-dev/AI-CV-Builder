@@ -99,6 +99,17 @@ const safeNumber = (value: unknown, fallback: number, min: number, max: number) 
   return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
 };
 
+export const resolveTextScale = (value: unknown) => safeNumber(value, 1, 0.85, 1.2);
+
+export const scaleCssFontSizes = (html: string, textScale: unknown) => {
+  const scale = resolveTextScale(textScale);
+  if (Math.abs(scale - 1) < 0.001) return html;
+  return html.replace(
+    /(font-size\s*:\s*)(?!calc\()([0-9]*\.?[0-9]+)(px|rem|em)\b/gi,
+    (_match, prefix, size, unit) => `${prefix}calc(${size}${unit} * ${scale})`,
+  );
+};
+
 const getContrastColor = (hex: string) => {
   if (!hex || hex.length < 7) return '#ffffff';
   const r = parseInt(hex.slice(1, 3), 16);
@@ -159,6 +170,7 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
   const profileImage = cvData?.profileImage || '';
   const lineSpacing = safeNumber(cvData?.lineSpacing, 1.5, 1, 2.5);
   const sectionGap = safeNumber(cvData?.sectionGap, 2, 0.5, 4);
+  const textScale = resolveTextScale(cvData?.textScale);
   const personalDetails = [
     personalInfo.dob ? { label: 'Date of Birth', value: personalInfo.dob } : null,
     personalInfo.nic ? { label: 'NIC', value: personalInfo.nic } : null,
@@ -264,6 +276,8 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
       lineSpacing,
       sectionGap,
       sectionGapRem: `${sectionGap}rem`,
+      textScale,
+      textScalePercent: `${Math.round(textScale * 100)}%`,
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: imageCss.transform,

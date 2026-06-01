@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
 import type {
   AdminBillingPlan,
   AdminBillingPlanDraft,
@@ -15,6 +15,7 @@ export default function PromotionManagementSection({
   onCouponFormChange,
   onSaveCoupon,
   onToggleCoupon,
+  onDeleteCoupon,
 }: {
   billingPlans: AdminBillingPlan[];
   coupons: AdminCoupon[];
@@ -24,6 +25,7 @@ export default function PromotionManagementSection({
   onCouponFormChange: (value: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; maxRedemptions: string; active: boolean }) => void;
   onSaveCoupon: () => Promise<void>;
   onToggleCoupon: (coupon: AdminCoupon) => Promise<void>;
+  onDeleteCoupon: (coupon: AdminCoupon) => Promise<void>;
 }) {
   const [planDrafts, setPlanDrafts] = useState<Record<string, AdminBillingPlanDraft>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -57,6 +59,13 @@ export default function PromotionManagementSection({
   const handleToggleCoupon = async (coupon: AdminCoupon) => {
     setSavingId(coupon.code);
     await onToggleCoupon(coupon).finally(() => setSavingId(null));
+  };
+
+  const handleDeleteCoupon = async (coupon: AdminCoupon) => {
+    const confirmed = window.confirm(`Delete coupon ${coupon.code}? This will also remove its Lemon Squeezy discount.`);
+    if (!confirmed) return;
+    setSavingId(coupon.code);
+    await onDeleteCoupon(coupon).finally(() => setSavingId(null));
   };
 
   const visibleCoupons = useMemo(() => {
@@ -176,7 +185,12 @@ export default function PromotionManagementSection({
                 <p className="mt-1 text-xs font-bold text-slate-500">
                   {coupon.discountType === 'percent' ? `${coupon.discountValue}%` : formatCurrency(coupon.discountValue, 'LKR')} off · used {coupon.redeemedCount}{coupon.maxRedemptions ? `/${coupon.maxRedemptions}` : ''}
                 </p>
+                <p className={`mt-1 text-xs font-black ${coupon.lemonSqueezySyncStatus === 'synced' ? 'text-emerald-300' : coupon.lemonSqueezySyncStatus === 'deleted' ? 'text-slate-500' : 'text-amber-300'}`}>
+                  Lemon Squeezy: {coupon.lemonSqueezySyncStatus === 'synced' ? 'Synced' : coupon.lemonSqueezySyncStatus === 'deleted' ? 'Removed' : 'Not synced'}
+                  {coupon.lemonSqueezySyncError ? ` - ${coupon.lemonSqueezySyncError}` : ''}
+                </p>
               </div>
+              <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={isAnySaving}
@@ -185,6 +199,16 @@ export default function PromotionManagementSection({
               >
                 {savingId === coupon.code ? '...' : (coupon.active ? 'Pause' : 'Activate')}
               </button>
+              <button
+                type="button"
+                disabled={isAnySaving}
+                onClick={() => handleDeleteCoupon(coupon)}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/15 text-red-200 ring-1 ring-red-300/20 transition hover:bg-red-500/25 disabled:cursor-not-allowed ${savingId === coupon.code ? 'opacity-50' : ''}`}
+                title="Delete coupon"
+              >
+                <Trash2 size={15} />
+              </button>
+              </div>
             </div>
           ))}
         </div>
