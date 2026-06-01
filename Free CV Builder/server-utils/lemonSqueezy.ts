@@ -174,6 +174,36 @@ export const deleteLemonSqueezyDiscount = async (discountId?: string | null) => 
     return true;
 };
 
+export const findLemonSqueezyDiscountIdsByCode = async (code: string) => {
+    const cleanCode = code.trim().toUpperCase();
+    if (!cleanCode) return [];
+    const config = getLemonSqueezyConfig();
+    if (!config.apiKey) throw new Error('LEMON_SQUEEZY_API_KEY missing');
+    if (!config.storeId) throw new Error('LEMON_SQUEEZY_STORE_ID missing');
+    const url = new URL(`${LEMON_API_BASE_URL}/discounts`);
+    url.searchParams.set('filter[store_id]', config.storeId);
+    url.searchParams.set('page[size]', '100');
+    const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: buildLemonSqueezyHeaders(config),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(apiErrorMessage(payload, 'Could not list Lemon Squeezy discounts.'));
+    }
+    const discounts = Array.isArray(payload?.data) ? payload.data : [];
+    return discounts
+        .filter((item: any) => String(item?.attributes?.code || '').trim().toUpperCase() === cleanCode)
+        .map((item: any) => String(item?.id || '').trim())
+        .filter(Boolean);
+};
+
+export const deleteLemonSqueezyDiscountsByCode = async (code: string) => {
+    const ids = await findLemonSqueezyDiscountIdsByCode(code);
+    await Promise.all(ids.map((id) => deleteLemonSqueezyDiscount(id)));
+    return ids.length;
+};
+
 export const syncLemonSqueezyDiscount = async (discount: LemonSqueezyDiscountSyncInput) => {
     const config = getLemonSqueezyConfig();
     if (!config.apiKey) throw new Error('LEMON_SQUEEZY_API_KEY missing');

@@ -4,7 +4,7 @@ import type { BillingPlan } from '../../server-models/userPlan';
 
 
 export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
-    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getAdminBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, isPaidBillingPlan, PAYHERE_PLAN_PRICES, recordAdminAuditLog, syncLemonSqueezyDiscount, deleteLemonSqueezyDiscount } = bindDeps(deps);
+    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getAdminBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, isPaidBillingPlan, PAYHERE_PLAN_PRICES, recordAdminAuditLog, syncLemonSqueezyDiscount, deleteLemonSqueezyDiscount, deleteLemonSqueezyDiscountsByCode } = bindDeps(deps);
 
     const markExpiredPendingCheckouts = async () => {
         await CheckoutSession.updateMany(
@@ -353,9 +353,11 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             const code = normalizeCouponCode(req.params.code);
             const coupon = code ? await Coupon.findOne({ code }) : null;
             if (!coupon) return res.status(404).json({ error: 'Coupon not found.' });
+            let lemonDeletedCount = 0;
             if (coupon.lemonSqueezyDiscountId) {
-                await deleteLemonSqueezyDiscount(coupon.lemonSqueezyDiscountId);
+                lemonDeletedCount += await deleteLemonSqueezyDiscount(coupon.lemonSqueezyDiscountId) ? 1 : 0;
             }
+            lemonDeletedCount += await deleteLemonSqueezyDiscountsByCode(coupon.code);
             await Coupon.deleteOne({ _id: coupon._id });
             await recordAdminAuditLog({
                 actorId: currentUserId(req),
@@ -365,6 +367,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 targetLabel: coupon.label,
                 metadata: {
                     lemonSqueezyDiscountId: coupon.lemonSqueezyDiscountId || '',
+                    lemonDeletedCount,
                     appliesTo: coupon.appliesTo || [],
                 },
                 ip: req.ip,
