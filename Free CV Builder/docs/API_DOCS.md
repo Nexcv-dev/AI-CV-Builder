@@ -61,22 +61,30 @@ PDF generation requires authentication and is subject to quota, plan, and premiu
 | --- | --- | --- |
 | `GET` | `/api/billing/plans` | Return public billing plan configuration. |
 | `POST` | `/api/billing/quote` | Quote a plan/coupon combination. |
+| `GET` | `/api/billing/featured-coupon` | Return the current public coupon for monthly/quarterly pricing banners when one is active and under its redemption limit. |
 | `POST` | `/api/billing/payhere-checkout` | Create PayHere checkout data for the authenticated user. |
+| `POST` | `/api/billing/lemonsqueezy-checkout` | Create a Lemon Squeezy global/USD checkout URL for the authenticated user. |
+| `GET` | `/api/billing/checkout/:orderId/status` | Poll checkout status after returning from a payment provider. |
+| `POST` | `/api/billing/checkout/:orderId/cancel` | Mark a pending checkout as cancelled after a provider cancel/back action. |
 | `POST` | `/api/billing/activate` | Deprecated, admin-restricted, and disabled; normal users receive `403`, admins receive `410`. Paid plans are activated only by verified PayHere IPN processing. |
 | `POST` | `/api/payhere/ipn` | PayHere Instant Payment Notification webhook. |
+| `POST` | `/api/lemonsqueezy/webhook` | Lemon Squeezy order webhook for global/USD plan activation. |
 
 Do not wrap `/api/payhere/ipn` in session authentication. It must be reachable by PayHere and verified by signature/merchant data.
+Do not wrap `/api/lemonsqueezy/webhook` in session authentication. It must be reachable by Lemon Squeezy and verified by webhook signature.
 Do not activate a paid plan from browser-submitted plan, order, or transaction data.
+
+Billing plan keys are `payg`, `monthly`, and `quarterly`. Public labels are Single CV Pass, Monthly Pro, and Pro Quarterly. PayHere handles local LKR checkout, and Lemon Squeezy handles global USD checkout. Local PayHere quote amounts are rounded to whole rupees before the gateway payload is signed, while USD quotes keep cents. Coupon quotes are validated against plan scope, active dates, and maximum redemption count.
 
 ## Admin Routes
 
-Admin routes require an authenticated admin user and the relevant permission. In production, `ADMIN_ALLOWED_IPS` can block access before route handling.
+Admin API routes require an authenticated admin user, the relevant permission, and `ADMIN_ALLOWED_IPS` configured with the caller's source IP. The `/admin` React route may still be served so public users see the branded app 404 instead of a plain server 404; admin data remains behind `/api/admin/*`.
 
 ### Admin Summary
 
 | Method | Path | Permission | Purpose |
 | --- | --- | --- | --- |
-| `GET` | `/api/admin/summary` | `dashboard.read` | Dashboard totals and health summaries. |
+| `GET` | `/api/admin/summary` | `dashboard.read` | Dashboard totals, health summaries, and LKR/USD revenue overview. |
 
 ### Users And Roles
 
@@ -102,7 +110,7 @@ Admin routes require an authenticated admin user and the relevant permission. In
 
 | Method | Path | Permission | Purpose |
 | --- | --- | --- | --- |
-| `GET` | `/api/admin/billing/config` | `billing.read` | Billing plans and coupon config. |
+| `GET` | `/api/admin/billing/config` | `billing.read` | Billing plans, promotions, coupons, and provider config. |
 | `PATCH` | `/api/admin/billing/plans/:plan` | `billing.write` | Update plan settings. |
 | `POST` | `/api/admin/billing/coupons` | `billing.write` | Create a coupon. |
 | `PATCH` | `/api/admin/billing/coupons/:code` | `billing.write` | Update a coupon. |

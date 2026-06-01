@@ -180,9 +180,26 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             if (!key) return res.status(400).json({ error: 'Invalid template key.' });
             const setting = await TemplateSetting.findOne({ key, source: 'custom', thumbnailS3Key: { $exists: true, $ne: '' } });
             if (!setting?.thumbnailS3Key) return res.status(404).json({ error: 'Template thumbnail not found.' });
-            const response = await getS3ObjectStream(setting.thumbnailS3Key);
+            const currentPrefix = S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key;
+            const storedPrefix = setting.s3Prefix || '';
+            const thumbnailKeys = [
+                `${currentPrefix}/thumbnail.webp`,
+                storedPrefix ? `${storedPrefix}/thumbnail.webp` : '',
+                setting.thumbnailS3Key,
+            ].filter((item, index, list) => item && list.indexOf(item) === index);
+
+            let response: any = null;
+            for (const thumbnailKey of thumbnailKeys) {
+                try {
+                    response = await getS3ObjectStream(thumbnailKey);
+                    if (response) break;
+                } catch (error: any) {
+                    const code = error?.name || error?.Code || error?.code;
+                    if (code !== 'NoSuchKey' && code !== 'NotFound' && error?.$metadata?.httpStatusCode !== 404) throw error;
+                }
+            }
             if (!response) return res.status(404).json({ error: 'Template thumbnail not configured.' });
-            res.setHeader('Content-Type', response.ContentType || 'image/svg+xml');
+            res.setHeader('Content-Type', response.ContentType || 'image/webp');
             res.setHeader('Cache-Control', 'public, max-age=3600');
             if (response.Body && typeof (response.Body as any).pipe === 'function') {
                 return (response.Body as any).pipe(res);

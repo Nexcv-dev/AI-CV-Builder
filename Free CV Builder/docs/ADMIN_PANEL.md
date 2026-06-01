@@ -7,16 +7,16 @@ The NexCV admin panel is the protected operations area for platform owners and s
 - Admins must be authenticated.
 - Initial owner access comes from `SUPER_ADMIN_EMAILS`.
 - Role and permission checks are enforced through `requireAdminPermission(...)`.
-- Production admin access can be hidden from untrusted networks with `ADMIN_ALLOWED_IPS`.
+- Production admin API access can be restricted to trusted networks with `ADMIN_ALLOWED_IPS`.
 - Important state changes should create admin audit log entries.
 
-Local development usually leaves `ADMIN_ALLOWED_IPS` empty. In production, set it to trusted public IPv4/IPv6 addresses only. If `/admin` shows the branded 404 page, the IP allowlist is either missing or the current public IP is not allowed; this is intentional so the admin page is hidden from untrusted networks.
+Local development usually leaves `ADMIN_ALLOWED_IPS` empty only when admin API calls are not being exercised. In production, set it to trusted public IPv4/IPv6 addresses only. The `/admin` page itself is served by the React app so unknown public paths can show the branded React 404 page instead of plain server text; `/api/admin/*` still requires an authenticated admin, the relevant permission, and an allowed source IP.
 
 ## Core Modules
 
 ### Overview
 
-The overview shows operational summaries such as user counts, CV activity, payment health, and service readiness. The backing API is `GET /api/admin/summary`.
+The overview shows operational summaries such as user counts, CV activity, payment health, service readiness, and revenue split by currency. The backing API is `GET /api/admin/summary`.
 
 ### Users
 
@@ -62,6 +62,22 @@ Admins can:
 - Review payment transactions.
 - Support users after PayHere IPN or Lemon Squeezy webhook failures.
 - Review LKR PayHere revenue and USD Lemon Squeezy revenue separately.
+
+Supported paid plans are:
+
+- `payg` - Single CV Pass, 7 days.
+- `monthly` - Monthly Pro, 30 days.
+- `quarterly` - Pro Quarterly, 90 days.
+
+Old saved display labels such as `Pay As You Go` and `Monthly` are normalized to the current public labels when plan copy is rendered.
+
+Promotions can be attached to plan prices, and coupons can be limited by plan and maximum redemptions. The `Monthly + Quarterly` coupon target maps to `monthly` and `quarterly`, which is used for first-user campaigns such as a 25-use launch coupon. Featured public coupons are exposed to the landing/pricing flows and can be deep-linked into checkout with `?coupon=CODE`.
+
+PayHere local LKR checkouts round the final gateway amount to a whole rupee and send the value in PayHere's expected decimal format, for example `3749.00`. The rounded amount is also stored on the checkout session so IPN amount validation matches the gateway charge.
+
+Lemon Squeezy global USD checkouts use Lemon Squeezy variant prices. If an app coupon is intended for global users, create the matching discount code in Lemon Squeezy as well and pass/apply the same code at checkout; otherwise the webhook amount check can reject a payment because Lemon Squeezy charged the undiscounted variant price.
+
+Admin summary and billing views report revenue by actual or inferred currency. If an older payment record is missing `currency`, provider fallback is used: Lemon Squeezy is treated as USD and PayHere as LKR.
 
 Relevant APIs:
 
@@ -113,10 +129,13 @@ Before production launch:
 
 - Configure `SUPER_ADMIN_EMAILS`.
 - Configure `SESSION_SECRET`.
-- Decide whether `ADMIN_ALLOWED_IPS` is required.
+- Configure `ADMIN_ALLOWED_IPS` with trusted public admin IPs.
 - Verify role permissions with a non-owner admin account.
 - Test billing updates and coupon creation in sandbox.
 - Test PayHere local-market checkout and Lemon Squeezy global-market checkout in sandbox/test mode.
+- Test Single CV Pass, Monthly Pro, and Pro Quarterly plan activation.
+- Test local featured coupons on both landing/pricing pages and checkout.
+- Confirm admin revenue overview and billing report LKR and USD separately.
 - Test template publish/archive flow with one non-critical template.
 - Test email delivery through the admin test-email endpoint.
 - Test password reset, OTP verification, payment receipt, and support reply emails after changing sender/domain settings.

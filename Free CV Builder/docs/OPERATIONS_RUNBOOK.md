@@ -44,6 +44,8 @@ Symptoms:
 - User paid but plan did not upgrade.
 - Checkout transaction stays pending.
 - IPN endpoint logs signature or merchant errors.
+- PayHere shows "Unauthorized payment request" before card entry.
+- PayHere card screen shows a decline such as "Unknown card".
 
 Diagnosis:
 
@@ -52,6 +54,9 @@ Diagnosis:
 - Confirm PayHere can reach the deployed public URL.
 - Confirm `PAYHERE_MERCHANT_ID` and `PAYHERE_MERCHANT_SECRET`.
 - Confirm `PAYHERE_NOTIFY_URL` points to `/api/payhere/ipn`.
+- Confirm sandbox checkouts use sandbox merchant credentials, sandbox checkout URL, and PayHere sandbox test cards. Sandbox rejects normal live cards.
+- Confirm live checkouts use live merchant credentials and the live checkout URL.
+- Confirm the checkout payload amount is a rounded LKR amount in PayHere's decimal format, for example `3749.00`.
 
 Resolution:
 
@@ -59,6 +64,8 @@ Resolution:
 - Fix merchant credentials or notify URL.
 - Review failed/pending transactions in admin billing.
 - Keep a reconciliation note for later cleanup.
+- For "Unknown card", test with a PayHere-supported card or PayHere sandbox test card before changing app code.
+- For duplicate cancel/back toasts, confirm the checkout URL is cleaned after handling `payment=cancel`.
 
 ## Lemon Squeezy Payments Not Activating
 
@@ -75,7 +82,9 @@ Diagnosis:
 - Confirm the webhook URL is `https://your-domain.example/api/lemonsqueezy/webhook`.
 - Confirm `LEMON_SQUEEZY_WEBHOOK_SECRET` matches the Lemon Squeezy webhook signing secret.
 - Confirm `LEMON_SQUEEZY_STORE_ID` and variant IDs are numeric and from the same test/live store.
+- Confirm `LEMON_SQUEEZY_PAYG_VARIANT_ID`, `LEMON_SQUEEZY_MONTHLY_VARIANT_ID`, and `LEMON_SQUEEZY_QUARTERLY_VARIANT_ID` are all set.
 - Confirm the checkout was started from the same environment users return to. Localhost tests need `FRONTEND_URL=http://localhost:3000`; production tests need the production domain.
+- If the user used an app coupon, confirm the same discount code exists and is active in Lemon Squeezy with matching value and eligible variants. Otherwise Lemon Squeezy can charge the full variant price while the app expects a discounted amount.
 
 Resolution:
 
@@ -88,7 +97,8 @@ Resolution:
 
 Symptoms:
 
-- Admin receives 403/404.
+- Admin receives 403/404 from admin API calls.
+- A public user sees the branded React 404 page for an unknown route.
 - Admin pages do not load, but public site works.
 
 Diagnosis:
@@ -99,6 +109,7 @@ Diagnosis:
 - Check `ADMIN_ALLOWED_IPS` in production.
 - Confirm the user's current public IP.
 - Confirm the app is resolving real client IPs through the host/proxy. Render should work with Express `trust proxy`; the allowlist must contain the public client IP, not an internal container IP.
+- Remember that `/admin` page serving and `/api/admin/*` data access are separate. The React page can load, while admin API calls can still return 403 if the IP allowlist is missing or does not include the caller.
 
 Resolution:
 
@@ -147,6 +158,8 @@ If the database is down, app-level maintenance mode may not be available. Use ho
 - Search logs for `mongodb.connection_failed` after deploys or environment changes.
 - Take a manual snapshot before risky data operations.
 - Review failed PayHere transactions.
+- Reconcile Admin Dashboard and Billing revenue by currency. Older payment rows with missing `currency` should be inferred by provider: PayHere as LKR and Lemon Squeezy as USD.
+- Review featured coupons for active dates, max redemptions, and monthly/quarterly scope.
 - Review failed email/PDF logs.
 - Validate templates before release.
 - Export audit logs externally if longer retention is required.

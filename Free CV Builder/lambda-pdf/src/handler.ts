@@ -25,12 +25,12 @@ const DOMPurify = {
 };
 
 const CV_TEMPLATES = [
-  { key: 'classic', label: 'Classic', image: '/templates/classic.png', access: 'free', surfaceColorRole: 'none' },
-  { key: 'modern', label: 'Modern', image: '/templates/modern.png', access: 'paid', surfaceColorRole: 'sidebar', surfaceColorLabel: 'Sidebar Background' },
-  { key: 'professional', label: 'Professional', image: '/templates/professional.png', access: 'paid', surfaceColorRole: 'none' },
-  { key: 'timeline', label: 'Timeline', image: '/templates/timeline.svg', access: 'paid', surfaceColorRole: 'none' },
-  { key: 'minimalist', label: 'Minimalist', image: '/templates/minimalist.svg', access: 'paid', surfaceColorRole: 'none' },
-  { key: 'startup', label: 'Startup', image: '/templates/startup.svg', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Header Background' },
+  { key: 'classic', label: 'Classic', image: '/templates/classic.webp', access: 'free', surfaceColorRole: 'none' },
+  { key: 'modern', label: 'Modern', image: '/templates/modern.webp', access: 'paid', surfaceColorRole: 'sidebar', surfaceColorLabel: 'Sidebar Background' },
+  { key: 'professional', label: 'Professional', image: '/templates/professional.webp', access: 'paid', surfaceColorRole: 'none' },
+  { key: 'timeline', label: 'Timeline', image: '/templates/timeline.webp', access: 'paid', surfaceColorRole: 'none' },
+  { key: 'minimalist', label: 'Minimalist', image: '/templates/minimalist.webp', access: 'paid', surfaceColorRole: 'none' },
+  { key: 'startup', label: 'Startup', image: '/templates/startup.webp', access: 'paid', surfaceColorRole: 'header', surfaceColorLabel: 'Header Background' },
 ] as const;
 
 type TemplateName = (typeof CV_TEMPLATES)[number]['key'];

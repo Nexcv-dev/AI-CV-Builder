@@ -1,6 +1,6 @@
 # Roadmap
 
-This roadmap tracks recommended next work before and shortly after launch. Keep it aligned with the current architecture: React/Vite frontend, Express route modules, MongoDB models, PayHere checkout/IPN, S3-backed templates, Lambda/local PDF rendering, email delivery, and modular admin pages.
+This roadmap tracks recommended next work before and shortly after launch. Keep it aligned with the current architecture: React/Vite frontend, Express route modules, MongoDB models, PayHere checkout/IPN, Lemon Squeezy checkout/webhooks, S3-backed templates, Lambda/local PDF rendering, email delivery, and modular admin pages.
 
 ## Current Focus
 
@@ -12,14 +12,14 @@ This roadmap tracks recommended next work before and shortly after launch. Keep 
 ## Must Have Before Launch
 
 1. Observability: structured server logs, uptime checks, error tracking, and alerts for failed payments, failed PDFs, failed email, and MongoDB connection issues.
-2. Payment hardening: PayHere IPN idempotency/replay review, checkout reconciliation, failed-payment visibility, receipt history, and cleanup for expired pending checkouts.
+2. Payment hardening: PayHere IPN and Lemon Squeezy webhook idempotency/replay review, checkout reconciliation, failed-payment visibility, receipt history, currency-aware revenue reporting, and cleanup for expired pending checkouts.
 3. Admin security: documented `ADMIN_ALLOWED_IPS` process, role audit, optional 2FA plan, suspicious-login alerting, and long-term audit export if required.
 4. Data lifecycle: account export/delete verification, CV deletion policy, S3 orphan cleanup, MongoDB index review, and backup/restore drill.
 5. Production QA: end-to-end coverage for signup/login, email verification, builder save, PDF download, checkout sandbox/live flow, admin permissions, template publish/archive, support replies, and maintenance mode.
 
 ## Should Have Soon After Launch
 
-1. Analytics improvements: date filters, exports, checkout funnel by plan, template conversion tracking, retention metrics, and revenue by coupon.
+1. Analytics improvements: date filters, exports, checkout funnel by plan/provider/currency, template conversion tracking, retention metrics, and revenue by coupon.
 2. Template operations: visual preview before publish, version history, rollback, thumbnail regeneration, and PDF/mobile validation previews.
 3. Support workflow: ticket assignment, internal notes, reply history, canned replies, SLA state, email thread correlation, and support analytics.
 4. Performance: route/component splitting, image optimization, cache/CDN strategy, Core Web Vitals, and bundle-size review.

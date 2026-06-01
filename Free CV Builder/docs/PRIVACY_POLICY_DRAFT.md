@@ -11,7 +11,7 @@ NexCV may collect:
 - Account information such as name, email address, password hash, Google OAuth identity details, role, plan, and verification status.
 - CV content entered into the builder, including personal details, education, work history, skills, projects, languages, references, rich-text descriptions, and profile images.
 - Saved CV document metadata, selected templates, design settings, and download activity.
-- Billing and checkout records such as selected plan, coupon use, PayHere transaction references, payment status, and quota state. NexCV does not store card numbers.
+- Billing and checkout records such as selected plan, coupon use, PayHere transaction references, Lemon Squeezy order/webhook references, payment status, currency, provider, and quota state. NexCV does not store card numbers.
 - Support/contact information submitted through support tickets or contact forms.
 - Technical and usage information such as session data, IP address, browser details, route activity, audit logs, and operational logs.
 
@@ -40,7 +40,8 @@ NexCV may use:
 - MongoDB for application data storage.
 - AWS S3 for template assets and related files.
 - AWS Lambda or compatible infrastructure for PDF rendering.
-- PayHere for payment checkout and IPN notifications.
+- PayHere for local/LKR payment checkout and IPN notifications.
+- Lemon Squeezy for global/USD payment checkout and order webhooks.
 - SMTP, Gmail, or Resend for email delivery.
 - Google OAuth for sign-in.
 - Google Gemini for AI features.

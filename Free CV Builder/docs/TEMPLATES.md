@@ -26,7 +26,7 @@ Admin Templates/
   template-key/
     index.html
     style.css
-    thumbnail.svg
+    thumbnail.webp
 ```
 
 Template folders should use lowercase letters, numbers, and hyphens.
@@ -37,31 +37,57 @@ Each custom template contains:
 
 - `index.html` - Mustache-style placeholders and layout.
 - `style.css` - screen and print styling.
-- `thumbnail.*` - card/admin thumbnail.
+- `thumbnail.webp` - card/admin thumbnail generated from the rendered template so users see the real CV layout.
 - Metadata - name, key, premium status, status, profile-image settings, and colors.
 
 Data is normalized before rendering, then injected into the template HTML. CSS is loaded alongside the HTML for preview and export.
+
+## Thumbnail Generation
+
+Template thumbnails are generated locally by rendering real CV HTML in Chrome and saving WebP screenshots. This is faster and more accurate than hand-drawing SVG previews.
+
+```bash
+cd "Free CV Builder"
+npm run templates:thumbnails
+```
+
+Output locations:
+
+- Built-in template thumbnails are saved to `public/templates/*.webp`.
+- Admin template thumbnails are saved to `../Admin Templates/<template-folder>/thumbnail.webp`.
+
+The generator uses sample CV data and the template renderer. For admin/S3 templates, keep `themeColor` at the default `#000000` sentinel so the thumbnail uses the template's `defaultThemeColor` from `config/template-release-map.json`. This keeps thumbnails aligned with each template's default color palette.
+
+You can upload the generated `thumbnail.webp` manually through the admin panel, or use the S3 release command below.
 
 ## Admin Lifecycle
 
 Typical flow:
 
 1. Create or edit a folder in `Admin Templates/`.
-2. Run validation.
-3. Preview desktop/mobile and PDF behavior.
-4. Dry-run template release.
-5. Release to the managed template system.
-6. Publish from admin when ready.
+2. Generate `thumbnail.webp`.
+3. Run validation.
+4. Preview desktop/mobile and PDF behavior.
+5. Dry-run template release.
+6. Release to the managed template system.
+7. Sync thumbnail metadata.
+8. Publish from admin when ready.
 
 Commands:
 
 ```bash
 cd "Free CV Builder"
+npm run templates:thumbnails
 npm run validate:template-map
 npm run validate:templates
 npm run templates:release:dry-run
 npm run templates:release
+npm run templates:sync-thumbnails
 ```
+
+`templates:release` uploads `index.html`, `style.css`, and `thumbnail.webp` for templates listed in `config/template-release-map.json`.
+
+`templates:sync-thumbnails` updates MongoDB `TemplateSetting` records so public template cards point at the current WebP thumbnails. Run it after S3 upload, especially when replacing old PNG/SVG thumbnails or changing cache-bust URLs.
 
 ## S3 Storage
 
@@ -75,6 +101,14 @@ S3_TEMPLATE_CACHE_TTL_MS=300000
 ```
 
 `TEMPLATE_BUCKET_NAME` is also supported as a fallback name for the bucket in backend services.
+
+With `S3_TEMPLATE_PREFIX=admin-cv-templates`, uploaded custom template assets use keys like:
+
+```text
+admin-cv-templates/modular-card/index.html
+admin-cv-templates/modular-card/style.css
+admin-cv-templates/modular-card/thumbnail.webp
+```
 
 ## Safety Rules
 

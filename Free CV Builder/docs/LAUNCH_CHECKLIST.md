@@ -14,7 +14,7 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 - `FRONTEND_URL`, `ALLOWED_ORIGIN`, and public API/host URLs match the live domains.
 - `MONGODB_URI` points to a production replica set or managed cluster with backups enabled.
 - `SUPER_ADMIN_EMAILS` contains only launch owners.
-- `ADMIN_ALLOWED_IPS` is set to trusted public admin IPs if admin access should be network-restricted.
+- `ADMIN_ALLOWED_IPS` is set to trusted public admin IPs so `/api/admin/*` routes can be used by admins.
 - `GEMINI_API_KEY`, email provider credentials, PayHere credentials, Lemon Squeezy credentials, S3 bucket, and PDF Lambda URL are configured.
 - `LEMON_SQUEEZY_STORE_ID`, `LEMON_SQUEEZY_PAYG_VARIANT_ID`, `LEMON_SQUEEZY_MONTHLY_VARIANT_ID`, and `LEMON_SQUEEZY_QUARTERLY_VARIANT_ID` are numeric IDs from the same test/live store.
 
@@ -23,12 +23,17 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 - PayHere sandbox checkout has been tested end to end.
 - PayHere live checkout URL and merchant credentials are configured only after sandbox validation.
 - `PAYHERE_NOTIFY_URL` points to the deployed `/api/payhere/ipn` endpoint.
+- PayHere LKR checkout amounts show whole-rupee totals such as `3749.00`, and IPN amount validation still passes.
 - Lemon Squeezy test checkout has been tested end to end for global/USD users.
 - Lemon Squeezy webhook points to `/api/lemonsqueezy/webhook` and webhook resend works after a simulated failure.
-- Admin Billing shows processed payments, pending checkouts, expired checkouts, and failed/unprocessed payment notifications with LKR PayHere and USD Lemon Squeezy revenue separated.
+- Lemon Squeezy dashboard has variants for Single CV Pass, Monthly Pro, and Pro Quarterly.
+- Any public coupon used for global/USD checkout has a matching Lemon Squeezy discount code with the same value and eligible variants.
+- Admin Dashboard and Admin Billing show processed payments, pending checkouts, expired checkouts, and failed/unprocessed payment notifications with LKR PayHere and USD Lemon Squeezy revenue separated.
 - Duplicate PayHere IPNs do not create duplicate user credits or duplicate coupon redemptions.
 - Duplicate Lemon Squeezy webhooks do not create duplicate user credits or duplicate coupon redemptions.
 - A failed/cancelled PayHere notification appears as unprocessed for admin review.
+- PayHere cancel/back flow shows one cancellation toast and leaves the user on checkout with loading state reset.
+- Public landing and pricing pages show the featured monthly/quarterly coupon only while it is active and under its max redemption count.
 
 ## PDF And Templates
 
@@ -45,6 +50,8 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 - Account deletion removes the user's saved CV documents and user record.
 - Saved CV deletion works from dashboard/profile flows.
 - Admin roles are reviewed for least privilege.
+- `/admin` and unknown public paths render the branded React 404 page instead of plain server text.
+- Paid users do not see the dashboard upgrade card while dashboard user state is still loading.
 - Admin audit logs are created for sensitive billing, role, template, support, and settings changes.
 - Long-term audit export is arranged if compliance or business policy requires it.
 
@@ -67,8 +74,8 @@ Run this after deploy, before public announcement:
 4. Generate one free PDF.
 5. Complete one local/LKR paid checkout through PayHere.
 6. Complete one global/USD paid checkout through Lemon Squeezy.
-7. Confirm each paid plan unlocks premium export.
+7. Confirm Single CV Pass, Monthly Pro, and Pro Quarterly each unlock premium export.
 8. Open admin summary, settings, users, templates, billing, support, and audit pages.
-9. Confirm admin Billing has no unexpected failed payments or old pending checkouts.
+9. Confirm admin Dashboard and Billing show separate LKR and USD revenue, including date-wise rows.
 10. Send a support/contact message and confirm notification delivery.
 11. Toggle maintenance mode in a controlled window, verify public behavior, then disable it.

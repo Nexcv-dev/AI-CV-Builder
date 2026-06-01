@@ -35,7 +35,7 @@ The backend entrypoint is `server.ts`. Route modules live under `routes/`.
 
 - `routes/auth.ts` - signup, login, logout, Google OAuth, email verification, password reset, profile updates, and account deletion.
 - `routes/cv.ts` - saved CV documents, AI parsing/generation/refinement, and PDF export.
-- `routes/payment.ts` - billing plans, PayHere quote/checkout/IPN, and plan activation.
+- `routes/payment.ts` - billing plans, public featured coupons, PayHere quote/checkout/IPN, Lemon Squeezy checkout/webhook, checkout status, and plan activation.
 - `routes/public.ts` - health, public settings, templates, template HTML/thumbnail, support tickets, and contact form.
 - `routes/admin/*` - admin dashboard, users, templates, support, billing, settings, roles, and audit logs.
 
@@ -52,7 +52,7 @@ MongoDB stores:
 
 - Users, roles, email verification, password reset, and OAuth identity data.
 - CV documents owned by authenticated users.
-- Billing plans, checkout sessions, payment transactions, coupons, and quota state.
+- Billing plans, checkout sessions, payment transactions, coupons, promotions, and quota state.
 - Template settings and metadata.
 - Support tickets.
 - App settings and CMS-like public content.
@@ -86,8 +86,9 @@ The Lambda implementation lives in `lambda-pdf/` and can fetch template assets f
 - Helmet and CORS are configured in `middlewares/security.ts`.
 - Authentication-sensitive routes use rate limiters.
 - Admin routes are protected by role/permission checks.
-- `ADMIN_ALLOWED_IPS` can hide admin routes from untrusted IPs in production.
-- PayHere IPN verification is centralized in `server-utils/payHere.ts`.
+- `ADMIN_ALLOWED_IPS` restricts `/api/admin/*` routes from untrusted IPs in production. The React `/admin` page can still be served so unknown public paths use the branded app 404 instead of plain server text.
+- PayHere amount formatting, hash/signature helpers, local LKR rounding, and IPN verification are centralized in `server-utils/payHere.ts`.
+- Lemon Squeezy checkout creation and webhook signature verification are centralized in `server-utils/lemonSqueezy.ts`.
 - Admin state changes should be audit logged.
 
 ## Deployment Model
