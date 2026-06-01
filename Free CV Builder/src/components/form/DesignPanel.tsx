@@ -202,6 +202,14 @@ export const DesignPanel = React.memo(({ templateDefaultThemeColor, isDarkMode, 
             <div className="space-y-5">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
+                  <label htmlFor="textScale" className={`text-xs font-semibold flex items-center gap-2 uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}><Type size={14} /> Text Size</label>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded border ${isDarkMode ? 'text-violet-300 bg-violet-900/40 border-violet-800/50' : 'text-violet-600 bg-violet-50 border-violet-100'}`}>{Math.round((cvData.textScale || 1) * 100)}%</span>
+                </div>
+                <input id="textScale" name="textScale" type="range" min="0.85" max="1.2" step="0.01" value={cvData.textScale || 1} onChange={(e) => setCvData(prev => ({ ...prev, textScale: parseFloat(e.target.value) }))} className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-violet-600 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                <div className={`flex justify-between text-[10px] font-bold uppercase tracking-tighter ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}><span>Small</span><span>Large</span></div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
                   <label htmlFor="lineSpacing" className={`text-xs font-semibold flex items-center gap-2 uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}><MoveVertical size={14} /> Line Spacing</label>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded border ${isDarkMode ? 'text-violet-300 bg-violet-900/40 border-violet-800/50' : 'text-violet-600 bg-violet-50 border-violet-100'}`}>{cvData.lineSpacing || 1.5}</span>
                 </div>

@@ -3,7 +3,7 @@ import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import * as dotenv from 'dotenv';
 import { injectCvTemplatePaginationRules } from '../src/utils/cvTemplateRules';
-import { prepareS3TemplateData, profileImageCss } from '../src/utils/templateData';
+import { prepareS3TemplateData, profileImageCss, scaleCssFontSizes } from '../src/utils/templateData';
 
 dotenv.config();
 
@@ -216,7 +216,8 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
         ));
     };
 
-    return injectCvTemplatePaginationRules(applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style));
+    const renderedHtml = applyProfileImageAdjustments(renderBlock(templateHtml, root), profileImageUrl, imageCss.style);
+    return injectCvTemplatePaginationRules(scaleCssFontSizes(renderedHtml, rootData?.computed?.textScale));
 }
 
 export async function generateS3CVHTML(cvData: any, template: string, options: { watermark?: boolean } = {}) {

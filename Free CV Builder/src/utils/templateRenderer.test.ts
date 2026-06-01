@@ -110,6 +110,16 @@ describe('renderCvTemplateString', () => {
     expect(html).not.toContain('#fca311');
   });
 
+  it('scales template font-size declarations for live preview rendering', () => {
+    const html = renderCvTemplateString('<style>h1 { font-size: 24px; } p { font-size:0.875rem; }</style>', {
+      ...cvData,
+      textScale: 1.1,
+    });
+
+    expect(html).toContain('font-size: calc(24px * 1.1)');
+    expect(html).toContain('font-size:calc(0.875rem * 1.1)');
+  });
+
   it('does not render ghost position text for empty experience titles', () => {
     const html = renderCvTemplateString('{{#experience}}<h3>{{position}}</h3>{{/experience}}', {
       ...cvData,

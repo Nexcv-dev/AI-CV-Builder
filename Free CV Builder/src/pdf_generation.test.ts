@@ -105,6 +105,16 @@ describe('PDF HTML Generation', () => {
     expect(html).toContain('margin-bottom:0.5rem');
   });
 
+  it('applies text size scaling to generated PDF HTML', () => {
+    const html = generateCVHTML({
+      ...mockCVData,
+      textScale: 1.12,
+    }, 'classic');
+
+    expect(html).toContain('font-size:calc(0.875rem * 1.12)');
+    expect(html).toContain('font-size:calc(2.25rem * 1.12)');
+  });
+
   it('handles empty sections gracefully', () => {
     const emptyData = {
       ...mockCVData,

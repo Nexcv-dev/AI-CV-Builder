@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ATS Two Column Compact Preview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #f2f4f7;
+        color: #1f2937;
+        font-family: "Inter", "Segoe UI", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 24px auto;
+        background: #ffffff;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
+      }
+
+      .inner {
+        padding: 15mm 16mm 16mm;
+      }
+
+      .header {
+        padding-bottom: 8mm;
+        border-bottom: 2px solid #0f766e;
+      }
+
+      h1 {
+        margin: 0;
+        color: #111827;
+        font-size: 31px;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .role {
+        margin: 7px 0 0;
+        color: #0f766e;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .contact {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        margin-top: 9px;
+        color: #4b5563;
+        font-size: 10.8px;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .contact span:not(:last-child)::after {
+        content: "";
+        display: inline-block;
+        width: 4px;
+        height: 4px;
+        margin-left: 12px;
+        border-radius: 999px;
+        background: #0f766e;
+        vertical-align: middle;
+      }
+
+      .body-grid {
+        display: grid;
+        grid-template-columns: 64% 1fr;
+        gap: 10mm;
+        margin-top: 8mm;
+      }
+
+      .section {
+        margin-top: 8mm;
+      }
+
+      .section:first-child {
+        margin-top: 0;
+      }
+
+      h2 {
+        margin: 0 0 8px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #d1d5db;
+        color: #111827;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        line-height: 1.2;
+        text-transform: uppercase;
+      }
+
+      h3 {
+        margin: 0;
+        color: #111827;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.32;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .summary {
+        color: #374151;
+        font-size: 11.5px;
+        font-weight: 400;
+        line-height: 1.6;
+      }
+
+      .entry {
+        margin-bottom: 11px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .entry:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .entry-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 4px;
+      }
+
+      .organization {
+        margin-top: 2px;
+        color: #0f766e;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .date {
+        flex: 0 0 27mm;
+        margin-top: 1px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.35;
+        text-align: right;
+      }
+
+      .description {
+        color: #374151;
+        font-size: 10.8px;
+        line-height: 1.52;
+      }
+
+      ul {
+        margin: 5px 0 0;
+        padding-left: 16px;
+      }
+
+      li {
+        margin-bottom: 3px;
+      }
+
+      .keyword-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .keyword-list span {
+        display: inline-block;
+        padding: 4px 7px;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        color: #374151;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.25;
+      }
+
+      .side-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .side-item {
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e7eb;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .side-item:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .side-item h3 {
+        font-size: 11.5px;
+      }
+
+      .side-item p,
+      .language-line {
+        margin-top: 3px;
+        color: #4b5563;
+        font-size: 10.5px;
+        font-weight: 600;
+        line-height: 1.42;
+      }
+
+      .tool-line {
+        color: #374151;
+        font-size: 10.8px;
+        font-weight: 600;
+        line-height: 1.55;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+        }
+
+        .page {
+          margin: 0;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="inner">
+        <header class="header">
+          <h1>Avishka Jayawardena</h1>
+          <p class="role">Accounts Executive</p>
+          <div class="contact">
+            <span>avishka.j@email.com</span>
+            <span>+94 77 908 1122</span>
+            <span>Gampaha, Sri Lanka</span>
+            <span>linkedin.com/in/avishkaj</span>
+          </div>
+        </header>
+
+        <div class="body-grid">
+          <main>
+            <section class="section">
+              <h2>Professional Summary</h2>
+              <p class="summary">
+                Detail-focused accounts professional with 4+ years of experience in invoice processing, bank
+                reconciliation, payment follow-up, vendor coordination, and month-end reporting. Strong working
+                knowledge of accounting software, spreadsheet controls, and accurate documentation practices.
+              </p>
+            </section>
+
+            <section class="section">
+              <h2>Professional Experience</h2>
+              <article class="entry">
+                <div class="entry-top">
+                  <div>
+                    <h3>Accounts Executive</h3>
+                    <p class="organization">Ceylon Trade Holdings</p>
+                  </div>
+                  <p class="date">2022 - Present</p>
+                </div>
+                <div class="description">
+                  <ul>
+                    <li>Process supplier invoices, payment vouchers, petty cash records, and monthly expense claims.</li>
+                    <li>Prepare bank reconciliations and assist with month-end closing schedules for management review.</li>
+                    <li>Reduced pending vendor follow-ups by maintaining a shared payment tracker with aging status.</li>
+                  </ul>
+                </div>
+              </article>
+
+              <article class="entry">
+                <div class="entry-top">
+                  <div>
+                    <h3>Finance Assistant</h3>
+                    <p class="organization">Metro Logistics Lanka</p>
+                  </div>
+                  <p class="date">2020 - 2022</p>
+                </div>
+                <div class="description">
+                  <ul>
+                    <li>Maintained customer receipts, supplier statements, purchase orders, and supporting documents.</li>
+                    <li>Assisted the finance team with audit schedules, invoice matching, and weekly cash summaries.</li>
+                  </ul>
+                </div>
+              </article>
+            </section>
+
+            <section class="section">
+              <h2>Education</h2>
+              <article class="entry">
+                <div class="entry-top">
+                  <div>
+                    <h3>Diploma in Accounting and Business</h3>
+                    <p class="organization">ACCA</p>
+                  </div>
+                  <p class="date">2019 - 2021</p>
+                </div>
+              </article>
+            </section>
+
+            <section class="section">
+              <h2>Projects</h2>
+              <article class="entry">
+                <div class="entry-top">
+                  <div>
+                    <h3>Vendor Payment Tracker</h3>
+                    <p class="organization">Finance Process Improvement</p>
+                  </div>
+                  <p class="date">2024</p>
+                </div>
+                <p class="description">
+                  Created an Excel-based tracker for invoice due dates, approvals, payment status, and follow-up
+                  ownership, improving visibility during weekly finance reviews.
+                </p>
+              </article>
+            </section>
+          </main>
+
+          <aside>
+            <section class="section">
+              <h2>Core Skills</h2>
+              <div class="keyword-list">
+                <span>Bank Reconciliation</span>
+                <span>Invoice Processing</span>
+                <span>Accounts Payable</span>
+                <span>Accounts Receivable</span>
+                <span>Petty Cash</span>
+                <span>Month-End Closing</span>
+                <span>Vendor Coordination</span>
+                <span>Financial Reporting</span>
+              </div>
+            </section>
+
+            <section class="section">
+              <h2>Tools</h2>
+              <p class="tool-line">
+                QuickBooks, Sage, Tally, Microsoft Excel, Google Sheets, ERP data entry, PDF documentation,
+                email follow-up, and shared finance trackers.
+              </p>
+            </section>
+
+            <section class="section">
+              <h2>Certifications</h2>
+              <div class="side-list">
+                <article class="side-item">
+                  <h3>Certificate in Business Accounting</h3>
+                  <p>CA Sri Lanka - 2023</p>
+                </article>
+                <article class="side-item">
+                  <h3>Advanced Excel for Finance</h3>
+                  <p>Online Professional Learning - 2022</p>
+                </article>
+              </div>
+            </section>
+
+            <section class="section">
+              <h2>Languages</h2>
+              <p class="language-line"><strong>Sinhala:</strong> Native</p>
+              <p class="language-line"><strong>English:</strong> Professional</p>
+              <p class="language-line"><strong>Tamil:</strong> Conversational</p>
+            </section>
+
+            <section class="section">
+              <h2>Personal Details</h2>
+              <div class="side-list">
+                <article class="side-item">
+                  <h3>Nationality</h3>
+                  <p>Sri Lankan</p>
+                </article>
+                <article class="side-item">
+                  <h3>Availability</h3>
+                  <p>Immediate</p>
+                </article>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

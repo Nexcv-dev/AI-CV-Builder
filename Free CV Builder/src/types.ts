@@ -95,5 +95,6 @@ export interface CVData {
   sectionOrder: string[];
   lineSpacing?: number;
   sectionGap?: number;
+  textScale?: number;
   hiddenSections?: string[];
 }
