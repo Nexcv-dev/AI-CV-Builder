@@ -156,6 +156,10 @@ export interface AdminCoupon {
   expiresAt?: string;
   maxRedemptions?: number | null;
   redeemedCount: number;
+  lemonSqueezyDiscountId?: string;
+  lemonSqueezySyncStatus?: 'synced' | 'not_synced' | 'deleted';
+  lemonSqueezySyncError?: string;
+  lemonSqueezyLastSyncedAt?: string;
 }
 
 export interface AdminBillingPlanDraft {
