@@ -1,15 +1,17 @@
+const TEMPLATE_THUMBNAIL_VERSION = '20260601-modern-fill';
+
 export const CV_TEMPLATES = [
   {
     key: 'classic',
     label: 'Classic',
-    image: '/templates/classic.webp',
+    image: `/templates/classic.webp?v=${TEMPLATE_THUMBNAIL_VERSION}`,
     access: 'free',
     surfaceColorRole: 'none',
   },
   {
     key: 'modern',
     label: 'Modern',
-    image: '/templates/modern.webp',
+    image: `/templates/modern.webp?v=${TEMPLATE_THUMBNAIL_VERSION}`,
     access: 'paid',
     surfaceColorRole: 'sidebar',
     surfaceColorLabel: 'Sidebar Background',
@@ -17,28 +19,28 @@ export const CV_TEMPLATES = [
   {
     key: 'professional',
     label: 'Professional',
-    image: '/templates/professional.webp',
+    image: `/templates/professional.webp?v=${TEMPLATE_THUMBNAIL_VERSION}`,
     access: 'paid',
     surfaceColorRole: 'none',
   },
   {
     key: 'timeline',
     label: 'Timeline',
-    image: '/templates/timeline.svg',
+    image: `/templates/timeline.webp?v=${TEMPLATE_THUMBNAIL_VERSION}`,
     access: 'paid',
     surfaceColorRole: 'none',
   },
   {
     key: 'minimalist',
     label: 'Minimalist',
-    image: '/templates/minimalist.svg',
+    image: `/templates/minimalist.webp?v=${TEMPLATE_THUMBNAIL_VERSION}`,
     access: 'paid',
     surfaceColorRole: 'none',
   },
   {
     key: 'startup',
     label: 'Startup',
-    image: '/templates/startup.svg',
+    image: `/templates/startup.webp?v=${TEMPLATE_THUMBNAIL_VERSION}`,
     access: 'paid',
     surfaceColorRole: 'header',
     surfaceColorLabel: 'Header Background',

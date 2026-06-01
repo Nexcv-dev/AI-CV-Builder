@@ -28,12 +28,29 @@ export const templateThumbnailPath = (key: string, version?: unknown) => (
     `/api/templates/${encodeURIComponent(key)}/thumbnail${version ? `?v=${encodeURIComponent(String(version))}` : ''}`
 );
 
+const isLegacyTemplateThumbnailPath = (value: unknown) => (
+    typeof value === 'string' && /\.(?:png|svg)(?:[?#].*)?$/i.test(value.trim())
+);
+
+const builtInThumbnail = (template: any, setting: any) => {
+    const thumbnail = setting?.thumbnail;
+    return thumbnail && !isLegacyTemplateThumbnailPath(thumbnail) ? thumbnail : template.image;
+};
+
+const customThumbnail = (setting: any) => {
+    const version = setting.updatedAt?.getTime?.() || setting.updatedAt;
+    if (setting.thumbnailS3Key || isLegacyTemplateThumbnailPath(setting.thumbnail)) {
+        return templateThumbnailPath(setting.key, version);
+    }
+    return setting.thumbnail || templateThumbnailPath(setting.key, version);
+};
+
 const builtInTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
     key: template.key,
     label: setting?.label || template.label,
     category: setting?.category || defaultTemplateCategory(template.key),
     access: setting?.access || template.access,
-    thumbnail: setting?.thumbnail || template.image,
+    thumbnail: builtInThumbnail(template, setting),
     builtInThumbnail: template.image,
     surfaceColorRole: setting?.surfaceColorRole || template.surfaceColorRole,
     surfaceColorLabel: setting?.surfaceColorLabel || template.surfaceColorLabel || null,
@@ -49,8 +66,8 @@ export const customTemplateSummary = (setting: any, usageCount = 0) => ({
     label: setting.label || setting.key,
     category: setting.category || defaultTemplateCategory(setting.key),
     access: setting.access || 'paid',
-    thumbnail: setting.thumbnail || templateThumbnailPath(setting.key, setting.updatedAt?.getTime?.() || setting.updatedAt),
-    builtInThumbnail: setting.thumbnail || templateThumbnailPath(setting.key, setting.updatedAt?.getTime?.() || setting.updatedAt),
+    thumbnail: customThumbnail(setting),
+    builtInThumbnail: customThumbnail(setting),
     surfaceColorRole: setting.surfaceColorRole || 'none',
     surfaceColorLabel: setting.surfaceColorLabel || null,
     defaultThemeColor: setting.defaultThemeColor || '#000000',

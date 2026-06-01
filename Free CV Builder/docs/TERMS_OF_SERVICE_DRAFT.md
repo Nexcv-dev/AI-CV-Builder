@@ -29,7 +29,9 @@ When you use AI features, relevant text may be sent to Google Gemini or another 
 
 ## 5. Payments, Plans, And Quotas
 
-- Paid plans and premium features are processed through PayHere or another configured payment provider.
+- Paid plans and premium features are processed through PayHere for local/LKR checkout, Lemon Squeezy for global/USD checkout, or another configured payment provider.
+- Current paid plan labels are Single CV Pass, Monthly Pro, and Pro Quarterly. Plan names, durations, pricing, and promotional offers may change over time.
+- Coupons and promotions may be limited by plan, currency/market, date range, and redemption count.
 - Free and paid usage may be subject to quotas, including CV creation and PDF download limits.
 - Plan activation may depend on successful payment verification.
 - Refund handling should follow the published refund policy and applicable law.

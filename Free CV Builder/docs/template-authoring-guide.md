@@ -11,7 +11,7 @@ Admin Templates/
   my-template-key/
     index.html
     style.css
-    thumbnail.svg
+    thumbnail.webp
 ```
 
 Rules:
@@ -19,7 +19,7 @@ Rules:
 - Use lowercase letters, numbers, and hyphens.
 - Prefer `index.html`, not `index (1).html`.
 - Prefer files at the template folder root, not nested inside another folder.
-- Thumbnail can be `.svg`, `.png`, `.jpg`, `.jpeg`, or `.webp`.
+- Thumbnail should be `thumbnail.webp` generated from the rendered template. The validator still accepts `.svg`, `.png`, `.jpg`, and `.jpeg` for compatibility, but WebP is the release format users should see.
 
 ## Required Files
 
@@ -27,7 +27,7 @@ Rules:
 
 `style.css` contains the visual layout and print rules.
 
-`thumbnail.*` is shown in template cards/admin lists.
+`thumbnail.webp` is shown in template cards/admin lists. Generate it with `npm.cmd run templates:thumbnails`; the file is saved beside the template source as `Admin Templates/<template-folder>/thumbnail.webp`.
 
 ## Mustache Syntax
 
@@ -239,12 +239,14 @@ Rich text is sanitized, but the template itself should still stay simple.
 Run:
 
 ```bash
+npm run templates:thumbnails
 npm run validate:templates
 ```
 
 Or on Windows:
 
 ```powershell
+npm.cmd run templates:thumbnails
 npm.cmd run validate:templates
 ```
 
@@ -260,25 +262,76 @@ npm.cmd run lint
 npm.cmd run test:run
 ```
 
+## Thumbnail Workflow
+
+The thumbnail generator renders each template with sample CV data in Chrome and screenshots the A4 page as WebP. It generates:
+
+- Built-in previews in `public/templates/*.webp`.
+- Admin template previews in `../Admin Templates/<template-folder>/thumbnail.webp`.
+
+For a new admin template, create:
+
+```text
+Admin Templates/
+  my-template-key/
+    index.html
+    style.css
+```
+
+Then run:
+
+```powershell
+cd "Free CV Builder"
+npm.cmd run templates:thumbnails
+```
+
+Run the command from `Free CV Builder/`, not from inside `Admin Templates/my-template-key/`.
+
+The command currently regenerates every thumbnail: all built-in templates plus every folder under `Admin Templates/`. Your new template's output will be saved as:
+
+```text
+Admin Templates/my-template-key/thumbnail.webp
+```
+
+To regenerate only one template, pass its built-in key or admin folder name:
+
+```powershell
+npm.cmd run templates:thumbnails -- --template my-template-key
+```
+
+You can upload the generated `thumbnail.webp` manually in the admin panel. To upload through the command line, add the template to `config/template-release-map.json`, then run:
+
+```powershell
+npm.cmd run templates:release
+npm.cmd run templates:sync-thumbnails
+```
+
+`templates:release` uploads `index.html`, `style.css`, and `thumbnail.webp` to S3.
+
+`templates:sync-thumbnails` updates MongoDB template metadata so the app uses the current WebP thumbnail path.
+
+Admin thumbnails should use each template's default color. The generator keeps `themeColor` at `#000000`, which tells the renderer to use `defaultThemeColor` from `config/template-release-map.json`.
+
 ## Upload Flow
 
 Recommended flow:
 
 1. Create or update the local template folder.
-2. Run `npm.cmd run validate:templates`.
+2. Run `npm.cmd run templates:thumbnails` and `npm.cmd run validate:templates`.
 3. Preview locally in desktop and mobile.
 4. Test Design panel color changes.
-5. Upload one template first.
-6. Verify preview and PDF.
-7. Upload the remaining templates.
+5. Add/update `config/template-release-map.json` if using command-line S3 release.
+6. Run `npm.cmd run templates:release`.
+7. Run `npm.cmd run templates:sync-thumbnails`.
+8. Verify preview and PDF.
 
-For batch S3 sync, use the project sync script only after validation passes.
+For manual upload, use the admin panel file picker with the generated `thumbnail.webp`. For batch S3 sync, use the release script only after validation passes.
 
 ## Quick Checklist
 
 - `index.html` exists.
 - `style.css` exists.
-- `thumbnail.*` exists.
+- `thumbnail.webp` exists.
 - `@page size: A4` exists.
 - `.page` uses `min-height: 297mm`, not fixed `height`.
 - No `Position` or `Professional Title` ghost text.

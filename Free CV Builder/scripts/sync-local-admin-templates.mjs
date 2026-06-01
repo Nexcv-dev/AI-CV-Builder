@@ -77,7 +77,11 @@ const uploadFile = async (template, fileName) => {
 
 for (const template of templates) {
   const files = await fs.readdir(path.join(adminTemplatesRoot, template));
-  for (const fileName of files.filter((file) => ['index.html', 'style.css'].includes(file) || file.startsWith('thumbnail.'))) {
+  const hasWebpThumbnail = files.some((file) => /^thumbnail\.webp$/i.test(file));
+  const uploadableFiles = files
+    .filter((file) => ['index.html', 'style.css'].includes(file) || /^thumbnail\.(svg|png|jpe?g|webp)$/i.test(file))
+    .filter((file) => !hasWebpThumbnail || !/^thumbnail\.(svg|png|jpe?g)$/i.test(file));
+  for (const fileName of uploadableFiles) {
     await uploadFile(template, fileName);
   }
 }

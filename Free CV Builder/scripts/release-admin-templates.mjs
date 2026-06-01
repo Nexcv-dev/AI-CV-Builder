@@ -84,8 +84,13 @@ const uploadFile = async ({ sourceFolder, targetKey }, fileName) => {
 
 for (const item of releaseMap) {
   const files = await fs.readdir(path.join(adminTemplatesRoot, item.sourceFolder));
+  const hasWebpThumbnail = files.some((fileName) => /^thumbnail\.webp$/i.test(fileName));
   const uploadableFiles = files
-    .filter((fileName) => ['index.html', 'style.css'].includes(fileName) || /^thumbnail\.(svg|png|jpe?g|webp)$/i.test(fileName))
+    .filter((fileName) => (
+      ['index.html', 'style.css'].includes(fileName)
+      || /^thumbnail\.(svg|png|jpe?g|webp)$/i.test(fileName)
+    ))
+    .filter((fileName) => !hasWebpThumbnail || !/^thumbnail\.(svg|png|jpe?g)$/i.test(fileName))
     .sort((a, b) => a.localeCompare(b));
 
   for (const fileName of uploadableFiles) {
