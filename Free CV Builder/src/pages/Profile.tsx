@@ -394,15 +394,24 @@ export default function Profile() {
                       <h2 className="font-montserrat text-xl font-black">Password</h2>
                       <p className="mt-1 text-sm font-semibold text-slate-400">Use {passwordPolicyHint}</p>
                     </div>
-                    {user?.authProvider === 'email' && (
+                    {user?.hasPassword && (
                       <SecurityInput label="Current password" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
                     )}
-                    <SecurityInput label="New password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
-                    <SecurityInput label="Confirm new password" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
-                    <button type="submit" disabled={isSavingPassword} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60 sm:w-auto">
-                      {isSavingPassword ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                      Change Password
-                    </button>
+                    {!user?.hasPassword && (
+                      <p className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 text-sm font-bold leading-6 text-amber-100">
+                        This Google account does not have a password yet. Use forgot password to create one securely.
+                      </p>
+                    )}
+                    {user?.hasPassword && (
+                      <>
+                        <SecurityInput label="New password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
+                        <SecurityInput label="Confirm new password" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
+                        <button type="submit" disabled={isSavingPassword} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60 sm:w-auto">
+                          {isSavingPassword ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                          Change Password
+                        </button>
+                      </>
+                    )}
                   </form>
                 )}
 

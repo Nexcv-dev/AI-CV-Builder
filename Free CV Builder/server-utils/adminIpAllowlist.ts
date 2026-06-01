@@ -37,9 +37,10 @@ const getTrustedAdminProxyIps = () => (
 
 export const resolveAdminClientIp = (req: Request) => {
     const remoteIp = normalizeClientIp(req.socket?.remoteAddress);
+    const expressResolvedIp = normalizeClientIp(req.ip);
     const trustedProxyIps = getTrustedAdminProxyIps();
     if (!remoteIp || !trustedProxyIps.includes(remoteIp)) {
-        return remoteIp;
+        return expressResolvedIp || remoteIp;
     }
 
     const proxyResolvedIp = (req.ips || []).map(normalizeClientIp).find(Boolean);

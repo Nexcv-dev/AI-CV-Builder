@@ -8,6 +8,7 @@ export interface AuthUser {
   plan: 'free' | 'payg' | 'monthly' | 'unlimited';
   planExpiresAt?: string;
   emailVerified: boolean;
+  hasPassword?: boolean;
   profileImage?: string;
   phone?: string;
   address?: string;

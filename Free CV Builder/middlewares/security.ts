@@ -3,13 +3,30 @@ import helmet from 'helmet';
 import cors from 'cors';
 import { randomBytes } from 'crypto';
 
+const normalizeDsnOrigin = (value: string | undefined) => {
+    if (!value?.trim()) return '';
+    try {
+        return new URL(value.trim()).origin;
+    } catch {
+        return '';
+    }
+};
+
+const sentryConnectSrc = Array.from(new Set([
+    normalizeDsnOrigin(process.env.SENTRY_DSN),
+    normalizeDsnOrigin(process.env.VITE_SENTRY_DSN),
+    'https://*.ingest.sentry.io',
+    'https://*.ingest.us.sentry.io',
+    'https://*.ingest.de.sentry.io',
+].filter(Boolean)));
+
 const productionCspDirectives = {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'", 'https://cloud.umami.is'],
     styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
     fontSrc: ["'self'", 'https://fonts.gstatic.com'],
     imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-    connectSrc: ["'self'", 'https://cloud.umami.is', 'https://api-gateway.umami.dev'],
+    connectSrc: ["'self'", 'https://cloud.umami.is', 'https://api-gateway.umami.dev', ...sentryConnectSrc],
     objectSrc: ["'none'"],
     baseUri: ["'self'"],
     formAction: ["'self'", 'https://sandbox.payhere.lk', 'https://www.payhere.lk'],

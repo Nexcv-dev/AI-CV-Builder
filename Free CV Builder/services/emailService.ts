@@ -9,6 +9,7 @@ export interface AppEmailOptions {
     from: string;
     subject: string;
     text: string;
+    html?: string;
     replyTo?: string;
 }
 
@@ -62,7 +63,7 @@ export const normalizeEmailFrom = (value: string | undefined, fallback: string) 
     return isValidEmailFrom(normalized) ? normalized : fallback;
 };
 
-export async function sendAppEmail({ to, from, subject, text, replyTo }: AppEmailOptions) {
+export async function sendAppEmail({ to, from, subject, text, html, replyTo }: AppEmailOptions) {
     const resendApiKey = process.env.RESEND_API_KEY?.trim();
     if (resendApiKey) {
         try {
@@ -78,6 +79,7 @@ export async function sendAppEmail({ to, from, subject, text, replyTo }: AppEmai
                     to,
                     subject,
                     text,
+                    ...(html ? { html } : {}),
                     ...(replyTo ? { reply_to: replyTo } : {}),
                 }),
             });
@@ -98,7 +100,7 @@ export async function sendAppEmail({ to, from, subject, text, replyTo }: AppEmai
 
     try {
         const transporter = nodemailer.createTransport(buildPasswordResetTransportOptions());
-        await transporter.sendMail({ to, from, subject, text, replyTo });
+        await transporter.sendMail({ to, from, subject, text, html, replyTo });
         logEvent('info', 'email.sent', { provider: 'smtp', to, subject });
     } catch (error) {
         logError('email.smtp_failed', error, { to, subject });

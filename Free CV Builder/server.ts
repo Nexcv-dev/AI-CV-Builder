@@ -50,6 +50,7 @@ import {
     sendNotificationEmail,
     sendSystemEmail,
 } from './services/emailService';
+import { buildBrandedEmailHtml } from './services/brandedEmail';
 import {
     clearS3TemplateCache,
     fetchS3Text,
@@ -847,7 +848,7 @@ const routeDeps = {
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,
     recordAdminAuditLog, adminAuditLogSummary,
     logEvent, logError,
-    emailGreetingName, mergeEmailTemplates, renderEmailTemplate,
+    emailGreetingName, mergeEmailTemplates, renderEmailTemplate, buildBrandedEmailHtml,
     sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, getAppEmailFrom,
     roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, isUserRole, isAdminIpAllowed,
     mongoose, randomBytes, randomInt, createHash, timingSafeEqual,

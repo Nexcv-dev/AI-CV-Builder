@@ -15,15 +15,19 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 - `MONGODB_URI` points to a production replica set or managed cluster with backups enabled.
 - `SUPER_ADMIN_EMAILS` contains only launch owners.
 - `ADMIN_ALLOWED_IPS` is set to trusted public admin IPs if admin access should be network-restricted.
-- `GEMINI_API_KEY`, email provider credentials, PayHere credentials, S3 bucket, and PDF Lambda URL are configured.
+- `GEMINI_API_KEY`, email provider credentials, PayHere credentials, Lemon Squeezy credentials, S3 bucket, and PDF Lambda URL are configured.
+- `LEMON_SQUEEZY_STORE_ID`, `LEMON_SQUEEZY_PAYG_VARIANT_ID`, and `LEMON_SQUEEZY_MONTHLY_VARIANT_ID` are numeric IDs from the same test/live store.
 
 ## Payments
 
 - PayHere sandbox checkout has been tested end to end.
 - PayHere live checkout URL and merchant credentials are configured only after sandbox validation.
 - `PAYHERE_NOTIFY_URL` points to the deployed `/api/payhere/ipn` endpoint.
-- Admin Billing shows processed payments, pending checkouts, expired checkouts, and failed/unprocessed payment notifications.
+- Lemon Squeezy test checkout has been tested end to end for global/USD users.
+- Lemon Squeezy webhook points to `/api/lemonsqueezy/webhook` and webhook resend works after a simulated failure.
+- Admin Billing shows processed payments, pending checkouts, expired checkouts, and failed/unprocessed payment notifications with LKR PayHere and USD Lemon Squeezy revenue separated.
 - Duplicate PayHere IPNs do not create duplicate user credits or duplicate coupon redemptions.
+- Duplicate Lemon Squeezy webhooks do not create duplicate user credits or duplicate coupon redemptions.
 - A failed/cancelled PayHere notification appears as unprocessed for admin review.
 
 ## PDF And Templates
@@ -37,6 +41,7 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 ## Auth, Admin, And Data
 
 - Signup, login, logout, email verification, forgot password, and reset password work on the live domain.
+- Verification OTP, reset-password, payment receipt, and support reply emails render correctly as branded HTML and still have readable plain-text fallbacks.
 - Account deletion removes the user's saved CV documents and user record.
 - Saved CV deletion works from dashboard/profile flows.
 - Admin roles are reviewed for least privilege.
@@ -60,9 +65,10 @@ Run this after deploy, before public announcement:
 2. Sign up as a new user and verify email.
 3. Create, save, reopen, and delete a CV.
 4. Generate one free PDF.
-5. Complete one paid checkout in the intended PayHere mode.
-6. Confirm the paid plan unlocks premium export.
-7. Open admin summary, settings, users, templates, billing, support, and audit pages.
-8. Confirm admin Billing has no unexpected failed payments or old pending checkouts.
-9. Send a support/contact message and confirm notification delivery.
-10. Toggle maintenance mode in a controlled window, verify public behavior, then disable it.
+5. Complete one local/LKR paid checkout through PayHere.
+6. Complete one global/USD paid checkout through Lemon Squeezy.
+7. Confirm each paid plan unlocks premium export.
+8. Open admin summary, settings, users, templates, billing, support, and audit pages.
+9. Confirm admin Billing has no unexpected failed payments or old pending checkouts.
+10. Send a support/contact message and confirm notification delivery.
+11. Toggle maintenance mode in a controlled window, verify public behavior, then disable it.

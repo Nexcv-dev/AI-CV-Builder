@@ -2,6 +2,7 @@ import { createHash, pbkdf2Sync, randomBytes, randomInt, timingSafeEqual } from 
 import { getAppSettings } from '../server-models/AppSetting';
 import { getEffectivePlan } from '../server-models/userPlan';
 import { sendNotificationEmail, sendSystemEmail } from '../services/emailService';
+import { buildBrandedEmailHtml } from '../services/brandedEmail';
 import { mergeEmailTemplates, renderEmailTemplate } from '../src/emailTemplateDefaults';
 import type { BillingPlan } from '../server-models/userPlan';
 import { planDisplayName } from './payHere';
@@ -82,6 +83,12 @@ const sendEmailVerification = async (user: any, code: string) => {
         to: user.email,
         subject: email.subject,
         text: email.text,
+        html: await buildBrandedEmailHtml({
+            subject: email.subject,
+            text: email.text,
+            badge: 'Email verification',
+            highlightCode: code,
+        }),
     });
 };
 
@@ -109,6 +116,7 @@ export const publicUser = (user: any) => ({
     displayName: user.displayName,
     role: user.role || 'user',
     emailVerified: isEmailVerified(user),
+    hasPassword: Boolean(user.passwordHash),
     profileImage: user.profileImage,
     phone: user.phone,
     address: user.address,
@@ -174,6 +182,13 @@ export const sendBillingSuccessNotifications = async (details: {
         to: details.user.email,
         subject: receiptEmail.subject,
         text: receiptEmail.text,
+        html: await buildBrandedEmailHtml({
+            subject: receiptEmail.subject,
+            text: receiptEmail.text,
+            badge: 'Payment receipt',
+            ctaLabel: 'Open NexCV',
+            ctaUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/builder`,
+        }),
     });
 };
 

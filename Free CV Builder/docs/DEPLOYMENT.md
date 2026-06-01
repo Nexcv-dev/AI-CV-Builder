@@ -11,6 +11,7 @@ Required services:
 - S3 bucket for managed template HTML/CSS/thumbnail files.
 - AWS Lambda or compatible function host for PDF generation.
 - PayHere merchant account for paid plans.
+- Lemon Squeezy account for global USD paid plans.
 - SMTP, Gmail OAuth, or Resend for transactional email.
 
 ## Main App Deployment
@@ -94,6 +95,12 @@ PAYHERE_MERCHANT_SECRET=your_payhere_secret
 PAYHERE_NOTIFY_URL=https://your-api-domain.example/api/payhere/ipn
 PAYHERE_CHECKOUT_URL=https://www.payhere.lk/pay/checkout
 
+LEMON_SQUEEZY_API_KEY=your_lemon_squeezy_api_key
+LEMON_SQUEEZY_STORE_ID=123456
+LEMON_SQUEEZY_PAYG_VARIANT_ID=123456
+LEMON_SQUEEZY_MONTHLY_VARIANT_ID=123456
+LEMON_SQUEEZY_WEBHOOK_SECRET=your_webhook_secret
+
 S3_TEMPLATE_BUCKET_NAME=your_template_bucket
 S3_TEMPLATE_PREFIX=templates
 AWS_REGION=eu-north-1
@@ -110,6 +117,18 @@ VITE_SENTRY_TRACES_SAMPLE_RATE=0.1
 
 ADMIN_ALLOWED_IPS=203.0.113.10,2001:db8::10
 ```
+
+`FRONTEND_URL` controls checkout and password-reset redirects. For localhost payment testing, set it to `http://localhost:3000`; for production testing, start checkout from the production domain and keep `FRONTEND_URL` on that production domain.
+
+`LEMON_SQUEEZY_STORE_ID` and variant IDs must be numeric IDs from the same Lemon Squeezy test or live store. Do not use the store domain as the store ID. Configure the Lemon Squeezy webhook URL as:
+
+```text
+https://your-domain.example/api/lemonsqueezy/webhook
+```
+
+Set the webhook signing secret in `LEMON_SQUEEZY_WEBHOOK_SECRET`. Global checkout activation depends on the webhook, not only the browser redirect.
+
+Transactional email supports both plain text and branded HTML generated with React Email. Resend is recommended for production; set a verified `EMAIL_FROM` domain before launch. SMTP fallback also sends the same HTML when configured.
 
 Optional quota values:
 
@@ -180,6 +199,7 @@ After deployment:
 - Create and save a CV.
 - Generate a PDF with a free built-in template.
 - Test PayHere sandbox checkout/IPN before live mode.
+- Test Lemon Squeezy test-mode checkout/webhook before live mode.
 - Open admin as a super admin.
 - Verify admin summary, settings, users, templates, billing, support, and audit pages.
 - Toggle maintenance mode in a controlled window and turn it back off.

@@ -45,7 +45,7 @@ const UserSchema: Schema = new Schema(
     gender: { type: String },
     nationality: { type: String },
     passwordHash: { type: String },
-    emailVerified: { type: Boolean, default: true, required: true },
+    emailVerified: { type: Boolean, default: false, required: true },
     emailVerificationToken: { type: String },
     emailVerificationExpires: { type: Date },
     resetPasswordToken: { type: String },

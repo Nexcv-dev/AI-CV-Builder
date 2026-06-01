@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Suspense, lazy, useState, useRef, useEffect, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -547,7 +547,7 @@ export default function Home() {
 
   // Keep the visual preview fitted to the visible pane while preserving the
   // underlying A4/template dimensions for PDF output.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!previewContainerRef.current) return;
 
     const syncPreviewScale = () => {
@@ -577,7 +577,7 @@ export default function Home() {
     };
   }, [mobileView, previewNode, previewWidth, template]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!previewNode) return;
 
     const resizeObserver = new ResizeObserver((entries) => {

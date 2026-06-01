@@ -3,7 +3,7 @@ import { bindDeps, type RouteDeps } from '../_shared';
 
 
 export function registerAdminSupportRoutes(router: Router, deps: RouteDeps) {
-    const { SupportTicket, requireAdminPermission, sendError, currentUserId, isValidDocumentId, sanitizeProfileField, escapeRegex, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, adminSupportTicketSummary, recordAdminAuditLog, sendSystemEmail, emailGreetingName, mergeEmailTemplates, renderEmailTemplate } = bindDeps(deps);
+    const { SupportTicket, requireAdminPermission, sendError, currentUserId, isValidDocumentId, sanitizeProfileField, escapeRegex, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, adminSupportTicketSummary, recordAdminAuditLog, sendSystemEmail, emailGreetingName, mergeEmailTemplates, renderEmailTemplate, buildBrandedEmailHtml } = bindDeps(deps);
 
     router.get('/api/admin/support/tickets', requireAdminPermission('support.read'), async (req: Request, res: Response) => {
         try {
@@ -110,6 +110,11 @@ export function registerAdminSupportRoutes(router: Router, deps: RouteDeps) {
                 replyTo: (req.user as any)?.email,
                 subject: email.subject,
                 text: email.text,
+                html: await buildBrandedEmailHtml({
+                    subject: email.subject,
+                    text: email.text,
+                    badge: 'Support update',
+                }),
             });
 
             ticket.adminNotes = [ticket.adminNotes, `Reply sent at ${new Date().toISOString()}:\n${replyMessage}`].filter(Boolean).join('\n\n');

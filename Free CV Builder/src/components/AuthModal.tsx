@@ -32,6 +32,12 @@ function googleNextParam(redirectTo: string) {
   return '?next=builder';
 }
 
+const prefetchBuilderRoute = () => {
+  void import('../pages/Home');
+  void import('./CVForm');
+  void import('./CVPreview');
+};
+
 const allowedAuthEmailDomains = [
   'gmail.com',
   'googlemail.com',
@@ -322,6 +328,9 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     setError('');
     setIsSubmitting(true);
     try {
+      if (redirectTo.startsWith('/builder')) {
+        prefetchBuilderRoute();
+      }
       const data = await apiFetch<{ user: AuthUser }>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: normalizedEmail, password }),

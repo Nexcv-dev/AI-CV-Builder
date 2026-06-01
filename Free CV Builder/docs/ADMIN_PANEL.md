@@ -10,7 +10,7 @@ The NexCV admin panel is the protected operations area for platform owners and s
 - Production admin access can be hidden from untrusted networks with `ADMIN_ALLOWED_IPS`.
 - Important state changes should create admin audit log entries.
 
-Local development usually leaves `ADMIN_ALLOWED_IPS` empty. In production, set it to trusted public IPv4/IPv6 addresses only.
+Local development usually leaves `ADMIN_ALLOWED_IPS` empty. In production, set it to trusted public IPv4/IPv6 addresses only. If `/admin` returns `Not found`, the IP allowlist is either missing or the current public IP is not allowed; this is intentional so the admin page is hidden from untrusted networks.
 
 ## Core Modules
 
@@ -60,7 +60,8 @@ Admins can:
 - View/update plan configuration.
 - Create/update coupons.
 - Review payment transactions.
-- Support users after PayHere/IPN failures.
+- Support users after PayHere IPN or Lemon Squeezy webhook failures.
+- Review LKR PayHere revenue and USD Lemon Squeezy revenue separately.
 
 Relevant APIs:
 
@@ -90,6 +91,7 @@ Settings cover launch and runtime controls, including:
 - Runtime environment display.
 - Service readiness indicators for MongoDB, S3, PayHere, Gemini, email, and session configuration.
 - Test-email delivery.
+- Admin-editable email subject/body text. Transactional emails are delivered as branded React Email HTML with the plain text content preserved as fallback.
 
 Relevant APIs:
 
@@ -114,6 +116,8 @@ Before production launch:
 - Decide whether `ADMIN_ALLOWED_IPS` is required.
 - Verify role permissions with a non-owner admin account.
 - Test billing updates and coupon creation in sandbox.
+- Test PayHere local-market checkout and Lemon Squeezy global-market checkout in sandbox/test mode.
 - Test template publish/archive flow with one non-critical template.
 - Test email delivery through the admin test-email endpoint.
+- Test password reset, OTP verification, payment receipt, and support reply emails after changing sender/domain settings.
 - Confirm audit logs are written for sensitive actions.
