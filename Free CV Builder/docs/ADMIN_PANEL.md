@@ -10,7 +10,7 @@ The NexCV admin panel is the protected operations area for platform owners and s
 - Production admin access can be hidden from untrusted networks with `ADMIN_ALLOWED_IPS`.
 - Important state changes should create admin audit log entries.
 
-Local development usually leaves `ADMIN_ALLOWED_IPS` empty. In production, set it to trusted public IPv4/IPv6 addresses only. If `/admin` returns `Not found`, the IP allowlist is either missing or the current public IP is not allowed; this is intentional so the admin page is hidden from untrusted networks.
+Local development usually leaves `ADMIN_ALLOWED_IPS` empty. In production, set it to trusted public IPv4/IPv6 addresses only. If `/admin` shows the branded 404 page, the IP allowlist is either missing or the current public IP is not allowed; this is intentional so the admin page is hidden from untrusted networks.
 
 ## Core Modules
 

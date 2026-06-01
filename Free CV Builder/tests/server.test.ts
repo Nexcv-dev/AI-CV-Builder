@@ -177,6 +177,13 @@ describe('Server Utils', () => {
         userId: '507f1f77bcf86cd799439011',
         plan: 'payg',
       });
+
+      expect(resolvePayHerePaymentContext({
+        order_id: 'NXCV-507f1f77bcf86cd799439011-quarterly-001',
+      })).toEqual({
+        userId: '507f1f77bcf86cd799439011',
+        plan: 'quarterly',
+      });
     });
 
     it('should parse PayHere amounts to cents for price validation', () => {
@@ -334,7 +341,7 @@ describe('Server Utils', () => {
       });
     });
 
-    it('should add one extra CV save for each Pay As You Go purchase and make Monthly unlimited', () => {
+    it('should add one extra CV save for each Single CV Pass purchase and make Pro plans unlimited', () => {
       const future = new Date(Date.now() + 100000);
       expect(buildCvCreationQuota({ role: 'user', plan: 'payg', planExpiresAt: future } as any, 1)).toEqual({
         limit: 1,
@@ -363,6 +370,13 @@ describe('Server Utils', () => {
         remaining: null,
         reached: false,
         plan: 'monthly',
+      });
+      expect(buildCvCreationQuota({ role: 'user', plan: 'quarterly', planExpiresAt: future } as any, 99)).toEqual({
+        limit: null,
+        used: 99,
+        remaining: null,
+        reached: false,
+        plan: 'quarterly',
       });
     });
 
@@ -429,7 +443,7 @@ describe('Server Utils', () => {
       });
     });
 
-    it('should limit monthly downloads to 25 per UTC day while active', () => {
+    it('should limit Pro plan downloads to 25 per UTC day while active', () => {
       const future = new Date(Date.now() + 100000);
       expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user', plan: 'monthly', planExpiresAt: future } as any, 24)).toEqual({
         limit: 25,
@@ -444,6 +458,13 @@ describe('Server Utils', () => {
         remaining: 0,
         reached: true,
         plan: 'monthly',
+      });
+      expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user', plan: 'quarterly', planExpiresAt: future } as any, 24)).toEqual({
+        limit: 25,
+        used: 24,
+        remaining: 1,
+        reached: false,
+        plan: 'quarterly',
       });
     });
 
@@ -541,6 +562,7 @@ describe('Server Utils', () => {
       const start = new Date('2026-05-16T00:00:00.000Z');
       expect(createPlanExpiry('payg', start).toISOString()).toBe('2026-05-23T00:00:00.000Z');
       expect(createPlanExpiry('monthly', start).toISOString()).toBe('2026-06-15T00:00:00.000Z');
+      expect(createPlanExpiry('quarterly', start).toISOString()).toBe('2026-08-14T00:00:00.000Z');
     });
   });
 

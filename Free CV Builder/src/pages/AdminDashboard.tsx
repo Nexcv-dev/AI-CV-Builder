@@ -114,7 +114,7 @@ export default function AdminDashboard() {
   const [paymentSummary, setPaymentSummary] = useState<AdminPaymentSummary | null>(null);
   const [billingPlans, setBillingPlans] = useState<AdminBillingPlan[]>([]);
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
-  const [couponForm, setCouponForm] = useState({ code: '', label: '', discountType: 'fixed' as 'fixed' | 'percent', discountValue: '', appliesTo: 'both', active: true });
+  const [couponForm, setCouponForm] = useState({ code: '', label: '', discountType: 'fixed' as 'fixed' | 'percent', discountValue: '', appliesTo: 'pro', maxRedemptions: '25', active: true });
   const [savingBilling, setSavingBilling] = useState(false);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [paymentSearch, setPaymentSearch] = useState('');
@@ -506,17 +506,22 @@ export default function AdminDashboard() {
   const saveCoupon = async () => {
     setSavingBilling(true);
     try {
-      const appliesTo = couponForm.appliesTo === 'both' ? ['payg', 'monthly'] : [couponForm.appliesTo];
+      const appliesTo = couponForm.appliesTo === 'both'
+        ? ['payg', 'monthly', 'quarterly']
+        : couponForm.appliesTo === 'pro'
+          ? ['monthly', 'quarterly']
+          : [couponForm.appliesTo];
       const data = await apiFetch<{ coupon: AdminCoupon }>('/api/admin/billing/coupons', {
         method: 'POST',
         body: JSON.stringify({
           ...couponForm,
           discountValue: couponForm.discountType === 'fixed' ? Math.round(Number(couponForm.discountValue) * 100) : Number(couponForm.discountValue),
           appliesTo,
+          maxRedemptions: couponForm.maxRedemptions,
         }),
       });
       setCoupons((items) => [data.coupon, ...items.filter((item) => item.code !== data.coupon.code)]);
-      setCouponForm({ code: '', label: '', discountType: 'fixed', discountValue: '', appliesTo: 'both', active: true });
+      setCouponForm({ code: '', label: '', discountType: 'fixed', discountValue: '', appliesTo: 'pro', maxRedemptions: '25', active: true });
       toast.success('Coupon saved.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not save coupon.');

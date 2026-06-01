@@ -18,10 +18,10 @@ export default function PromotionManagementSection({
 }: {
   billingPlans: AdminBillingPlan[];
   coupons: AdminCoupon[];
-  couponForm: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; active: boolean };
+  couponForm: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; maxRedemptions: string; active: boolean };
   savingBilling: boolean;
   onUpdatePlanPrice: (plan: AdminBillingPlan, draft: AdminBillingPlanDraft) => Promise<void>;
-  onCouponFormChange: (value: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; active: boolean }) => void;
+  onCouponFormChange: (value: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; maxRedemptions: string; active: boolean }) => void;
   onSaveCoupon: () => Promise<void>;
   onToggleCoupon: (coupon: AdminCoupon) => Promise<void>;
 }) {
@@ -148,10 +148,13 @@ export default function PromotionManagementSection({
           </select>
           <input value={couponForm.discountValue} onChange={(event) => onCouponFormChange({ ...couponForm, discountValue: event.target.value })} placeholder={couponForm.discountType === 'fixed' ? '250' : '15'} className="h-10 min-w-[100px] flex-1 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
           <select value={couponForm.appliesTo} onChange={(event) => onCouponFormChange({ ...couponForm, appliesTo: event.target.value })} className="h-10 min-w-[120px] flex-1 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400">
-            <option value="both">Both plans</option>
-            <option value="payg">Pay As You Go</option>
-            <option value="monthly">Monthly</option>
+            <option value="both">All paid plans</option>
+            <option value="pro">Monthly + Quarterly</option>
+            <option value="payg">Single CV Pass</option>
+            <option value="monthly">Monthly Pro</option>
+            <option value="quarterly">Pro Quarterly</option>
           </select>
+          <input value={couponForm.maxRedemptions} onChange={(event) => onCouponFormChange({ ...couponForm, maxRedemptions: event.target.value })} placeholder="First 25 uses" className="h-10 min-w-[110px] flex-1 rounded-xl border border-white/10 bg-slate-950 px-3 text-sm font-bold text-white outline-none focus:border-violet-400" />
           <button
             type="button"
             disabled={isAnySaving}
@@ -170,7 +173,9 @@ export default function PromotionManagementSection({
             <div key={coupon.code} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/50 p-4">
               <div>
                 <p className="text-sm font-black text-slate-100">{coupon.code} <span className="text-slate-500">· {coupon.label}</span></p>
-                <p className="mt-1 text-xs font-bold text-slate-500">{coupon.discountType === 'percent' ? `${coupon.discountValue}%` : formatCurrency(coupon.discountValue, 'LKR')} off · used {coupon.redeemedCount}</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">
+                  {coupon.discountType === 'percent' ? `${coupon.discountValue}%` : formatCurrency(coupon.discountValue, 'LKR')} off · used {coupon.redeemedCount}{coupon.maxRedemptions ? `/${coupon.maxRedemptions}` : ''}
+                </p>
               </div>
               <button
                 type="button"

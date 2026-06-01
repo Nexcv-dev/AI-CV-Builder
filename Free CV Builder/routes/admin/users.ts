@@ -4,7 +4,7 @@ import type { BillingPlan } from '../../server-models/userPlan';
 
 
 export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, requireAdminPermission, sendError, currentUserId, isValidDocumentId, createPlanExpiry, documentSummary, escapeRegex, adminUserSummary, recordAdminAuditLog, isUserRole } = bindDeps(deps);
+    const { User, CVDocument, requireAdminPermission, sendError, currentUserId, isValidDocumentId, createPlanExpiry, documentSummary, escapeRegex, adminUserSummary, recordAdminAuditLog, isUserRole, isPaidBillingPlan } = bindDeps(deps);
 
     router.get('/api/admin/users', requireAdminPermission('users.read'), async (req: Request, res: Response) => {
         try {
@@ -19,7 +19,7 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
                 const pattern = new RegExp(escapeRegex(search), 'i');
                 filter.$or = [{ email: pattern }, { displayName: pattern }];
             }
-            if (['free', 'payg', 'monthly'].includes(plan)) {
+            if (plan === 'free' || isPaidBillingPlan(plan)) {
                 filter.plan = plan;
             }
             if (isUserRole(role)) {
@@ -99,7 +99,7 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
             }
     
             const plan = req.body.plan as BillingPlan;
-            if (plan !== 'free' && plan !== 'payg' && plan !== 'monthly') {
+            if (plan !== 'free' && !isPaidBillingPlan(plan)) {
                 return res.status(400).json({ error: 'Choose a valid plan.' });
             }
     

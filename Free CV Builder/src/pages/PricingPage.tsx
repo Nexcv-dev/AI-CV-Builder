@@ -6,7 +6,17 @@ import { usePublicContent } from '../hooks/usePublicContent';
 import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
 import { detectClientBillingCountry } from '../utils/countries';
 
-type PlanKey = 'free' | 'payg' | 'monthly';
+type PlanKey = 'free' | 'payg' | 'monthly' | 'quarterly';
+
+type FeaturedCoupon = {
+  code: string;
+  label: string;
+  discountType: 'fixed' | 'percent';
+  discountValue: number;
+  appliesTo: Array<'payg' | 'monthly' | 'quarterly'>;
+  redeemedCount: number;
+  maxRedemptions: number | null;
+};
 
 const plans: Array<{
   key: PlanKey;
@@ -34,11 +44,10 @@ const plans: Array<{
   },
   {
     key: 'payg',
-    name: 'Pay As You Go',
+    name: 'Single CV Pass',
     duration: '7 days (One-time payment)',
     description: 'Perfect when you need one polished CV ready for applications this week.',
     icon: Zap,
-    highlighted: true,
     features: [
       '1 extra saved CV per purchase',
       'Any template',
@@ -50,7 +59,7 @@ const plans: Array<{
   },
   {
     key: 'monthly',
-    name: 'Monthly',
+    name: 'Monthly Pro',
     duration: '30 days (One-time payment)',
     description: 'For active job searches with multiple CV versions and unlimited exports.',
     icon: Crown,
@@ -59,6 +68,22 @@ const plans: Array<{
       'Unlimited saved CVs',
       'Any template',
       'Unlimited downloads for 30 days',
+      'Faster warm PDF downloads',
+      'AI import, summary, and refine tools',
+    ],
+  },
+  {
+    key: 'quarterly',
+    name: 'Pro Quarterly',
+    duration: '90 days (One-time payment)',
+    description: 'Everything you need for a focused 3-month job search.',
+    icon: Crown,
+    highlighted: true,
+    features: [
+      'Unlimited CV creation',
+      'Unlimited saved CVs',
+      'Any template',
+      'Unlimited downloads for 90 days',
       'Faster warm PDF downloads',
       'AI import, summary, and refine tools',
     ],
@@ -81,6 +106,7 @@ export default function PricingPage() {
   }> | null>(null);
   const [resolvedCountry, setResolvedCountry] = useState('GLOBAL');
   const [billingCurrency, setBillingCurrency] = useState('USD');
+  const [featuredCoupon, setFeaturedCoupon] = useState<FeaturedCoupon | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -127,10 +153,23 @@ export default function PricingPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+    apiFetch<{ coupon: FeaturedCoupon | null }>('/api/billing/featured-coupon', { cache: 'no-store' })
+      .then((data) => {
+        if (!ignore) setFeaturedCoupon(data.coupon);
+      })
+      .catch(() => undefined);
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const activePlanLabel = useMemo(() => {
     if (!user) return '';
-    if (user.plan === 'payg') return 'Pay As You Go';
-    if (user.plan === 'monthly') return 'Monthly';
+    if (user.plan === 'payg') return 'Single CV Pass';
+    if (user.plan === 'monthly') return 'Monthly Pro';
+    if (user.plan === 'quarterly') return 'Pro Quarterly';
     if (user.plan === 'unlimited') return 'Admin';
     return 'Free';
   }, [user]);
@@ -150,6 +189,12 @@ export default function PricingPage() {
     return planPrices?.[plan.key] ? formatPrice(planPrices[plan.key].cents, planPrices[plan.key].currency) : 'Loading...';
   };
 
+  const featuredCouponText = featuredCoupon
+    ? featuredCoupon.discountType === 'percent'
+      ? `${featuredCoupon.discountValue}% off`
+      : `${formatPrice(featuredCoupon.discountValue, 'LKR')} off`
+    : '';
+
   return (
     <>
       <SiteHeader />
@@ -166,7 +211,7 @@ export default function PricingPage() {
                   {cmsContent.landing.pricingTitle}
                 </h1>
                 <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-slate-300 sm:text-lg">
-                  Start free, unlock one CV for a short application push, or go monthly when you need multiple versions and AI help.
+                  Start free, unlock one CV for a short application push, or choose Pro Quarterly for a focused job search.
                 </p>
               </div>
 
@@ -184,7 +229,22 @@ export default function PricingPage() {
 
         <section className="bg-slate-900 py-10 sm:py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-4 lg:grid-cols-3">
+            {featuredCoupon && (
+              <div className="mb-6 rounded-2xl border border-emerald-300/25 bg-emerald-300/10 px-4 py-4 shadow-xl shadow-emerald-950/20 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase text-emerald-200">{featuredCoupon.maxRedemptions ? `First ${featuredCoupon.maxRedemptions} users` : 'Limited offer'}</p>
+                  <p className="mt-1 text-sm font-bold text-white">
+                    Use code <span className="font-black text-emerald-200">{featuredCoupon.code}</span> for {featuredCouponText} on Monthly Pro or Pro Quarterly.
+                  </p>
+                </div>
+                {featuredCoupon.maxRedemptions && (
+                  <p className="mt-3 shrink-0 rounded-full bg-emerald-300 px-3 py-1 text-xs font-black text-slate-950 sm:mt-0">
+                    {Math.max(featuredCoupon.maxRedemptions - featuredCoupon.redeemedCount, 0)} left
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="grid gap-4 lg:grid-cols-4">
             {cmsPlans.map((plan) => {
               const Icon = plan.icon;
               const isCurrentPlan = user?.plan === plan.key || (plan.key === 'free' && (!user || user.plan === 'free'));

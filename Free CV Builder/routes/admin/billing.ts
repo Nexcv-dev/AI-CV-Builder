@@ -4,7 +4,7 @@ import type { BillingPlan } from '../../server-models/userPlan';
 
 
 export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
-    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getAdminBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, recordAdminAuditLog } = bindDeps(deps);
+    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getAdminBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, isPaidBillingPlan, PAYHERE_PLAN_PRICES, recordAdminAuditLog } = bindDeps(deps);
 
     const markExpiredPendingCheckouts = async () => {
         await CheckoutSession.updateMany(
@@ -133,7 +133,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
     router.patch('/api/admin/billing/plans/:plan', requireAdminPermission('billing.write'), async (req: Request, res: Response) => {
         try {
             const plan = req.params.plan as BillingPlan;
-            if (plan !== 'payg' && plan !== 'monthly') return res.status(400).json({ error: 'Choose a valid paid plan.' });
+            if (!isPaidBillingPlan(plan)) return res.status(400).json({ error: 'Choose a valid paid plan.' });
             const market = req.body.market === 'global' ? 'global' : 'local';
             const amountCents = Math.round(Number(req.body.amountCents));
             if (!Number.isFinite(amountCents) || amountCents < 100) {
@@ -176,7 +176,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 {
                     plan,
                     label,
-                    amountCents: market === 'local' ? amountCents : (previousSetting?.amountCents || (plan === 'payg' ? 49900 : 219900)),
+                    amountCents: market === 'local' ? amountCents : (previousSetting?.amountCents || PAYHERE_PLAN_PRICES[plan].cents),
                     currency: 'LKR',
                     prices,
                     active: req.body.active !== false,
@@ -225,7 +225,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             const discountValue = discountType === 'percent' ? Math.min(Math.max(Math.round(rawValue), 1), 100) : Math.round(rawValue);
             if (!Number.isFinite(discountValue) || discountValue <= 0) return res.status(400).json({ error: 'Enter a valid discount.' });
             const appliesTo = Array.isArray(req.body.appliesTo)
-                ? req.body.appliesTo.filter((item: unknown) => item === 'payg' || item === 'monthly')
+                ? req.body.appliesTo.filter(isPaidBillingPlan)
                 : [];
             const previousCoupon = await Coupon.findOne({ code });
             const coupon = await Coupon.findOneAndUpdate(
@@ -282,7 +282,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             if (req.body.discountType === 'fixed' || req.body.discountType === 'percent') coupon.discountType = req.body.discountType;
             if (req.body.discountValue !== undefined) coupon.discountValue = Math.max(1, Math.round(Number(req.body.discountValue)));
             if (typeof req.body.active === 'boolean') coupon.active = req.body.active;
-            if (Array.isArray(req.body.appliesTo)) coupon.appliesTo = req.body.appliesTo.filter((item: unknown) => item === 'payg' || item === 'monthly');
+            if (Array.isArray(req.body.appliesTo)) coupon.appliesTo = req.body.appliesTo.filter(isPaidBillingPlan);
             coupon.startsAt = req.body.startsAt ? new Date(req.body.startsAt) : undefined;
             coupon.expiresAt = req.body.expiresAt ? new Date(req.body.expiresAt) : undefined;
             coupon.maxRedemptions = req.body.maxRedemptions ? Math.max(1, Math.round(Number(req.body.maxRedemptions))) : undefined;
@@ -323,7 +323,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             const limit = Math.min(100, Math.max(10, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
             const filter: any = {};
     
-            if (['payg', 'monthly'].includes(plan)) {
+            if (isPaidBillingPlan(plan)) {
                 filter.plan = plan;
             }
             if (provider === 'payhere' || provider === 'lemonsqueezy') {
@@ -355,7 +355,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
             let checkoutReviewItems: any[] = [];
             if (status === 'review') {
                 const checkoutFilter: any = { status: 'failed', billingReviewStatus: { $ne: 'resolved' } };
-                if (['payg', 'monthly'].includes(plan)) checkoutFilter.plan = plan;
+                if (isPaidBillingPlan(plan)) checkoutFilter.plan = plan;
                 if (provider === 'payhere') checkoutFilter.currency = 'LKR';
                 if (provider === 'lemonsqueezy') checkoutFilter.currency = 'USD';
                 if (search) {
@@ -392,10 +392,13 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 bucket[currency].cents += cents;
                 bucket[currency].count += 1;
             };
+            const resolvePaymentCurrency = (payment: any) => (
+                String(payment.currency || (payment.provider === 'lemonsqueezy' ? 'USD' : 'LKR')).toUpperCase()
+            );
 
             allProcessedPayments.forEach((payment: any) => {
                 const cents = parsePaymentAmountCents(payment.amount);
-                const currency = String(payment.currency || 'LKR').toUpperCase();
+                const currency = resolvePaymentCurrency(payment);
                 const providerKey = payment.provider || (currency === 'USD' ? 'lemonsqueezy' : 'payhere');
                 const planKey = payment.plan || 'unknown';
 
@@ -407,7 +410,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 revenueByPlanCurrency[planKey][currency] = (revenueByPlanCurrency[planKey][currency] || 0) + cents;
             });
 
-            const localProcessedPayments = allProcessedPayments.filter((payment: any) => String(payment.currency || 'LKR').toUpperCase() === 'LKR');
+            const localProcessedPayments = allProcessedPayments.filter((payment: any) => resolvePaymentCurrency(payment) === 'LKR');
             const revenueCents = revenueByCurrency.LKR?.cents || 0;
             const revenueByPlan = localProcessedPayments.reduce((acc: Record<string, number>, payment: any) => {
                 const key = payment.plan || 'unknown';
@@ -422,7 +425,7 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 if (!payment.createdAt || payment.createdAt < sevenDaysAgo) return;
                 const day = formatUtcDay(payment.createdAt);
                 const cents = parsePaymentAmountCents(payment.amount);
-                const currency = String(payment.currency || 'LKR').toUpperCase();
+                const currency = resolvePaymentCurrency(payment);
                 if (currency === 'LKR') revenueByDay.set(day, (revenueByDay.get(day) || 0) + cents);
                 const dayCurrencies = revenueByDayCurrency.get(day) || {};
                 dayCurrencies[currency] = (dayCurrencies[currency] || 0) + cents;

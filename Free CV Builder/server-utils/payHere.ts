@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import mongoose from 'mongoose';
 import BillingPlanSetting from '../server-models/BillingPlanSetting';
 import Coupon from '../server-models/Coupon';
-import type { BillingPlan } from '../server-models/userPlan';
+import { PAID_BILLING_PLANS, type BillingPlan } from '../server-models/userPlan';
 
 const md5Upper = (value: string) => createHash('md5').update(value, 'utf8').digest('hex').toUpperCase();
 
@@ -13,11 +13,13 @@ const isValidDocumentId = (id: unknown) => (
 export const PAYHERE_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount: string; cents: number; currency: 'LKR' }> = {
     payg: { amount: '499.00', cents: 49900, currency: 'LKR' },
     monthly: { amount: '2199.00', cents: 219900, currency: 'LKR' },
+    quarterly: { amount: '4999.00', cents: 499900, currency: 'LKR' },
 };
 
 export const GLOBAL_PLAN_PRICES: Record<Exclude<BillingPlan, 'free'>, { amount: string; cents: number; currency: 'USD' }> = {
     payg: { amount: '4.99', cents: 499, currency: 'USD' },
     monthly: { amount: '9.99', cents: 999, currency: 'USD' },
+    quarterly: { amount: '24.99', cents: 2499, currency: 'USD' },
 };
 
 export type BillingMarket = 'local' | 'global';
@@ -89,7 +91,17 @@ export const resolveBillingMarket = (country?: unknown, request?: { headers?: an
     return { ...resolved, market, provider, currency };
 };
 
-const centsToPayHereAmount = (cents: number) => (Math.max(0, cents) / 100).toFixed(2);
+const roundCheckoutAmountCents = (cents: number, currency: 'LKR' | 'USD') => {
+    const safeCents = Math.max(cents, 100);
+    return currency === 'LKR'
+        ? Math.max(Math.round(safeCents / 100) * 100, 100)
+        : safeCents;
+};
+
+const centsToGatewayAmount = (cents: number, currency: 'LKR' | 'USD') => {
+    const safeCents = Math.max(0, cents);
+    return (currency === 'LKR' ? Math.round(safeCents / 100) : safeCents / 100).toFixed(2);
+};
 
 const calculateDiscountCents = (amountCents: number, discountType?: string, discountValue?: number) => {
     if (!discountType || !discountValue) return 0;
@@ -106,10 +118,17 @@ export const normalizeCouponCode = (value: unknown) => (
 );
 
 export const planDisplayName = (plan: BillingPlan) => (
-    plan === 'monthly' ? 'Monthly' :
-        plan === 'payg' ? 'Pay As You Go' :
+    plan === 'quarterly' ? 'Pro Quarterly' :
+        plan === 'monthly' ? 'Monthly Pro' :
+        plan === 'payg' ? 'Single CV Pass' :
             'Free'
 );
+
+const normalizePlanLabel = (plan: BillingPlan, label?: string) => {
+    if (plan === 'payg' && label === 'Pay As You Go') return 'Single CV Pass';
+    if (plan === 'monthly' && label === 'Monthly') return 'Monthly Pro';
+    return label || planDisplayName(plan);
+};
 
 export const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>, market: BillingMarket = 'local') => {
     const setting = await BillingPlanSetting.findOne({ plan, active: true });
@@ -125,11 +144,11 @@ export const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>, market: B
     const promotionDiscountCents = promotionActive
         ? calculateDiscountCents(baseAmountCents, promotionDiscountType, promotionDiscountValue)
         : 0;
-    const finalAmountCents = Math.max(baseAmountCents - promotionDiscountCents, 100);
+    const finalAmountCents = roundCheckoutAmountCents(baseAmountCents - promotionDiscountCents, currency);
     return {
         plan,
-        label: setting?.label || planDisplayName(plan),
-        amount: centsToPayHereAmount(finalAmountCents),
+        label: normalizePlanLabel(plan, setting?.label),
+        amount: centsToGatewayAmount(finalAmountCents, currency),
         cents: finalAmountCents,
         baseAmountCents,
         promotionDiscountCents,
@@ -151,18 +170,24 @@ export const getPlanPrice = async (plan: Exclude<BillingPlan, 'free'>, market: B
 };
 
 export const getPublicBillingPlans = async (market: BillingMarket = 'local') => {
-    const [payg, monthly] = await Promise.all([getPlanPrice('payg', market), getPlanPrice('monthly', market)]);
-    return [payg, monthly];
+    const [payg, monthly, quarterly] = await Promise.all([
+        getPlanPrice('payg', market),
+        getPlanPrice('monthly', market),
+        getPlanPrice('quarterly', market),
+    ]);
+    return [payg, monthly, quarterly];
 };
 
 export const getAdminBillingPlans = async () => {
-    const [localPayg, localMonthly, globalPayg, globalMonthly] = await Promise.all([
+    const [localPayg, localMonthly, localQuarterly, globalPayg, globalMonthly, globalQuarterly] = await Promise.all([
         getPlanPrice('payg', 'local'),
         getPlanPrice('monthly', 'local'),
+        getPlanPrice('quarterly', 'local'),
         getPlanPrice('payg', 'global'),
         getPlanPrice('monthly', 'global'),
+        getPlanPrice('quarterly', 'global'),
     ]);
-    return [localPayg, localMonthly, globalPayg, globalMonthly];
+    return [localPayg, localMonthly, localQuarterly, globalPayg, globalMonthly, globalQuarterly];
 };
 
 export const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCode?: string, market: BillingMarket = 'local') => {
@@ -186,8 +211,9 @@ export const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCo
     const couponWins = couponDiscountCents > promotionDiscountCents;
     const effectivePromotionDiscountCents = couponWins ? 0 : promotionDiscountCents;
     const effectiveCouponDiscountCents = couponWins ? couponDiscountCents : 0;
-    const discountCents = effectivePromotionDiscountCents + effectiveCouponDiscountCents;
-    const finalAmountCents = Math.max(price.baseAmountCents - discountCents, 100);
+    const rawDiscountCents = effectivePromotionDiscountCents + effectiveCouponDiscountCents;
+    const finalAmountCents = roundCheckoutAmountCents(price.baseAmountCents - rawDiscountCents, price.currency);
+    const discountCents = Math.max(price.baseAmountCents - finalAmountCents, 0);
     return {
         plan,
         currency: price.currency,
@@ -198,7 +224,7 @@ export const quoteCheckout = async (plan: Exclude<BillingPlan, 'free'>, couponCo
         discountCents,
         couponDiscountCents: effectiveCouponDiscountCents,
         finalAmountCents,
-        amount: centsToPayHereAmount(finalAmountCents),
+        amount: centsToGatewayAmount(finalAmountCents, price.currency),
         couponCode: effectiveCouponDiscountCents > 0 ? coupon?.code || '' : '',
         couponLabel: effectiveCouponDiscountCents > 0 ? coupon?.label || '' : '',
         promotionLabel: effectivePromotionDiscountCents > 0 ? price.promotionLabel : '',
@@ -256,14 +282,15 @@ export const payHereAmountToCents = (value: unknown) => {
 };
 
 export const isPaidBillingPlan = (value: unknown): value is Exclude<BillingPlan, 'free'> => (
-    value === 'payg' || value === 'monthly'
+    typeof value === 'string' && PAID_BILLING_PLANS.includes(value as Exclude<BillingPlan, 'free'>)
 );
 
 export const resolvePayHerePaymentContext = (payload: Record<string, unknown>) => {
     const customUserId = typeof payload.custom_1 === 'string' ? payload.custom_1.trim() : '';
     const customPlan = typeof payload.custom_2 === 'string' ? payload.custom_2.trim().toLowerCase() : '';
     const orderId = typeof payload.order_id === 'string' ? payload.order_id.trim() : '';
-    const orderMatch = orderId.match(/([a-f\d]{24})[^a-z\d]+(payg|monthly)|(payg|monthly)[^a-z\d]+([a-f\d]{24})/i);
+    const paidPlanPattern = PAID_BILLING_PLANS.join('|');
+    const orderMatch = orderId.match(new RegExp(`([a-f\\d]{24})[^a-z\\d]+(${paidPlanPattern})|(${paidPlanPattern})[^a-z\\d]+([a-f\\d]{24})`, 'i'));
 
     const userId = isValidDocumentId(customUserId)
         ? customUserId

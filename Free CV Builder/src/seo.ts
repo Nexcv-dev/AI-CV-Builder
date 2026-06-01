@@ -83,8 +83,9 @@ export const PUBLIC_SEO_ROUTES: SeoRoute[] = [
       name: 'NexCV CV Builder Plans',
       itemListElement: [
         { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'LKR' },
-        { '@type': 'Offer', name: 'Pay As You Go', price: '499', priceCurrency: 'LKR' },
-        { '@type': 'Offer', name: 'Monthly', price: '2199', priceCurrency: 'LKR' },
+        { '@type': 'Offer', name: 'Single CV Pass', price: '499', priceCurrency: 'LKR' },
+        { '@type': 'Offer', name: 'Monthly Pro', price: '2199', priceCurrency: 'LKR' },
+        { '@type': 'Offer', name: 'Pro Quarterly', price: '4999', priceCurrency: 'LKR' },
       ],
     },
   },

@@ -33,7 +33,7 @@ interface CvCreationQuota {
   used: number;
   remaining: number | null;
   reached: boolean;
-  plan?: 'free' | 'payg' | 'monthly' | 'unlimited';
+  plan?: 'free' | 'payg' | 'monthly' | 'quarterly' | 'unlimited';
 }
 
 interface DownloadQuota {
@@ -41,7 +41,7 @@ interface DownloadQuota {
   used: number;
   remaining: number | null;
   reached: boolean;
-  plan?: 'free' | 'payg' | 'monthly' | 'unlimited';
+  plan?: 'free' | 'payg' | 'monthly' | 'quarterly' | 'unlimited';
   resetAt?: string;
 }
 
@@ -59,10 +59,13 @@ function formatDownloadResetTime(resetAt?: string) {
 
 function downloadLimitMessage(quota?: DownloadQuota | null) {
   if (quota?.plan === 'payg') {
-    return `Daily download limit reached. You have already used your ${quota.limit ?? 15} PAYG PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)} while your plan is active.`;
+    return `Daily download limit reached. You have already used your ${quota.limit ?? 15} Single CV Pass PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)} while your plan is active.`;
   }
   if (quota?.plan === 'monthly') {
-    return `Daily download limit reached. You have already used your ${quota.limit ?? 25} Monthly plan PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)}.`;
+    return `Daily download limit reached. You have already used your ${quota.limit ?? 25} Monthly Pro PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)}.`;
+  }
+  if (quota?.plan === 'quarterly') {
+    return `Daily download limit reached. You have already used your ${quota.limit ?? 25} Pro Quarterly PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)}.`;
   }
   return 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.';
 }
@@ -114,7 +117,7 @@ export default function Home() {
   });
   const [downloadError, setDownloadError] = useState<{ title: string; message: string } | null>(null);
   const [upgradePrompt, setUpgradePrompt] = useState<{ title: string; message: string; source: 'save' | 'download' | 'ai' } | null>(null);
-  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<'free' | 'payg' | 'monthly' | null>(null);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<'free' | 'payg' | 'monthly' | 'quarterly' | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authRedirectTo, setAuthRedirectTo] = useState('/builder');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -147,7 +150,7 @@ export default function Home() {
     setDebouncedCvData(initialBuilderCvData);
   }, [resetBuilder, setCvData]);
 
-  const renderMobileUpgradeActions = (plan: 'free' | 'payg' | 'monthly') => (
+  const renderMobileUpgradeActions = (plan: 'free' | 'payg' | 'monthly' | 'quarterly') => (
     <div className="mt-3 grid gap-2 sm:hidden">
       <Link
         to={plan === 'free' ? '/builder?import=1' : `/checkout?plan=${plan}`}
@@ -958,7 +961,7 @@ export default function Home() {
                   onUpgradeRequired={(source) => openUpgradePrompt(
                     source,
                     source === 'ai'
-                      ? 'AI import, summary generation, and text refinement are available on Pay As You Go and Monthly plans.'
+                      ? 'AI import, summary generation, and text refinement are available on Single CV Pass and Pro plans.'
                       : 'Free plan includes the Classic template. Upgrade to use any template with your CV.'
                   )}
                 />
@@ -1180,7 +1183,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-2.5 sm:mt-6 sm:grid-cols-3 sm:gap-3">
+                  <div className="mt-4 grid gap-2.5 sm:mt-6 sm:grid-cols-4 sm:gap-3">
                     <div className="flex flex-col h-full">
                       <button
                         type="button"
@@ -1200,7 +1203,7 @@ export default function Home() {
                         onClick={() => setSelectedUpgradePlan('payg')}
                         className={`w-full h-full flex flex-col text-left ring-2 ring-violet-500/40 transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${isDarkMode ? 'border-violet-300/30 bg-violet-400/10' : 'border-violet-200 bg-violet-50'}`}
                       >
-                        <div className="flex items-center gap-2 text-sm font-black"><Zap size={15} className="text-violet-600" /> Pay As You Go</div>
+                        <div className="flex items-center gap-2 text-sm font-black"><Zap size={15} className="text-violet-600" /> Single CV Pass</div>
                         <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 499</div>
                         <div className="text-[10px] font-bold text-violet-400/90 dark:text-violet-300/90 mt-0.5">7 days access • One-time payment</div>
                         <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 extra CV, any template, unlimited edits, and faster PDF downloads for 7 days.</p>
@@ -1213,12 +1216,25 @@ export default function Home() {
                         onClick={() => setSelectedUpgradePlan('monthly')}
                         className={`w-full h-full flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${selectedUpgradePlan === 'monthly' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-white'}`}
                       >
-                        <div className="text-sm font-black">Monthly</div>
+                        <div className="text-sm font-black">Monthly Pro</div>
                         <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 2199</div>
                         <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">30 days access • One-time payment</div>
                         <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, faster PDF downloads, and AI features.</p>
                       </button>
                       {selectedUpgradePlan === 'monthly' && renderMobileUpgradeActions('monthly')}
+                    </div>
+                    <div className="flex flex-col h-full">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedUpgradePlan('quarterly')}
+                        className={`w-full h-full flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${selectedUpgradePlan === 'quarterly' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-emerald-300/30 bg-emerald-400/10' : 'border-emerald-200 bg-emerald-50'}`}
+                      >
+                        <div className="text-sm font-black">Pro Quarterly</div>
+                        <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 4999</div>
+                        <div className="text-[10px] font-bold text-emerald-500 dark:text-emerald-300 mt-0.5">90 days access &bull; Most popular</div>
+                        <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-emerald-100/75' : 'text-emerald-950/65'}`}>Unlimited CV creation, saves, downloads, and AI tools for a focused job search.</p>
+                      </button>
+                      {selectedUpgradePlan === 'quarterly' && renderMobileUpgradeActions('quarterly')}
                     </div>
                   </div>
 

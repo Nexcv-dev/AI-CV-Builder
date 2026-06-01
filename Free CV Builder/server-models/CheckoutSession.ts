@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import type { BillingPlan } from './userPlan';
+import { PAID_BILLING_PLANS, type BillingPlan } from './userPlan';
 
 export interface ICheckoutSession extends Document {
   orderId: string;
@@ -26,7 +26,7 @@ const CheckoutSessionSchema = new Schema<ICheckoutSession>(
   {
     orderId: { type: String, required: true, unique: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    plan: { type: String, enum: ['payg', 'monthly'], required: true },
+    plan: { type: String, enum: PAID_BILLING_PLANS, required: true },
     currency: { type: String, enum: ['LKR', 'USD'], default: 'LKR', required: true },
     baseAmountCents: { type: Number, required: true, min: 0 },
     discountCents: { type: Number, required: true, min: 0 },

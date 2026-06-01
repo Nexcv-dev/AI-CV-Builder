@@ -52,7 +52,7 @@ const UserSchema: Schema = new Schema(
     resetPasswordExpires: { type: Date },
     sessionVersion: { type: Number, default: 0, min: 0, required: true },
     authProvider: { type: String, enum: ['google', 'email'], default: 'email', required: true },
-    plan: { type: String, enum: ['free', 'payg', 'monthly'], default: 'free', required: true },
+    plan: { type: String, enum: ['free', 'payg', 'monthly', 'quarterly'], default: 'free', required: true },
     planStartedAt: { type: Date },
     planExpiresAt: { type: Date },
     paygCvSaveCredits: { type: Number, default: 0, min: 0, required: true },

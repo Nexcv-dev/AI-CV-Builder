@@ -101,7 +101,7 @@ export default function Dashboard() {
   const recentDocuments = useMemo(() => documents.slice(0, 3), [documents]);
   const templatesUsed = useMemo(() => new Set(documents.map((document) => document.template)).size, [documents]);
   const creationLimitReached = Boolean(quota?.reached);
-  const isFreePlan = !user || user.plan === 'free';
+  const isFreePlan = !userLoading && Boolean(user && user.plan === 'free');
   const savedCvUsed = quota?.used ?? documents.length;
   const savedCvLimit = quota?.limit ?? (isFreePlan ? 1 : null);
   const savedCvRemaining = savedCvLimit === null
@@ -119,7 +119,7 @@ export default function Dashboard() {
     if (!Number.isFinite(diffMs) || diffMs <= 0 || diffMs > 3 * 24 * 60 * 60 * 1000) return null;
 
     const daysLeft = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
-    const planName = user.plan === 'payg' ? 'Pay As You Go' : 'Monthly';
+    const planName = user.plan === 'payg' ? 'Single CV Pass' : user.plan === 'quarterly' ? 'Pro Quarterly' : 'Monthly Pro';
     return {
       daysLeft,
       planName,
@@ -292,7 +292,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <Link
-                  to={`/checkout?plan=${user?.plan === 'monthly' ? 'monthly' : 'payg'}`}
+                  to={`/checkout?plan=${user?.plan === 'monthly' || user?.plan === 'quarterly' ? user.plan : 'payg'}`}
                   className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-violet-500 px-4 py-2.5 text-xs font-black text-white transition hover:bg-violet-400 active:scale-[0.98] sm:mt-0 sm:w-auto"
                 >
                   Renew plan

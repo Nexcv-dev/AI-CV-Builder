@@ -16,7 +16,7 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 - `SUPER_ADMIN_EMAILS` contains only launch owners.
 - `ADMIN_ALLOWED_IPS` is set to trusted public admin IPs if admin access should be network-restricted.
 - `GEMINI_API_KEY`, email provider credentials, PayHere credentials, Lemon Squeezy credentials, S3 bucket, and PDF Lambda URL are configured.
-- `LEMON_SQUEEZY_STORE_ID`, `LEMON_SQUEEZY_PAYG_VARIANT_ID`, and `LEMON_SQUEEZY_MONTHLY_VARIANT_ID` are numeric IDs from the same test/live store.
+- `LEMON_SQUEEZY_STORE_ID`, `LEMON_SQUEEZY_PAYG_VARIANT_ID`, `LEMON_SQUEEZY_MONTHLY_VARIANT_ID`, and `LEMON_SQUEEZY_QUARTERLY_VARIANT_ID` are numeric IDs from the same test/live store.
 
 ## Payments
 

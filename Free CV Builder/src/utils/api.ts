@@ -5,7 +5,7 @@ export interface AuthUser {
   email: string;
   displayName: string;
   role: UserRole;
-  plan: 'free' | 'payg' | 'monthly' | 'unlimited';
+  plan: 'free' | 'payg' | 'monthly' | 'quarterly' | 'unlimited';
   planExpiresAt?: string;
   emailVerified: boolean;
   hasPassword?: boolean;

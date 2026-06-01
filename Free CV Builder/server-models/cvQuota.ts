@@ -25,7 +25,7 @@ export function getUtcDayBounds(now = new Date()) {
 
 export function buildCvCreationQuota(user: Pick<IUser, 'role' | 'plan' | 'planStartedAt' | 'planExpiresAt' | 'paygCvSaveCredits'>, usedToday: number): CvCreationQuota {
   const plan = getEffectivePlan(user);
-  if (plan === 'monthly' || plan === 'unlimited') {
+  if (plan === 'monthly' || plan === 'quarterly' || plan === 'unlimited') {
     return {
       limit: null,
       used: usedToday,
