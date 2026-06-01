@@ -12,6 +12,12 @@ const adminTemplatesRoot = path.join(repoRoot, 'Admin Templates');
 
 const builtInTemplates = ['classic', 'modern', 'professional', 'timeline', 'minimalist', 'startup'];
 const viewport = { width: 794, height: 1123, deviceScaleFactor: 1 };
+const templateArgIndex = process.argv.indexOf('--template');
+const selectedTemplate = templateArgIndex >= 0 ? process.argv[templateArgIndex + 1]?.trim() : '';
+
+if (templateArgIndex >= 0 && !selectedTemplate) {
+  throw new Error('Pass a template key or admin folder name after --template, for example: --template modular-card');
+}
 
 const chromeCandidates = [
   process.env.CHROME_PATH,
@@ -182,7 +188,11 @@ const captureHtml = async (browser, html, outputPath) => {
 };
 
 const renderBuiltInThumbnails = async (browser) => {
-  for (const template of builtInTemplates) {
+  const templates = selectedTemplate
+    ? builtInTemplates.filter((template) => template === selectedTemplate)
+    : builtInTemplates;
+
+  for (const template of templates) {
     const previewPath = path.join(builtInPreviewRoot, `${template}.html`);
     if (!(await fileExists(previewPath))) {
       console.warn(`skip built-in ${template}: preview HTML not found`);
@@ -198,6 +208,7 @@ const renderBuiltInThumbnails = async (browser) => {
 const renderAdminThumbnails = async (browser) => {
   const entries = (await fs.readdir(adminTemplatesRoot, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
+    .filter((entry) => !selectedTemplate || entry.name === selectedTemplate)
     .sort((a, b) => a.name.localeCompare(b.name));
 
   for (const entry of entries) {
@@ -234,6 +245,12 @@ const browser = await puppeteer.launch({
 try {
   await renderBuiltInThumbnails(browser);
   await renderAdminThumbnails(browser);
+  if (selectedTemplate && !builtInTemplates.includes(selectedTemplate)) {
+    const adminPath = path.join(adminTemplatesRoot, selectedTemplate);
+    if (!(await fileExists(adminPath))) {
+      throw new Error(`Template "${selectedTemplate}" was not found in built-in templates or Admin Templates.`);
+    }
+  }
 } finally {
   await browser.close();
 }

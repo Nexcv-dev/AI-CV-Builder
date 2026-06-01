@@ -51,10 +51,20 @@ cd "Free CV Builder"
 npm run templates:thumbnails
 ```
 
+Run this command from the `Free CV Builder/` project folder, not from inside an individual template folder.
+
 Output locations:
 
 - Built-in template thumbnails are saved to `public/templates/*.webp`.
 - Admin template thumbnails are saved to `../Admin Templates/<template-folder>/thumbnail.webp`.
+
+The command currently regenerates every thumbnail: all built-in templates plus every folder under `Admin Templates/`. For example, a template at `Admin Templates/my-new-template/` gets its thumbnail at `Admin Templates/my-new-template/thumbnail.webp`.
+
+To regenerate only one template, pass its built-in key or admin folder name:
+
+```bash
+npm run templates:thumbnails -- --template my-new-template
+```
 
 The generator uses sample CV data and the template renderer. For admin/S3 templates, keep `themeColor` at the default `#000000` sentinel so the thumbnail uses the template's `defaultThemeColor` from `config/template-release-map.json`. This keeps thumbnails aligned with each template's default color palette.
 

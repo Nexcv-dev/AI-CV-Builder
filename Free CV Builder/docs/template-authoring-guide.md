@@ -285,6 +285,20 @@ cd "Free CV Builder"
 npm.cmd run templates:thumbnails
 ```
 
+Run the command from `Free CV Builder/`, not from inside `Admin Templates/my-template-key/`.
+
+The command currently regenerates every thumbnail: all built-in templates plus every folder under `Admin Templates/`. Your new template's output will be saved as:
+
+```text
+Admin Templates/my-template-key/thumbnail.webp
+```
+
+To regenerate only one template, pass its built-in key or admin folder name:
+
+```powershell
+npm.cmd run templates:thumbnails -- --template my-template-key
+```
+
 You can upload the generated `thumbnail.webp` manually in the admin panel. To upload through the command line, add the template to `config/template-release-map.json`, then run:
 
 ```powershell
