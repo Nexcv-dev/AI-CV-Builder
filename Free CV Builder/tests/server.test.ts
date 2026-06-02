@@ -554,8 +554,39 @@ describe('Server Utils', () => {
   describe('billing plans', () => {
     it('should treat expired paid plans as free', () => {
       const past = new Date(Date.now() - 1000);
-      expect(getEffectivePlan({ role: 'user', plan: 'payg', planExpiresAt: past } as any)).toBe('free');
-      expect(isPaidPlan({ role: 'user', plan: 'payg', planExpiresAt: past } as any)).toBe(false);
+      (['payg', 'monthly', 'quarterly'] as const).forEach((plan) => {
+        expect(getEffectivePlan({ role: 'user', plan, planExpiresAt: past } as any)).toBe('free');
+        expect(isPaidPlan({ role: 'user', plan, planExpiresAt: past } as any)).toBe(false);
+      });
+    });
+
+    it('should switch paid plans to free on the exact expiry date', () => {
+      const expiresAt = new Date('2026-06-02T00:00:00.000Z');
+      (['payg', 'monthly', 'quarterly'] as const).forEach((plan) => {
+        const user = { role: 'user', plan, planExpiresAt: expiresAt } as any;
+        expect(getEffectivePlan(user, new Date('2026-06-01T23:59:59.999Z'))).toBe(plan);
+        expect(getEffectivePlan(user, expiresAt)).toBe('free');
+      });
+    });
+
+    it('should apply free quotas after any paid package expires', () => {
+      const past = new Date(Date.now() - 1000);
+      (['payg', 'monthly', 'quarterly'] as const).forEach((plan) => {
+        expect(buildCvCreationQuota({ role: 'user', plan, planExpiresAt: past, paygCvSaveCredits: 2 } as any, 0)).toEqual({
+          limit: 1,
+          used: 0,
+          remaining: 1,
+          reached: false,
+          plan: 'free',
+        });
+        expect(buildDownloadQuota({ authProvider: 'email', emailVerified: true, role: 'user', plan, planExpiresAt: past } as any, 0)).toEqual({
+          limit: 1,
+          used: 0,
+          remaining: 1,
+          reached: false,
+          plan: 'free',
+        });
+      });
     });
 
     it('should create plan expiry dates from the selected duration', () => {

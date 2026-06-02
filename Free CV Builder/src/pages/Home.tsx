@@ -16,7 +16,7 @@ import { ApiError, AuthUser, apiFetch, csrfFetch, getCurrentUser, setDashboardNo
 import { AccountMenu } from '../components/AccountMenu';
 import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import toast from 'react-hot-toast';
-import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Moon, Sun, X, Crown, Zap } from 'lucide-react';
+import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Clock3, Moon, Sun, X, Crown, Zap } from 'lucide-react';
 
 const THEME_STORAGE_KEY = 'cv-builder-theme';
 const LOCAL_STORAGE_DRAFT_KEY = 'nexcv-draft-data';
@@ -68,6 +68,14 @@ function downloadLimitMessage(quota?: DownloadQuota | null) {
     return `Daily download limit reached. You have already used your ${quota.limit ?? 25} Pro Quarterly PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)}.`;
   }
   return 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.';
+}
+
+function getPlanLabel(plan?: AuthUser['plan']) {
+  if (plan === 'payg') return 'Single CV Pass';
+  if (plan === 'monthly') return 'Monthly Pro';
+  if (plan === 'quarterly') return 'Pro Quarterly';
+  if (plan === 'unlimited') return 'Unlimited';
+  return 'Free';
 }
 
 export default function Home() {
@@ -613,6 +621,20 @@ export default function Home() {
     : savedCvRemaining === null
       ? 'Unlimited saves available'
       : `${savedCvRemaining} save${savedCvRemaining === 1 ? '' : 's'} left`;
+  const planExpiryReminder = React.useMemo(() => {
+    if (!currentUser?.planExpiresAt || currentUser.plan === 'free' || currentUser.plan === 'unlimited') return null;
+
+    const expiresAt = new Date(currentUser.planExpiresAt);
+    const diffMs = expiresAt.getTime() - Date.now();
+    if (!Number.isFinite(diffMs) || diffMs <= 0 || diffMs > 3 * 24 * 60 * 60 * 1000) return null;
+
+    return {
+      daysLeft: Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000))),
+      expiresAt: new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(expiresAt),
+      planName: getPlanLabel(currentUser.plan),
+      renewalPlan: currentUser.plan === 'monthly' || currentUser.plan === 'quarterly' ? currentUser.plan : 'payg',
+    };
+  }, [currentUser]);
 
   const handlePrint = async () => {
     if (pdfInFlightRef.current || isGeneratingPDF) return;
@@ -896,6 +918,34 @@ export default function Home() {
         </header>
 
         <AnimatePresence initial={false}>
+          {!isPopupVisible && planExpiryReminder && (
+            <motion.div
+              key="builder-plan-expiry-banner"
+              className="shrink-0 overflow-hidden print:hidden"
+              initial={{ height: 0, opacity: 0, y: -8 }}
+              animate={{ height: 'auto', opacity: 1, y: 0 }}
+              exit={{ height: 0, opacity: 0, y: -8 }}
+              transition={{ duration: 0.24, ease: 'easeOut' }}
+            >
+              <div className="px-3 py-2 sm:px-4">
+                <div className={`mx-auto grid max-w-xl gap-2 rounded-2xl border py-2.5 pl-3 pr-3 shadow-lg sm:flex sm:max-w-2xl sm:items-center sm:justify-between sm:gap-3 sm:px-4 ${isDarkMode ? 'border-violet-300/20 bg-violet-950/80 shadow-black/20' : 'border-violet-200 bg-violet-50 shadow-violet-900/5'}`}>
+                  <div className="flex min-w-0 items-start gap-2 sm:items-center">
+                    <Clock3 size={17} className={`mt-0.5 shrink-0 sm:mt-0 ${isDarkMode ? 'text-violet-200' : 'text-violet-700'}`} />
+                    <p className={`text-xs font-extrabold leading-5 sm:text-sm ${isDarkMode ? 'text-violet-100' : 'text-violet-950'}`}>
+                      Your {planExpiryReminder.planName} plan expires in {planExpiryReminder.daysLeft} day{planExpiryReminder.daysLeft === 1 ? '' : 's'} on {planExpiryReminder.expiresAt}.
+                    </p>
+                  </div>
+                  <Link
+                    to={`/checkout?plan=${planExpiryReminder.renewalPlan}`}
+                    className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3 text-[11px] font-extrabold transition active:scale-95 sm:h-9 sm:px-4 sm:text-xs ${isDarkMode ? 'bg-violet-300 text-slate-950 hover:bg-violet-200' : 'bg-violet-600 text-white hover:bg-violet-500'}`}
+                  >
+                    Renew plan
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {!isPopupVisible && currentUser && !currentUser.emailVerified && !verificationBannerDismissed && (
             <motion.div
               key="verify-email-banner"
