@@ -1,306 +1,367 @@
 import React, { useLayoutEffect } from 'react';
-import { motion } from 'motion/react';
-import { BookOpen, CheckCircle, Target, Search, FileText, AlertTriangle, Layers, Briefcase, GraduationCap } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  Crown,
+  Download,
+  Edit3,
+  FileText,
+  LayoutTemplate,
+  Lightbulb,
+  Plus,
+  Save,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Upload,
+  Wand2,
+} from 'lucide-react';
+import { AppShellHeader } from '../components/AppShellHeader';
+import { AppSidebar } from '../components/AppSidebar';
+import { clearPageScrollLock } from '../utils/scrollLock';
 
-const TipsAndResources = () => {
+type GuideSection = {
+  eyebrow: string;
+  title: string;
+  copy: string;
+  points: string[];
+  visual: React.ReactNode;
+};
+
+const quickSteps = [
+  {
+    icon: Plus,
+    title: 'Create or import',
+    text: 'Start with a blank CV, or import an existing PDF so the builder can help you organize the content.',
+  },
+  {
+    icon: Wand2,
+    title: 'Refine with AI',
+    text: 'Use AI for summaries and bullet points, then edit the wording so it still sounds like you.',
+  },
+  {
+    icon: LayoutTemplate,
+    title: 'Choose a template',
+    text: 'Switch templates anytime. Your CV data stays in place while the visual layout changes.',
+  },
+  {
+    icon: Download,
+    title: 'Download when ready',
+    text: 'Preview first, confirm the final layout, then export a polished PDF for applications.',
+  },
+];
+
+function DashboardScreenshot() {
+  return (
+    <ScreenshotFrame label="Dashboard">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          ['Saved CVs', '1', FileText],
+          ['Templates Used', '1', LayoutTemplate],
+          ['Latest Update', '5 days', CheckCircle2],
+        ].map(([label, value, Icon]) => (
+          <div key={label as string} className="rounded-xl border border-white/10 bg-slate-950/80 p-3">
+            <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 text-violet-200">
+              <Icon size={16} />
+            </span>
+            <p className="text-2xl font-black text-white">{value as string}</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">{label as string}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/75 p-3">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-black text-white">Recent CVs</p>
+            <p className="text-xs font-semibold text-slate-500">Your latest saved documents.</p>
+          </div>
+          <span className="rounded-lg bg-emerald-300/12 px-2 py-1 text-[10px] font-black text-emerald-200">Saved</span>
+        </div>
+        <div className="flex items-center gap-3 rounded-lg bg-white/[0.035] p-2">
+          <div className="h-14 w-11 rounded-md bg-linear-to-b from-slate-100 to-slate-300" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-black text-white">Alpha CV</p>
+            <p className="text-xs font-semibold text-slate-400">Tech template</p>
+          </div>
+          <button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/10 px-2 text-xs font-black text-slate-200">
+            <Edit3 size={13} />
+            Edit
+          </button>
+        </div>
+      </div>
+    </ScreenshotFrame>
+  );
+}
+
+function BuilderScreenshot() {
+  return (
+    <ScreenshotFrame label="Builder">
+      <div className="grid gap-4 md:grid-cols-[1fr_0.85fr]">
+        <div className="rounded-xl border border-white/10 bg-slate-950/80 p-3">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-black text-white">Personal Details</p>
+            <span className="rounded-lg bg-violet-400/12 px-2 py-1 text-[10px] font-black text-violet-200">Editing</span>
+          </div>
+          <div className="grid gap-2">
+            <div className="h-9 rounded-lg bg-white/[0.07]" />
+            <div className="h-9 rounded-lg bg-white/[0.07]" />
+            <div className="h-20 rounded-lg bg-white/[0.07]" />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-300 px-2.5 py-2 text-xs font-black text-slate-950">
+              <Save size={13} />
+              Save
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-violet-500 px-2.5 py-2 text-xs font-black text-white">
+              <Sparkles size={13} />
+              AI refine
+            </span>
+          </div>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-slate-100 p-3 shadow-xl shadow-black/20">
+          <div className="rounded-lg bg-white p-3 text-slate-900">
+            <div className="h-5 w-32 rounded bg-slate-900" />
+            <div className="mt-2 h-2 w-44 rounded bg-slate-300" />
+            <div className="mt-5 grid gap-2">
+              <div className="h-2 rounded bg-slate-300" />
+              <div className="h-2 rounded bg-slate-300" />
+              <div className="h-2 w-3/4 rounded bg-slate-300" />
+            </div>
+            <div className="mt-5 h-16 rounded bg-violet-100" />
+          </div>
+        </div>
+      </div>
+    </ScreenshotFrame>
+  );
+}
+
+function TemplatesScreenshot() {
+  return (
+    <ScreenshotFrame label="Templates and pricing">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {['Classic', 'Tech', 'Creative'].map((template, index) => (
+          <div key={template} className="rounded-xl border border-white/10 bg-slate-950/80 p-3">
+            <div className={`h-28 rounded-lg ${index === 0 ? 'bg-slate-200' : index === 1 ? 'bg-cyan-100' : 'bg-violet-100'}`} />
+            <p className="mt-3 text-sm font-black text-white">{template}</p>
+            <p className="text-xs font-semibold text-slate-500">{index === 0 ? 'Free' : 'Premium'}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-3">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-300/15 text-emerald-200">
+            <Crown size={16} />
+          </span>
+          <div>
+            <p className="text-sm font-black text-white">Upgrade only when you need more</p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-slate-400">
+              Free is enough to try the builder. Paid plans unlock more saved CVs, premium templates, and higher download access.
+            </p>
+          </div>
+        </div>
+      </div>
+    </ScreenshotFrame>
+  );
+}
+
+const guideSections: GuideSection[] = [
+  {
+    eyebrow: 'Step 1',
+    title: 'Use the dashboard as your control room',
+    copy: 'The dashboard is where you check saved CVs, recent activity, and your current progress. Keep one master CV for your full career history, then edit copies for specific jobs when needed.',
+    points: [
+      'Create New CV starts a fresh document or import flow.',
+      'Recent CVs shows the latest saved work so you can continue quickly.',
+      'Edit opens the same builder view, so there is no separate download-only flow to manage.',
+    ],
+    visual: <DashboardScreenshot />,
+  },
+  {
+    eyebrow: 'Step 2',
+    title: 'Build content first, polish second',
+    copy: 'A strong CV starts with accurate details. Add your experience, education, skills, projects, and contact information before spending too much time on design. After the structure is complete, use AI carefully to improve clarity.',
+    points: [
+      'Write short, direct bullet points focused on outcomes.',
+      'Use AI as a helper, then review every sentence manually.',
+      'Save regularly so your latest version appears in My CVs.',
+    ],
+    visual: <BuilderScreenshot />,
+  },
+  {
+    eyebrow: 'Step 3',
+    title: 'Choose templates and plans with balance',
+    copy: 'Templates help your CV look professional, but the content still matters most. Start simple, check readability, then choose a premium template only when it improves the final presentation.',
+    points: [
+      'Free templates are good for testing and basic CV creation.',
+      'Premium templates are useful when you want a more polished final PDF.',
+      'Pricing is separated by local and global checkout so users see the relevant currency.',
+    ],
+    visual: <TemplatesScreenshot />,
+  },
+];
+
+export default function TipsAndResources() {
   useLayoutEffect(() => {
+    clearPageScrollLock();
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
   return (
-    <main className="flex-1 overflow-x-hidden bg-slate-950 text-slate-200">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-28">
-        <div className="absolute top-0 left-1/2 -ml-156 w-312 max-w-none opacity-40">
-          <div className="absolute inset-0 bg-linear-to-b from-slate-950 to-transparent" />
-          <div className="h-160 w-full bg-linear-to-r from-violet-600 to-emerald-500 blur-3xl opacity-20 rounded-full mix-blend-screen" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-sm font-bold text-violet-300 mb-6 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
-            >
-              <BookOpen size={16} />
-              The Ultimate Career Success Guide
-            </motion.div>
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-5xl font-black tracking-tight text-white sm:text-7xl mb-6 font-montserrat"
-            >
-              Master Your Resume: <span className="bg-linear-to-r from-violet-400 to-emerald-400 bg-clip-text text-transparent">Tips {"&"} Resources</span>
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-lg text-slate-400 leading-relaxed max-w-4xl mx-auto"
-            >
-              Welcome to the most comprehensive guide on modern resume writing. Whether you're a recent graduate or a seasoned executive, learning how to beat Applicant Tracking Systems (ATS), hook recruiters in 6 seconds, and quantify your achievements will transform your job hunt. Let's turn your boring list of duties into a powerful, high-converting marketing document.
-            </motion.p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pb-24 space-y-24">
-        {/* Article 1: ATS Optimization */}
-        <motion.article
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          className="rounded-3xl border border-white/10 bg-white/5 p-8 sm:p-12 shadow-2xl backdrop-blur-sm relative overflow-hidden"
-        >
-          <div className="grid gap-12 lg:grid-cols-2 items-start mb-8">
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-4 text-emerald-400 font-bold">
-                <Search size={24} />
-                <h3>Phase 1: ATS Optimization</h3>
+    <div className="min-h-screen overflow-x-hidden bg-slate-950 text-white">
+      <AppShellHeader />
+      <div className="lg:flex lg:h-dvh lg:overflow-hidden">
+        <AppSidebar />
+        <main className="scrollbar-hide mx-auto min-w-0 max-w-7xl flex-1 px-4 pb-28 pt-6 sm:px-6 sm:pb-32 sm:pt-10 lg:h-dvh lg:overflow-y-auto lg:px-8 lg:pb-12">
+          <section className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
+            <div className="min-w-0">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-500/10 px-3 py-1.5 text-xs font-black uppercase text-violet-200">
+                <BookOpen size={15} />
+                NexCV app guide
               </div>
-              <h2 className="text-3xl font-black text-white mb-6 leading-tight">Decoding the Applicant Tracking System (ATS)</h2>
-              <p className="text-slate-300 leading-relaxed mb-4">
-                Let's address the elephant in the room: Before a human recruiter ever lays eyes on your carefully crafted CV, it must pass through an automated gatekeeper known as the Applicant Tracking System (ATS). Today, over 98% of Fortune 500 companies and 75% of medium-sized businesses rely on ATS software to filter candidates.
-              </p>
-              <p className="text-slate-300 leading-relaxed mb-4">
-                What does this mean for you? If your CV is structured in a way the machine cannot read, you are automatically disqualified—even if you are the perfect candidate. The ATS parses your document, stripping away the design, and converts it into a plain-text digital profile. It then scores your profile based on keyword density, relevance, and formatting readability.
-              </p>
-            </div>
-            <div className="relative z-10 rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_40px_rgba(52,211,153,0.15)] aspect-video lg:aspect-square">
-              <img src="/images/ats_friendly.webp" alt="ATS AI Scanning visualization" loading="lazy" decoding="async" className="object-cover w-full h-full hover:scale-105 transition-transform duration-700" />
-            </div>
-          </div>
-
-          <div className="relative z-10 mb-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6 sm:p-8">
-            <p className="text-slate-200 leading-relaxed">
-              The secret to beating the ATS isn't just "keyword stuffing"—which can backfire when a human finally reads it—but rather <strong className="text-emerald-300">contextual relevance</strong>. You need to naturally weave the exact terminology from the job description into your experience bullet points, ensuring both the machine and the hiring manager are impressed.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-6 relative z-10">
-            <div className="bg-slate-950/60 rounded-2xl p-6 border border-white/5 hover:border-emerald-500/30 transition-colors duration-300">
-              <h4 className="font-bold text-white mb-3 flex items-center gap-2"><CheckCircle size={18} className="text-emerald-400" /> Standard Formatting is King</h4>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Avoid complex multi-column layouts, tables, headers, footers, or embedded graphics. The ATS reads top-to-bottom, left-to-right. If you put vital information in a sidebar, the ATS might read it out of order, combining your contact info with your work history. NexCV's templates are specifically engineered to maintain a beautiful visual design for human eyes while remaining 100% linear and parseable for the machine.
+              <h1 className="max-w-4xl font-montserrat text-3xl font-black leading-tight text-white sm:text-5xl">
+                How to use NexCV from first draft to final PDF
+              </h1>
+              <p className="mt-4 max-w-3xl text-sm font-semibold leading-6 text-slate-400 sm:text-base sm:leading-7">
+                This guide explains the app workflow in a practical way: what each main area does, when to use AI, how to keep your saved CVs organized, and how to download only after checking the final preview.
               </p>
             </div>
-            <div className="bg-slate-950/60 rounded-2xl p-6 border border-white/5 hover:border-emerald-500/30 transition-colors duration-300">
-              <h4 className="font-bold text-white mb-3 flex items-center gap-2"><CheckCircle size={18} className="text-emerald-400" /> Exact Keyword Context</h4>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                If a job description asks for "Search Engine Optimization (SEO)", write exactly that on your resume, including both the full term and the acronym. Don't just write "Web Marketing." If they ask for "Adobe Creative Suite," listing "Photoshop" might not trigger the ATS filter. The machine is literal; mirror their vocabulary exactly.
-              </p>
-            </div>
-          </div>
-        </motion.article>
-
-        {/* Article 2: The Perfect Summary */}
-        <motion.article
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-        >
-          <div className="flex items-center gap-3 mb-4 text-violet-400 font-bold">
-            <Target size={24} />
-            <h3>Phase 2: Human Psychology</h3>
-          </div>
-          <h2 className="text-3xl font-black text-white mb-6">Crafting a 6-Second Hook (The Summary)</h2>
-          <p className="text-slate-300 leading-relaxed mb-4 text-lg">
-            Congratulations, you've beaten the ATS. Now, a stressed, overworked recruiter is looking at your resume. Eye-tracking studies show that recruiters spend an average of <strong>6 to 7.4 seconds</strong> glancing at a resume before making a definitive "fit/no fit" decision.
-          </p>
-          <p className="text-slate-300 leading-relaxed mb-8">
-            Your professional summary—the 3-4 sentences at the very top of your CV—acts as your elevator pitch. It is prime real estate. Ditch the outdated "Objective" statement. Employers don't care what you want out of a job; they care about what value you bring to them. A modern summary should highlight your seniority, your specialty, your biggest metric-driven achievement, and what you uniquely offer. Think of it as a movie trailer for your career.
-          </p>
-
-          <div className="relative mx-auto mb-10 max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-[0_0_40px_rgba(139,92,246,0.15)]">
-            <img src="/images/resume_tips_hero.webp" alt="Glowing professional resume illustration" loading="lazy" decoding="async" className="h-auto max-h-80 w-full object-contain" />
-          </div>
-
-          <div className="space-y-6">
-            <div className="flex gap-4 p-6 sm:p-8 rounded-2xl bg-slate-900/40 border border-red-500/20">
-              <div className="shrink-0 w-10 h-10 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center font-bold text-xl">X</div>
-              <div>
-                <h4 className="font-bold text-white mb-2 text-lg">Bad Example (The Outdated Objective)</h4>
-                <p className="text-slate-400 italic mb-4">"Hardworking, highly motivated professional looking for a challenging role in a reputable company to utilize my skills, learn new technologies, and grow my career."</p>
-                <div className="bg-slate-950/50 rounded-lg p-4 border border-red-500/10">
-                  <p className="text-sm text-red-400 font-medium"><strong>Why it fails:</strong> This tells the employer absolutely nothing about what you can do for them. It is completely focused on what the applicant wants. It's filled with generic, empty buzzwords ("hardworking," "motivated") that anyone can claim, and lacks any measurable proof of value or specific skills.</p>
+            <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200 ring-1 ring-emerald-200/20">
+                  <Lightbulb size={18} />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-emerald-100">Best habit</p>
+                  <p className="mt-1 text-sm font-semibold leading-6 text-emerald-50/75">
+                    Build once, review twice, download last. That keeps the final PDF clean and avoids wasting time on repeated exports.
+                  </p>
                 </div>
               </div>
             </div>
+          </section>
 
-            <div className="flex gap-4 p-6 sm:p-8 rounded-2xl bg-slate-900/40 border border-emerald-500/30 shadow-lg shadow-emerald-900/10">
-              <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xl">✓</div>
-              <div>
-                <h4 className="font-bold text-white mb-2 text-lg">Good Example (The Value-Driven Summary)</h4>
-                <p className="text-slate-400 italic mb-4">"Data-driven Digital Marketing Manager with 5+ years of experience leading B2B campaigns in the SaaS sector. Proven track record of increasing inbound lead generation by 40% year-over-year and managing $500k+ quarterly ad budgets to drive a consistently high 3x ROI. Seeking to leverage expertise in growth hacking and team leadership to scale customer acquisition."</p>
-                <div className="bg-slate-950/50 rounded-lg p-4 border border-emerald-500/10">
-                  <p className="text-sm text-emerald-400 font-medium"><strong>Why it works:</strong> In just three sentences, the recruiter knows exactly who this person is, their level of seniority, their specific industry experience (B2B SaaS), and the massive financial impact they've had. The inclusion of hard numbers (40%, $500k, 3x ROI) provides instant credibility that generic adjectives cannot match.</p>
+          <section className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {quickSteps.map((step) => {
+              const Icon = step.icon;
+              return (
+                <article key={step.title} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-200 ring-1 ring-violet-300/15">
+                    <Icon size={18} />
+                  </span>
+                  <h2 className="mt-4 font-montserrat text-base font-black text-white">{step.title}</h2>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-slate-400">{step.text}</p>
+                </article>
+              );
+            })}
+          </section>
+
+          <section className="mt-10 grid gap-8">
+            {guideSections.map((section, index) => (
+              <article key={section.title} className="grid gap-5 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-black/15 sm:p-5 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:p-6">
+                <div className={index % 2 === 1 ? 'lg:order-2' : ''}>
+                  <p className="text-xs font-black uppercase tracking-wide text-emerald-300">{section.eyebrow}</p>
+                  <h2 className="mt-2 font-montserrat text-2xl font-black leading-tight text-white sm:text-3xl">{section.title}</h2>
+                  <p className="mt-3 text-sm font-semibold leading-7 text-slate-400">{section.copy}</p>
+                  <ul className="mt-5 grid gap-3">
+                    {section.points.map((point) => (
+                      <li key={point} className="flex gap-3 text-sm font-semibold leading-6 text-slate-300">
+                        <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-300" size={17} />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className={index % 2 === 1 ? 'lg:order-1' : ''}>{section.visual}</div>
+              </article>
+            ))}
+          </section>
+
+          <section className="mt-10 grid gap-5 lg:grid-cols-[1fr_1fr]">
+            <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-400/12 text-sky-200">
+                  <Search size={18} />
+                </span>
+                <h2 className="font-montserrat text-xl font-black">Before you download</h2>
+              </div>
+              <div className="mt-5 grid gap-3">
+                {[
+                  'Check spelling, phone number, email, and links.',
+                  'Preview the full page and make sure sections do not overflow.',
+                  'Use a role-specific title and keep the summary focused.',
+                  'Download only after the CV looks correct in the preview.',
+                ].map((item) => (
+                  <div key={item} className="flex gap-3 rounded-xl bg-white/[0.035] p-3 text-sm font-semibold leading-6 text-slate-300">
+                    <ShieldCheck className="mt-0.5 shrink-0 text-sky-300" size={16} />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-200">
+                  <Sparkles size={18} />
+                </span>
+                <h2 className="font-montserrat text-xl font-black">A balanced AI workflow</h2>
+              </div>
+              <p className="mt-4 text-sm font-semibold leading-7 text-slate-400">
+                AI is best for cleaning rough wording, creating stronger summaries, and improving bullet points. It should not invent experience, fake numbers, or add skills you cannot explain in an interview.
+              </p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-3">
+                  <p className="text-sm font-black text-emerald-100">Good use</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-emerald-50/75">Rewrite unclear sentences and make real achievements sharper.</p>
+                </div>
+                <div className="rounded-xl border border-red-300/20 bg-red-400/10 p-3">
+                  <p className="text-sm font-black text-red-100">Avoid</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-red-50/75">Adding false results, fake roles, or keywords you cannot support.</p>
                 </div>
               </div>
             </div>
-          </div>
-        </motion.article>
+          </section>
 
-        {/* Article 3: Tailoring */}
-        <motion.article
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          className="rounded-3xl border border-white/10 bg-linear-to-b from-slate-900/80 to-slate-950 p-8 sm:p-12 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 p-8 opacity-5 transform translate-x-1/4 -translate-y-1/4">
-            <Layers size={200} />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4 text-blue-400 font-bold">
-              <Layers size={24} />
-              <h3>Phase 3: Strategy</h3>
-            </div>
-            <h2 className="text-3xl font-black text-white mb-6">Stop Sending the Same CV Everywhere</h2>
-            <p className="text-slate-300 leading-relaxed mb-6">
-              The "spray and pray" method—sending one generic CV to 100 different companies—rarely yields good results in today's highly competitive job market. Every job description has different priorities, even for the exact same job title. A Marketing Manager at a startup needs entirely different skills than a Marketing Manager at a Fortune 500 company.
-            </p>
-            <p className="text-slate-300 leading-relaxed mb-8">
-              Tailoring doesn't mean rewriting your entire resume from scratch. It means making strategic 5-minute tweaks to ensure your document speaks directly to the employer's specific pain points.
-            </p>
-
-            <div className="space-y-6 text-slate-300 mb-8">
-              <div className="bg-slate-950/40 p-6 rounded-xl border border-white/5">
-                <h4 className="text-white font-bold mb-2 text-lg">1. Rearrange Your Bullet Points</h4>
-                <p className="text-sm">Recruiters read top-to-bottom. If a job description emphasizes "Client Communication" as the absolute #1 requirement, make sure your bullet points detailing client relations are at the very top of your most recent role, not buried at the bottom. Put your most relevant achievements first.</p>
+          <section className="mt-10 overflow-hidden rounded-2xl border border-violet-300/20 bg-[linear-gradient(135deg,rgba(124,58,237,0.22),rgba(16,185,129,0.12),rgba(255,255,255,0.04))] p-5 shadow-2xl shadow-black/20 sm:p-6">
+            <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <h2 className="font-montserrat text-2xl font-black text-white">Ready to continue your CV?</h2>
+                <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-300">
+                  Open the builder, make the next useful edit, save it, and come back to My CVs whenever you need to manage your versions.
+                </p>
               </div>
-              <div className="bg-slate-950/40 p-6 rounded-xl border border-white/5">
-                <h4 className="text-white font-bold mb-2 text-lg">2. Speak Their Dialect</h4>
-                <p className="text-sm">Companies use different jargon. If your current CV says "Customer Service" but the job description heavily uses the term "Client Success," simply do a find-and-replace to modify your wording. Mirroring their dialect shows you belong in their culture.</p>
-              </div>
-              <div className="bg-slate-950/40 p-6 rounded-xl border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-                <h4 className="text-white font-bold mb-2 text-lg">3. Leverage NexCV's Duplicate Feature</h4>
-                <p className="text-sm">Never overwrite your "Master CV". Inside your NexCV dashboard, we've built a 1-click duplicate feature. Simply clone your master resume, rename it for the specific company (e.g., "John Doe - Google Application"), and tweak the copy. This keeps your documents organized and your applications highly targeted.</p>
+              <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[330px]">
+                <Link to="/builder?import=1" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-black text-white transition hover:bg-violet-500 active:scale-[0.98]">
+                  <Upload size={16} />
+                  Open builder
+                </Link>
+                <Link to="/my-cvs" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-black text-white transition hover:bg-white/12 active:scale-[0.98]">
+                  My CVs
+                  <ArrowRight size={16} />
+                </Link>
               </div>
             </div>
-          </div>
-        </motion.article>
-
-        {/* Article 4: Action Verbs */}
-        <motion.article
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          className="rounded-3xl border border-white/10 bg-linear-to-br from-slate-900 to-slate-950 p-8 sm:p-12 shadow-2xl relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 p-8 opacity-10">
-            <FileText size={120} />
-          </div>
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4 text-amber-400 font-bold">
-              <Briefcase size={24} />
-              <h3>Phase 4: Impact</h3>
-            </div>
-            <h2 className="text-3xl font-black text-white mb-6">Quantify Everything: The XYZ Formula</h2>
-            <p className="text-slate-300 leading-relaxed mb-6">
-              The biggest mistake job seekers make is turning their resume into a boring job description. A list of responsibilities only tells an employer what you were <em>supposed</em> to do. A list of quantified achievements tells them how <em>well</em> you did it. Instead of saying "Responsible for managing social media," tell them the business result of your management.
-            </p>
-            <p className="text-slate-300 leading-relaxed mb-8">
-              Use Google's famous <strong className="text-emerald-400">XYZ Formula:</strong> "Accomplished [X] as measured by [Y], by doing [Z]."
-              <br /><br />
-              <span className="block p-4 bg-emerald-950/30 border-l-4 border-emerald-500 rounded-r-lg mt-4 text-emerald-200">
-                <em>Example:</em> "Grew Instagram follower base by 25% (Y) in six months (X) by executing a new micro-influencer partnership strategy and A/B testing ad creative (Z)."
-              </span>
-            </p>
-
-            <p className="text-slate-300 leading-relaxed mb-8">
-              <strong>"But what if I don't have hard numbers?"</strong> You always have numbers. You can quantify volume (e.g., "Managed 50+ daily client requests"), frequency (e.g., "Published 4 weekly newsletters"), or scale (e.g., "Collaborated with a cross-functional team of 12").
-            </p>
-
-            <h3 className="text-lg font-bold text-white mb-6 border-b border-white/10 pb-2">Replace Weak Words with Strong Action Verbs:</h3>
-            <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-              <div className="bg-slate-800/50 rounded-xl p-4 border border-white/5 text-center">
-                <span className="block text-xs text-slate-400 mb-2 uppercase tracking-widest">Instead of "Led"</span>
-                <strong className="text-violet-300 block mb-1">Spearheaded</strong>
-                <strong className="text-violet-300 block mb-1">Directed</strong>
-                <strong className="text-violet-300 block">Orchestrated</strong>
-              </div>
-              <div className="bg-slate-800/50 rounded-xl p-4 border border-white/5 text-center">
-                <span className="block text-xs text-slate-400 mb-2 uppercase tracking-widest">Instead of "Helped"</span>
-                <strong className="text-emerald-300 block mb-1">Facilitated</strong>
-                <strong className="text-emerald-300 block mb-1">Streamlined</strong>
-                <strong className="text-emerald-300 block">Supported</strong>
-              </div>
-              <div className="bg-slate-800/50 rounded-xl p-4 border border-white/5 text-center">
-                <span className="block text-xs text-slate-400 mb-2 uppercase tracking-widest">Instead of "Made"</span>
-                <strong className="text-blue-300 block mb-1">Engineered</strong>
-                <strong className="text-blue-300 block mb-1">Formulated</strong>
-                <strong className="text-blue-300 block">Generated</strong>
-              </div>
-              <div className="bg-slate-800/50 rounded-xl p-4 border border-white/5 text-center">
-                <span className="block text-xs text-slate-400 mb-2 uppercase tracking-widest">Instead of "Changed"</span>
-                <strong className="text-amber-300 block mb-1">Overhauled</strong>
-                <strong className="text-amber-300 block mb-1">Transformed</strong>
-                <strong className="text-amber-300 block">Revamped</strong>
-              </div>
-            </div>
-
-            {/* Fatal Flaws Section */}
-            <div className="bg-red-950/20 border border-red-500/20 rounded-2xl p-6 sm:p-8 mb-10">
-              <div className="flex items-center gap-3 mb-6 text-red-400 font-bold">
-                <AlertTriangle size={24} />
-                <h3 className="text-xl">Fatal Flaws to Avoid</h3>
-              </div>
-              <ul className="text-slate-300 space-y-4">
-                <li className="flex gap-4">
-                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
-                  <div>
-                    <strong className="text-white block mb-1">Typos and Grammar Errors</strong>
-                    <p className="text-sm text-slate-400">A single spelling mistake can send your CV straight to the trash. It signals poor attention to detail. Always proofread, use spell-check, and ideally have a friend review it before submitting.</p>
-                  </div>
-                </li>
-                <li className="flex gap-4">
-                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
-                  <div>
-                    <strong className="text-white block mb-1">Unprofessional Email Addresses</strong>
-                    <p className="text-sm text-slate-400">Drop the `skaterboy99@yahoo.com` or `party_girl_xo@hotmail.com`. Create a clean, professional email address using variations of your first and last name (e.g., `firstname.lastname@gmail.com`).</p>
-                  </div>
-                </li>
-                <li className="flex gap-4">
-                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
-                  <div>
-                    <strong className="text-white block mb-1">Including a Photograph</strong>
-                    <p className="text-sm text-slate-400">Unless you are applying for an acting/modeling role, or applying in specific regions where it is culturally expected (like some countries in Europe or Asia), do NOT include a photo. In North America and the UK, companies often reject CVs with photos immediately to avoid accusations of unconscious bias and discrimination.</p>
-                  </div>
-                </li>
-                <li className="flex gap-4">
-                  <div className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
-                  <div>
-                    <strong className="text-white block mb-1">Lying or Exaggerating</strong>
-                    <p className="text-sm text-slate-400">Background checks are rigorous. They will expose false degrees, inflated job titles, or fabricated dates of employment. Be honest, but learn how to phrase your real experience in the best, most professional light possible.</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            <div className="text-center pt-12 border-t border-white/10 mt-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-violet-500/20 text-violet-400 mb-6">
-                <GraduationCap size={32} />
-              </div>
-              <h3 className="text-3xl font-black text-white mb-4">Ready to apply these expert tips?</h3>
-              <p className="text-slate-400 mb-8 max-w-xl mx-auto text-lg">
-                Our AI-powered CV builder naturally guides you toward making better formatting choices. Put your new knowledge to work and build a resume that gets you hired.
-              </p>
-              <Link
-                to="/builder"
-                className="inline-flex items-center justify-center rounded-2xl bg-linear-to-r from-violet-600 to-indigo-600 px-10 py-5 text-lg font-extrabold text-white shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all hover:scale-105 active:scale-[0.98]"
-              >
-                Create Your Winning CV Now
-              </Link>
-            </div>
-          </div>
-        </motion.article>
-      </section>
-    </main>
+          </section>
+        </main>
+      </div>
+    </div>
   );
-};
+}
 
-export default TipsAndResources;
+function ScreenshotFrame({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/30">
+      <div className="flex items-center justify-between border-b border-white/10 bg-slate-900 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+          <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+        </div>
+        <span className="text-xs font-black uppercase text-slate-500">{label}</span>
+      </div>
+      <div className="p-3 sm:p-4">{children}</div>
+    </div>
+  );
+}

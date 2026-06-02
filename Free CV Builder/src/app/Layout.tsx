@@ -6,6 +6,7 @@ const FOOTERLESS_ROUTES = [
   '/dashboard',
   '/my-cvs',
   '/profile',
+  '/tips',
   '/forgot-password',
   '/reset-password',
   '/checkout',

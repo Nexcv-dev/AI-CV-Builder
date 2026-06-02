@@ -331,7 +331,8 @@ export default function LandingPage() {
   const formatPrice = (cents: number, currency = 'LKR') => {
     const amount = cents / 100;
     const fractionDigits = currency === 'USD' ? 2 : 0;
-    return `${currency} ${new Intl.NumberFormat(undefined, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(amount)}`;
+    const formattedAmount = new Intl.NumberFormat(undefined, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(amount);
+    return currency === 'USD' ? `$${formattedAmount}` : `${currency} ${formattedAmount}`;
   };
 
   const displayPlanPrice = (plan: { key: string; price: string }) => {
@@ -477,7 +478,7 @@ export default function LandingPage() {
           <nav className="hidden items-center gap-7 text-sm font-bold text-slate-300 md:flex">
             <Link to="/templates" className="transition-colors hover:text-white">Templates</Link>
             <a href="#pricing" className="transition-colors hover:text-white">Pricing</a>
-            <Link to="/tips" className="transition-colors hover:text-white">Tips</Link>
+            <Link to="/blog" className="transition-colors hover:text-white">Blog</Link>
             <a href="#features" className="transition-colors hover:text-white">Features</a>
             <a href="#faq" className="transition-colors hover:text-white">FAQ</a>
             <Link to="/about" className="transition-colors hover:text-white">About</Link>
@@ -561,6 +562,7 @@ export default function LandingPage() {
               { label: 'Home', href: '/', icon: Home, delay: '0ms', isLink: true },
               { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms', isLink: true },
               { label: 'Pricing', href: '#pricing', icon: Crown, delay: '100ms', isLink: false },
+              { label: 'Blog', href: '/blog', icon: BookOpen, delay: '150ms', isLink: true },
               { label: 'Features', href: '#features', icon: Zap, delay: '200ms', isLink: false },
               { label: 'FAQ', href: '#faq', icon: Info, delay: '250ms', isLink: false },
               { label: 'About', href: '/about', icon: Info, delay: '300ms', isLink: true },

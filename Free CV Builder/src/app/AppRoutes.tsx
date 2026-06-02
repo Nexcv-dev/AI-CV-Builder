@@ -22,6 +22,7 @@ const MyCvs = lazy(() => import('../pages/MyCvs'));
 const Profile = lazy(() => import('../pages/Profile'));
 const ResetPassword = lazy(() => import('../pages/ResetPassword'));
 const TipsAndResources = lazy(() => import('../pages/TipsAndResources'));
+const BlogPage = lazy(() => import('../pages/BlogPage'));
 const PricingPage = lazy(() => import('../pages/PricingPage'));
 const CheckoutPage = lazy(() => import('../pages/CheckoutPage'));
 const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
@@ -115,6 +116,7 @@ export function AppRoutes() {
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/builder" element={<Home />} />
             <Route path="/tips" element={<TipsAndResources />} />
+            <Route path="/blog" element={<BlogPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/terms" element={<TermsAndConditions />} />

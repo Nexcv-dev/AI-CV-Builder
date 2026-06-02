@@ -90,8 +90,8 @@ export const PUBLIC_SEO_ROUTES: SeoRoute[] = [
     },
   },
   {
-    path: '/tips',
-    title: 'Resume Writing Tips & ATS CV Guide | NexCV',
+    path: '/blog',
+    title: 'How to Create a Professional CV | NexCV Blog',
     description:
       'Learn how to write a stronger CV, improve ATS compatibility, choose resume templates, and present your experience with confidence.',
     keywords: ['resume writing tips', 'ATS resume guide', 'how to write a CV', 'CV writing guide'],
@@ -99,7 +99,7 @@ export const PUBLIC_SEO_ROUTES: SeoRoute[] = [
     structuredData: {
       '@type': 'Article',
       '@id': '#resume-guide',
-      headline: 'Resume Writing Tips and ATS CV Guide',
+      headline: 'How to Create a Professional CV',
       description:
         'A practical guide to writing stronger, ATS-friendly resumes with better summaries, keywords, tailoring, and achievement-focused bullet points.',
       author: {

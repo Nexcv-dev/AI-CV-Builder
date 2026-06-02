@@ -181,7 +181,8 @@ export default function PricingPage() {
   const formatPrice = (cents: number, currency = 'LKR') => {
     const amount = cents / 100;
     const fractionDigits = currency === 'USD' ? 2 : 0;
-    return `${currency} ${new Intl.NumberFormat(undefined, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(amount)}`;
+    const formattedAmount = new Intl.NumberFormat(undefined, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(amount);
+    return currency === 'USD' ? `$${formattedAmount}` : `${currency} ${formattedAmount}`;
   };
 
   const displayPlanPrice = (plan: { key: PlanKey }) => {

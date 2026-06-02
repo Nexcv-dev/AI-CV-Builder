@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Clock3,
   Crown,
-  Download,
   Edit3,
   FileText,
   LayoutTemplate,
@@ -393,7 +392,6 @@ export default function Dashboard() {
                   menuOpen={openActionsDocumentId === document.id}
                   onToggleMenu={() => setOpenActionsDocumentId((current) => current === document.id ? null : document.id)}
                   onEdit={() => navigate(`/builder?document=${document.id}`)}
-                  onDownload={() => navigate(`/builder?document=${document.id}&download=1`)}
                   onDelete={() => {
                     setOpenActionsDocumentId(null);
                     setDocumentToDelete(document);
@@ -557,7 +555,6 @@ function RecentCvRow({
   menuOpen,
   onToggleMenu,
   onEdit,
-  onDownload,
   onDelete,
 }: {
   document: SavedDocument;
@@ -566,7 +563,6 @@ function RecentCvRow({
   menuOpen: boolean;
   onToggleMenu: () => void;
   onEdit: () => void;
-  onDownload: () => void;
   onDelete: () => void;
 }) {
   const meta = templateMap.get(document.template as any);
@@ -621,10 +617,6 @@ function RecentCvRow({
               <Edit3 size={14} />
               Edit
             </button>
-            <button type="button" onClick={onDownload} className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition hover:bg-white/8">
-              <Download size={14} />
-              Download
-            </button>
             <button type="button" onClick={onDelete} disabled={deleting} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-red-200 transition hover:bg-red-500/10 disabled:opacity-60">
               {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
               Delete
@@ -641,14 +633,6 @@ function RecentCvRow({
         >
           <Edit3 size={14} />
           Edit
-        </button>
-        <button
-          type="button"
-          onClick={onDownload}
-          className="hidden items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-extrabold text-slate-200 transition hover:bg-white/10 active:scale-[0.98] min-[460px]:inline-flex"
-        >
-          <Download size={14} />
-          Download
         </button>
         <button
           type="button"
