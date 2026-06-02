@@ -307,15 +307,9 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (isFreePlan) {
-      onUpgradeRequired?.('ai');
-      event.target.value = '';
-      return;
-    }
-
     importInFlightRef.current = true;
     setIsImporting(true);
-    setImportMessage({ type: 'success', text: 'Starting import...' });
+    setImportMessage({ type: 'success', text: 'Reading your file...' });
 
     if (file.size > MAX_CV_FILE_SIZE) {
       setImportMessage({ type: 'error', text: 'File is too large. Maximum allowed size is 10 MB.' });
@@ -350,7 +344,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
             let errorMessage = parseResponse.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Unknown server error";
             try {
               const errorJson = JSON.parse(errorText);
-              if (errorJson.upgradeRequired) {
+              if (errorJson.upgradeRequired && errorJson.reason !== 'basic_import') {
                 onUpgradeRequired?.('ai');
                 return;
               }
@@ -363,6 +357,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
 
           const result = await parseResponse.json();
           if (result) {
+            const hasImportedItems = (items: unknown): items is any[] => Array.isArray(items) && items.length > 0;
             setCvData(prev => ({
               ...prev,
               personalInfo: {
@@ -379,62 +374,68 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
                 religion: result.personalInfo?.religion || prev.personalInfo.religion || '',
                 maritalStatus: result.personalInfo?.maritalStatus || prev.personalInfo.maritalStatus || '',
               },
-              experience: (result.experience || []).map((e: any) => ({
+              experience: hasImportedItems(result.experience) ? result.experience.map((e: any) => ({
                 id: crypto.randomUUID(),
                 company: e.company || '',
                 position: e.position || '',
                 startDate: e.startDate || '',
                 endDate: e.endDate || '',
                 description: e.description || '',
-              })),
-              education: (result.education || []).map((e: any) => ({
+              })) : prev.experience,
+              education: hasImportedItems(result.education) ? result.education.map((e: any) => ({
                 id: crypto.randomUUID(),
                 institution: e.institution || '',
                 degree: e.degree || '',
                 startDate: e.startDate || '',
                 endDate: e.endDate || '',
                 description: e.description || '',
-              })),
-              skills: (result.skills || []).map((s: any) => ({
+              })) : prev.education,
+              skills: hasImportedItems(result.skills) ? result.skills.map((s: any) => ({
                 id: crypto.randomUUID(),
                 name: s.name || '',
                 level: s.level || 4,
-              })),
-              courses: (result.courses || []).map((c: any) => ({
+                category: s.category || undefined,
+              })) : prev.skills,
+              courses: hasImportedItems(result.courses) ? result.courses.map((c: any) => ({
                 id: crypto.randomUUID(),
                 name: c.name || '',
                 institution: c.institution || '',
                 startDate: c.startDate || '',
                 endDate: c.endDate || '',
-              })),
-              languages: (result.languages || []).map((l: any) => ({
+              })) : prev.courses,
+              languages: hasImportedItems(result.languages) ? result.languages.map((l: any) => ({
                 id: crypto.randomUUID(),
                 name: l.name || '',
                 proficiency: l.proficiency || '',
-              })),
-              projects: (result.projects || []).map((p: any) => ({
+              })) : prev.languages,
+              projects: hasImportedItems(result.projects) ? result.projects.map((p: any) => ({
                 id: crypto.randomUUID(),
                 name: p.name || '',
                 description: p.description || '',
                 link: p.link || '',
-              })),
-              awards: (result.awards || []).map((a: any) => ({
+              })) : prev.projects,
+              awards: hasImportedItems(result.awards) ? result.awards.map((a: any) => ({
                 id: crypto.randomUUID(),
                 name: a.name || '',
                 date: a.date || '',
                 issuer: a.issuer || '',
-              })),
-              references: (result.references || []).map((r: any) => ({
+              })) : prev.awards,
+              references: hasImportedItems(result.references) ? result.references.map((r: any) => ({
                 id: crypto.randomUUID(),
                 name: r.name || '',
                 position: r.position || '',
                 company: r.company || '',
                 email: r.email || '',
                 phone: r.phone || '',
-              })),
+              })) : prev.references,
             }));
 
-            setImportMessage({ type: 'success', text: 'Data imported successfully!' });
+            const importMeta = result.importMeta;
+            const successText = importMeta?.message
+              || (importMeta?.source === 'basic'
+                ? 'Basic import completed. Review each section before saving.'
+                : 'Data imported successfully!');
+            setImportMessage({ type: 'success', text: successText });
             setTimeout(() => {
               setShowUploadModal(false);
               setImportMessage(null);

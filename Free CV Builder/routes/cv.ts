@@ -6,7 +6,7 @@ import type { TemplateName } from '../src/templates';
 type RouteDeps = Record<string, any>;
 
 export function registerCvRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, aiLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, logError, logEvent } = bindDeps(deps);
+    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, aiLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
 
     router.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
         try {
@@ -140,10 +140,6 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
 
     router.post('/api/parse-cv', requireAuth, aiLimiter, cvImportJsonParser, async (req: Request, res: Response) => {
         try {
-            if (!requirePaidPlan(req, res)) {
-                return;
-            }
-    
             const { base64Data, mimeType } = req.body;
     
             if (!base64Data || typeof base64Data !== 'string') {
@@ -156,146 +152,203 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
     
             // Validate mimeType against allow-list
             const validatedMimeType = ALLOWED_MIME_TYPES.includes(mimeType) ? mimeType : 'application/pdf';
-    
-            if (!process.env.GEMINI_API_KEY) {
-                return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
+
+            const { text: extractedText, usedOcr } = await extractCvText(base64Data, validatedMimeType);
+            const basicResult = parseCvTextToStructuredData(extractedText || '');
+            const userCanUseAi = isPaidPlan(req.user);
+
+            if (!userCanUseAi) {
+                if (!extractedText.trim()) {
+                    return res.status(422).json({
+                        error: 'We could not read enough text from this file. Try a clearer image or a text-based PDF.',
+                    });
+                }
+
+                return res.json(withImportMeta(basicResult, {
+                    source: 'basic',
+                    extractedTextLength: extractedText.length,
+                    usedAi: false,
+                    usedOcr,
+                    message: 'Basic import completed. Review each section before saving.',
+                }));
             }
-    
+
+            if (!process.env.GEMINI_API_KEY) {
+                return res.json(withImportMeta(basicResult, {
+                    source: 'basic',
+                    extractedTextLength: extractedText.length,
+                    usedAi: false,
+                    usedOcr,
+                    message: 'AI import is not configured, so basic extraction was used.',
+                }));
+            }
+
             const prompt = `Extract the resume data from this CV/Resume document.
               Return a JSON object that strictly matches the following structure.
-              For arrays like experience, education, skills, courses, languages, projects, and awards, extract as much detail as possible.
+              Only put data into a section when it clearly belongs to that CV section.
+              Do not move unrelated text into experience, education, skills, projects, courses, awards, languages, or references.
+              For arrays like experience, education, skills, courses, languages, projects, and awards, extract only relevant details.
               Ensure dates are in a readable format (e.g., "Jan 2020", "2015").
               If a field is not found, leave it as an empty string or empty array.`;
     
-            const jsonStr = await generateGeminiText(
-                [
+            try {
+                const jsonStr = await generateGeminiText(
+                    [
+                        {
+                            inlineData: {
+                                data: base64Data,
+                                mimeType: validatedMimeType
+                            }
+                        },
+                        ...(extractedText.trim()
+                            ? [{ text: `OCR/text extraction fallback. Use this text only when it helps confirm the document content:\n${sanitizeTextForPrompt(extractedText)}` }]
+                            : []),
+                        prompt
+                    ],
                     {
-                        inlineData: {
-                            data: base64Data,
-                            mimeType: validatedMimeType
-                        }
-                    },
-                    prompt
-                ],
-                {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            personalInfo: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    fullName: { type: Type.STRING },
-                                    email: { type: Type.STRING },
-                                    phone: { type: Type.STRING },
-                                    address: { type: Type.STRING },
-                                    summary: { type: Type.STRING },
-                                    dob: { type: Type.STRING },
-                                    nic: { type: Type.STRING },
-                                    gender: { type: Type.STRING },
-                                    nationality: { type: Type.STRING },
-                                    religion: { type: Type.STRING },
-                                    maritalStatus: { type: Type.STRING }
-                                }
-                            },
-                            experience: {
-                                type: Type.ARRAY,
-                                items: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: Type.OBJECT,
+                            properties: {
+                                personalInfo: {
                                     type: Type.OBJECT,
                                     properties: {
-                                        company: { type: Type.STRING },
-                                        position: { type: Type.STRING },
-                                        startDate: { type: Type.STRING },
-                                        endDate: { type: Type.STRING },
-                                        description: { type: Type.STRING },
+                                        fullName: { type: Type.STRING },
+                                        email: { type: Type.STRING },
+                                        phone: { type: Type.STRING },
+                                        address: { type: Type.STRING },
+                                        summary: { type: Type.STRING },
+                                        dob: { type: Type.STRING },
+                                        nic: { type: Type.STRING },
+                                        gender: { type: Type.STRING },
+                                        nationality: { type: Type.STRING },
+                                        religion: { type: Type.STRING },
+                                        maritalStatus: { type: Type.STRING }
                                     }
-                                }
-                            },
-                            education: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        institution: { type: Type.STRING },
-                                        degree: { type: Type.STRING },
-                                        startDate: { type: Type.STRING },
-                                        endDate: { type: Type.STRING },
-                                        description: { type: Type.STRING },
+                                },
+                                experience: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            company: { type: Type.STRING },
+                                            position: { type: Type.STRING },
+                                            startDate: { type: Type.STRING },
+                                            endDate: { type: Type.STRING },
+                                            description: { type: Type.STRING },
+                                        }
                                     }
-                                }
-                            },
-                            skills: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        name: { type: Type.STRING },
-                                        level: { type: Type.INTEGER, description: "1 to 5" },
-                                        category: { type: Type.STRING, description: "e.g., Frontend, Backend, Tools, Soft Skills" }
+                                },
+                                education: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            institution: { type: Type.STRING },
+                                            degree: { type: Type.STRING },
+                                            startDate: { type: Type.STRING },
+                                            endDate: { type: Type.STRING },
+                                            description: { type: Type.STRING },
+                                        }
                                     }
-                                }
-                            },
-                            courses: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        name: { type: Type.STRING },
-                                        institution: { type: Type.STRING },
-                                        startDate: { type: Type.STRING },
-                                        endDate: { type: Type.STRING }
+                                },
+                                skills: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            name: { type: Type.STRING },
+                                            level: { type: Type.INTEGER, description: "1 to 5" },
+                                            category: { type: Type.STRING, description: "e.g., Frontend, Backend, Tools, Soft Skills" }
+                                        }
                                     }
-                                }
-                            },
-                            languages: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        name: { type: Type.STRING },
-                                        proficiency: { type: Type.STRING }
+                                },
+                                courses: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            name: { type: Type.STRING },
+                                            institution: { type: Type.STRING },
+                                            startDate: { type: Type.STRING },
+                                            endDate: { type: Type.STRING }
+                                        }
                                     }
-                                }
-                            },
-                            projects: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        name: { type: Type.STRING },
-                                        description: { type: Type.STRING },
-                                        link: { type: Type.STRING }
+                                },
+                                languages: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            name: { type: Type.STRING },
+                                            proficiency: { type: Type.STRING }
+                                        }
                                     }
-                                }
-                            },
-                            awards: {
-                                type: Type.ARRAY,
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        name: { type: Type.STRING },
-                                        date: { type: Type.STRING },
-                                        issuer: { type: Type.STRING }
+                                },
+                                projects: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            name: { type: Type.STRING },
+                                            description: { type: Type.STRING },
+                                            link: { type: Type.STRING }
+                                        }
+                                    }
+                                },
+                                awards: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            name: { type: Type.STRING },
+                                            date: { type: Type.STRING },
+                                            issuer: { type: Type.STRING }
+                                        }
+                                    }
+                                },
+                                references: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            name: { type: Type.STRING },
+                                            position: { type: Type.STRING },
+                                            company: { type: Type.STRING },
+                                            email: { type: Type.STRING },
+                                            phone: { type: Type.STRING }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-            );
-    
-            if (jsonStr) {
+                );
+
+                if (!jsonStr) throw new Error('No data returned.');
                 // Strip markdown code fences if present
                 const cleanJson = jsonStr.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-                try {
-                    const result = JSON.parse(cleanJson);
-                    return res.json(result);
-                } catch {
-                    console.error("Failed to parse AI response as JSON");
-                    return res.status(500).json({ error: "Failed to parse document. Please try again." });
+                const result = JSON.parse(cleanJson);
+                return res.json(withImportMeta(result, {
+                    source: 'ai',
+                    extractedTextLength: extractedText.length,
+                    usedAi: true,
+                    usedOcr,
+                    message: 'AI import completed.',
+                }));
+            } catch (aiError) {
+                logError?.('cv_import.ai_fallback', aiError, { usedOcr, extractedTextLength: extractedText.length });
+                if (!extractedText.trim()) {
+                    return sendError(res, 500, "Failed to process document. Please try again.", aiError);
                 }
-            } else {
-                return res.status(500).json({ error: "No data returned. Please try again." });
+
+                return res.json(withImportMeta(basicResult, {
+                    source: 'basic',
+                    extractedTextLength: extractedText.length,
+                    usedAi: false,
+                    usedOcr,
+                    message: 'AI import failed, so basic OCR/text extraction was used.',
+                }));
             }
         } catch (error: any) {
             return sendError(res, 500, "Failed to process document. Please try again.", error);

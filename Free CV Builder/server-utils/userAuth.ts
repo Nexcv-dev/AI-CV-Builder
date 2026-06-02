@@ -65,7 +65,7 @@ export const generateEmailVerificationOtp = () => {
 };
 
 export const isEmailVerified = (user: any) => user?.authProvider === 'google' || user?.emailVerified !== false;
-const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || 'www.bimanthaperera@gmail.com';
+const getAdminNotificationEmail = () => process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || 'www.bimanthaperera@gmail.com';
 
 const getEmailTemplates = async () => {
     const settings = await getAppSettings().catch(() => null);
@@ -129,7 +129,7 @@ export const publicUser = (user: any) => ({
 });
 
 export const sendNewAccountNotification = (user: any) => sendNotificationEmail({
-    to: ADMIN_NOTIFICATION_EMAIL,
+    to: getAdminNotificationEmail(),
     subject: 'New NexCV account created',
     text: `A new NexCV account was created.\n\n` +
         `Name: ${sanitizeDisplayName(user.displayName) || 'Unknown'}\n` +
@@ -140,7 +140,7 @@ export const sendNewAccountNotification = (user: any) => sendNotificationEmail({
 });
 
 export const sendContactNotification = (details: { fullName: string; email: string; message: string }) => sendSystemEmail({
-    to: ADMIN_NOTIFICATION_EMAIL,
+    to: getAdminNotificationEmail(),
     replyTo: details.email,
     subject: `New NexCV contact message from ${details.fullName}`,
     text: `A contact form message was submitted on NexCV.\n\n` +
@@ -159,7 +159,7 @@ export const sendBillingSuccessNotifications = async (details: {
     const expiresAt = details.planExpiresAt?.toISOString?.() || 'Unknown';
 
     await sendNotificationEmail({
-        to: ADMIN_NOTIFICATION_EMAIL,
+        to: getAdminNotificationEmail(),
         subject: `NexCV payment success - ${details.transactionId}`,
         text: `A NexCV transaction completed successfully.\n\n` +
             `Transaction ID: ${details.transactionId}\n` +
@@ -204,7 +204,7 @@ export const sendBillingAlertNotification = async (details: {
     currency?: string;
 }) => {
     await sendNotificationEmail({
-        to: ADMIN_NOTIFICATION_EMAIL,
+        to: getAdminNotificationEmail(),
         subject: `NexCV PayHere alert - ${details.event}`,
         text: `A PayHere IPN needs attention.\n\n` +
             `Event: ${details.event}\n` +

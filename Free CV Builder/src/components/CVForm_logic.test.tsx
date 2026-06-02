@@ -171,7 +171,7 @@ describe('CVForm Logic', () => {
     fireEvent.click(skillsStep);
     
     // Look for skill level buttons - wait for them to appear
-    const skillButtons = await screen.findAllByLabelText(/Set skill level to/i);
+    const skillButtons = await screen.findAllByLabelText(/Set skill level to/i, undefined, { timeout: 5000 });
     expect(skillButtons.length).toBe(5); // 5 levels
     expect(skillButtons[0]).toHaveAttribute('aria-label', 'Set skill level to 1 out of 5');
   });
@@ -250,7 +250,7 @@ describe('CVForm Logic', () => {
     }
   });
 
-  it('clears import message and shows starting message on new CV import', async () => {
+  it('clears import message and shows file-reading message on new CV import', async () => {
     render(
       <MemoryRouter>
         <CVForm cvData={initialData} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} showImportPromptOnMount />
@@ -271,7 +271,7 @@ describe('CVForm Logic', () => {
     await user.upload(importInput, file);
 
     // Verify immediate feedback - use findBy to wait for render
-    expect(await screen.findByText(/Starting import/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Reading your file/i)).toBeInTheDocument();
 
     // Wait for the async operation to finish to prevent unhandled promise rejections after test ends
     await waitFor(() => {

@@ -71,6 +71,8 @@ const loginWithRegeneratedSession = (
 };
 
 const GOOGLE_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const GITHUB_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const LINKEDIN_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 type TokenHasher = (value: string) => string;
 type RandomBytesFactory = (size: number) => { toString(encoding: 'hex'): string };
@@ -102,6 +104,239 @@ const consumeGoogleOAuthState = (
     }
 
     return stored.value === hashToken(state);
+};
+
+const createLinkedInOAuthState = (
+    req: Request,
+    randomBytes: RandomBytesFactory,
+    hashToken: TokenHasher,
+) => {
+    const state = randomBytes(32).toString('hex');
+    (req.session as any).linkedinOAuthState = {
+        value: hashToken(state),
+        createdAt: Date.now(),
+    };
+    return state;
+};
+
+const consumeLinkedInOAuthState = (
+    req: Request,
+    state: unknown,
+    hashToken: TokenHasher,
+) => {
+    const stored = (req.session as any)?.linkedinOAuthState;
+    delete (req.session as any).linkedinOAuthState;
+
+    if (!stored || typeof state !== 'string' || !state) return false;
+    if (typeof stored.createdAt !== 'number' || Date.now() - stored.createdAt > LINKEDIN_OAUTH_STATE_TTL_MS) {
+        return false;
+    }
+
+    return stored.value === hashToken(state);
+};
+
+const createGitHubOAuthState = (
+    req: Request,
+    randomBytes: RandomBytesFactory,
+    hashToken: TokenHasher,
+) => {
+    const state = randomBytes(32).toString('hex');
+    (req.session as any).githubOAuthState = {
+        value: hashToken(state),
+        createdAt: Date.now(),
+    };
+    return state;
+};
+
+const consumeGitHubOAuthState = (
+    req: Request,
+    state: unknown,
+    hashToken: TokenHasher,
+) => {
+    const stored = (req.session as any)?.githubOAuthState;
+    delete (req.session as any).githubOAuthState;
+
+    if (!stored || typeof state !== 'string' || !state) return false;
+    if (typeof stored.createdAt !== 'number' || Date.now() - stored.createdAt > GITHUB_OAUTH_STATE_TTL_MS) {
+        return false;
+    }
+
+    return stored.value === hashToken(state);
+};
+
+const authRedirectForNextTarget = (nextTarget: unknown) =>
+    nextTarget === 'download' ? '/builder?download=1' :
+        nextTarget === 'builder' ? '/builder' :
+            nextTarget === 'dashboard' ? '/dashboard' :
+                nextTarget === 'my-cvs' ? '/my-cvs' :
+                    nextTarget === 'profile' ? '/profile' :
+                        nextTarget === 'admin' ? '/admin' :
+                            '/builder?import=1';
+
+const linkedinCallbackUrl = (req: Request) => {
+    const configured = process.env.LINKEDIN_REDIRECT_URI?.trim();
+    if (configured) return configured;
+    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '');
+    if (frontendUrl) return `${frontendUrl}/api/auth/linkedin/callback`;
+    return `${req.protocol}://${req.get('host')}/api/auth/linkedin/callback`;
+};
+
+const linkedinConfig = () => {
+    const clientId = process.env.LINKEDIN_CLIENT_ID?.trim();
+    const clientSecret = process.env.LINKEDIN_CLIENT_SECRET?.trim();
+    return clientId && clientSecret ? { clientId, clientSecret } : null;
+};
+
+const githubCallbackUrl = (req: Request) => {
+    const configured = (process.env.GITHUB_CALLBACK_URL || process.env.GITHUB_REDIRECT_URI || '').trim();
+    if (configured) return configured;
+    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '');
+    if (frontendUrl) return `${frontendUrl}/api/auth/github/callback`;
+    return `${req.protocol}://${req.get('host')}/api/auth/github/callback`;
+};
+
+const githubConfig = () => {
+    const clientId = process.env.GITHUB_CLIENT_ID?.trim();
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET?.trim();
+    return clientId && clientSecret ? { clientId, clientSecret } : null;
+};
+
+const safeLinkedInImage = (value: unknown) => {
+    const image = typeof value === 'string' ? value.trim() : '';
+    return image.startsWith('https://') ? image : '';
+};
+
+const resolveLinkedInOAuthUser = async ({
+    User,
+    roleForEmail,
+    syncUserRoleFromAllowlist,
+    normalizeEmail,
+    sanitizeDisplayName,
+    profile,
+}: {
+    User: any;
+    roleForEmail: (email: string) => string;
+    syncUserRoleFromAllowlist: (user: any) => Promise<any>;
+    normalizeEmail: (email: unknown) => string;
+    sanitizeDisplayName: (value: unknown) => string;
+    profile: Record<string, any>;
+}) => {
+    const linkedinId = typeof profile.sub === 'string' ? profile.sub.trim() : '';
+    const email = normalizeEmail(profile.email);
+    const displayName = sanitizeDisplayName(profile.name || [profile.given_name, profile.family_name].filter(Boolean).join(' '));
+    const profileImage = safeLinkedInImage(profile.picture);
+
+    if (!linkedinId) throw new Error('LinkedIn account did not provide an account id.');
+    if (!email) throw new Error('LinkedIn account did not provide an email address.');
+    if (!displayName) throw new Error('LinkedIn account did not provide a display name.');
+
+    let user = await User.findOne({ linkedinId });
+    if (user) {
+        if (profileImage && user.profileImage !== profileImage) {
+            user.profileImage = profileImage;
+        }
+        if (!user.emailVerified) {
+            user.emailVerified = true;
+            user.emailVerificationToken = undefined;
+            user.emailVerificationExpires = undefined;
+        }
+        await syncUserRoleFromAllowlist(user);
+        await user.save();
+        return { user };
+    }
+
+    user = await User.findOne({ email });
+    if (user) {
+        return {
+            user: null,
+            info: { message: 'A NexCV account already exists for this email. Sign in with email first.' },
+        };
+    }
+
+    user = await User.create({
+        linkedinId,
+        displayName,
+        email,
+        profileImage,
+        role: roleForEmail(email),
+        emailVerified: true,
+        authProvider: 'linkedin',
+    });
+    (user as any).wasNewlyCreated = true;
+
+    return { user };
+};
+
+const primaryGitHubEmail = (profile: Record<string, any>, emails: any[], normalizeEmail: (email: unknown) => string) => {
+    const profileEmail = normalizeEmail(profile.email);
+    if (profileEmail) return profileEmail;
+
+    const primaryVerified = emails.find((item) => item?.primary && item?.verified && item?.email);
+    const anyVerified = emails.find((item) => item?.verified && item?.email);
+    return normalizeEmail(primaryVerified?.email || anyVerified?.email);
+};
+
+const resolveGitHubOAuthUser = async ({
+    User,
+    roleForEmail,
+    syncUserRoleFromAllowlist,
+    normalizeEmail,
+    sanitizeDisplayName,
+    profile,
+    emails,
+}: {
+    User: any;
+    roleForEmail: (email: string) => string;
+    syncUserRoleFromAllowlist: (user: any) => Promise<any>;
+    normalizeEmail: (email: unknown) => string;
+    sanitizeDisplayName: (value: unknown) => string;
+    profile: Record<string, any>;
+    emails: any[];
+}) => {
+    const githubId = profile.id ? String(profile.id).trim() : '';
+    const email = primaryGitHubEmail(profile, emails, normalizeEmail);
+    const displayName = sanitizeDisplayName(profile.name || profile.login);
+    const profileImage = safeLinkedInImage(profile.avatar_url);
+
+    if (!githubId) throw new Error('GitHub account did not provide an account id.');
+    if (!email) throw new Error('GitHub account did not provide a verified email address.');
+    if (!displayName) throw new Error('GitHub account did not provide a display name.');
+
+    let user = await User.findOne({ githubId });
+    if (user) {
+        if (profileImage && user.profileImage !== profileImage) {
+            user.profileImage = profileImage;
+        }
+        if (!user.emailVerified) {
+            user.emailVerified = true;
+            user.emailVerificationToken = undefined;
+            user.emailVerificationExpires = undefined;
+        }
+        await syncUserRoleFromAllowlist(user);
+        await user.save();
+        return { user };
+    }
+
+    user = await User.findOne({ email });
+    if (user) {
+        return {
+            user: null,
+            info: { message: 'A NexCV account already exists for this email. Sign in with email first.' },
+        };
+    }
+
+    user = await User.create({
+        githubId,
+        displayName,
+        email,
+        profileImage,
+        role: roleForEmail(email),
+        emailVerified: true,
+        authProvider: 'github',
+    });
+    (user as any).wasNewlyCreated = true;
+
+    return { user };
 };
 
 const genericSignupError = 'Could not create your account. Please check your details and try again.';
@@ -698,14 +933,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
 
     router.get('/api/auth/google', (req: Request, _res: Response, next: NextFunction) => {
         const nextTarget = typeof req.query.next === 'string' ? req.query.next : 'import';
-        (req.session as any).authRedirect =
-            nextTarget === 'download' ? '/builder?download=1' :
-                nextTarget === 'builder' ? '/builder' :
-                    nextTarget === 'dashboard' ? '/dashboard' :
-                        nextTarget === 'my-cvs' ? '/my-cvs' :
-                            nextTarget === 'profile' ? '/profile' :
-                                nextTarget === 'admin' ? '/admin' :
-                    '/builder?import=1';
+        (req.session as any).authRedirect = authRedirectForNextTarget(nextTarget);
         (req as any).googleOAuthState = createGoogleOAuthState(req, randomBytes, hashToken);
         next();
     }, (req: Request, res: Response, next: NextFunction) => passport.authenticate('google', {
@@ -743,6 +971,198 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 res.redirect(redirectTo);
             });
         })(req, res, next);
+    });
+
+    router.get('/api/auth/github', (req: Request, res: Response) => {
+        const config = githubConfig();
+        if (!config) {
+            console.warn('GitHub Auth variables missing in .env. GitHub login is not available.');
+            return res.redirect('/?auth=failed&reason=github_not_configured');
+        }
+
+        const nextTarget = typeof req.query.next === 'string' ? req.query.next : 'import';
+        (req.session as any).authRedirect = authRedirectForNextTarget(nextTarget);
+        const state = createGitHubOAuthState(req, randomBytes, hashToken);
+        const params = new URLSearchParams({
+            client_id: config.clientId,
+            redirect_uri: githubCallbackUrl(req),
+            scope: 'read:user user:email',
+            state,
+        });
+
+        return res.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
+    });
+
+    router.get('/api/auth/github/callback', async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!consumeGitHubOAuthState(req, req.query.state, hashToken)) {
+                console.warn('GitHub Auth callback rejected: invalid OAuth state');
+                return res.redirect('/?auth=failed&reason=invalid_state');
+            }
+
+            const config = githubConfig();
+            const code = typeof req.query.code === 'string' ? req.query.code : '';
+            if (!config || !code) {
+                return res.redirect('/?auth=failed&reason=denied');
+            }
+
+            const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    Accept: 'application/json',
+                },
+                body: new URLSearchParams({
+                    client_id: config.clientId,
+                    client_secret: config.clientSecret,
+                    code,
+                    redirect_uri: githubCallbackUrl(req),
+                }),
+            });
+
+            const tokenData = await tokenResponse.json().catch(() => ({}));
+            if (!tokenResponse.ok || typeof tokenData.access_token !== 'string') {
+                console.warn('GitHub token exchange failed:', tokenData?.error_description || tokenData?.error || tokenResponse.status);
+                return res.redirect('/?auth=failed&reason=server_error');
+            }
+
+            const authHeaders = {
+                Authorization: `Bearer ${tokenData.access_token}`,
+                Accept: 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+            };
+            const profileResponse = await fetch('https://api.github.com/user', { headers: authHeaders });
+            const profile = await profileResponse.json().catch(() => ({}));
+            if (!profileResponse.ok) {
+                console.warn('GitHub profile fetch failed:', profile?.message || profileResponse.status);
+                return res.redirect('/?auth=failed&reason=server_error');
+            }
+
+            const emailsResponse = await fetch('https://api.github.com/user/emails', { headers: authHeaders });
+            const emails = await emailsResponse.json().catch(() => []);
+            if (!emailsResponse.ok) {
+                console.warn('GitHub email fetch failed:', Array.isArray(emails) ? emailsResponse.status : emails?.message || emailsResponse.status);
+                return res.redirect('/?auth=failed&reason=server_error');
+            }
+
+            const result = await resolveGitHubOAuthUser({
+                User,
+                roleForEmail,
+                syncUserRoleFromAllowlist,
+                normalizeEmail,
+                sanitizeDisplayName,
+                profile,
+                emails: Array.isArray(emails) ? emails : [],
+            });
+
+            if (!result.user) {
+                const reason = result.info?.message?.includes('already exists') ? 'account_exists' : 'denied';
+                return res.redirect(`/?auth=failed&reason=${reason}`);
+            }
+
+            loginWithRegeneratedSession(req, result.user, next, () => {
+                markSessionCurrent(req, result.user);
+                if ((result.user as any).wasNewlyCreated) {
+                    void sendNewAccountNotification(result.user);
+                }
+                const redirectTo = (req.session as any).authRedirect || '/builder?import=1';
+                delete (req.session as any).authRedirect;
+                return res.redirect(redirectTo);
+            });
+        } catch (error) {
+            console.error('GitHub Auth callback error:', error instanceof Error ? error.message : error);
+            return res.redirect('/?auth=failed&reason=server_error');
+        }
+    });
+
+    router.get('/api/auth/linkedin', (req: Request, res: Response) => {
+        const config = linkedinConfig();
+        if (!config) {
+            console.warn('LinkedIn Auth variables missing in .env. LinkedIn login is not available.');
+            return res.redirect('/?auth=failed&reason=linkedin_not_configured');
+        }
+
+        const nextTarget = typeof req.query.next === 'string' ? req.query.next : 'import';
+        (req.session as any).authRedirect = authRedirectForNextTarget(nextTarget);
+        const state = createLinkedInOAuthState(req, randomBytes, hashToken);
+        const params = new URLSearchParams({
+            response_type: 'code',
+            client_id: config.clientId,
+            redirect_uri: linkedinCallbackUrl(req),
+            scope: 'openid profile email',
+            state,
+        });
+
+        return res.redirect(`https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`);
+    });
+
+    router.get('/api/auth/linkedin/callback', async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!consumeLinkedInOAuthState(req, req.query.state, hashToken)) {
+                console.warn('LinkedIn Auth callback rejected: invalid OAuth state');
+                return res.redirect('/?auth=failed&reason=invalid_state');
+            }
+
+            const config = linkedinConfig();
+            const code = typeof req.query.code === 'string' ? req.query.code : '';
+            if (!config || !code) {
+                return res.redirect('/?auth=failed&reason=denied');
+            }
+
+            const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code,
+                    redirect_uri: linkedinCallbackUrl(req),
+                    client_id: config.clientId,
+                    client_secret: config.clientSecret,
+                }),
+            });
+
+            const tokenData = await tokenResponse.json().catch(() => ({}));
+            if (!tokenResponse.ok || typeof tokenData.access_token !== 'string') {
+                console.warn('LinkedIn token exchange failed:', tokenData?.error_description || tokenData?.error || tokenResponse.status);
+                return res.redirect('/?auth=failed&reason=server_error');
+            }
+
+            const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
+                headers: { Authorization: `Bearer ${tokenData.access_token}` },
+            });
+            const profile = await profileResponse.json().catch(() => ({}));
+            if (!profileResponse.ok) {
+                console.warn('LinkedIn userinfo failed:', profile?.message || profile?.error || profileResponse.status);
+                return res.redirect('/?auth=failed&reason=server_error');
+            }
+
+            const result = await resolveLinkedInOAuthUser({
+                User,
+                roleForEmail,
+                syncUserRoleFromAllowlist,
+                normalizeEmail,
+                sanitizeDisplayName,
+                profile,
+            });
+
+            if (!result.user) {
+                const reason = result.info?.message?.includes('already exists') ? 'account_exists' : 'denied';
+                return res.redirect(`/?auth=failed&reason=${reason}`);
+            }
+
+            loginWithRegeneratedSession(req, result.user, next, () => {
+                markSessionCurrent(req, result.user);
+                if ((result.user as any).wasNewlyCreated) {
+                    void sendNewAccountNotification(result.user);
+                }
+                const redirectTo = (req.session as any).authRedirect || '/builder?import=1';
+                delete (req.session as any).authRedirect;
+                return res.redirect(redirectTo);
+            });
+        } catch (error) {
+            console.error('LinkedIn Auth callback error:', error instanceof Error ? error.message : error);
+            return res.redirect('/?auth=failed&reason=server_error');
+        }
     });
     
     // Get Current User

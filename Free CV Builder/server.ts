@@ -62,6 +62,7 @@ import {
     S3_TEMPLATE_PREFIX,
 } from './services/s3Service';
 import { generateCVHTML, generatePdfDocument, sanitizeCvData } from './services/pdfService';
+import { extractCvText, parseCvTextToStructuredData, withImportMeta } from './services/cvImportService';
 import { CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan } from './src/templates';
 import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
 import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from './src/adminAccess';
@@ -272,6 +273,8 @@ const isMaintenanceBypassRoute = (req: Request) => {
     if (req.path === '/api/auth/current-user' || req.path === '/api/auth/login' || req.path === '/api/auth/logout') return true;
     if (req.path === '/api/auth/forgot-password' || req.path === '/api/auth/validate-reset-token' || req.path === '/api/auth/reset-password') return true;
     if (req.path === '/api/auth/google' || req.path === '/api/auth/google/callback') return true;
+    if (req.path === '/api/auth/github' || req.path === '/api/auth/github/callback') return true;
+    if (req.path === '/api/auth/linkedin' || req.path === '/api/auth/linkedin/callback') return true;
     return false;
 };
 
@@ -845,6 +848,7 @@ const routeDeps = {
     generateTransactionId, planDisplayName, createPlanExpiry, getEffectivePlan, isPaidPlan,
     markSessionCurrent, invalidateUserSessions,
     documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
+    extractCvText, parseCvTextToStructuredData, withImportMeta,
     getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, buildCvCreationQuota, buildDownloadQuota,
     requireVerifiedEmail, requirePaidPlan,
     startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, adminPaymentSummary,

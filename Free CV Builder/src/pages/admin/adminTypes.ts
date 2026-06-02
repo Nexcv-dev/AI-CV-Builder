@@ -49,7 +49,7 @@ export interface AdminUserListItem {
   rawPlan: 'free' | 'payg' | 'monthly' | 'quarterly';
   planExpiresAt?: string;
   emailVerified: boolean;
-  authProvider: 'email' | 'google';
+  authProvider: 'email' | 'google' | 'github' | 'linkedin';
   cvCount: number;
   createdAt: string;
   updatedAt: string;

@@ -15,7 +15,7 @@ export interface AuthUser {
   dob?: string;
   gender?: string;
   nationality?: string;
-  authProvider: 'google' | 'email';
+  authProvider: 'google' | 'github' | 'linkedin' | 'email';
 }
 
 export class ApiError extends Error {

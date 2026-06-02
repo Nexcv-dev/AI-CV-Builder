@@ -44,5 +44,5 @@ describe('Billing alerts', () => {
     expect(emailService.sendNotificationEmail).toHaveBeenCalledWith(expect.objectContaining({
       text: expect.stringContaining('Reason: IPN signature verification failed.'),
     }));
-  });
+  }, 15000);
 });

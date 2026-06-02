@@ -55,6 +55,15 @@ PDF_WARM_BROWSER_IDLE_MS=300000
 PUPPETEER_EXECUTABLE_PATH=optional_local_browser_path
 ```
 
+OCR import uses a separate Lambda function when configured, so PDF rendering is not affected:
+
+```env
+OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
+OCR_LAMBDA_REGION=eu-central-1
+OCR_LAMBDA_TIMEOUT_MS=45000
+OCR_DOCUMENT_BUCKET=your-temp-ocr-bucket
+```
+
 Lambda:
 
 ```env

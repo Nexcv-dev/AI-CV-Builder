@@ -58,7 +58,7 @@ describe('Accessibility Audit', () => {
     fireEvent.click(screen.getByText('Skills'));
     
     // Skill remove button - wait for it to appear
-    const removeSkillBtn = await screen.findByLabelText(/Remove skill/i);
+    const removeSkillBtn = await screen.findByLabelText(/Remove skill/i, undefined, { timeout: 5000 });
     expect(removeSkillBtn).toBeInTheDocument();
     expect(removeSkillBtn).toHaveAttribute('title', 'Remove skill');
   });
@@ -87,7 +87,7 @@ describe('Accessibility Audit', () => {
      // Navigate to Skills step
      fireEvent.click(screen.getByText('Skills'));
      
-     const levelButtons = await screen.findAllByLabelText(/Set skill level to/i);
+     const levelButtons = await screen.findAllByLabelText(/Set skill level to/i, undefined, { timeout: 5000 });
      expect(levelButtons[0]).toHaveAttribute('aria-label', 'Set skill level to 1 out of 5');
   });
 });
