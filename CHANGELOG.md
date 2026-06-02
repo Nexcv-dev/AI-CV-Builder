@@ -3,23 +3,26 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #208 from bimanthaperera-lab/test/overview (6e5c6c5) - Bimantha Perera, 10 seconds ago
-* Improve UX (0648919) - Bimantha Perera, 25 minutes ago
-* fix bug in executive pro template (bc42afd) - Bimantha Perera, 12 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (4dc0ea3) - bimanthaperera-lab, 13 hours ago
-* Merge pull request #207 from bimanthaperera-lab/test/overview (9d39489) - Bimantha Perera, 13 hours ago
-* handle coupons in LS with admin panel (3420907) - Bimantha Perera, 13 hours ago
-* add lemon squeezy support coupons (917a1c8) - Bimantha Perera, 13 hours ago
-* add new text scaler and new 5 ATS templates (9ed5d35) - Bimantha Perera, 14 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (9af96f0) - bimanthaperera-lab, 18 hours ago
-* Merge pull request #206 from bimanthaperera-lab/test/overview (281faf9) - Bimantha Perera, 18 hours ago
-* add single thmbnail generate flow (02c1533) - Bimantha Perera, 19 hours ago
-* create new automate thmbnail generation flow (49689ea) - Bimantha Perera, 19 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (823833f) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #205 from bimanthaperera-lab/test/overview (85f0327) - Bimantha Perera, 20 hours ago
-* fix payment issues (49d1173) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (57f8783) - bimanthaperera-lab, 27 hours ago
-* Merge pull request #203 from bimanthaperera-lab/test/overview (64a4c03) - Bimantha Perera, 27 hours ago
+* Merge pull request #209 from bimanthaperera-lab/test/overview (a5efef8) - Bimantha Perera, 11 seconds ago
+* Price UI Change (2e55d49) - Bimantha Perera, 10 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (765247f) - bimanthaperera-lab, 5 hours ago
+* Merge pull request #208 from bimanthaperera-lab/test/overview (6e5c6c5) - Bimantha Perera, 5 hours ago
+* Improve UX (0648919) - Bimantha Perera, 5 hours ago
+* fix bug in executive pro template (bc42afd) - Bimantha Perera, 17 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (4dc0ea3) - bimanthaperera-lab, 17 hours ago
+* Merge pull request #207 from bimanthaperera-lab/test/overview (9d39489) - Bimantha Perera, 17 hours ago
+* handle coupons in LS with admin panel (3420907) - Bimantha Perera, 17 hours ago
+* add lemon squeezy support coupons (917a1c8) - Bimantha Perera, 18 hours ago
+* add new text scaler and new 5 ATS templates (9ed5d35) - Bimantha Perera, 18 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (9af96f0) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #206 from bimanthaperera-lab/test/overview (281faf9) - Bimantha Perera, 23 hours ago
+* add single thmbnail generate flow (02c1533) - Bimantha Perera, 23 hours ago
+* create new automate thmbnail generation flow (49689ea) - Bimantha Perera, 23 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (823833f) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #205 from bimanthaperera-lab/test/overview (85f0327) - Bimantha Perera, 24 hours ago
+* fix payment issues (49d1173) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (57f8783) - bimanthaperera-lab, 32 hours ago
+* Merge pull request #203 from bimanthaperera-lab/test/overview (64a4c03) - Bimantha Perera, 32 hours ago
 * fix bug & security improvements (050766c) - Bimantha Perera, 2 days ago
 * improve mail with react email (6a30ed1) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (0c2c2b4) - bimanthaperera-lab, 2 days ago
