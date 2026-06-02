@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, LayoutDashboard, User } from 'lucide-react';
+import { BookOpen, FileText, LayoutDashboard, User } from 'lucide-react';
 import { AccountMenu } from './AccountMenu';
 
 const mobileNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/my-cvs', label: 'My CVs', icon: FileText },
+  { to: '/tips', label: 'Tips', icon: BookOpen },
   { to: '/profile', label: 'Profile', icon: User },
 ];
 
@@ -62,7 +63,7 @@ export function AppShellHeader() {
         }`}
         aria-label="Mobile dashboard navigation"
       >
-        <div className="mx-auto grid max-w-md grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-white/[0.035] p-1">
+        <div className="mx-auto grid max-w-md grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-white/[0.035] p-1">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const active = location.pathname === item.to;

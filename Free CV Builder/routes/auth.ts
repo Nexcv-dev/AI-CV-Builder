@@ -701,6 +701,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         (req.session as any).authRedirect =
             nextTarget === 'download' ? '/builder?download=1' :
                 nextTarget === 'builder' ? '/builder' :
+                    nextTarget === 'dashboard' ? '/dashboard' :
+                        nextTarget === 'my-cvs' ? '/my-cvs' :
+                            nextTarget === 'profile' ? '/profile' :
+                                nextTarget === 'admin' ? '/admin' :
                     '/builder?import=1';
         (req as any).googleOAuthState = createGoogleOAuthState(req, randomBytes, hashToken);
         next();

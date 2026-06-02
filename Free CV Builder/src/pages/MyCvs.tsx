@@ -7,7 +7,6 @@ import {
   BookOpen,
   CheckCircle2,
   Clock3,
-  Download,
   Edit3,
   FileText,
   Filter,
@@ -210,7 +209,6 @@ export default function MyCvs() {
                         menuOpen={openActionsDocumentId === document.id}
                         onToggleMenu={() => setOpenActionsDocumentId((current) => current === document.id ? null : document.id)}
                         onEdit={() => navigate(`/builder?document=${document.id}`)}
-                        onDownload={() => navigate(`/builder?document=${document.id}&download=1`)}
                         onDelete={() => {
                           setOpenActionsDocumentId(null);
                           setDocumentToDelete(document);
@@ -314,7 +312,7 @@ function FilterButton({ active, onClick, label, count }: { active: boolean; onCl
   );
 }
 
-function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, onEdit, onDownload, onDelete }: { document: SavedDocument; templateMap: Map<string, TemplateConfigItem>; deleting: boolean; menuOpen: boolean; onToggleMenu: () => void; onEdit: () => void; onDownload: () => void; onDelete: () => void }) {
+function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, onEdit, onDelete }: { document: SavedDocument; templateMap: Map<string, TemplateConfigItem>; deleting: boolean; menuOpen: boolean; onToggleMenu: () => void; onEdit: () => void; onDelete: () => void }) {
   const meta = templateMap.get(document.template as any);
   const image = meta?.thumbnail || '/templates/professional.webp';
   const templateLabel = meta?.label || document.template;
@@ -367,10 +365,6 @@ function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, o
                 <Edit3 size={14} />
                 Edit
               </button>
-              <button type="button" onClick={onDownload} className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition hover:bg-white/8">
-                <Download size={14} />
-                Download
-              </button>
               <button type="button" onClick={onDelete} disabled={deleting} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-red-200 transition hover:bg-red-500/10 disabled:opacity-60">
                 {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
                 Delete
@@ -387,11 +381,6 @@ function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, o
         >
           <Edit3 size={14} />
           Edit
-        </button>
-        <button type="button" onClick={onDownload} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-xs font-extrabold text-slate-200 transition hover:bg-white/10 active:scale-[0.98] min-[380px]:gap-2 min-[380px]:px-3">
-          <Download size={14} />
-          <span className="hidden min-[380px]:inline">Download</span>
-          <span className="min-[380px]:hidden">PDF</span>
         </button>
         <button
           type="button"
