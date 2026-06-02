@@ -29,6 +29,32 @@ type FeaturedCoupon = {
   maxRedemptions: number | null;
 };
 
+const splitPriceLabel = (price: string) => {
+  const trimmedPrice = price.trim();
+  if (trimmedPrice.startsWith('$')) {
+    return { currency: '$', amount: trimmedPrice.slice(1) };
+  }
+
+  const currencyMatch = trimmedPrice.match(/^(LKR|USD)\s+(.+)$/);
+  return currencyMatch ? { currency: currencyMatch[1], amount: currencyMatch[2] } : null;
+};
+
+const PriceAmount = ({ price, compact = false, className = '' }: { price: string; compact?: boolean; className?: string }) => {
+  const parts = splitPriceLabel(price);
+  if (!parts) return <span className={className}>{price}</span>;
+
+  return (
+    <span className={`inline-flex items-start gap-1 ${className}`}>
+      <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-black leading-none opacity-80 translate-y-1`}>
+        {parts.currency}
+      </span>
+      <span className={`${compact ? 'text-lg' : 'text-4xl'} font-black leading-none`}>
+        {parts.amount}
+      </span>
+    </span>
+  );
+};
+
 const fakeStatsStartTime = new Date('2026-05-28T00:00:00+05:30').getTime();
 const fakeStatsSeed = {
   cvCount: 186,
@@ -902,38 +928,47 @@ export default function LandingPage() {
             <div className="mt-8 grid gap-4 sm:mt-10 md:grid-cols-2 xl:grid-cols-4">
               {cmsPricingPlans.map((plan, index) => {
                 const Icon = plan.icon;
+                const planPromotion = planPrices?.[plan.key]?.promotionActive ? planPrices[plan.key] : null;
                 return (
                   <article
                     key={plan.name}
-                    className={`landing-scroll-reveal flex min-h-[420px] flex-col rounded-2xl border p-5 shadow-2xl sm:p-6 ${plan.highlighted
+                    className={`landing-scroll-reveal relative flex min-h-[420px] flex-col rounded-2xl border p-5 shadow-2xl sm:p-6 ${plan.highlighted
                         ? 'border-violet-300/35 bg-violet-500/10 shadow-violet-950/30 ring-2 ring-violet-400/25'
                         : 'border-white/10 bg-white/6 shadow-black/20'
                       }`}
                     style={{ '--scroll-delay': `${index * 120}ms` } as React.CSSProperties}
                   >
+                    {planPromotion && (
+                      <div className="absolute right-5 top-5 flex max-w-[8rem] flex-col items-end gap-1 sm:right-6 sm:top-6">
+                        {planPromotion.promotionLabel && (
+                          <span className="text-right text-[10px] font-black uppercase leading-tight text-emerald-200">
+                            {planPromotion.promotionLabel}
+                          </span>
+                        )}
+                        <span className="rounded-full bg-emerald-300 px-2.5 py-1 text-[10px] font-black uppercase text-slate-950">
+                          {planPromotion.discountBadge}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-start justify-between gap-4">
                       <span className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${plan.highlighted ? 'border-violet-300/30 bg-violet-400/15 text-violet-200' : 'border-white/10 bg-white/6 text-emerald-300'}`}>
                         <Icon size={22} />
                       </span>
-                      {plan.highlighted && (
+                      {plan.highlighted && !planPromotion && (
                         <span className="rounded-full bg-violet-400 px-3 py-1 text-[11px] font-black uppercase text-slate-950">{plan.badge || 'Popular'}</span>
                       )}
                     </div>
                     <h3 className="mt-5 font-montserrat text-2xl font-black">{plan.name}</h3>
                     <p className="mt-2 min-h-14 text-sm font-semibold leading-6 text-slate-400">{plan.description}</p>
                     <div className="mt-5">
-                      {planPrices?.[plan.key]?.promotionActive && (
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <span className="text-lg font-black text-slate-500 line-through">{formatPrice(planPrices[plan.key].baseAmountCents, planPrices[plan.key].currency)}</span>
-                          <span className="rounded-full bg-emerald-300 px-2.5 py-1 text-[10px] font-black uppercase text-slate-950">{planPrices[plan.key].discountBadge}</span>
+                      <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+                        {planPromotion && (
+                          <PriceAmount price={formatPrice(planPromotion.baseAmountCents, planPromotion.currency)} compact className="text-slate-500 line-through" />
+                        )}
+                        <div>
+                          <PriceAmount price={displayPlanPrice(plan)} className={planPromotion ? 'text-emerald-300' : ''} />
                         </div>
-                      )}
-                      <div className={`text-4xl font-black ${planPrices?.[plan.key]?.promotionActive ? 'text-emerald-300' : ''}`}>
-                        {displayPlanPrice(plan)}
                       </div>
-                      {planPrices?.[plan.key]?.promotionLabel && (
-                        <div className="mt-2 text-xs font-black uppercase text-emerald-200">{planPrices[plan.key].promotionLabel}</div>
-                      )}
                       <div className="mt-1 text-sm font-bold text-slate-400">{plan.duration}</div>
                     </div>
                     <div className="mt-7 mb-8 grid gap-3">
