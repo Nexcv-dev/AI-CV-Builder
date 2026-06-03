@@ -7,6 +7,8 @@ export const EMAIL_VERIFICATION_RESEND_LIMIT = 3;
 export const EMAIL_VERIFICATION_RESEND_WINDOW_MS = 15 * 60 * 1000;
 export const EMAIL_VERIFICATION_ATTEMPT_LIMIT = 5;
 export const EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
+export const CV_IMPORT_LIMIT = 5;
+export const CV_IMPORT_WINDOW_MS = 15 * 60 * 1000;
 
 export const getAuthenticatedRateLimitKey = (req: Request) => {
     const user = req.user as any;
@@ -76,6 +78,15 @@ export const aiLimiter = createRateLimiter('ai', {
     legacyHeaders: false,
     keyGenerator: getAuthenticatedRateLimitKey,
     message: { error: 'AI request limit reached. Please wait an hour before trying again.' },
+});
+
+export const cvImportLimiter = createRateLimiter('cv-import', {
+    windowMs: CV_IMPORT_WINDOW_MS,
+    max: CV_IMPORT_LIMIT,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: getAuthenticatedRateLimitKey,
+    message: { error: 'CV import limit reached. Please wait 15 minutes before trying again.' },
 });
 
 export const authLimiter = createRateLimiter('auth', {

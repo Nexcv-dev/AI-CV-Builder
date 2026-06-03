@@ -4,6 +4,8 @@ import type { Server } from 'node:http';
 import {
   EMAIL_VERIFICATION_ATTEMPT_LIMIT,
   EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS,
+  CV_IMPORT_LIMIT,
+  CV_IMPORT_WINDOW_MS,
   EMAIL_VERIFICATION_RESEND_LIMIT,
   EMAIL_VERIFICATION_RESEND_WINDOW_MS,
   PAYHERE_PLAN_PRICES,
@@ -58,6 +60,11 @@ describe('Server Utils', () => {
       expect(EMAIL_VERIFICATION_RESEND_WINDOW_MS).toBe(15 * 60 * 1000);
       expect(EMAIL_VERIFICATION_ATTEMPT_LIMIT).toBe(5);
       expect(EMAIL_VERIFICATION_ATTEMPT_WINDOW_MS).toBe(10 * 60 * 1000);
+    });
+
+    it('should keep guest CV import rate limits intentionally strict', () => {
+      expect(CV_IMPORT_LIMIT).toBe(5);
+      expect(CV_IMPORT_WINDOW_MS).toBe(15 * 60 * 1000);
     });
 
     it('should rate-limit authenticated users by user id before falling back to IP', () => {
@@ -491,6 +498,7 @@ describe('Server Utils', () => {
 
       registerCvRoutes(router, {
         aiLimiter: (_req: any, _res: any, next: any) => next(),
+        cvImportLimiter: (_req: any, _res: any, next: any) => next(),
         CV_TEMPLATES: [{ key: 'classic' }],
         cvImportJsonParser: express.json({ limit: '1mb' }),
         DEFAULT_TEMPLATE: 'classic',
