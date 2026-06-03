@@ -29,6 +29,7 @@ import { registerPaymentRoutes } from '../routes/payment';
 import { isSuperAdminEmail, roleForEmail, syncUserRoleFromAllowlist } from '../server-models/userRole';
 import { hasAdminPermission } from '../src/adminAccess';
 import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
+import { buildCvImportQuota, getCvImportQuotaPeriod } from '../server-models/cvImportQuota';
 import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getNextUtcDayResetAt, getUtcDayKey } from '../server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
 import { logEvent } from '../server-utils/logger';
@@ -551,6 +552,119 @@ describe('Server Utils', () => {
         expect(secondBody.upgradeRequired).toBe(true);
         expect(consumeDownloadQuota).toHaveBeenCalledTimes(2);
         expect(generatePdfDocument).toHaveBeenCalledTimes(1);
+      } finally {
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => error ? reject(error) : resolve());
+        });
+      }
+    });
+  });
+
+  describe('CV import quota', () => {
+    it('should enforce the configured plan import limits', () => {
+      const now = new Date('2026-06-03T10:00:00.000Z');
+      const future = new Date('2026-07-03T10:00:00.000Z');
+
+      expect(buildCvImportQuota({ role: 'user', plan: 'free' } as any, 4, now)).toEqual({
+        limit: 5,
+        used: 4,
+        remaining: 1,
+        reached: false,
+        plan: 'free',
+        period: 'free:2026-06',
+        resetAt: '2026-07-01T00:00:00.000Z',
+      });
+      expect(buildCvImportQuota({ role: 'user', plan: 'free' } as any, 5, now).reached).toBe(true);
+      expect(buildCvImportQuota({ role: 'user', plan: 'payg', planStartedAt: now, planExpiresAt: future } as any, 14, now)).toMatchObject({
+        limit: 15,
+        remaining: 1,
+        plan: 'payg',
+      });
+      expect(buildCvImportQuota({ role: 'user', plan: 'monthly', planStartedAt: now, planExpiresAt: future } as any, 99, now)).toMatchObject({
+        limit: 100,
+        remaining: 1,
+        plan: 'monthly',
+      });
+      expect(buildCvImportQuota({ role: 'user', plan: 'quarterly', planStartedAt: now, planExpiresAt: future } as any, 299, now)).toMatchObject({
+        limit: 300,
+        remaining: 1,
+        plan: 'quarterly',
+      });
+      expect(buildCvImportQuota({ role: 'super_admin' } as any, 999, now)).toEqual({
+        limit: null,
+        used: 999,
+        remaining: null,
+        reached: false,
+        plan: 'unlimited',
+        period: 'unlimited',
+      });
+    });
+
+    it('should use the active paid plan period as the quota key', () => {
+      const startedAt = new Date('2026-06-03T10:00:00.000Z');
+      const expiresAt = new Date('2026-06-10T10:00:00.000Z');
+      expect(getCvImportQuotaPeriod({ role: 'user', plan: 'payg', planStartedAt: startedAt, planExpiresAt: expiresAt } as any, startedAt)).toEqual({
+        plan: 'payg',
+        period: 'payg:2026-06-03:2026-06-10',
+        resetAt: '2026-06-10T10:00:00.000Z',
+      });
+    });
+
+    it('should reject authenticated imports before OCR when the plan quota is exhausted', async () => {
+      const app = express();
+      const router = express.Router();
+      const user = { _id: '507f1f77bcf86cd799439011', role: 'user', plan: 'free' };
+      const extractCvText = vi.fn();
+
+      registerCvRoutes(router, {
+        aiLimiter: (_req: any, _res: any, next: any) => next(),
+        cvImportLimiter: (_req: any, _res: any, next: any) => next(),
+        cvImportJsonParser: express.json({ limit: '1mb' }),
+        pdfLimiter: (_req: any, _res: any, next: any) => next(),
+        pdfJsonParser: express.json({ limit: '1mb' }),
+        requireAuth: (_req: any, _res: any, next: any) => next(),
+        ALLOWED_MIME_TYPES: ['image/png'],
+        MAX_BASE64_LENGTH: 1000,
+        consumeCvImportQuota: vi.fn().mockResolvedValue({
+          limit: 5,
+          used: 5,
+          remaining: 0,
+          reached: true,
+          plan: 'free',
+          period: 'free:2026-06',
+          reserved: false,
+        }),
+        extractCvText,
+        parseCvTextToStructuredData: vi.fn(),
+        sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
+        withImportMeta: vi.fn((data, meta) => ({ ...data, importMeta: meta })),
+        isPaidPlan: vi.fn(() => false),
+      });
+      app.use((req: any, _res, next) => {
+        req.user = user;
+        req.isAuthenticated = () => true;
+        next();
+      });
+      app.use(router);
+
+      const server = await new Promise<Server>((resolve) => {
+        const listeningServer = app.listen(0, '127.0.0.1', () => resolve(listeningServer));
+      });
+      const address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not bind to a TCP port.');
+
+      try {
+        const response = await fetch(`http://127.0.0.1:${address.port}/api/parse-cv`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64Data: 'abcd', mimeType: 'image/png' }),
+        });
+        const body = await response.json() as { error: string; upgradeRequired: boolean };
+
+        expect(response.status).toBe(403);
+        expect(body.error).toContain('CV import limit reached');
+        expect(body.upgradeRequired).toBe(true);
+        expect(extractCvText).not.toHaveBeenCalled();
       } finally {
         await new Promise<void>((resolve, reject) => {
           server.close((error) => error ? reject(error) : resolve());
