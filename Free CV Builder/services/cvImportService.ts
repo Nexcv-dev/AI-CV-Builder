@@ -1,10 +1,9 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { PDFParse } from 'pdf-parse';
-import { createWorker } from 'tesseract.js';
 import path from 'node:path';
 
 type CvImportSource = 'ai' | 'basic';
 type OcrProvider = 'aws-lambda' | 'local-tesseract' | 'pdf-text' | 'none';
+type PdfParser = import('pdf-parse').PDFParse;
 
 export interface ParsedCvImport {
   personalInfo: {
@@ -82,6 +81,12 @@ const cleanText = (value: string, limit = 1600) => value
   .replace(/\s+/g, ' ')
   .trim()
   .slice(0, limit);
+
+const escapeHtml = (value: string) => value
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;');
 
 const cleanExtractedText = (value: string, limit = 20_000) => value
   .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
@@ -223,6 +228,17 @@ const isUsefulSectionLine = (value: string) => {
   return Boolean(line) && !sectionNoisePattern.test(line) && !personalInfoNoisePattern.test(line) && !hasContactNoise(line);
 };
 
+const descriptionHtml = (lines: string[], limit = 1000) => {
+  const items = unique(lines)
+    .map((line) => cleanLine(line.replace(dateRangePattern, '')))
+    .filter(isUsefulSectionLine)
+    .slice(0, 6);
+
+  if (!items.length) return '';
+  const html = `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+  return html.slice(0, limit);
+};
+
 const normalizedForEmail = (text: string) => text
   .replace(/\s*@\s*/g, '@')
   .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]*[A-Z])\s+([A-Z0-9.-]+\.[A-Z]{2,})\b/gi, '$1$2')
@@ -313,7 +329,7 @@ const parseExperience = (lines: string[]) => splitEntryBlocks(lines, (line) => j
       position: position || '',
       startDate: cleanLine(dateMatch[1]),
       endDate: cleanLine(dateMatch[2]),
-      description: cleanText(nonDateLines.filter((_, index) => index !== jobLineIndex && index !== jobLineIndex + 1).join(' '), 1000),
+      description: descriptionHtml(nonDateLines.filter((_, index) => index !== jobLineIndex && index !== jobLineIndex + 1), 1000),
     };
   })
   .filter((item): item is NonNullable<typeof item> => Boolean(item && (item.company || item.position)));
@@ -336,10 +352,10 @@ const parseEducation = (lines: string[]) => splitEntryBlocks(lines, (line) => de
       degree,
       startDate: dateMatch ? cleanLine(dateMatch[1]) : '',
       endDate: dateMatch ? cleanLine(dateMatch[2]) : '',
-      description: cleanText(nonDateLines
+      description: descriptionHtml(nonDateLines
         .filter((line) => line !== degree && line !== institution)
-        .filter((line) => !extractKnownSkills(line).length)
-        .join(' '), 500),
+        .filter((line) => !extractKnownSkills(line).length),
+      500),
     };
   })
   .filter((item): item is NonNullable<typeof item> => Boolean(item && (item.degree || item.institution)));
@@ -417,6 +433,7 @@ const parseReferences = (lines: string[]) => splitDatedBlocks(lines).flatMap((bl
   .filter((item): item is NonNullable<typeof item> => Boolean(item && (item.name || item.email || item.phone)));
 
 const recognizeImageBuffer = async (buffer: Buffer | Uint8Array) => {
+  const { createWorker } = await import('tesseract.js');
   const worker = await createWorker('eng', undefined, {
     langPath: TESSERACT_LANG_PATH,
     gzip: true,
@@ -429,7 +446,7 @@ const recognizeImageBuffer = async (buffer: Buffer | Uint8Array) => {
   }
 };
 
-const ocrPdfPages = async (parser: PDFParse) => {
+const ocrPdfPages = async (parser: PdfParser) => {
   const screenshot = await parser.getScreenshot({
     first: 3,
     desiredWidth: 1400,
@@ -553,18 +570,17 @@ export const extractCvText = async (base64Data: string, mimeType: string): Promi
   const lambdaResult = await extractWithConfiguredLambda(base64Data, mimeType);
   if (lambdaResult) return lambdaResult;
 
+  if (OCR_LAMBDA_CONFIGURED) return emptyLambdaFallbackResult();
+
   const buffer = Buffer.from(base64Data, 'base64');
   if (mimeType === 'application/pdf') {
+    const { PDFParse } = await import('pdf-parse');
     const parser = new PDFParse({ data: buffer });
     try {
       const parsed = await parser.getText().catch(() => ({ text: '' }));
       const text = cleanExtractedText(parsed.text || '');
       if (text.length >= 120) {
         return { text, usedOcr: false, ocrProvider: 'pdf-text' };
-      }
-
-      if (OCR_LAMBDA_CONFIGURED) {
-        return text ? { text, usedOcr: false, ocrProvider: 'pdf-text' } : emptyLambdaFallbackResult();
       }
 
       const ocrText = await ocrPdfPages(parser).catch(() => '');
@@ -579,7 +595,6 @@ export const extractCvText = async (base64Data: string, mimeType: string): Promi
   }
 
   if (mimeType.startsWith('image/')) {
-    if (OCR_LAMBDA_CONFIGURED) return emptyLambdaFallbackResult();
     return { text: cleanExtractedText(await recognizeImageBuffer(buffer)), usedOcr: true, ocrProvider: 'local-tesseract' };
   }
 

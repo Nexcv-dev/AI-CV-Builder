@@ -133,14 +133,14 @@ TAILWIND CSS GIT
         company: 'Tech Solutions Inc.',
         startDate: 'Jan 2020',
         endDate: 'Present',
-        description: 'Led a team of 5 engineers to develop a scalable web application.',
+        description: '<ul><li>Led a team of 5 engineers to develop a scalable web application.</li></ul>',
       }),
     ]);
     expect(parsed.education).toEqual([
       expect.objectContaining({
         degree: 'Bachelor of Science in Computer Science',
         institution: 'State University',
-        description: 'Graduated with Honors. Coursework included Data Structures, Algorithms, and Web Development.',
+        description: '<ul><li>Graduated with Honors. Coursework included Data Structures, Algorithms, and Web Development.</li></ul>',
       }),
     ]);
     expect(parsed.skills.map((skill) => skill.name)).toEqual(['JavaScript', 'TypeScript', 'React', 'Node.js', 'Tailwind CSS', 'Git']);
@@ -177,14 +177,14 @@ Completed practical software training.
         company: 'Tech Solutions Inc.',
         startDate: 'Jan 2020',
         endDate: 'Present',
-        description: 'Led platform migration work.',
+        description: '<ul><li>Led platform migration work.</li></ul>',
       }),
       expect.objectContaining({
         position: 'Frontend Developer',
         company: 'Creative Apps Ltd.',
         startDate: 'Jun 2017',
         endDate: 'Dec 2019',
-        description: 'Built React dashboards.',
+        description: '<ul><li>Built React dashboards.</li></ul>',
       }),
     ]);
     expect(parsed.education).toEqual([
@@ -193,16 +193,32 @@ Completed practical software training.
         institution: 'State University',
         startDate: 'Sep 2015',
         endDate: 'May 2019',
-        description: 'Graduated with Honors.',
+        description: '<ul><li>Graduated with Honors.</li></ul>',
       }),
       expect.objectContaining({
         degree: 'Diploma in Software Engineering',
         institution: 'Tech Institute',
         startDate: 'Jan 2014',
         endDate: 'Dec 2014',
-        description: 'Completed practical software training.',
+        description: '<ul><li>Completed practical software training.</li></ul>',
       }),
     ]);
+  });
+
+  it('keeps multiple body lines as rich-text bullets', () => {
+    const parsed = parseCvTextToStructuredData(`
+EXPERIENCE
+Senior Software Engineer
+Tech Solutions Inc.
+Jan 2020 - Present
+Led a team of 5 engineers to develop a scalable web application.
+Mentored junior developers and conducted code reviews.
+Improved system performance by 30%.
+`);
+
+    expect(parsed.experience[0].description).toBe(
+      '<ul><li>Led a team of 5 engineers to develop a scalable web application.</li><li>Mentored junior developers and conducted code reviews.</li><li>Improved system performance by 30%.</li></ul>'
+    );
   });
 
   it('marks unsupported import input with no OCR provider', async () => {
@@ -211,7 +227,7 @@ Completed practical software training.
     expect(result).toEqual({ text: '', usedOcr: false, ocrProvider: 'none' });
   });
 
-  it('does not run local image OCR when AWS OCR is configured', async () => {
+  it('does not run local document parsing when AWS OCR is configured', async () => {
     const originalFunctionName = process.env.OCR_LAMBDA_FUNCTION_NAME;
     const originalUrl = process.env.OCR_LAMBDA_URL;
     process.env.OCR_LAMBDA_FUNCTION_NAME = 'test-ocr-lambda';
@@ -219,9 +235,11 @@ Completed practical software training.
     vi.resetModules();
 
     const { extractCvText: extractWithAwsConfigured } = await import('./cvImportService');
-    const result = await extractWithAwsConfigured(Buffer.from('not an image').toString('base64'), 'image/png');
+    const imageResult = await extractWithAwsConfigured(Buffer.from('not an image').toString('base64'), 'image/png');
+    const pdfResult = await extractWithAwsConfigured(Buffer.from('not a pdf').toString('base64'), 'application/pdf');
 
-    expect(result).toEqual({ text: '', usedOcr: false, ocrProvider: 'aws-lambda' });
+    expect(imageResult).toEqual({ text: '', usedOcr: false, ocrProvider: 'aws-lambda' });
+    expect(pdfResult).toEqual({ text: '', usedOcr: false, ocrProvider: 'aws-lambda' });
 
     if (originalFunctionName === undefined) delete process.env.OCR_LAMBDA_FUNCTION_NAME;
     else process.env.OCR_LAMBDA_FUNCTION_NAME = originalFunctionName;
