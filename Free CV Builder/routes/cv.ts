@@ -153,7 +153,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             // Validate mimeType against allow-list
             const validatedMimeType = ALLOWED_MIME_TYPES.includes(mimeType) ? mimeType : 'application/pdf';
 
-            const { text: extractedText, usedOcr } = await extractCvText(base64Data, validatedMimeType);
+            const { text: extractedText, usedOcr, ocrProvider } = await extractCvText(base64Data, validatedMimeType);
             const basicResult = parseCvTextToStructuredData(extractedText || '');
             const userCanUseAi = Boolean(req.isAuthenticated?.() && req.user && isPaidPlan(req.user));
 
@@ -169,6 +169,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     extractedTextLength: extractedText.length,
                     usedAi: false,
                     usedOcr,
+                    ocrProvider,
                     message: 'Basic import completed. Review each section before saving.',
                 }));
             }
@@ -179,6 +180,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     extractedTextLength: extractedText.length,
                     usedAi: false,
                     usedOcr,
+                    ocrProvider,
                     message: 'AI import is not configured, so basic extraction was used.',
                 }));
             }
@@ -334,6 +336,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     extractedTextLength: extractedText.length,
                     usedAi: true,
                     usedOcr,
+                    ocrProvider,
                     message: 'AI import completed.',
                 }));
             } catch (aiError) {
@@ -347,6 +350,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     extractedTextLength: extractedText.length,
                     usedAi: false,
                     usedOcr,
+                    ocrProvider,
                     message: 'AI import failed, so basic OCR/text extraction was used.',
                 }));
             }
