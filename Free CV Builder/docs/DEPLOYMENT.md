@@ -109,6 +109,11 @@ AWS_REGION=eu-north-1
 PDF_LAMBDA_URL=https://your-lambda-url.example
 PDF_LAMBDA_TIMEOUT_MS=45000
 
+OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
+OCR_LAMBDA_REGION=eu-central-1
+OCR_LAMBDA_TIMEOUT_MS=45000
+OCR_DOCUMENT_BUCKET=your-temp-ocr-bucket
+
 SENTRY_DSN=https://your-backend-dsn@sentry.io/project-id
 SENTRY_ENVIRONMENT=production
 SENTRY_TRACES_SAMPLE_RATE=0.1
@@ -175,6 +180,35 @@ S3_TEMPLATE_CACHE_TTL_MS=300000
 ```
 
 Expose the Lambda through a Function URL or API Gateway, then set the main app's `PDF_LAMBDA_URL` to that URL.
+
+## OCR Lambda Deployment
+
+Build the OCR Lambda artifact from the app folder:
+
+```bash
+npm run build:ocr-lambda
+```
+
+Deploy the generated ZIP from `lambda-ocr/dist/` to AWS Lambda as `OCR_data_Extract`.
+
+Recommended Lambda settings:
+
+- Runtime: Node.js 20.x
+- Handler: `handler.handler`
+- Memory: 512 MB or higher
+- Timeout: 60 seconds or higher
+
+Lambda environment variables:
+
+```env
+AWS_REGION=eu-north-1
+OCR_DOCUMENT_BUCKET=your-temp-ocr-bucket
+OCR_DOCUMENT_PREFIX=ocr-imports
+OCR_TEXTRACT_TIMEOUT_MS=55000
+OCR_TEXTRACT_MAX_PAGES=8
+```
+
+The OCR Lambda uploads each import file to S3 temporarily, runs AWS Textract, returns extracted line text, and deletes the S3 object. Keep the OCR bucket private, block public access, enable encryption, and add a short lifecycle cleanup rule.
 
 ## Template Deployment
 

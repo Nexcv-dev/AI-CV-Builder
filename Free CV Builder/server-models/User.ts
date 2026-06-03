@@ -5,6 +5,8 @@ import type { BillingPlan } from './userPlan';
 
 export interface IUser extends Document {
   googleId?: string;
+  githubId?: string;
+  linkedinId?: string;
   email: string;
   displayName: string;
   role: UserRole;
@@ -22,7 +24,7 @@ export interface IUser extends Document {
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   sessionVersion: number;
-  authProvider: 'google' | 'email';
+  authProvider: 'google' | 'github' | 'linkedin' | 'email';
   plan: BillingPlan;
   planStartedAt?: Date;
   planExpiresAt?: Date;
@@ -34,6 +36,8 @@ export interface IUser extends Document {
 const UserSchema: Schema = new Schema(
   {
     googleId: { type: String },
+    githubId: { type: String },
+    linkedinId: { type: String },
     email: { type: String, required: true, unique: true },
     displayName: { type: String, required: true },
     role: { type: String, enum: ALL_USER_ROLES, default: DEFAULT_USER_ROLE, required: true },
@@ -51,7 +55,7 @@ const UserSchema: Schema = new Schema(
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
     sessionVersion: { type: Number, default: 0, min: 0, required: true },
-    authProvider: { type: String, enum: ['google', 'email'], default: 'email', required: true },
+    authProvider: { type: String, enum: ['google', 'github', 'linkedin', 'email'], default: 'email', required: true },
     plan: { type: String, enum: ['free', 'payg', 'monthly', 'quarterly'], default: 'free', required: true },
     planStartedAt: { type: Date },
     planExpiresAt: { type: Date },
@@ -68,6 +72,22 @@ UserSchema.index(
     name: 'googleId_1',
     unique: true,
     partialFilterExpression: { googleId: { $type: 'string' } },
+  }
+);
+UserSchema.index(
+  { githubId: 1 },
+  {
+    name: 'githubId_1',
+    unique: true,
+    partialFilterExpression: { githubId: { $type: 'string' } },
+  }
+);
+UserSchema.index(
+  { linkedinId: 1 },
+  {
+    name: 'linkedinId_1',
+    unique: true,
+    partialFilterExpression: { linkedinId: { $type: 'string' } },
   }
 );
 UserSchema.index({ createdAt: -1 });

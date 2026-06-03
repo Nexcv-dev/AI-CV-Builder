@@ -1194,7 +1194,7 @@ export default function Home() {
               transition={{ duration: 0.18, ease: 'easeOut' }}
             >
               <motion.div
-                className={`relative flex max-h-[calc(100svh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border shadow-2xl sm:max-h-[calc(100svh-2rem)] sm:rounded-3xl ${isDarkMode ? 'bg-slate-900 border-violet-300/20 text-slate-100' : 'bg-white border-violet-100 text-slate-900'}`}
+                className={`relative flex max-h-[calc(100svh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border shadow-2xl sm:max-h-[calc(100svh-2rem)] sm:max-w-3xl sm:rounded-3xl ${isDarkMode ? 'bg-slate-900 border-violet-300/20 text-slate-100' : 'bg-white border-violet-100 text-slate-900'}`}
                 onClick={(event) => event.stopPropagation()}
                 initial={{ opacity: 0, scale: 0.96, y: 14 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1211,7 +1211,7 @@ export default function Home() {
                   <X size={16} />
                 </button>
 
-                <div className="overflow-y-auto px-4 pb-4 pt-5 sm:p-8">
+                <div className="overflow-y-auto px-4 pb-4 pt-5 sm:p-9">
                   <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl border sm:mb-5 sm:h-14 sm:w-14 ${isDarkMode ? 'border-violet-300/25 bg-violet-400/10' : 'border-violet-100 bg-violet-50'}`}>
                     <Crown className="h-6 w-6 text-violet-600 sm:h-7 sm:w-7" strokeWidth={1.8} />
                   </div>
@@ -1233,15 +1233,18 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-2.5 sm:mt-6 sm:grid-cols-4 sm:gap-3">
+                  <div className="mt-4 grid gap-2.5 sm:mt-7 sm:grid-cols-4 sm:gap-4">
                     <div className="flex flex-col h-full">
                       <button
                         type="button"
                         onClick={() => setSelectedUpgradePlan('free')}
-                        className={`w-full h-full flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${selectedUpgradePlan === 'free' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-slate-50'}`}
+                        className={`w-full h-full min-h-[14.75rem] flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-5 rounded-xl border p-3 ${selectedUpgradePlan === 'free' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-slate-50'}`}
                       >
                         <div className="text-sm font-black">Free</div>
-                        <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 0</div>
+                        <div className="mt-1.5 flex items-baseline gap-1.5 whitespace-nowrap font-black sm:mt-2">
+                          <span className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">LKR</span>
+                          <span className="text-xl sm:text-2xl">0</span>
+                        </div>
                         <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Starter access • Free forever</div>
                         <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>1 saved CV, 1 watermarked download.</p>
                       </button>
@@ -1251,10 +1254,13 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setSelectedUpgradePlan('payg')}
-                        className={`w-full h-full flex flex-col text-left ring-2 ring-violet-500/40 transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${isDarkMode ? 'border-violet-300/30 bg-violet-400/10' : 'border-violet-200 bg-violet-50'}`}
+                        className={`w-full h-full min-h-[14.75rem] flex flex-col text-left ring-2 ring-violet-500/40 transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-5 rounded-xl border p-3 ${isDarkMode ? 'border-violet-300/30 bg-violet-400/10' : 'border-violet-200 bg-violet-50'}`}
                       >
                         <div className="flex items-center gap-2 text-sm font-black"><Zap size={15} className="text-violet-600" /> Single CV Pass</div>
-                        <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 499</div>
+                        <div className="mt-1.5 flex items-baseline gap-1.5 whitespace-nowrap font-black sm:mt-2">
+                          <span className="text-[11px] uppercase tracking-wide text-violet-300/90">LKR</span>
+                          <span className="text-xl sm:text-2xl">499</span>
+                        </div>
                         <div className="text-[10px] font-bold text-violet-400/90 dark:text-violet-300/90 mt-0.5">7 days access • One-time payment</div>
                         <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 extra CV, any template, unlimited edits, and faster PDF downloads for 7 days.</p>
                       </button>
@@ -1264,10 +1270,13 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setSelectedUpgradePlan('monthly')}
-                        className={`w-full h-full flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${selectedUpgradePlan === 'monthly' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-white'}`}
+                        className={`w-full h-full min-h-[14.75rem] flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-5 rounded-xl border p-3 ${selectedUpgradePlan === 'monthly' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-white'}`}
                       >
                         <div className="text-sm font-black">Monthly Pro</div>
-                        <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 2199</div>
+                        <div className="mt-1.5 flex items-baseline gap-1.5 whitespace-nowrap font-black sm:mt-2">
+                          <span className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">LKR</span>
+                          <span className="text-xl sm:text-2xl">2199</span>
+                        </div>
                         <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">30 days access • One-time payment</div>
                         <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, faster PDF downloads, and AI features.</p>
                       </button>
@@ -1277,10 +1286,13 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setSelectedUpgradePlan('quarterly')}
-                        className={`w-full h-full flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-4 rounded-xl border p-3 ${selectedUpgradePlan === 'quarterly' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-emerald-300/30 bg-emerald-400/10' : 'border-emerald-200 bg-emerald-50'}`}
+                        className={`w-full h-full min-h-[14.75rem] flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-5 rounded-xl border p-3 ${selectedUpgradePlan === 'quarterly' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-emerald-300/30 bg-emerald-400/10' : 'border-emerald-200 bg-emerald-50'}`}
                       >
                         <div className="text-sm font-black">Pro Quarterly</div>
-                        <div className="mt-1.5 text-xl font-black sm:mt-2 sm:text-2xl">LKR 4999</div>
+                        <div className="mt-1.5 flex items-baseline gap-1.5 whitespace-nowrap font-black sm:mt-2">
+                          <span className="text-[11px] uppercase tracking-wide text-emerald-300">LKR</span>
+                          <span className="text-xl sm:text-2xl">4999</span>
+                        </div>
                         <div className="text-[10px] font-bold text-emerald-500 dark:text-emerald-300 mt-0.5">90 days access &bull; Most popular</div>
                         <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-emerald-100/75' : 'text-emerald-950/65'}`}>Unlimited CV creation, saves, downloads, and AI tools for a focused job search.</p>
                       </button>

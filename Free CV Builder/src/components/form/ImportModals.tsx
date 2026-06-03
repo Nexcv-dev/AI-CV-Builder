@@ -20,6 +20,14 @@ const modalTransition = { duration: 0.22, ease: 'easeOut' as const };
 const modalSurface = 'relative w-full overflow-hidden rounded-2xl border shadow-2xl';
 const iconShell = 'mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm';
 
+function LinkedInMark() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#0A66C2" d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45z" />
+    </svg>
+  );
+}
+
 export const ImportModals = React.memo(({
   showInitialPrompt,
   setShowInitialPrompt,
@@ -58,9 +66,9 @@ export const ImportModals = React.memo(({
                 <div className={`${iconShell} ${isDarkMode ? 'bg-violet-500/10 border-violet-400/30' : 'bg-violet-50 border-violet-100'}`}>
                   <FileText className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
                 </div>
-                <h3 className="mb-2 text-center text-xl font-bold">Start Faster With Your CV</h3>
+                <h3 className="mb-2 text-center text-xl font-bold">Start Faster With Your Resume</h3>
                 <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  If you have an existing resume, we can extract your data automatically to save time.
+                  Upload your resume or LinkedIn profile PDF and we will extract matching CV sections automatically.
                 </p>
                 <div className="flex flex-col gap-3">
                   <button
@@ -95,8 +103,8 @@ export const ImportModals = React.memo(({
                 <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
                 <div className="mb-6 flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-xl font-bold">Upload Resume</h3>
-                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>PDF, JPG, or PNG. We will fill the form for you.</p>
+                    <h3 className="text-xl font-bold">Upload Resume or LinkedIn PDF</h3>
+                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>PDF, JPG, or PNG. OCR handles basic import, with AI cleanup on paid plans.</p>
                   </div>
                   <button
                     onClick={() => {
@@ -127,7 +135,7 @@ export const ImportModals = React.memo(({
                       {isImporting ? 'Processing your CV...' : 'Drop your CV here'}
                     </h3>
                     <p className={`relative z-10 mb-5 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {isImporting ? 'AI is extracting your data' : 'or click to browse files'}
+                      {isImporting ? 'Reading and matching CV sections' : 'or click to browse files'}
                     </p>
 
                     <div className="flex items-center gap-2 mb-5 relative z-10">
@@ -139,6 +147,10 @@ export const ImportModals = React.memo(({
                           {format}
                         </span>
                       ))}
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold rounded-full border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-500'}`}>
+                        <LinkedInMark />
+                        LinkedIn PDF
+                      </span>
                     </div>
 
                     <div className="relative z-10">
@@ -168,7 +180,7 @@ export const ImportModals = React.memo(({
                   </label>
 
                   <p className={`text-center text-xs mt-4 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}>
-                    AI will auto-fill all fields from your resume, or you can skip and fill manually
+                    LinkedIn: Profile &gt; More &gt; Save to PDF, then upload it here
                   </p>
 
                   {importMessage && (
