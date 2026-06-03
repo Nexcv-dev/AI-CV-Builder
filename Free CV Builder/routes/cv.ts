@@ -147,7 +147,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             }
     
             if (base64Data.length > MAX_BASE64_LENGTH) {
-                return res.status(400).json({ error: 'File too large. Maximum allowed size is 15 MB.' });
+                return res.status(400).json({ error: 'File too large. Maximum allowed size is 10 MB.' });
             }
     
             // Validate mimeType against allow-list

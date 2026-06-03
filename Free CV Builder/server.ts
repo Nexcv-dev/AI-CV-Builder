@@ -215,7 +215,7 @@ configureRateLimiters(app);
 configureRequestTimeout(app);
 
 const defaultJsonParser = express.json({ limit: '1mb' });
-const cvImportJsonParser = express.json({ limit: '16mb' });
+const cvImportJsonParser = express.json({ limit: '14mb' });
 const pdfJsonParser = express.json({ limit: '5mb' });
 const adminTemplateJsonParser = express.json({ limit: '6mb' });
 
@@ -376,7 +376,8 @@ async function generateGeminiText(contents: any[], config?: Record<string, any>)
 }
 
 const MAX_TEXT_LENGTH = 10000; // Maximum characters for text inputs
-const MAX_BASE64_LENGTH = 15 * 1024 * 1024; // ~15MB for base64 data
+const MAX_CV_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_BASE64_LENGTH = Math.ceil(MAX_CV_IMPORT_FILE_BYTES / 3) * 4;
 
 export function sanitizeTextForPrompt(text: string): string {
     // Strip control characters and limit length
