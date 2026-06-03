@@ -73,6 +73,79 @@ Available upon request
     expect(parsed.references).toEqual([]);
   });
 
+  it('keeps sidebar personal data out of two-column work and education sections', () => {
+    const parsed = parseCvTextToStructuredData(`
+DETAILS
+jane.doe@exam
+ple.com
++1 234 567 890
+New York, NY
+
+PERSONAL INFO
+1990-01-01
+199012345678
+FEMALE
+AMERICAN
+CHRISTIANITY
+SINGLE
+
+SKILLS
+JAVASCRIPT
+TYPESCRIPT
+REACT
+NODE.JS
+TAILWIND CSS
+GIT
+
+JANE DOE
+PROFILE
+A highly motivated and detail-oriented professional with experience in software development and project management.
+
+EXPERIENCE
+Jan 2020 - Present
+0
+AMERICAN
+CHRISTIANITY
+Senior Software Engineer
+Tech Solutions Inc.
+Led a team of 5 engineers to develop a scalable web application.
+
+EDUCATION
+Sep 2015 - May 2019
+Bachelor of Science in Computer Science
+State University
+Graduated with Honors. Coursework included Data Structures, Algorithms, and Web Development.
+TAILWIND CSS GIT
+`);
+
+    expect(parsed.personalInfo.fullName).toBe('Jane Doe');
+    expect(parsed.personalInfo.email).toBe('jane.doe@example.com');
+    expect(parsed.personalInfo.phone).toBe('+1 234 567 890');
+    expect(parsed.personalInfo.nic).toBe('199012345678');
+    expect(parsed.personalInfo.gender).toBe('FEMALE');
+    expect(parsed.personalInfo.nationality).toBe('AMERICAN');
+    expect(parsed.personalInfo.religion).toBe('CHRISTIANITY');
+    expect(parsed.personalInfo.maritalStatus).toBe('SINGLE');
+    expect(parsed.personalInfo.summary).toBe('A highly motivated and detail-oriented professional with experience in software development and project management.');
+    expect(parsed.experience).toEqual([
+      expect.objectContaining({
+        position: 'Senior Software Engineer',
+        company: 'Tech Solutions Inc.',
+        startDate: 'Jan 2020',
+        endDate: 'Present',
+        description: 'Led a team of 5 engineers to develop a scalable web application.',
+      }),
+    ]);
+    expect(parsed.education).toEqual([
+      expect.objectContaining({
+        degree: 'Bachelor of Science in Computer Science',
+        institution: 'State University',
+        description: 'Graduated with Honors. Coursework included Data Structures, Algorithms, and Web Development.',
+      }),
+    ]);
+    expect(parsed.skills.map((skill) => skill.name)).toEqual(['JavaScript', 'TypeScript', 'React', 'Node.js', 'Tailwind CSS', 'Git']);
+  });
+
   it('marks unsupported import input with no OCR provider', async () => {
     const result = await extractCvText(Buffer.from('hello').toString('base64'), 'text/plain');
 
