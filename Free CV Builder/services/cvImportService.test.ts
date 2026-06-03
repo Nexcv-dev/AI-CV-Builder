@@ -221,6 +221,229 @@ Improved system performance by 30%.
     );
   });
 
+  it('parses the Bimantha-style compact CV layout', () => {
+    const parsed = parseCvTextToStructuredData(`
+BIMANTHA PERERA
+Address: 47/G/9 Samithpura Mattakuliya Co.15
+Phone: 072 696 2288 / 077 544 9755
+Email: www.bimanthaperera@gmail.com
+
+PROFESSIONAL SUMMARY
+A creative and driven professional with skills in software engineering, graphic design, and content creation. I enjoy solving problems by combining technical and creative thinking. Passionate about learning, mentoring, and helping others grow. Also interested in digital marketing and how technology supports business success.
+
+EXPERIENCE
+Transport Assistant
+SITREK Group, Colombo 02
+Sep 2024 - Present
+Managed daily logistics operations and driver payment systems
+Oversaw and maintained over 50+ GPS tracking devices to ensure accurate real-time vehicle monitoring
+Resolved operational issues, improving efficiency and communication
+Coordinated between management, drivers, and clients for seamless workflow
+Leveraged Excel and TMS tools to enhance organization and reporting
+Key Contributions:
+Improved payment processing efficiency through automation
+Enhanced client satisfaction scores
+Reduced operational challenges
+Mentored 6 junior staff, increasing their performance in six months
+
+EDUCATION
+Higher National Diploma (HND) in Software Engineering
+ICBT Campus
+Jan 2024 - Ongoing
+GCE Advanced Level (A/L) - Biology, Physics, Chemistry
+St. Benedict's College, Colombo-13
+Jan 2020 - Jan 2022
+GCE Ordinary Level (O/L)
+Christ King College, Wattala
+
+SKILLS
+Technical: Java, HTML, C++, Python,
+Tools: Microsoft Excel, TMS, Data Reconciliation
+Soft Skills: Problem Solving, Stress Management, Leadership, Communication, Time Management
+Languages: Sinhala, English, Tamil
+Other: Graphic Design, Research, Documentation
+`);
+
+    expect(parsed.personalInfo.fullName).toBe('Bimantha Perera');
+    expect(parsed.personalInfo.email).toBe('www.bimanthaperera@gmail.com');
+    expect(parsed.personalInfo.phone).toBe('072 696 2288 / 077 544 9755');
+    expect(parsed.personalInfo.address).toBe('47/G/9 Samithpura Mattakuliya Co.15');
+    expect(parsed.personalInfo.summary).toContain('creative and driven professional');
+    expect(parsed.experience).toEqual([
+      expect.objectContaining({
+        position: 'Transport Assistant',
+        company: 'SITREK Group, Colombo 02',
+        startDate: 'Sep 2024',
+        endDate: 'Present',
+      }),
+    ]);
+    expect(parsed.experience[0].description).toContain('<li>Managed daily logistics operations and driver payment systems</li>');
+    expect(parsed.experience[0].description).toContain('<li>Improved payment processing efficiency through automation</li>');
+    expect(parsed.education).toEqual([
+      expect.objectContaining({
+        degree: 'Higher National Diploma (HND) in Software Engineering',
+        institution: 'ICBT Campus',
+        startDate: 'Jan 2024',
+        endDate: 'Ongoing',
+      }),
+      expect.objectContaining({
+        degree: 'GCE Advanced Level (A/L) - Biology, Physics, Chemistry',
+        institution: "St. Benedict's College, Colombo-13",
+        startDate: 'Jan 2020',
+        endDate: 'Jan 2022',
+      }),
+      expect.objectContaining({
+        degree: 'GCE Ordinary Level (O/L)',
+        institution: 'Christ King College, Wattala',
+      }),
+    ]);
+    expect(parsed.skills.map((skill) => skill.name)).toEqual(expect.arrayContaining([
+      'Java',
+      'HTML',
+      'C++',
+      'Python',
+      'Microsoft Excel',
+      'TMS',
+      'Problem Solving',
+      'Leadership',
+      'Graphic Design',
+    ]));
+    expect(parsed.languages.map((language) => language.name)).toEqual(['Sinhala', 'English', 'Tamil']);
+  });
+
+  it('parses sidebar career and academic CV layouts', () => {
+    const parsed = parseCvTextToStructuredData(`
+MARK SMITH
+Head Teacher
+
+CONTACT
+Address
+Daisyloom, St Pauls Square
+Birmingham B18 6NY
+Phone
+0123 456 7890
+Email
+info@dayjob.com
+LinkedIn
+linkedin.com/yourname
+
+PROFILE
+Mark is an outgoing, ambitious, and confident individual, whose passion for head teaching is equally matched by his experience in it.
+
+CAREER
+2016 - Present
+Head Teacher
+School name
+Responsible for assisting in the complete educational and social development of pupils under the direction and guidance of the head teacher.
+
+2015 - 2016
+Head Teacher
+School name
+Planning & delivering well structured lessons which engage & motivate students.
+
+SKILLS
+Developing and implementing continuous improvement in all teaching, educational and recreational processes.
+Knowledge of related administrative & clerical procedures.
+
+ACADEMIC
+2011 - 2014
+Course details
+University name
+2009 - 2011
+Course details
+College name
+`);
+
+    expect(parsed.personalInfo.fullName).toBe('Mark Smith');
+    expect(parsed.personalInfo.email).toBe('info@dayjob.com');
+    expect(parsed.personalInfo.phone).toBe('0123 456 7890');
+    expect(parsed.experience.length).toBe(2);
+    expect(parsed.experience[0]).toEqual(expect.objectContaining({
+      position: 'Head Teacher',
+      company: 'School name',
+      startDate: '2016',
+      endDate: 'Present',
+    }));
+    expect(parsed.experience[0].description).toContain('complete educational and social development');
+    expect(parsed.education.length).toBe(2);
+    expect(parsed.education[0]).toEqual(expect.objectContaining({
+      degree: 'Course details',
+      institution: 'University name',
+      startDate: '2011',
+      endDate: '2014',
+    }));
+  });
+
+  it('parses header-line teacher CV layouts with core qualifications', () => {
+    const parsed = parseCvTextToStructuredData(`
+EMILY WILLIAMS
+Bridgeport, CT 06606  (555) 555-5555  example@example.com
+
+PERSONAL SUMMARY
+Focused and attentive, recently graduated Ph.D. student, Assistant Professor of English experienced in cultivating welcoming and engaging learning environments.
+
+CORE QUALIFICATIONS
+Writing coursework
+Student needs assessment
+Class instruction
+Student records management
+Student research guidance
+MS Office expertise
+Outlook and Gmail
+Tutoring
+
+EDUCATION
+Ph.D.: English Language And Literature
+Yale University - New Haven, CT
+Master of Arts: Writing
+Albertus Magnus College - New Haven, CT
+Bachelor of Arts: English
+Southern Connecticut State University - New Haven, CT
+
+WORK EXPERIENCE
+ASSISTANT PROFESSOR OF ENGLISH 09/2019 to Current
+Housatonic Community College, Bridgeport, CT
+Provided guidance and supervision to 20 master's degree students while giving academic support to Professors and other faculty members.
+Tracked materials and exercises to illustrate the application of course concepts.
+
+ASSISTANT ENGLISH INSTRUCTOR 09/2016 to 06/2019
+Sacred Heart University, Fairfield, CT
+Evaluated college students' abilities and grasp of English language.
+Evaluated and revised lesson plans and course content.
+`);
+
+    expect(parsed.personalInfo.fullName).toBe('Emily Williams');
+    expect(parsed.personalInfo.email).toBe('example@example.com');
+    expect(parsed.personalInfo.phone).toBe('(555) 555-5555');
+    expect(parsed.personalInfo.summary).toContain('recently graduated Ph.D. student');
+    expect(parsed.skills.map((skill) => skill.name)).toEqual(expect.arrayContaining([
+      'Writing coursework',
+      'Student needs assessment',
+      'MS Office expertise',
+      'Tutoring',
+    ]));
+    expect(parsed.education).toEqual([
+      expect.objectContaining({ degree: 'Ph.D.: English Language And Literature', institution: 'Yale University - New Haven, CT' }),
+      expect.objectContaining({ degree: 'Master of Arts: Writing', institution: 'Albertus Magnus College - New Haven, CT' }),
+      expect.objectContaining({ degree: 'Bachelor of Arts: English', institution: 'Southern Connecticut State University - New Haven, CT' }),
+    ]);
+    expect(parsed.experience).toEqual([
+      expect.objectContaining({
+        position: 'ASSISTANT PROFESSOR OF ENGLISH',
+        company: 'Housatonic Community College, Bridgeport, CT',
+        startDate: '09/2019',
+        endDate: 'Current',
+      }),
+      expect.objectContaining({
+        position: 'ASSISTANT ENGLISH INSTRUCTOR',
+        company: 'Sacred Heart University, Fairfield, CT',
+        startDate: '09/2016',
+        endDate: '06/2019',
+      }),
+    ]);
+    expect(parsed.experience[0].description).toContain('Provided guidance and supervision');
+  });
+
   it('marks unsupported import input with no OCR provider', async () => {
     const result = await extractCvText(Buffer.from('hello').toString('base64'), 'text/plain');
 

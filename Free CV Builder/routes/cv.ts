@@ -153,8 +153,21 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             // Validate mimeType against allow-list
             const validatedMimeType = ALLOWED_MIME_TYPES.includes(mimeType) ? mimeType : 'application/pdf';
 
-            const { text: extractedText, usedOcr, ocrProvider } = await extractCvText(base64Data, validatedMimeType);
-            const basicResult = parseCvTextToStructuredData(extractedText || '');
+            const { text: extractedText, usedOcr, ocrProvider, parsedCv, structuredProvider } = await extractCvText(base64Data, validatedMimeType);
+            const basicResult = parsedCv || parseCvTextToStructuredData(extractedText || '');
+
+            if (parsedCv) {
+                return res.json(withImportMeta(basicResult, {
+                    source: 'ai',
+                    extractedTextLength: extractedText.length,
+                    usedAi: true,
+                    usedOcr,
+                    ocrProvider,
+                    structuredProvider: structuredProvider || 'aws-lambda-ai',
+                    message: 'AI import completed in OCR Lambda.',
+                }));
+            }
+
             const userCanUseAi = Boolean(req.isAuthenticated?.() && req.user && isPaidPlan(req.user));
 
             if (!userCanUseAi) {
@@ -170,6 +183,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     usedAi: false,
                     usedOcr,
                     ocrProvider,
+                    structuredProvider: structuredProvider || 'app-basic',
                     message: 'Basic import completed. Review each section before saving.',
                 }));
             }
@@ -181,6 +195,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     usedAi: false,
                     usedOcr,
                     ocrProvider,
+                    structuredProvider: structuredProvider || 'app-basic',
                     message: 'AI import is not configured, so basic extraction was used.',
                 }));
             }
@@ -337,6 +352,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     usedAi: true,
                     usedOcr,
                     ocrProvider,
+                    structuredProvider: 'app-ai',
                     message: 'AI import completed.',
                 }));
             } catch (aiError) {
@@ -351,6 +367,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     usedAi: false,
                     usedOcr,
                     ocrProvider,
+                    structuredProvider: structuredProvider || 'app-basic',
                     message: 'AI import failed, so basic OCR/text extraction was used.',
                 }));
             }
