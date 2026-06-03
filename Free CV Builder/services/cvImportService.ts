@@ -263,7 +263,30 @@ const splitDatedBlocks = (lines: string[]) => {
   return blocks;
 };
 
-const parseExperience = (lines: string[]) => splitDatedBlocks(lines)
+const splitEntryBlocks = (lines: string[], startsEntry: (line: string) => boolean) => {
+  const blocks: string[][] = [];
+  let current: string[] = [];
+
+  for (const line of lines) {
+    const startsNewEntry = current.some((item) => dateRangePattern.test(item)) && current.some(startsEntry) && startsEntry(line);
+    if (startsNewEntry && current.length) {
+      blocks.push(current);
+      current = [];
+    }
+
+    if (dateRangePattern.test(line) && current.some((item) => dateRangePattern.test(item))) {
+      blocks.push(current);
+      current = [];
+    }
+
+    current.push(line);
+  }
+
+  if (current.length) blocks.push(current);
+  return blocks;
+};
+
+const parseExperience = (lines: string[]) => splitEntryBlocks(lines, (line) => jobTitlePattern.test(line))
   .map((block) => {
     const joined = block.join(' ');
     const dateMatch = joined.match(dateRangePattern);
@@ -294,7 +317,7 @@ const parseExperience = (lines: string[]) => splitDatedBlocks(lines)
   })
   .filter((item): item is NonNullable<typeof item> => Boolean(item && (item.company || item.position)));
 
-const parseEducation = (lines: string[]) => splitDatedBlocks(lines)
+const parseEducation = (lines: string[]) => splitEntryBlocks(lines, (line) => degreePattern.test(line))
   .map((block) => {
     const joined = block.join(' ');
     const dateMatch = joined.match(dateRangePattern);
