@@ -63,6 +63,7 @@ const blankImport = (): ParsedCvImport => ({
 });
 
 const SECTION_ALIASES = {
+  personalInfo: [/^(details|personal info|personal details|contact|contact details)$/i],
   summary: [/^(profile|professional profile|summary|career summary|about me|objective)$/i],
   experience: [/^(experience|work experience|employment history|professional experience|career history|work history)$/i],
   education: [/^(education|academic background|educational qualifications|qualifications)$/i],
@@ -132,9 +133,27 @@ const awardPattern = /\b(?:award|honou?r|achievement|winner|recognized|recognise
 const proficiencyPattern = /\b(?:native|fluent|professional|conversational|intermediate|beginner|basic|advanced|excellent|good|fair|written|spoken)\b/i;
 const knownLanguagePattern = /\b(?:english|sinhala|tamil|hindi|arabic|french|german|spanish|italian|chinese|mandarin|japanese|korean|russian|dutch|portuguese)\b/i;
 const sectionNoisePattern = /\b(?:experience|education|skills|projects|references|summary|profile|curriculum vitae|resume)\b/i;
+const personalInfoNoisePattern = /\b(?:male|female|american|sri lankan|christianity|buddhist|hindu|islam|muslim|single|married|nationality|religion|gender|nic|dob|personal info)\b/i;
+const knownSkillNames = [
+  'JavaScript',
+  'TypeScript',
+  'React',
+  'Node.js',
+  'Tailwind CSS',
+  'Git',
+  'AWS',
+  'HTML',
+  'CSS',
+  'Python',
+  'Java',
+  'SQL',
+  'MongoDB',
+  'Express',
+];
 
 const splitIntoSections = (text: string) => {
   const sections: Record<SectionKey, string[]> = {
+    personalInfo: [],
     summary: [],
     experience: [],
     education: [],
@@ -169,16 +188,27 @@ const splitIntoSections = (text: string) => {
 
 const parseName = (topLines: string[], email: string, phone: string) => {
   const blocked = new Set([email.toLowerCase(), phone.toLowerCase()]);
-  return topLines.find((line) => {
+  const name = topLines.find((line) => {
     const lower = line.toLowerCase();
     if (blocked.has(lower) || lower.includes('@') || /\d{3,}/.test(line)) return false;
-    if (/linkedin|github|portfolio|curriculum vitae|resume|address/i.test(line)) return false;
+    if (line.includes(',') || /linkedin|github|portfolio|curriculum vitae|resume|address/i.test(line)) return false;
+    if (personalInfoNoisePattern.test(line) || extractKnownSkills(line).length) return false;
     const words = line.split(/\s+/).filter(Boolean);
     return words.length >= 2 && words.length <= 5 && line.length <= 80;
   }) || '';
+  return /^[A-Z\s.'-]+$/.test(name)
+    ? name.toLowerCase().replace(/\b[a-z]/g, (letter) => letter.toUpperCase())
+    : name;
 };
 
-const parseSummary = (lines: string[]) => cleanText(lines.slice(0, 4).join(' '), 700);
+const stripInlineSectionLabels = (value: string) => cleanText(value
+  .replace(/^(?:personal info|personal details|details|profile|professional summary|summary|skills(?:\s*&\s*expertise)?)\b\s*:?\s*/i, ' ')
+  .replace(/\s+/g, ' '));
+
+const parseSummary = (lines: string[]) => {
+  const summary = stripInlineSectionLabels(lines.slice(0, 4).join(' '));
+  return cleanText(summary.replace(/^(?:info|profile)\s+/i, ''), 700);
+};
 
 const wordCount = (value: string) => value.split(/\s+/).filter(Boolean).length;
 
@@ -188,7 +218,35 @@ const hasContactNoise = (value: string) => value.includes('@') || /(?:\+?\d[\d\s
 
 const isUsefulSectionLine = (value: string) => {
   const line = cleanLine(value);
-  return Boolean(line) && !sectionNoisePattern.test(line) && !hasContactNoise(line);
+  if (/^[\d\s.,/-]+$/.test(line)) return false;
+  return Boolean(line) && !sectionNoisePattern.test(line) && !personalInfoNoisePattern.test(line) && !hasContactNoise(line);
+};
+
+const normalizedForEmail = (text: string) => text
+  .replace(/\s*@\s*/g, '@')
+  .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]*[A-Z])\s+([A-Z0-9.-]+\.[A-Z]{2,})\b/gi, '$1$2')
+  .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]+)\s+([A-Z]{2,})\b/gi, '$1.$2');
+
+const extractPersonalDetails = (text: string, lines: string[]) => {
+  const joined = lines.join('\n');
+  const compactText = normalizedForEmail(`${text}\n${joined}`);
+  const dob = compactText.match(/\b(?:19|20)\d{2}[-/]\d{2}[-/]\d{2}\b/)?.[0] || '';
+  const nic = compactText.match(/\b(?:\d{9}[vx]|\d{12})\b/i)?.[0] || '';
+  const gender = compactText.match(/\b(male|female)\b/i)?.[1] || '';
+  const nationality = compactText.match(/\b(sri lankan|american|british|indian|canadian|australian)\b/i)?.[1] || '';
+  const religion = compactText.match(/\b(christianity|christian|buddhist|hindu|islam|muslim|catholic)\b/i)?.[1] || '';
+  const maritalStatus = compactText.match(/\b(single|married|divorced|widowed)\b/i)?.[1] || '';
+
+  return {
+    email: extractEmail(compactText),
+    phone: extractPhone(compactText),
+    dob,
+    nic,
+    gender: cleanText(gender, 20),
+    nationality: cleanText(nationality, 40),
+    religion: cleanText(religion, 40),
+    maritalStatus: cleanText(maritalStatus, 20),
+  };
 };
 
 const splitDatedBlocks = (lines: string[]) => {
@@ -215,13 +273,14 @@ const parseExperience = (lines: string[]) => splitDatedBlocks(lines)
     const nonDateLines = block
       .map((line) => cleanLine(line.replace(dateRangePattern, '')))
       .filter(isUsefulSectionLine);
-    const titleLine = nonDateLines[0] || '';
-    const secondLine = nonDateLines[1] || '';
-    if (!titleLine && !secondLine) return null;
+    const jobLineIndex = nonDateLines.findIndex((line) => jobTitlePattern.test(line));
+    const titleLine = jobLineIndex >= 0 ? nonDateLines[jobLineIndex] : nonDateLines[0] || '';
+    const secondLine = jobLineIndex >= 0 ? nonDateLines[jobLineIndex + 1] || '' : nonDateLines[1] || '';
+    if (!titleLine) return null;
 
-    const [position, company] = titleLine.includes(' at ')
-      ? titleLine.split(/\s+at\s+/i).map(cleanLine)
-      : [titleLine, secondLine];
+    const atSplit = titleLine.split(/\s+at\s+/i).map(cleanLine);
+    const position = atSplit.length > 1 ? atSplit[0] : cleanLine(titleLine.replace(companyPattern, ''));
+    const company = atSplit.length > 1 ? atSplit.slice(1).join(' at ') : (companyPattern.test(titleLine) ? titleLine.replace(position, '').trim() : secondLine);
     const hasWorkEvidence = jobTitlePattern.test(position) || companyPattern.test(company) || /\s+at\s+/i.test(titleLine);
     if (!hasWorkEvidence || isLikelySentence(position)) return null;
 
@@ -230,7 +289,7 @@ const parseExperience = (lines: string[]) => splitDatedBlocks(lines)
       position: position || '',
       startDate: cleanLine(dateMatch[1]),
       endDate: cleanLine(dateMatch[2]),
-      description: cleanText(nonDateLines.slice(company ? 2 : 1).join(' '), 1000),
+      description: cleanText(nonDateLines.filter((_, index) => index !== jobLineIndex && index !== jobLineIndex + 1).join(' '), 1000),
     };
   })
   .filter((item): item is NonNullable<typeof item> => Boolean(item && (item.company || item.position)));
@@ -253,7 +312,10 @@ const parseEducation = (lines: string[]) => splitDatedBlocks(lines)
       degree,
       startDate: dateMatch ? cleanLine(dateMatch[1]) : '',
       endDate: dateMatch ? cleanLine(dateMatch[2]) : '',
-      description: cleanText(nonDateLines.filter((line) => line !== degree && line !== institution).join(' '), 500),
+      description: cleanText(nonDateLines
+        .filter((line) => line !== degree && line !== institution)
+        .filter((line) => !extractKnownSkills(line).length)
+        .join(' '), 500),
     };
   })
   .filter((item): item is NonNullable<typeof item> => Boolean(item && (item.degree || item.institution)));
@@ -262,10 +324,23 @@ const isLikelySkill = (name: string) => {
   if (!name || name.length > 60 || wordCount(name) > 5) return false;
   if (dateRangePattern.test(name) || yearPattern.test(name) || hasContactNoise(name)) return false;
   if (isLikelySentence(name) || sectionNoisePattern.test(name)) return false;
+  if (/^[A-Z\s.'-]+$/.test(name) && wordCount(name) === 2 && !extractKnownSkills(name).length) return false;
   return /[a-z]/i.test(name);
 };
 
-const parseSkills = (lines: string[]) => unique(lines.flatMap((line) => line.split(/[,|\u2022]/))).slice(0, 30)
+const extractKnownSkills = (line: string) => knownSkillNames.filter((skill) => {
+  const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\.?/g, '\\.?');
+  return new RegExp(`\\b${escaped}\\b`, 'i').test(line);
+}).filter((skill, _index, matches) => !matches.some((other) => other !== skill && other.toLowerCase().includes(skill.toLowerCase())));
+
+const splitSkillLine = (line: string) => {
+  if (/[,|\u2022]/.test(line)) return line.split(/[,|\u2022]/);
+  const known = extractKnownSkills(line);
+  if (known.length) return known;
+  return [line];
+};
+
+const parseSkills = (lines: string[]) => unique(lines.flatMap(splitSkillLine)).slice(0, 30)
   .filter(isLikelySkill)
   .map((name) => ({ name, level: 4 }));
 
@@ -418,12 +493,20 @@ export const parseCvTextToStructuredData = (text: string): ParsedCvImport => {
   const result = blankImport();
   const normalized = text.replace(/\r/g, '\n').replace(/\n{3,}/g, '\n\n').slice(0, 20_000);
   const { top, sections } = splitIntoSections(normalized);
-  const email = extractEmail(normalized);
-  const phone = extractPhone(normalized);
+  const personalLines = [...top, ...sections.personalInfo];
+  const personalDetails = extractPersonalDetails(normalized, personalLines);
+  const email = personalDetails.email;
+  const phone = personalDetails.phone;
 
   result.personalInfo.email = email;
   result.personalInfo.phone = phone;
-  result.personalInfo.fullName = parseName(top, email, phone);
+  result.personalInfo.fullName = parseName([...personalLines, ...sections.skills], email, phone);
+  result.personalInfo.dob = personalDetails.dob;
+  result.personalInfo.nic = personalDetails.nic;
+  result.personalInfo.gender = personalDetails.gender;
+  result.personalInfo.nationality = personalDetails.nationality;
+  result.personalInfo.religion = personalDetails.religion;
+  result.personalInfo.maritalStatus = personalDetails.maritalStatus;
   result.personalInfo.summary = parseSummary(sections.summary);
   result.experience = parseExperience(sections.experience).slice(0, 12);
   result.education = parseEducation(sections.education).slice(0, 12);
