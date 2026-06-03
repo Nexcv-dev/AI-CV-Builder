@@ -19,13 +19,19 @@ fs.mkdirSync(buildDir, { recursive: true });
 fs.mkdirSync(distDir, { recursive: true });
 
 await esbuild.build({
-  entryPoints: ['./lambda-ocr/src/handler.ts'],
+  stdin: {
+    contents: fs.readFileSync(path.join(lambdaRoot, 'src', 'handler.ts'), 'utf8'),
+    loader: 'ts',
+    sourcefile: 'handler.ts',
+    resolveDir: path.join(lambdaRoot, 'src'),
+  },
   bundle: true,
   platform: 'node',
   target: 'node20',
   format: 'cjs',
-  outfile: './lambda-ocr/build/handler.js',
-  absWorkingDir: projectRoot,
+  outfile: path.join(buildDir, 'handler.js'),
+  absWorkingDir: lambdaRoot,
+  nodePaths: [path.join(projectRoot, 'node_modules')],
   minify: true,
 });
 

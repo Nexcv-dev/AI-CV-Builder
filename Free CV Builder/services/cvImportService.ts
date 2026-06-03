@@ -3,6 +3,7 @@ import path from 'node:path';
 
 type CvImportSource = 'ai' | 'basic';
 type OcrProvider = 'aws-lambda' | 'local-tesseract' | 'pdf-text' | 'none';
+type StructuredProvider = 'aws-lambda-ai' | 'app-ai' | 'app-basic' | 'none';
 type PdfParser = import('pdf-parse').PDFParse;
 
 export interface ParsedCvImport {
@@ -33,6 +34,7 @@ export interface ParsedCvImport {
     usedAi: boolean;
     usedOcr: boolean;
     ocrProvider: OcrProvider;
+    structuredProvider?: StructuredProvider;
     message?: string;
   };
 }
@@ -63,10 +65,10 @@ const blankImport = (): ParsedCvImport => ({
 
 const SECTION_ALIASES = {
   personalInfo: [/^(details|personal info|personal details|contact|contact details)$/i],
-  summary: [/^(profile|professional profile|summary|career summary|about me|objective)$/i],
-  experience: [/^(experience|work experience|employment history|professional experience|career history|work history)$/i],
-  education: [/^(education|academic background|educational qualifications|qualifications)$/i],
-  skills: [/^(skills|technical skills|core skills|key skills|competencies)$/i],
+  summary: [/^(profile|professional profile|professional summary|personal summary|summary|career summary|about me|objective)$/i],
+  experience: [/^(experience|work experience|employment history|professional experience|career|career history|work history)$/i],
+  education: [/^(education|academic|academic background|educational qualifications|qualifications)$/i],
+  skills: [/^(skills|technical skills|core skills|core qualifications|key skills|competencies)$/i],
   courses: [/^(certifications|certificates|courses|licenses|training)$/i],
   languages: [/^(languages|language skills)$/i],
   projects: [/^(projects|portfolio|personal projects)$/i],
@@ -124,15 +126,17 @@ const lineLooksLikeHeading = (line: string) => {
 const extractEmail = (text: string) => text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || '';
 
 const extractPhone = (text: string) => {
-  const match = text.match(/(?:\+?\d[\d\s().-]{7,}\d)/);
+  const parenthesized = text.match(/\(\d{3}\)\s*\d{3}[-\s]\d{4}/);
+  if (parenthesized) return cleanText(parenthesized[0], 32);
+  const match = text.match(/(?:\+?\d[\d\s()./-]{7,}\d)/);
   return match ? cleanText(match[0], 32) : '';
 };
 
-const dateRangePattern = /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{4}|\d{4})\s*(?:-|\u2013|\u2014|to)\s*((?:present|current|now)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{4}|\d{4})/i;
+const dateRangePattern = /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{4}|\d{1,2}\/\d{4}|\d{4})\s*(?:-|\u2013|\u2014|to)\s*((?:present|current|now|ongoing)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{4}|\d{1,2}\/\d{4}|\d{4})/i;
 const yearPattern = /\b(?:19|20)\d{2}\b/;
-const degreePattern = /\b(?:degree|bachelor|master|diploma|certificate|advanced level|ordinary level|bsc|msc|ba|ma|phd|mba|hnd|nvq|gce|a\/l|o\/l)\b/i;
-const institutionPattern = /\b(?:university|college|school|institute|academy|campus|faculty|polytechnic)\b/i;
-const jobTitlePattern = /\b(?:engineer|developer|designer|manager|assistant|associate|executive|officer|analyst|consultant|coordinator|specialist|technician|intern|trainee|accountant|teacher|nurse|driver|cashier|clerk|supervisor|administrator|representative|lead|head|director)\b/i;
+const degreePattern = /\b(?:degree|bachelor|master|diploma|certificate|course details|advanced level|ordinary level|bsc|msc|ba|ma|phd|ph\.d\.?|mba|hnd|nvq|gce|a\/l|o\/l)\b/i;
+const institutionPattern = /\b(?:university|college|school|institute|academy|campus|faculty|polytechnic|name)\b/i;
+const jobTitlePattern = /\b(?:engineer|developer|designer|manager|assistant|associate|executive|officer|analyst|consultant|coordinator|specialist|technician|instructor|professor|intern|trainee|accountant|teacher|nurse|driver|cashier|clerk|supervisor|administrator|representative|lead|head|director)\b/i;
 const companyPattern = /\b(?:pvt|ltd|limited|inc|llc|company|group|solutions|technologies|systems|services|holdings|bank|hospital|hotel|restaurant|agency|store|center|centre)\b/i;
 const coursePattern = /\b(?:certification|certificate|course|training|license|licence|workshop|bootcamp|diploma)\b/i;
 const awardPattern = /\b(?:award|honou?r|achievement|winner|recognized|recognised|scholarship|medal|prize)\b/i;
@@ -232,7 +236,7 @@ const descriptionHtml = (lines: string[], limit = 1000) => {
   const items = unique(lines)
     .map((line) => cleanLine(line.replace(dateRangePattern, '')))
     .filter(isUsefulSectionLine)
-    .slice(0, 6);
+    .slice(0, 10);
 
   if (!items.length) return '';
   const html = `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
@@ -242,7 +246,7 @@ const descriptionHtml = (lines: string[], limit = 1000) => {
 const normalizedForEmail = (text: string) => text
   .replace(/\s*@\s*/g, '@')
   .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]*[A-Z])\s+([A-Z0-9.-]+\.[A-Z]{2,})\b/gi, '$1$2')
-  .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]+)\s+([A-Z]{2,})\b/gi, '$1.$2');
+  .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]+\.)\s+([A-Z]{2,4})\b/gi, '$1$2');
 
 const extractPersonalDetails = (text: string, lines: string[]) => {
   const joined = lines.join('\n');
@@ -253,10 +257,12 @@ const extractPersonalDetails = (text: string, lines: string[]) => {
   const nationality = compactText.match(/\b(sri lankan|american|british|indian|canadian|australian)\b/i)?.[1] || '';
   const religion = compactText.match(/\b(christianity|christian|buddhist|hindu|islam|muslim|catholic)\b/i)?.[1] || '';
   const maritalStatus = compactText.match(/\b(single|married|divorced|widowed)\b/i)?.[1] || '';
+  const address = compactText.match(/\bAddress\s*:\s*([^\n]+)/i)?.[1] || '';
 
   return {
     email: extractEmail(compactText),
     phone: extractPhone(compactText),
+    address: cleanText(address, 120),
     dob,
     nic,
     gender: cleanText(gender, 20),
@@ -285,7 +291,7 @@ const splitEntryBlocks = (lines: string[], startsEntry: (line: string) => boolea
   let current: string[] = [];
 
   for (const line of lines) {
-    const startsNewEntry = current.some((item) => dateRangePattern.test(item)) && current.some(startsEntry) && startsEntry(line);
+    const startsNewEntry = current.some(startsEntry) && startsEntry(line);
     if (startsNewEntry && current.length) {
       blocks.push(current);
       current = [];
@@ -303,17 +309,17 @@ const splitEntryBlocks = (lines: string[], startsEntry: (line: string) => boolea
   return blocks;
 };
 
-const parseExperience = (lines: string[]) => splitEntryBlocks(lines, (line) => jobTitlePattern.test(line))
+const parseExperience = (lines: string[]) => splitEntryBlocks(lines, (line) => jobTitlePattern.test(line) && wordCount(line) <= 5 && !isLikelySentence(line))
   .map((block) => {
     const joined = block.join(' ');
     const dateMatch = joined.match(dateRangePattern);
     if (!dateMatch) return null;
-    if (degreePattern.test(joined) || institutionPattern.test(joined)) return null;
 
     const nonDateLines = block
       .map((line) => cleanLine(line.replace(dateRangePattern, '')))
       .filter(isUsefulSectionLine);
     const jobLineIndex = nonDateLines.findIndex((line) => jobTitlePattern.test(line));
+    if (degreePattern.test(joined) && jobLineIndex < 0) return null;
     const titleLine = jobLineIndex >= 0 ? nonDateLines[jobLineIndex] : nonDateLines[0] || '';
     const secondLine = jobLineIndex >= 0 ? nonDateLines[jobLineIndex + 1] || '' : nonDateLines[1] || '';
     if (!titleLine) return null;
@@ -374,13 +380,16 @@ const extractKnownSkills = (line: string) => knownSkillNames.filter((skill) => {
 }).filter((skill, _index, matches) => !matches.some((other) => other !== skill && other.toLowerCase().includes(skill.toLowerCase())));
 
 const splitSkillLine = (line: string) => {
-  if (/[,|\u2022]/.test(line)) return line.split(/[,|\u2022]/);
-  const known = extractKnownSkills(line);
+  if (/^languages\s*:/i.test(line)) return [];
+  const withoutCategory = line.replace(/^(?:technical|tools?|soft skills?|other)\s*:\s*/i, '');
+  if (/[,|\u2022]/.test(withoutCategory)) return withoutCategory.split(/[,|\u2022]/);
+  const known = extractKnownSkills(withoutCategory);
   if (known.length) return known;
-  return [line];
+  return [withoutCategory];
 };
 
 const parseSkills = (lines: string[]) => unique(lines.flatMap(splitSkillLine)).slice(0, 30)
+  .filter((name) => !/^languages\s*:/i.test(name))
   .filter(isLikelySkill)
   .map((name) => ({ name, level: 4 }));
 
@@ -394,6 +403,7 @@ const parseCourses = (lines: string[]) => unique(lines).slice(0, 12)
 
 const parseLanguages = (lines: string[]) => unique(lines.flatMap((line) => line.split(/[,|\u2022]/))).slice(0, 10)
   .map((line) => {
+    line = line.replace(/^languages\s*:\s*/i, '');
     if (!knownLanguagePattern.test(line) && !proficiencyPattern.test(line)) return null;
     const [name, proficiency] = line.split(/[-:]/).map(cleanLine);
     return { name, proficiency: proficiency || '' };
@@ -462,7 +472,82 @@ const ocrPdfPages = async (parser: PdfParser) => {
   return pageTexts.join('\n');
 };
 
-const normalizeLambdaPayload = (payload: any): { text: string; usedOcr: boolean; ocrProvider: OcrProvider } | null => {
+const isPlainObject = (value: unknown): value is Record<string, any> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
+
+const normalizeParsedCv = (value: unknown): ParsedCvImport | null => {
+  if (!isPlainObject(value)) return null;
+  const blank = blankImport();
+  const personalInfo = isPlainObject(value.personalInfo) ? value.personalInfo : {};
+  return {
+    ...blank,
+    personalInfo: {
+      ...blank.personalInfo,
+      fullName: cleanText(personalInfo.fullName || '', 120),
+      email: cleanText(personalInfo.email || '', 160),
+      phone: cleanText(personalInfo.phone || '', 80),
+      address: cleanText(personalInfo.address || '', 240),
+      summary: cleanText(personalInfo.summary || '', 1200),
+      dob: cleanText(personalInfo.dob || '', 40),
+      nic: cleanText(personalInfo.nic || '', 40),
+      gender: cleanText(personalInfo.gender || '', 40),
+      nationality: cleanText(personalInfo.nationality || '', 80),
+      religion: cleanText(personalInfo.religion || '', 80),
+      maritalStatus: cleanText(personalInfo.maritalStatus || '', 40),
+    },
+    experience: Array.isArray(value.experience) ? value.experience.slice(0, 12).map((item: any) => ({
+      company: cleanText(item?.company || '', 160),
+      position: cleanText(item?.position || '', 160),
+      startDate: cleanText(item?.startDate || '', 80),
+      endDate: cleanText(item?.endDate || '', 80),
+      description: typeof item?.description === 'string' && item.description.includes('<li>')
+        ? item.description.slice(0, 1200)
+        : descriptionHtml(String(item?.description || '').split(/\r?\n|[•]/), 1200),
+    })).filter((item) => item.company || item.position || item.description) : [],
+    education: Array.isArray(value.education) ? value.education.slice(0, 12).map((item: any) => ({
+      institution: cleanText(item?.institution || '', 180),
+      degree: cleanText(item?.degree || '', 180),
+      startDate: cleanText(item?.startDate || '', 80),
+      endDate: cleanText(item?.endDate || '', 80),
+      description: typeof item?.description === 'string' && item.description.includes('<li>')
+        ? item.description.slice(0, 800)
+        : descriptionHtml(String(item?.description || '').split(/\r?\n|[•]/), 800),
+    })).filter((item) => item.institution || item.degree || item.description) : [],
+    skills: Array.isArray(value.skills) ? value.skills.slice(0, 40).map((item: any) => ({
+      name: cleanText(typeof item === 'string' ? item : item?.name || '', 80),
+      level: Math.min(5, Math.max(1, Number(typeof item === 'string' ? 4 : item?.level || 4) || 4)),
+      ...(typeof item !== 'string' && item?.category ? { category: cleanText(item.category, 80) } : {}),
+    })).filter((item) => item.name) : [],
+    courses: Array.isArray(value.courses) ? value.courses.slice(0, 12).map((item: any) => ({
+      name: cleanText(item?.name || '', 160),
+      institution: cleanText(item?.institution || '', 160),
+      startDate: cleanText(item?.startDate || '', 80),
+      endDate: cleanText(item?.endDate || '', 80),
+    })).filter((item) => item.name || item.institution) : [],
+    languages: Array.isArray(value.languages) ? value.languages.slice(0, 10).map((item: any) => ({
+      name: cleanText(typeof item === 'string' ? item : item?.name || '', 80),
+      proficiency: cleanText(typeof item === 'string' ? '' : item?.proficiency || '', 80),
+    })).filter((item) => item.name) : [],
+    projects: Array.isArray(value.projects) ? value.projects.slice(0, 12).map((item: any) => ({
+      name: cleanText(item?.name || '', 160),
+      description: cleanText(item?.description || '', 700),
+      link: cleanText(item?.link || '', 240),
+    })).filter((item) => item.name || item.description) : [],
+    awards: Array.isArray(value.awards) ? value.awards.slice(0, 12).map((item: any) => ({
+      name: cleanText(item?.name || '', 160),
+      date: cleanText(item?.date || '', 80),
+      issuer: cleanText(item?.issuer || '', 160),
+    })).filter((item) => item.name) : [],
+    references: Array.isArray(value.references) ? value.references.slice(0, 6).map((item: any) => ({
+      name: cleanText(item?.name || '', 160),
+      position: cleanText(item?.position || '', 160),
+      company: cleanText(item?.company || '', 160),
+      email: cleanText(item?.email || '', 160),
+      phone: cleanText(item?.phone || '', 80),
+    })).filter((item) => item.name || item.email || item.phone) : [],
+  };
+};
+
+const normalizeLambdaPayload = (payload: any): { text: string; usedOcr: boolean; ocrProvider: OcrProvider; parsedCv?: ParsedCvImport; structuredProvider?: StructuredProvider } | null => {
   const body = typeof payload?.body === 'string'
     ? JSON.parse(payload.body)
     : payload;
@@ -472,10 +557,13 @@ const normalizeLambdaPayload = (payload: any): { text: string; usedOcr: boolean;
       ? body.extractedText
       : '';
   if (!text.trim()) return null;
+  const parsedCv = normalizeParsedCv(body?.parsedCv || body?.structuredData);
   return {
     text: cleanExtractedText(text),
     usedOcr: body?.usedOcr !== false,
     ocrProvider: 'aws-lambda',
+    structuredProvider: parsedCv ? 'aws-lambda-ai' : 'none',
+    ...(parsedCv ? { parsedCv } : {}),
   };
 };
 
@@ -547,6 +635,7 @@ export const parseCvTextToStructuredData = (text: string): ParsedCvImport => {
 
   result.personalInfo.email = email;
   result.personalInfo.phone = phone;
+  result.personalInfo.address = personalDetails.address;
   result.personalInfo.fullName = parseName([...personalLines, ...sections.skills], email, phone);
   result.personalInfo.dob = personalDetails.dob;
   result.personalInfo.nic = personalDetails.nic;
@@ -559,14 +648,17 @@ export const parseCvTextToStructuredData = (text: string): ParsedCvImport => {
   result.education = parseEducation(sections.education).slice(0, 12);
   result.skills = parseSkills(sections.skills);
   result.courses = parseCourses(sections.courses);
-  result.languages = parseLanguages(sections.languages);
+  result.languages = parseLanguages([
+    ...sections.languages,
+    ...sections.skills.filter((line) => /^languages\s*:/i.test(line)),
+  ]);
   result.projects = parseNamedDescriptions(sections.projects);
   result.awards = parseAwards(sections.awards);
   result.references = parseReferences(sections.references);
   return result;
 };
 
-export const extractCvText = async (base64Data: string, mimeType: string): Promise<{ text: string; usedOcr: boolean; ocrProvider: OcrProvider }> => {
+export const extractCvText = async (base64Data: string, mimeType: string): Promise<{ text: string; usedOcr: boolean; ocrProvider: OcrProvider; parsedCv?: ParsedCvImport; structuredProvider?: StructuredProvider }> => {
   const lambdaResult = await extractWithConfiguredLambda(base64Data, mimeType);
   if (lambdaResult) return lambdaResult;
 
