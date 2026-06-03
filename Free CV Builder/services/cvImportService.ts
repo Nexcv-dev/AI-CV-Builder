@@ -96,6 +96,7 @@ const OCR_LAMBDA_TIMEOUT_MS = Number(process.env.OCR_LAMBDA_TIMEOUT_MS || 45_000
 const OCR_LAMBDA_FUNCTION_NAME = process.env.OCR_LAMBDA_FUNCTION_NAME?.trim();
 const OCR_LAMBDA_REGION = process.env.OCR_LAMBDA_REGION?.trim();
 const OCR_LAMBDA_URL = process.env.OCR_LAMBDA_URL?.trim();
+const OCR_LAMBDA_CONFIGURED = Boolean(OCR_LAMBDA_FUNCTION_NAME || OCR_LAMBDA_URL);
 
 let lambdaClient: LambdaClient | null = null;
 
@@ -512,6 +513,12 @@ const extractWithConfiguredLambda = async (base64Data: string, mimeType: string)
   return lambdaResult && lambdaResult.text.length >= 20 ? lambdaResult : null;
 };
 
+const emptyLambdaFallbackResult = (): { text: string; usedOcr: boolean; ocrProvider: OcrProvider } => ({
+  text: '',
+  usedOcr: false,
+  ocrProvider: 'aws-lambda',
+});
+
 export const parseCvTextToStructuredData = (text: string): ParsedCvImport => {
   const result = blankImport();
   const normalized = text.replace(/\r/g, '\n').replace(/\n{3,}/g, '\n\n').slice(0, 20_000);
@@ -556,6 +563,10 @@ export const extractCvText = async (base64Data: string, mimeType: string): Promi
         return { text, usedOcr: false, ocrProvider: 'pdf-text' };
       }
 
+      if (OCR_LAMBDA_CONFIGURED) {
+        return text ? { text, usedOcr: false, ocrProvider: 'pdf-text' } : emptyLambdaFallbackResult();
+      }
+
       const ocrText = await ocrPdfPages(parser).catch(() => '');
       return {
         text: cleanExtractedText(ocrText || text),
@@ -568,6 +579,7 @@ export const extractCvText = async (base64Data: string, mimeType: string): Promi
   }
 
   if (mimeType.startsWith('image/')) {
+    if (OCR_LAMBDA_CONFIGURED) return emptyLambdaFallbackResult();
     return { text: cleanExtractedText(await recognizeImageBuffer(buffer)), usedOcr: true, ocrProvider: 'local-tesseract' };
   }
 

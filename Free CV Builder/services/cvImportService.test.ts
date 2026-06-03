@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { extractCvText, parseCvTextToStructuredData } from './cvImportService';
 
 describe('cv import parser', () => {
@@ -209,5 +209,24 @@ Completed practical software training.
     const result = await extractCvText(Buffer.from('hello').toString('base64'), 'text/plain');
 
     expect(result).toEqual({ text: '', usedOcr: false, ocrProvider: 'none' });
+  });
+
+  it('does not run local image OCR when AWS OCR is configured', async () => {
+    const originalFunctionName = process.env.OCR_LAMBDA_FUNCTION_NAME;
+    const originalUrl = process.env.OCR_LAMBDA_URL;
+    process.env.OCR_LAMBDA_FUNCTION_NAME = 'test-ocr-lambda';
+    delete process.env.OCR_LAMBDA_URL;
+    vi.resetModules();
+
+    const { extractCvText: extractWithAwsConfigured } = await import('./cvImportService');
+    const result = await extractWithAwsConfigured(Buffer.from('not an image').toString('base64'), 'image/png');
+
+    expect(result).toEqual({ text: '', usedOcr: false, ocrProvider: 'aws-lambda' });
+
+    if (originalFunctionName === undefined) delete process.env.OCR_LAMBDA_FUNCTION_NAME;
+    else process.env.OCR_LAMBDA_FUNCTION_NAME = originalFunctionName;
+    if (originalUrl === undefined) delete process.env.OCR_LAMBDA_URL;
+    else process.env.OCR_LAMBDA_URL = originalUrl;
+    vi.resetModules();
   });
 });
