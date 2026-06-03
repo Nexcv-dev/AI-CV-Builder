@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCvTextToStructuredData } from './cvImportService';
+import { extractCvText, parseCvTextToStructuredData } from './cvImportService';
 
 describe('cv import parser', () => {
   it('extracts clear section data while ignoring unrelated lines', () => {
@@ -71,5 +71,11 @@ Available upon request
     expect(parsed.education).toEqual([]);
     expect(parsed.skills).toEqual([]);
     expect(parsed.references).toEqual([]);
+  });
+
+  it('marks unsupported import input with no OCR provider', async () => {
+    const result = await extractCvText(Buffer.from('hello').toString('base64'), 'text/plain');
+
+    expect(result).toEqual({ text: '', usedOcr: false, ocrProvider: 'none' });
   });
 });

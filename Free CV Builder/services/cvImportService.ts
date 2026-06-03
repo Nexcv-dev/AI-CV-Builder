@@ -4,6 +4,7 @@ import { createWorker } from 'tesseract.js';
 import path from 'node:path';
 
 type CvImportSource = 'ai' | 'basic';
+type OcrProvider = 'aws-lambda' | 'local-tesseract' | 'pdf-text' | 'none';
 
 export interface ParsedCvImport {
   personalInfo: {
@@ -32,6 +33,7 @@ export interface ParsedCvImport {
     extractedTextLength: number;
     usedAi: boolean;
     usedOcr: boolean;
+    ocrProvider: OcrProvider;
     message?: string;
   };
 }
@@ -344,7 +346,7 @@ const ocrPdfPages = async (parser: PDFParse) => {
   return pageTexts.join('\n');
 };
 
-const normalizeLambdaPayload = (payload: any): { text: string; usedOcr: boolean } | null => {
+const normalizeLambdaPayload = (payload: any): { text: string; usedOcr: boolean; ocrProvider: OcrProvider } | null => {
   const body = typeof payload?.body === 'string'
     ? JSON.parse(payload.body)
     : payload;
@@ -357,6 +359,7 @@ const normalizeLambdaPayload = (payload: any): { text: string; usedOcr: boolean 
   return {
     text: cleanExtractedText(text),
     usedOcr: body?.usedOcr !== false,
+    ocrProvider: 'aws-lambda',
   };
 };
 
@@ -433,7 +436,7 @@ export const parseCvTextToStructuredData = (text: string): ParsedCvImport => {
   return result;
 };
 
-export const extractCvText = async (base64Data: string, mimeType: string): Promise<{ text: string; usedOcr: boolean }> => {
+export const extractCvText = async (base64Data: string, mimeType: string): Promise<{ text: string; usedOcr: boolean; ocrProvider: OcrProvider }> => {
   const lambdaResult = await extractWithConfiguredLambda(base64Data, mimeType);
   if (lambdaResult) return lambdaResult;
 
@@ -444,21 +447,25 @@ export const extractCvText = async (base64Data: string, mimeType: string): Promi
       const parsed = await parser.getText().catch(() => ({ text: '' }));
       const text = cleanExtractedText(parsed.text || '');
       if (text.length >= 120) {
-        return { text, usedOcr: false };
+        return { text, usedOcr: false, ocrProvider: 'pdf-text' };
       }
 
       const ocrText = await ocrPdfPages(parser).catch(() => '');
-      return { text: cleanExtractedText(ocrText || text), usedOcr: Boolean(ocrText) };
+      return {
+        text: cleanExtractedText(ocrText || text),
+        usedOcr: Boolean(ocrText),
+        ocrProvider: ocrText ? 'local-tesseract' : 'pdf-text',
+      };
     } finally {
       await parser.destroy().catch(() => undefined);
     }
   }
 
   if (mimeType.startsWith('image/')) {
-    return { text: cleanExtractedText(await recognizeImageBuffer(buffer)), usedOcr: true };
+    return { text: cleanExtractedText(await recognizeImageBuffer(buffer)), usedOcr: true, ocrProvider: 'local-tesseract' };
   }
 
-  return { text: '', usedOcr: false };
+  return { text: '', usedOcr: false, ocrProvider: 'none' };
 };
 
 export const withImportMeta = (data: ParsedCvImport, meta: ParsedCvImport['importMeta']) => ({
