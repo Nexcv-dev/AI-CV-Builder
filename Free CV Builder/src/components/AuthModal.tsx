@@ -206,6 +206,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
 
   const normalizedEmail = email.trim().toLowerCase();
   const emailSuggestion = useMemo(() => getSuggestedEmail(email), [email]);
@@ -218,6 +219,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const passwordStrengthTextClass = isPasswordStrong ? 'text-emerald-200' : isPasswordIntermediate ? 'text-amber-200' : 'text-red-200';
   const passwordStrengthSegments = isPasswordStrong ? 5 : isPasswordIntermediate ? 3 : password ? 1 : 0;
   const isLogin = mode === 'login';
+  const showLoginFromSignupError = mode === 'signup' && error.toLowerCase().includes('already exists');
 
   const title = useMemo(() => {
     if (step === 'email') return isLogin ? 'Login with email' : 'Sign up with email';
@@ -241,6 +243,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     setVerificationCode('');
     setError('');
     setIsSubmitting(false);
+    setIsResendingOtp(false);
   }, [initialMode, isOpen]);
 
   useEffect(() => {
@@ -297,6 +300,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     setAcceptedTerms(false);
     setVerificationCode('');
     setError('');
+    setIsResendingOtp(false);
   };
 
   const startEmailOtp = async (name: string, termsAccepted: boolean, intent: AuthMode) => {
@@ -330,6 +334,10 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
         setStep('password');
         window.setTimeout(() => document.getElementById('auth-password')?.focus(), 0);
       } else {
+        await apiFetch<{ exists: boolean }>('/api/auth/email/check', {
+          method: 'POST',
+          body: JSON.stringify({ email: normalizedEmail, intent: 'signup' }),
+        });
         setDisplayName('');
         setAcceptedTerms(false);
         setStep('name');
@@ -409,7 +417,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
 
   const handleVerifyOtp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || isResendingOtp) return;
     setError('');
     setIsSubmitting(true);
     try {
@@ -427,15 +435,15 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   };
 
   const handleResendOtp = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isResendingOtp) return;
     setError('');
-    setIsSubmitting(true);
+    setIsResendingOtp(true);
     try {
       await startEmailOtp(displayName, acceptedTerms, mode);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not resend OTP.');
     } finally {
-      setIsSubmitting(false);
+      setIsResendingOtp(false);
     }
   };
 
@@ -594,7 +602,26 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
                   </span>
                 </button>
               )}
-              {error && <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">{error}</p>}
+              {error && (
+                <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">
+                  <p>{error}</p>
+                  {showLoginFromSignupError && (
+                    <button
+                      type="button"
+                      className="mt-2 font-black text-emerald-200 underline underline-offset-4 hover:text-emerald-100"
+                      onClick={() => {
+                        setMode('login');
+                        setStep('password');
+                        setPassword('');
+                        setError('');
+                        window.setTimeout(() => document.getElementById('auth-password')?.focus(), 0);
+                      }}
+                    >
+                      Log in with this email
+                    </button>
+                  )}
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -817,7 +844,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               {error && <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">{error}</p>}
               <button
                 type="submit"
-                disabled={isSubmitting || verificationCode.length !== 6}
+                disabled={isSubmitting || isResendingOtp || verificationCode.length !== 6}
                 className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSubmitting ? 'Verifying...' : 'Confirm OTP'}
@@ -826,11 +853,11 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               <button
                 type="button"
                 onClick={handleResendOtp}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isResendingOtp}
                 className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 text-sm font-black text-slate-200 transition hover:bg-white/10 active:scale-[0.99] disabled:opacity-70"
               >
                 <RotateCcw size={16} />
-                Resend OTP
+                {isResendingOtp ? 'Sending OTP...' : 'Resend OTP'}
               </button>
             </form>
           )}
