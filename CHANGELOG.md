@@ -3,35 +3,38 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #216 from bimanthaperera-lab/test/overview (777e86a) - Bimantha Perera, 10 seconds ago
-* improve data parsing (3c55eae) - Bimantha Perera, 7 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (c6f0128) - bimanthaperera-lab, 43 minutes ago
-* Merge pull request #215 from bimanthaperera-lab/test/overview (c0b719b) - Bimantha Perera, 43 minutes ago
-* stop local OCR (b692781) - Bimantha Perera, 72 minutes ago
-* Splits multiple experience and education entries into separate records (22b0235) - Bimantha Perera, 76 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (4cd0ce3) - bimanthaperera-lab, 2 hours ago
-* Merge pull request #214 from bimanthaperera-lab/test/overview (ceda315) - Bimantha Perera, 2 hours ago
-* improve data parsing (93dc62c) - Bimantha Perera, 3 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (9a4ed06) - bimanthaperera-lab, 3 hours ago
-* Merge pull request #213 from bimanthaperera-lab/test/overview (7535bda) - Bimantha Perera, 3 hours ago
-* improve data parsing (8cf80b5) - Bimantha Perera, 3 hours ago
-* Improve OCR text extract (2dccdb2) - Bimantha Perera, 4 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (1dcb31b) - bimanthaperera-lab, 4 hours ago
-* Merge pull request #212 from bimanthaperera-lab/test/overview (3a07360) - Bimantha Perera, 4 hours ago
-* make gest users can import cv data (1f35b0b) - Bimantha Perera, 4 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (fb7e0f9) - bimanthaperera-lab, 5 hours ago
-* Merge pull request #211 from bimanthaperera-lab/test/overview (e6f2b38) - Bimantha Perera, 5 hours ago
-* Add AWS Textract OCR Pdf data extarcting & Add new Social Logins (16478c8) - Bimantha Perera, 14 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (01488c5) - bimanthaperera-lab, 22 hours ago
-* Merge pull request #210 from bimanthaperera-lab/test/overview (b62522b) - Bimantha Perera, 22 hours ago
-* add test case for plan expire (e98c78b) - Bimantha Perera, 22 hours ago
-* add plan expire banner (f6da2af) - Bimantha Perera, 23 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (ee787b6) - bimanthaperera-lab, 23 hours ago
-* Merge pull request #209 from bimanthaperera-lab/test/overview (a5efef8) - Bimantha Perera, 23 hours ago
-* Price UI Change (2e55d49) - Bimantha Perera, 23 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (765247f) - bimanthaperera-lab, 28 hours ago
-* Merge pull request #208 from bimanthaperera-lab/test/overview (6e5c6c5) - Bimantha Perera, 28 hours ago
-* Improve UX (0648919) - Bimantha Perera, 28 hours ago
+* Merge pull request #217 from bimanthaperera-lab/test/overview (0d3a908) - Bimantha Perera, 9 seconds ago
+* Add AI data parsing (a1f04e6) - Bimantha Perera, 15 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (0dfd952) - bimanthaperera-lab, 74 minutes ago
+* Merge pull request #216 from bimanthaperera-lab/test/overview (777e86a) - Bimantha Perera, 74 minutes ago
+* improve data parsing (3c55eae) - Bimantha Perera, 82 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (c6f0128) - bimanthaperera-lab, 2 hours ago
+* Merge pull request #215 from bimanthaperera-lab/test/overview (c0b719b) - Bimantha Perera, 2 hours ago
+* stop local OCR (b692781) - Bimantha Perera, 2 hours ago
+* Splits multiple experience and education entries into separate records (22b0235) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (4cd0ce3) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #214 from bimanthaperera-lab/test/overview (ceda315) - Bimantha Perera, 4 hours ago
+* improve data parsing (93dc62c) - Bimantha Perera, 4 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (9a4ed06) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #213 from bimanthaperera-lab/test/overview (7535bda) - Bimantha Perera, 4 hours ago
+* improve data parsing (8cf80b5) - Bimantha Perera, 5 hours ago
+* Improve OCR text extract (2dccdb2) - Bimantha Perera, 5 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (1dcb31b) - bimanthaperera-lab, 5 hours ago
+* Merge pull request #212 from bimanthaperera-lab/test/overview (3a07360) - Bimantha Perera, 5 hours ago
+* make gest users can import cv data (1f35b0b) - Bimantha Perera, 6 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (fb7e0f9) - bimanthaperera-lab, 6 hours ago
+* Merge pull request #211 from bimanthaperera-lab/test/overview (e6f2b38) - Bimantha Perera, 6 hours ago
+* Add AWS Textract OCR Pdf data extarcting & Add new Social Logins (16478c8) - Bimantha Perera, 15 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (01488c5) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #210 from bimanthaperera-lab/test/overview (b62522b) - Bimantha Perera, 23 hours ago
+* add test case for plan expire (e98c78b) - Bimantha Perera, 24 hours ago
+* add plan expire banner (f6da2af) - Bimantha Perera, 24 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (ee787b6) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #209 from bimanthaperera-lab/test/overview (a5efef8) - Bimantha Perera, 24 hours ago
+* Price UI Change (2e55d49) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (765247f) - bimanthaperera-lab, 29 hours ago
+* Merge pull request #208 from bimanthaperera-lab/test/overview (6e5c6c5) - Bimantha Perera, 29 hours ago
+* Improve UX (0648919) - Bimantha Perera, 29 hours ago
 * fix bug in executive pro template (bc42afd) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (4dc0ea3) - bimanthaperera-lab, 2 days ago
 * Merge pull request #207 from bimanthaperera-lab/test/overview (9d39489) - Bimantha Perera, 2 days ago
