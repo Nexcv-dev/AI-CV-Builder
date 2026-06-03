@@ -120,6 +120,16 @@ const extractPhone = (text: string) => {
 };
 
 const dateRangePattern = /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{4}|\d{4})\s*(?:-|\u2013|\u2014|to)\s*((?:present|current|now)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{4}|\d{4})/i;
+const yearPattern = /\b(?:19|20)\d{2}\b/;
+const degreePattern = /\b(?:degree|bachelor|master|diploma|certificate|advanced level|ordinary level|bsc|msc|ba|ma|phd|mba|hnd|nvq|gce|a\/l|o\/l)\b/i;
+const institutionPattern = /\b(?:university|college|school|institute|academy|campus|faculty|polytechnic)\b/i;
+const jobTitlePattern = /\b(?:engineer|developer|designer|manager|assistant|associate|executive|officer|analyst|consultant|coordinator|specialist|technician|intern|trainee|accountant|teacher|nurse|driver|cashier|clerk|supervisor|administrator|representative|lead|head|director)\b/i;
+const companyPattern = /\b(?:pvt|ltd|limited|inc|llc|company|group|solutions|technologies|systems|services|holdings|bank|hospital|hotel|restaurant|agency|store|center|centre)\b/i;
+const coursePattern = /\b(?:certification|certificate|course|training|license|licence|workshop|bootcamp|diploma)\b/i;
+const awardPattern = /\b(?:award|honou?r|achievement|winner|recognized|recognised|scholarship|medal|prize)\b/i;
+const proficiencyPattern = /\b(?:native|fluent|professional|conversational|intermediate|beginner|basic|advanced|excellent|good|fair|written|spoken)\b/i;
+const knownLanguagePattern = /\b(?:english|sinhala|tamil|hindi|arabic|french|german|spanish|italian|chinese|mandarin|japanese|korean|russian|dutch|portuguese)\b/i;
+const sectionNoisePattern = /\b(?:experience|education|skills|projects|references|summary|profile|curriculum vitae|resume)\b/i;
 
 const splitIntoSections = (text: string) => {
   const sections: Record<SectionKey, string[]> = {
@@ -168,6 +178,17 @@ const parseName = (topLines: string[], email: string, phone: string) => {
 
 const parseSummary = (lines: string[]) => cleanText(lines.slice(0, 4).join(' '), 700);
 
+const wordCount = (value: string) => value.split(/\s+/).filter(Boolean).length;
+
+const isLikelySentence = (value: string) => wordCount(value) > 8 || /[.!?]\s*$/.test(value);
+
+const hasContactNoise = (value: string) => value.includes('@') || /(?:\+?\d[\d\s().-]{7,}\d)/.test(value);
+
+const isUsefulSectionLine = (value: string) => {
+  const line = cleanLine(value);
+  return Boolean(line) && !sectionNoisePattern.test(line) && !hasContactNoise(line);
+};
+
 const splitDatedBlocks = (lines: string[]) => {
   const blocks: string[][] = [];
   let current: string[] = [];
@@ -187,13 +208,21 @@ const parseExperience = (lines: string[]) => splitDatedBlocks(lines)
     const joined = block.join(' ');
     const dateMatch = joined.match(dateRangePattern);
     if (!dateMatch) return null;
-    const nonDateLines = block.map((line) => cleanLine(line.replace(dateRangePattern, ''))).filter(Boolean);
+    if (degreePattern.test(joined) || institutionPattern.test(joined)) return null;
+
+    const nonDateLines = block
+      .map((line) => cleanLine(line.replace(dateRangePattern, '')))
+      .filter(isUsefulSectionLine);
     const titleLine = nonDateLines[0] || '';
     const secondLine = nonDateLines[1] || '';
     if (!titleLine && !secondLine) return null;
+
     const [position, company] = titleLine.includes(' at ')
       ? titleLine.split(/\s+at\s+/i).map(cleanLine)
       : [titleLine, secondLine];
+    const hasWorkEvidence = jobTitlePattern.test(position) || companyPattern.test(company) || /\s+at\s+/i.test(titleLine);
+    if (!hasWorkEvidence || isLikelySentence(position)) return null;
+
     return {
       company: company || '',
       position: position || '',
@@ -208,11 +237,15 @@ const parseEducation = (lines: string[]) => splitDatedBlocks(lines)
   .map((block) => {
     const joined = block.join(' ');
     const dateMatch = joined.match(dateRangePattern);
-    const nonDateLines = block.map((line) => cleanLine(line.replace(dateRangePattern, ''))).filter(Boolean);
-    const degreeIndex = nonDateLines.findIndex((line) => /degree|bachelor|master|diploma|certificate|advanced level|ordinary level|bsc|msc|ba|ma|phd/i.test(line));
+    if (jobTitlePattern.test(joined) && !degreePattern.test(joined) && !institutionPattern.test(joined)) return null;
+
+    const nonDateLines = block
+      .map((line) => cleanLine(line.replace(dateRangePattern, '')))
+      .filter(isUsefulSectionLine);
+    const degreeIndex = nonDateLines.findIndex((line) => degreePattern.test(line));
     const degree = degreeIndex >= 0 ? nonDateLines[degreeIndex] : nonDateLines[0] || '';
-    const institution = nonDateLines.find((line, index) => index !== degreeIndex && /university|college|school|institute|academy|campus/i.test(line)) || nonDateLines.find((_, index) => index !== degreeIndex) || '';
-    if (!degree && !institution) return null;
+    const institution = nonDateLines.find((line, index) => index !== degreeIndex && institutionPattern.test(line)) || '';
+    if (!degreePattern.test(degree) && !institution) return null;
     return {
       institution,
       degree,
@@ -223,48 +256,64 @@ const parseEducation = (lines: string[]) => splitDatedBlocks(lines)
   })
   .filter((item): item is NonNullable<typeof item> => Boolean(item && (item.degree || item.institution)));
 
+const isLikelySkill = (name: string) => {
+  if (!name || name.length > 60 || wordCount(name) > 5) return false;
+  if (dateRangePattern.test(name) || yearPattern.test(name) || hasContactNoise(name)) return false;
+  if (isLikelySentence(name) || sectionNoisePattern.test(name)) return false;
+  return /[a-z]/i.test(name);
+};
+
 const parseSkills = (lines: string[]) => unique(lines.flatMap((line) => line.split(/[,|\u2022]/))).slice(0, 30)
-  .filter((name) => name.length <= 60 && !dateRangePattern.test(name))
+  .filter(isLikelySkill)
   .map((name) => ({ name, level: 4 }));
 
 const parseCourses = (lines: string[]) => unique(lines).slice(0, 12)
   .map((line) => {
-    const date = line.match(/\b(19|20)\d{2}\b/)?.[0] || '';
+    if (!coursePattern.test(line) && !degreePattern.test(line)) return null;
+    const date = line.match(yearPattern)?.[0] || '';
     return { name: cleanLine(line.replace(date, '')), institution: '', startDate: '', endDate: date };
   })
-  .filter((item) => item.name);
+  .filter((item): item is NonNullable<typeof item> => Boolean(item?.name && !isLikelySentence(item.name)));
 
 const parseLanguages = (lines: string[]) => unique(lines.flatMap((line) => line.split(/[,|\u2022]/))).slice(0, 10)
   .map((line) => {
+    if (!knownLanguagePattern.test(line) && !proficiencyPattern.test(line)) return null;
     const [name, proficiency] = line.split(/[-:]/).map(cleanLine);
     return { name, proficiency: proficiency || '' };
   })
-  .filter((item) => item.name);
+  .filter((item): item is NonNullable<typeof item> => Boolean(item?.name && wordCount(item.name) <= 3));
 
 const parseNamedDescriptions = (lines: string[]) => unique(lines).slice(0, 12)
   .map((line) => {
     const [name, ...rest] = line.split(/[-:]/).map(cleanLine);
+    if (!name || wordCount(name) > 8 || (!rest.length && !/https?:\/\/\S+/.test(line))) return null;
     return { name, description: cleanText(rest.join(' '), 700), link: line.match(/https?:\/\/\S+/)?.[0] || '' };
   })
-  .filter((item) => item.name);
+  .filter((item): item is NonNullable<typeof item> => Boolean(item?.name));
 
 const parseAwards = (lines: string[]) => unique(lines).slice(0, 12)
-  .map((line) => ({ name: cleanLine(line.replace(/\b(19|20)\d{2}\b/, '')), date: line.match(/\b(19|20)\d{2}\b/)?.[0] || '', issuer: '' }))
-  .filter((item) => item.name);
+  .map((line) => {
+    if (!awardPattern.test(line)) return null;
+    return { name: cleanLine(line.replace(yearPattern, '')), date: line.match(yearPattern)?.[0] || '', issuer: '' };
+  })
+  .filter((item): item is NonNullable<typeof item> => Boolean(item?.name && !isLikelySentence(item.name)));
 
 const parseReferences = (lines: string[]) => splitDatedBlocks(lines).flatMap((block) => block.length ? [block] : [])
   .slice(0, 6)
   .map((block) => {
     const joined = block.join(' ');
+    const email = extractEmail(joined);
+    const phone = extractPhone(joined);
+    if (!email && !phone) return null;
     return {
       name: block.find((line) => !line.includes('@') && !/\d{7,}/.test(line)) || '',
       position: '',
       company: '',
-      email: extractEmail(joined),
-      phone: extractPhone(joined),
+      email,
+      phone,
     };
   })
-  .filter((item) => item.name || item.email || item.phone);
+  .filter((item): item is NonNullable<typeof item> => Boolean(item && (item.name || item.email || item.phone)));
 
 const recognizeImageBuffer = async (buffer: Buffer | Uint8Array) => {
   const worker = await createWorker('eng', undefined, {
