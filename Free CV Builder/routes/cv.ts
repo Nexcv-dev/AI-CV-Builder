@@ -6,7 +6,7 @@ import type { TemplateName } from '../src/templates';
 type RouteDeps = Record<string, any>;
 
 export function registerCvRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, aiLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
+    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, aiLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
 
     router.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
         try {
@@ -152,12 +152,25 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
     
             // Validate mimeType against allow-list
             const validatedMimeType = ALLOWED_MIME_TYPES.includes(mimeType) ? mimeType : 'application/pdf';
+            const importQuota = req.isAuthenticated?.() && req.user
+                ? await consumeCvImportQuota(req.user)
+                : null;
+            if (importQuota && !importQuota.reserved) {
+                return res.status(403).json({
+                    error: 'CV import limit reached for your plan.',
+                    importQuota: { ...importQuota, reserved: undefined },
+                    upgradeRequired: importQuota.plan === 'free',
+                });
+            }
+            const attachImportQuota = (payload: any) => importQuota
+                ? { ...payload, importQuota: { ...importQuota, reserved: undefined } }
+                : payload;
 
             const { text: extractedText, usedOcr, ocrProvider, parsedCv, structuredProvider } = await extractCvText(base64Data, validatedMimeType);
             const basicResult = parsedCv || parseCvTextToStructuredData(extractedText || '');
 
             if (parsedCv) {
-                return res.json(withImportMeta(basicResult, {
+                return res.json(attachImportQuota(withImportMeta(basicResult, {
                     source: 'ai',
                     extractedTextLength: extractedText.length,
                     usedAi: true,
@@ -165,7 +178,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     ocrProvider,
                     structuredProvider: structuredProvider || 'aws-lambda-ai',
                     message: 'AI import completed in OCR Lambda.',
-                }));
+                })));
             }
 
             const userCanUseAi = Boolean(req.isAuthenticated?.() && req.user && isPaidPlan(req.user));
@@ -177,7 +190,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     });
                 }
 
-                return res.json(withImportMeta(basicResult, {
+                return res.json(attachImportQuota(withImportMeta(basicResult, {
                     source: 'basic',
                     extractedTextLength: extractedText.length,
                     usedAi: false,
@@ -185,11 +198,11 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     ocrProvider,
                     structuredProvider: structuredProvider || 'app-basic',
                     message: 'Basic import completed. Review each section before saving.',
-                }));
+                })));
             }
 
             if (!process.env.GEMINI_API_KEY) {
-                return res.json(withImportMeta(basicResult, {
+                return res.json(attachImportQuota(withImportMeta(basicResult, {
                     source: 'basic',
                     extractedTextLength: extractedText.length,
                     usedAi: false,
@@ -197,7 +210,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     ocrProvider,
                     structuredProvider: structuredProvider || 'app-basic',
                     message: 'AI import is not configured, so basic extraction was used.',
-                }));
+                })));
             }
 
             const prompt = `Extract the resume data from this CV/Resume document.
@@ -346,7 +359,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 // Strip markdown code fences if present
                 const cleanJson = jsonStr.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
                 const result = JSON.parse(cleanJson);
-                return res.json(withImportMeta(result, {
+                return res.json(attachImportQuota(withImportMeta(result, {
                     source: 'ai',
                     extractedTextLength: extractedText.length,
                     usedAi: true,
@@ -354,14 +367,14 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     ocrProvider,
                     structuredProvider: 'app-ai',
                     message: 'AI import completed.',
-                }));
+                })));
             } catch (aiError) {
                 logError?.('cv_import.ai_fallback', aiError, { usedOcr, extractedTextLength: extractedText.length });
                 if (!extractedText.trim()) {
                     return sendError(res, 500, "Failed to process document. Please try again.", aiError);
                 }
 
-                return res.json(withImportMeta(basicResult, {
+                return res.json(attachImportQuota(withImportMeta(basicResult, {
                     source: 'basic',
                     extractedTextLength: extractedText.length,
                     usedAi: false,
@@ -369,7 +382,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     ocrProvider,
                     structuredProvider: structuredProvider || 'app-basic',
                     message: 'AI import failed, so basic OCR/text extraction was used.',
-                }));
+                })));
             }
         } catch (error: any) {
             return sendError(res, 500, "Failed to process document. Please try again.", error);

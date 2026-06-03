@@ -10,6 +10,7 @@ import connectDB from './server-models/db';
 import User from './server-models/User';
 import CVDocument from './server-models/CVDocument';
 import CvCreationQuota from './server-models/CvCreationQuotaModel';
+import CvImportQuota from './server-models/CvImportQuotaModel';
 import DownloadQuota from './server-models/DownloadQuotaModel';
 import PaymentTransaction from './server-models/PaymentTransaction';
 import BillingPlanSetting from './server-models/BillingPlanSetting';
@@ -71,6 +72,7 @@ import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-
 import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from './src/adminAccess';
 import { mergeEmailTemplates, renderEmailTemplate } from './src/emailTemplateDefaults';
 import { buildCvCreationQuota } from './server-models/cvQuota';
+import { buildCvImportQuota, getCvImportQuotaPeriod } from './server-models/cvImportQuota';
 import { buildDownloadQuota, getNextUtcDayResetAt, getUtcDayKey } from './server-models/downloadQuotaUtils';
 import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
 import type { BillingPlan } from './server-models/userPlan';
@@ -486,6 +488,48 @@ const rollbackCvCreationQuota = async (user: any) => {
     );
 };
 
+const getCvImportQuota = async (user: any) => {
+    const { period } = getCvImportQuotaPeriod(user);
+    if (period === 'unlimited') return buildCvImportQuota(user, 0);
+    const record = await CvImportQuota.findOne({ userId: user._id || user.id, period });
+    return buildCvImportQuota(user, record?.count || 0);
+};
+
+const consumeCvImportQuota = async (user: any) => {
+    const userId = user._id || user.id;
+    const currentQuota = await getCvImportQuota(user);
+    if (currentQuota.limit === null) return { ...currentQuota, reserved: true };
+    if (currentQuota.reached) return { ...currentQuota, reserved: false };
+
+    try {
+        await CvImportQuota.updateOne(
+            { userId, period: currentQuota.period },
+            { $setOnInsert: { userId, period: currentQuota.period, count: currentQuota.used } },
+            { upsert: true }
+        );
+    } catch (error: any) {
+        if (error?.code !== 11000) throw error;
+    }
+
+    const reserved = await CvImportQuota.findOneAndUpdate(
+        { userId, period: currentQuota.period, count: { $lt: currentQuota.limit } },
+        { $inc: { count: 1 } },
+        { new: true }
+    );
+
+    if (!reserved) {
+        return {
+            ...currentQuota,
+            used: currentQuota.limit,
+            remaining: 0,
+            reached: true,
+            reserved: false,
+        };
+    }
+
+    return { ...(await getCvImportQuota(user)), reserved: true };
+};
+
 const getDownloadQuota = async (user: any) => {
     const plan = getEffectivePlan(user);
     const usesDailyDownloadQuota = plan === 'payg' || plan === 'monthly' || plan === 'quarterly';
@@ -855,7 +899,7 @@ const routeDeps = {
     markSessionCurrent, invalidateUserSessions,
     documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
     extractCvText, parseCvTextToStructuredData, withImportMeta,
-    getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, buildCvCreationQuota, buildDownloadQuota,
+    getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, buildCvCreationQuota, buildDownloadQuota,
     requireVerifiedEmail, requirePaidPlan,
     startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, adminPaymentSummary,
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,
