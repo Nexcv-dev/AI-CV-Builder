@@ -3,6 +3,7 @@ import { integrityCheck, sendError, generateCVHTML } from '../server';
 import { isAdminIpAllowed, requireAdminPageAllowedIp, resolveAdminClientIp } from '../server-utils/adminIpAllowlist';
 import User from '../server-models/User';
 import { GOOGLE_EMAIL_CONFLICT_MESSAGE, resolveGoogleOAuthUser } from '../server-models/passportSetup';
+import { registerAuthRoutes } from '../routes/auth';
 
 const restoreEnvValue = (name: string, value: string | undefined) => {
   if (value === undefined) {
@@ -13,6 +14,223 @@ const restoreEnvValue = (name: string, value: string | undefined) => {
 };
 
 describe('Advanced Server Security', () => {
+  describe('email signup OTP start', () => {
+    const getAuthPostHandler = (routePath: string, overrides: Record<string, any> = {}) => {
+      const routes: Array<{ method: string; path: string; handlers: any[] }> = [];
+      const router = {
+        post: vi.fn((path: string, ...handlers: any[]) => {
+          routes.push({ method: 'post', path, handlers });
+          return router;
+        }),
+        get: vi.fn((path: string, ...handlers: any[]) => {
+          routes.push({ method: 'get', path, handlers });
+          return router;
+        }),
+        patch: vi.fn((path: string, ...handlers: any[]) => {
+          routes.push({ method: 'patch', path, handlers });
+          return router;
+        }),
+        delete: vi.fn((path: string, ...handlers: any[]) => {
+          routes.push({ method: 'delete', path, handlers });
+          return router;
+        }),
+      } as any;
+
+      const deps = {
+        User,
+        authLimiter: vi.fn(),
+        emailVerificationLimiter: vi.fn(),
+        emailVerificationAttemptLimiter: vi.fn(),
+        passwordResetLimiter: vi.fn(),
+        passwordResetDailyLimiter: vi.fn(),
+        requireAuth: vi.fn(),
+        mongoose: { connection: { readyState: 1 } },
+        isEmailServiceConfigured: vi.fn(() => true),
+        normalizeEmail: vi.fn((email: unknown) => String(email || '').trim().toLowerCase()),
+        sanitizeDisplayName: vi.fn((value: unknown) => String(value || '').trim()),
+        sanitizeProfileField: vi.fn((value: unknown) => String(value || '').trim()),
+        isValidEmail: vi.fn((email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)),
+        sendError: vi.fn((res: any, status: number, message: string) => res.status(status).json({ error: message })),
+        passport: { authenticate: vi.fn(() => vi.fn()) },
+        randomBytes: vi.fn(() => ({ toString: () => 'state-token' })),
+        hashToken: vi.fn((value: string) => `hash:${value}`),
+        roleForEmail: vi.fn(() => 'user'),
+        ...overrides,
+      };
+
+      registerAuthRoutes(router, deps);
+      const route = routes.find((item) => item.method === 'post' && item.path === routePath);
+      return { handler: route?.handlers.at(-1), deps };
+    };
+
+    const getEmailStartHandler = (overrides: Record<string, any> = {}) => getAuthPostHandler('/api/auth/email/start', overrides);
+
+    it.each([true, false])('should reject signup when the email already exists, verified=%s', async (emailVerified) => {
+      const existingUser = {
+        email: 'taken@gmail.com',
+        emailVerified,
+        passwordHash: 'existing-hash',
+        save: vi.fn(),
+      };
+      const findOne = vi.spyOn(User, 'findOne').mockResolvedValue(existingUser as any);
+      const generateEmailVerificationOtp = vi.fn();
+      const sendEmailVerificationWithRetry = vi.fn();
+      const { handler } = getEmailStartHandler({
+        generateEmailVerificationOtp,
+        sendEmailVerificationWithRetry,
+      });
+      const req = {
+        body: {
+          email: 'Taken@Gmail.com',
+          displayName: 'Taken User',
+          acceptedTerms: true,
+          intent: 'signup',
+          password: 'StrongPass123!',
+        },
+      } as any;
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+
+      await handler(req, res);
+
+      expect(findOne).toHaveBeenCalledWith({ email: 'taken@gmail.com' });
+      expect(res.status).toHaveBeenCalledWith(409);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'An account already exists for this email. Please log in instead.',
+        code: 'account_exists',
+      });
+      expect(existingUser.save).not.toHaveBeenCalled();
+      expect(generateEmailVerificationOtp).not.toHaveBeenCalled();
+      expect(sendEmailVerificationWithRetry).not.toHaveBeenCalled();
+
+      findOne.mockRestore();
+    });
+
+    it('should reject signup OTP start for super admin allowlist emails', async () => {
+      const findOne = vi.spyOn(User, 'findOne').mockResolvedValue(null);
+      const create = vi.spyOn(User, 'create').mockResolvedValue({} as any);
+      const generateEmailVerificationOtp = vi.fn();
+      const sendEmailVerificationWithRetry = vi.fn();
+      const roleForEmail = vi.fn(() => 'super_admin');
+      const { handler } = getEmailStartHandler({
+        generateEmailVerificationOtp,
+        roleForEmail,
+        sendEmailVerificationWithRetry,
+      });
+      const req = {
+        body: {
+          email: 'Owner@Gmail.com',
+          displayName: 'Owner',
+          acceptedTerms: true,
+          intent: 'signup',
+          password: 'StrongPass123!',
+        },
+      } as any;
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+
+      await handler(req, res);
+
+      expect(roleForEmail).toHaveBeenCalledWith('owner@gmail.com');
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Could not create your account. Please check your details and try again.',
+      });
+      expect(findOne).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
+      expect(generateEmailVerificationOtp).not.toHaveBeenCalled();
+      expect(sendEmailVerificationWithRetry).not.toHaveBeenCalled();
+
+      findOne.mockRestore();
+      create.mockRestore();
+    });
+
+    it('should reject direct signup for super admin allowlist emails', async () => {
+      const findOne = vi.spyOn(User, 'findOne').mockResolvedValue(null);
+      const create = vi.spyOn(User, 'create').mockResolvedValue({} as any);
+      const generateEmailVerificationOtp = vi.fn();
+      const roleForEmail = vi.fn(() => 'super_admin');
+      const { handler } = getAuthPostHandler('/api/auth/signup', {
+        generateEmailVerificationOtp,
+        roleForEmail,
+      });
+      const req = {
+        body: {
+          email: 'Owner@Gmail.com',
+          displayName: 'Owner',
+          phone: '+94771234567',
+          acceptedTerms: true,
+          password: 'StrongPass123!',
+        },
+      } as any;
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+      const next = vi.fn();
+
+      await handler(req, res, next);
+
+      expect(roleForEmail).toHaveBeenCalledWith('owner@gmail.com');
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Could not create your account. Please check your details and try again.',
+      });
+      expect(findOne).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
+      expect(generateEmailVerificationOtp).not.toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+
+      findOne.mockRestore();
+      create.mockRestore();
+    });
+
+    it('should reject signup email checks for existing accounts before profile entry', async () => {
+      const findOne = vi.spyOn(User, 'findOne').mockResolvedValue({
+        email: 'taken@gmail.com',
+        passwordHash: 'existing-hash',
+      } as any);
+      const { handler } = getAuthPostHandler('/api/auth/email/check');
+      const req = {
+        body: {
+          email: 'Taken@Gmail.com',
+          intent: 'signup',
+        },
+      } as any;
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+
+      await handler(req, res);
+
+      expect(findOne).toHaveBeenCalledWith({ email: 'taken@gmail.com' });
+      expect(res.status).toHaveBeenCalledWith(409);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'An account already exists for this email. Please log in instead.',
+        code: 'account_exists',
+      });
+
+      findOne.mockRestore();
+    });
+
+    it('should reject signup email checks for super admin allowlist emails before profile entry', async () => {
+      const findOne = vi.spyOn(User, 'findOne').mockResolvedValue(null);
+      const roleForEmail = vi.fn(() => 'super_admin');
+      const { handler } = getAuthPostHandler('/api/auth/email/check', { roleForEmail });
+      const req = {
+        body: {
+          email: 'Owner@Gmail.com',
+          intent: 'signup',
+        },
+      } as any;
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+
+      await handler(req, res);
+
+      expect(roleForEmail).toHaveBeenCalledWith('owner@gmail.com');
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Could not create your account. Please check your details and try again.',
+      });
+      expect(findOne).not.toHaveBeenCalled();
+
+      findOne.mockRestore();
+    });
+  });
+
   describe('integrityCheck middleware', () => {
     it('should allow non-POST requests', () => {
       const req = { method: 'GET', path: '/api/test', header: vi.fn() } as any;

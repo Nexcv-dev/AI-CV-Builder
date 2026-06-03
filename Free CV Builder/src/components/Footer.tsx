@@ -20,6 +20,7 @@ const linkGroups = [
       { label: 'About Us', to: '/about' },
       { label: 'Contact', to: '/contact' },
       { label: 'Privacy Policy', to: '/privacy-policy' },
+      { label: 'Refund Policy', to: '/refund-policy' },
       { label: 'Terms', to: '/terms' },
     ],
   },

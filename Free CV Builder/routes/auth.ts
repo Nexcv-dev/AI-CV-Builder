@@ -340,6 +340,7 @@ const resolveGitHubOAuthUser = async ({
 };
 
 const genericSignupError = 'Could not create your account. Please check your details and try again.';
+const existingAccountSignupError = 'An account already exists for this email. Please log in instead.';
 const genericPasswordResetMessage = 'If an account exists for this email, we will send password reset instructions.';
 
 export function registerAuthRoutes(router: Router, deps: RouteDeps) {
@@ -402,6 +403,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             if (emailError) {
                 return res.status(400).json({ error: emailError });
             }
+
+            if (roleForEmail(email) !== 'user') {
+                return res.status(400).json({ error: genericSignupError });
+            }
     
             if (!displayName) {
                 return res.status(400).json({ error: 'Enter your name.' });
@@ -421,7 +426,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             const existingUser = await User.findOne({ email });
             if (existingUser) {
-                return res.status(400).json({ error: genericSignupError });
+                return res.status(409).json({ error: existingAccountSignupError, code: 'account_exists' });
             }
     
             const verification = generateEmailVerificationOtp();
@@ -494,13 +499,23 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     router.post('/api/auth/email/check', authLimiter, async (req: Request, res: Response) => {
         try {
             const email = normalizeEmail(req.body.email);
+            const intent = req.body.intent === 'signup' ? 'signup' : 'login';
 
             const emailError = validateAuthEmail(email, isValidEmail);
             if (emailError) {
                 return res.status(400).json({ error: emailError });
             }
 
-            return res.json({ exists: true, method: 'password' });
+            if (intent === 'signup' && roleForEmail(email) !== 'user') {
+                return res.status(400).json({ error: genericSignupError });
+            }
+
+            const user = await User.findOne({ email });
+            if (intent === 'signup' && user) {
+                return res.status(409).json({ error: existingAccountSignupError, code: 'account_exists' });
+            }
+
+            return res.json({ exists: Boolean(user), method: user?.passwordHash ? 'password' : 'otp' });
         } catch (error) {
             return sendError(res, 500, 'Could not check this email.', error);
         }
@@ -528,14 +543,15 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 return res.status(400).json({ error: emailError });
             }
 
+            if (intent === 'signup' && roleForEmail(email) !== 'user') {
+                return res.status(400).json({ error: genericSignupError });
+            }
+
             let user = await User.findOne({ email });
             const isNewUser = !user;
 
-            if (intent === 'signup' && user && user.emailVerified !== false) {
-                return res.json({
-                    needsName: false,
-                    message: 'If this email can continue, we will send an OTP.',
-                });
+            if (intent === 'signup' && user) {
+                return res.status(409).json({ error: existingAccountSignupError, code: 'account_exists' });
             }
 
             if (!displayName && isNewUser) {
