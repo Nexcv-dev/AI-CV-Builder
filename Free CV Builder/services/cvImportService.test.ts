@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { extractCvText, parseCvTextToStructuredData } from './cvImportService';
 
 describe('cv import parser', () => {
@@ -146,9 +146,87 @@ TAILWIND CSS GIT
     expect(parsed.skills.map((skill) => skill.name)).toEqual(['JavaScript', 'TypeScript', 'React', 'Node.js', 'Tailwind CSS', 'Git']);
   });
 
+  it('splits multiple experience and education entries into separate records', () => {
+    const parsed = parseCvTextToStructuredData(`
+EXPERIENCE
+Senior Software Engineer
+Tech Solutions Inc.
+Jan 2020 - Present
+Led platform migration work.
+
+Frontend Developer
+Creative Apps Ltd.
+Jun 2017 - Dec 2019
+Built React dashboards.
+
+EDUCATION
+Bachelor of Science in Computer Science
+State University
+Sep 2015 - May 2019
+Graduated with Honors.
+
+Diploma in Software Engineering
+Tech Institute
+Jan 2014 - Dec 2014
+Completed practical software training.
+`);
+
+    expect(parsed.experience).toEqual([
+      expect.objectContaining({
+        position: 'Senior Software Engineer',
+        company: 'Tech Solutions Inc.',
+        startDate: 'Jan 2020',
+        endDate: 'Present',
+        description: 'Led platform migration work.',
+      }),
+      expect.objectContaining({
+        position: 'Frontend Developer',
+        company: 'Creative Apps Ltd.',
+        startDate: 'Jun 2017',
+        endDate: 'Dec 2019',
+        description: 'Built React dashboards.',
+      }),
+    ]);
+    expect(parsed.education).toEqual([
+      expect.objectContaining({
+        degree: 'Bachelor of Science in Computer Science',
+        institution: 'State University',
+        startDate: 'Sep 2015',
+        endDate: 'May 2019',
+        description: 'Graduated with Honors.',
+      }),
+      expect.objectContaining({
+        degree: 'Diploma in Software Engineering',
+        institution: 'Tech Institute',
+        startDate: 'Jan 2014',
+        endDate: 'Dec 2014',
+        description: 'Completed practical software training.',
+      }),
+    ]);
+  });
+
   it('marks unsupported import input with no OCR provider', async () => {
     const result = await extractCvText(Buffer.from('hello').toString('base64'), 'text/plain');
 
     expect(result).toEqual({ text: '', usedOcr: false, ocrProvider: 'none' });
+  });
+
+  it('does not run local image OCR when AWS OCR is configured', async () => {
+    const originalFunctionName = process.env.OCR_LAMBDA_FUNCTION_NAME;
+    const originalUrl = process.env.OCR_LAMBDA_URL;
+    process.env.OCR_LAMBDA_FUNCTION_NAME = 'test-ocr-lambda';
+    delete process.env.OCR_LAMBDA_URL;
+    vi.resetModules();
+
+    const { extractCvText: extractWithAwsConfigured } = await import('./cvImportService');
+    const result = await extractWithAwsConfigured(Buffer.from('not an image').toString('base64'), 'image/png');
+
+    expect(result).toEqual({ text: '', usedOcr: false, ocrProvider: 'aws-lambda' });
+
+    if (originalFunctionName === undefined) delete process.env.OCR_LAMBDA_FUNCTION_NAME;
+    else process.env.OCR_LAMBDA_FUNCTION_NAME = originalFunctionName;
+    if (originalUrl === undefined) delete process.env.OCR_LAMBDA_URL;
+    else process.env.OCR_LAMBDA_URL = originalUrl;
+    vi.resetModules();
   });
 });
