@@ -9,6 +9,7 @@
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "build:pdf-lambda": "node scripts/build-pdf-lambda.mjs",
+    "build:pdf-worker-lambda": "node scripts/build-pdf-worker-lambda.mjs",
     "build:ocr-lambda": "node scripts/build-ocr-lambda.mjs",
     "templates:release": "npm run validate:template-map && npm run validate:templates && node scripts/release-admin-templates.mjs",
     "templates:release:dry-run": "npm run validate:template-map && npm run validate:templates && node scripts/release-admin-templates.mjs --dry-run",
@@ -29,6 +30,7 @@
   "dependencies": {
     "@aws-sdk/client-lambda": "^3.1058.0",
     "@aws-sdk/client-s3": "^3.1055.0",
+    "@aws-sdk/client-sqs": "^3.1061.0",
     "@aws-sdk/client-textract": "^3.1058.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

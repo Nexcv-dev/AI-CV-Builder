@@ -6,17 +6,26 @@
 import React, { Suspense, lazy, useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { CVData } from '../types';
 import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { documentsQueryKey, documentsStaleTime, fetchDocuments } from '../hooks/useDocumentsQuery';
 import { initialBuilderCvData, useBuilderStore } from '../stores/useBuilderStore';
 import { ApiError, AuthUser, apiFetch, csrfFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
-import { AccountMenu } from '../components/AccountMenu';
 import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import toast from 'react-hot-toast';
-import { Download, LayoutTemplate, Loader2, FileText, AlertCircle, LogIn, RotateCcw, Save, CheckCircle2, Clock3, Moon, Sun, X, Crown, Zap } from 'lucide-react';
+import { Download, Loader2, Save, CheckCircle2, X } from 'lucide-react';
+import { BuilderHeader } from './home/BuilderHeader';
+import { BuilderLoadingOverlay } from './home/BuilderLoadingOverlay';
+import { BuilderStatusBanners } from './home/BuilderStatusBanners';
+import { DownloadConfirmModal } from './home/DownloadConfirmModal';
+import { DownloadErrorModal } from './home/DownloadErrorModal';
+import { PdfLoadingOverlay } from './home/PdfLoadingOverlay';
+import { ThemeTransitionOverlay } from './home/ThemeTransitionOverlay';
+import { UpgradePromptModal } from './home/UpgradePromptModal';
+import type { CvCreationQuota, DownloadQuota, ThemeTransitionState, UpgradePlan, UpgradePrompt } from './home/homeTypes';
+import { downloadLimitMessage, getPlanLabel } from './home/homeUtils';
 
 const THEME_STORAGE_KEY = 'cv-builder-theme';
 const LOCAL_STORAGE_DRAFT_KEY = 'nexcv-draft-data';
@@ -27,56 +36,6 @@ const DEFAULT_A4_PREVIEW_HEIGHT_PX = 1122;
 const AuthModal = lazy(() => import('../components/AuthModal').then((module) => ({ default: module.AuthModal })));
 const CVForm = lazy(() => import('../components/CVForm'));
 const CVPreview = lazy(() => import('../components/CVPreview'));
-
-interface CvCreationQuota {
-  limit: number | null;
-  used: number;
-  remaining: number | null;
-  reached: boolean;
-  plan?: 'free' | 'payg' | 'monthly' | 'quarterly' | 'unlimited';
-}
-
-interface DownloadQuota {
-  limit: number | null;
-  used: number;
-  remaining: number | null;
-  reached: boolean;
-  plan?: 'free' | 'payg' | 'monthly' | 'quarterly' | 'unlimited';
-  resetAt?: string;
-}
-
-function formatDownloadResetTime(resetAt?: string) {
-  if (!resetAt) return 'tomorrow';
-  const date = new Date(resetAt);
-  if (Number.isNaN(date.getTime())) return 'tomorrow';
-  return date.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function downloadLimitMessage(quota?: DownloadQuota | null) {
-  if (quota?.plan === 'payg') {
-    return `Daily download limit reached. You have already used your ${quota.limit ?? 15} Single CV Pass PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)} while your plan is active.`;
-  }
-  if (quota?.plan === 'monthly') {
-    return `Daily download limit reached. You have already used your ${quota.limit ?? 25} Monthly Pro PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)}.`;
-  }
-  if (quota?.plan === 'quarterly') {
-    return `Daily download limit reached. You have already used your ${quota.limit ?? 25} Pro Quarterly PDF downloads for today. Downloads reset at ${formatDownloadResetTime(quota.resetAt)}.`;
-  }
-  return 'You have already used your 1 Free plan PDF download. Upgrade to download more CVs.';
-}
-
-function getPlanLabel(plan?: AuthUser['plan']) {
-  if (plan === 'payg') return 'Single CV Pass';
-  if (plan === 'monthly') return 'Monthly Pro';
-  if (plan === 'quarterly') return 'Pro Quarterly';
-  if (plan === 'unlimited') return 'Unlimited';
-  return 'Free';
-}
 
 export default function Home() {
   const { isTemplatePaid } = useTemplateConfig();
@@ -124,8 +83,9 @@ export default function Home() {
     }
   });
   const [downloadError, setDownloadError] = useState<{ title: string; message: string } | null>(null);
-  const [upgradePrompt, setUpgradePrompt] = useState<{ title: string; message: string; source: 'save' | 'download' | 'ai' } | null>(null);
-  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<'free' | 'payg' | 'monthly' | 'quarterly' | null>(null);
+  const [pdfDownloadUrl, setPdfDownloadUrl] = useState<string | null>(null);
+  const [upgradePrompt, setUpgradePrompt] = useState<UpgradePrompt | null>(null);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<UpgradePlan | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authRedirectTo, setAuthRedirectTo] = useState('/builder');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -137,7 +97,7 @@ export default function Home() {
       return false;
     }
   });
-  const [themeTransition, setThemeTransition] = useState<{ x: number; y: number; key: number; targetDark: boolean } | null>(null);
+  const [themeTransition, setThemeTransition] = useState<ThemeTransitionState | null>(null);
   const isDraggingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const saveInFlightRef = useRef(false);
@@ -157,18 +117,6 @@ export default function Home() {
     resetBuilder();
     setDebouncedCvData(initialBuilderCvData);
   }, [resetBuilder, setCvData]);
-
-  const renderMobileUpgradeActions = (plan: 'free' | 'payg' | 'monthly' | 'quarterly') => (
-    <div className="mt-3 grid gap-2 sm:hidden">
-      <Link
-        to={plan === 'free' ? '/builder?import=1' : `/checkout?plan=${plan}`}
-        onClick={() => setUpgradePrompt(null)}
-        className="inline-flex h-11 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-600/20 transition active:scale-[0.98]"
-      >
-        {plan === 'free' ? 'Get Started' : 'Choose this plan'}
-      </Link>
-    </div>
-  );
 
   useEffect(() => {
     let ignore = false;
@@ -656,9 +604,75 @@ export default function Home() {
     setShowDownloadConfirm(false);
     pdfInFlightRef.current = true;
     setIsGeneratingPDF(true);
+    setPdfDownloadUrl(null);
 
     try {
-      const response = await csrfFetch('/api/generate-pdf', {
+      const safeName = (cvData.personalInfo.fullName || 'CV').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
+      const filename = `${safeName}_Resume.pdf`;
+
+      const triggerDownload = (url: string, shouldRevoke = false) => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) {
+          link.setAttribute('target', '_blank');
+        }
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        if (shouldRevoke) setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      };
+
+      const markQuotaUsed = () => {
+        if (!currentUser || downloadQuota?.limit === null) return;
+        setDownloadQuota((current) => {
+          if (!current || current.limit === null) return current;
+          const used = current.used + 1;
+          const remaining = Math.max(current.limit - used, 0);
+          return { ...current, used, remaining, reached: remaining <= 0 };
+        });
+      };
+
+      const handleUpgradeError = (errorData: any) => {
+        if (!errorData.upgradeRequired) return false;
+        if (errorData.quota) setDownloadQuota(errorData.quota);
+        setShowDownloadConfirm(false);
+        openUpgradePrompt(
+          'download',
+          errorData.reason === 'premium_template'
+            ? 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.'
+            : downloadLimitMessage(errorData.quota || downloadQuota),
+          errorData.reason === 'premium_template' ? 'Premium template download' : undefined
+        );
+        return true;
+      };
+
+      const downloadDirectPdf = async () => {
+        const response = await csrfFetch('/api/generate-pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ cvData, template }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          if (handleUpgradeError(errorData)) return;
+          const err = new Error(`Failed to generate PDF: ${response.statusText}`);
+          (err as any).responseBody = JSON.stringify(errorData);
+          throw err;
+        }
+
+        const blob = await response.blob();
+        triggerDownload(window.URL.createObjectURL(blob), true);
+        markQuotaUsed();
+      };
+
+      const queuedResponse = await csrfFetch('/api/pdf-jobs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -666,58 +680,48 @@ export default function Home() {
         body: JSON.stringify({ cvData, template }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (errorData.upgradeRequired) {
-          if (errorData.quota) setDownloadQuota(errorData.quota);
-          setShowDownloadConfirm(false);
-          openUpgradePrompt(
-            'download',
-            errorData.reason === 'premium_template'
-              ? 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.'
-              : downloadLimitMessage(errorData.quota || downloadQuota),
-            errorData.reason === 'premium_template' ? 'Premium template download' : undefined
-          );
+      if (!queuedResponse.ok) {
+        const errorData = await queuedResponse.json().catch(() => ({}));
+        if (queuedResponse.status === 503 && String(errorData.error || '').includes('storage')) {
+          await downloadDirectPdf();
           return;
         }
-        const err = new Error(`Failed to generate PDF: ${response.statusText}`);
+        if (handleUpgradeError(errorData)) return;
+        const err = new Error(`Failed to queue PDF: ${queuedResponse.statusText}`);
         (err as any).responseBody = JSON.stringify(errorData);
         throw err;
       }
 
-      // Convert response to blob
-      const blob = await response.blob();
+      const queuedPayload = await queuedResponse.json();
+      const jobId = queuedPayload?.job?.id;
+      if (!jobId) throw new Error('PDF job was not created.');
+      if (queuedPayload.quota) setDownloadQuota(queuedPayload.quota);
 
-      // Create a temporary link to trigger download
-      const url = window.URL.createObjectURL(blob);
-      const safeName = (cvData.personalInfo.fullName || 'CV').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
-      const filename = `${safeName}_Resume.pdf`;
+      const startedAt = Date.now();
+      while (Date.now() - startedAt < 120000) {
+        await new Promise((resolve) => setTimeout(resolve, 1800));
+        const statusResponse = await csrfFetch(`/api/pdf-jobs/${jobId}`);
+        if (!statusResponse.ok) {
+          const errorData = await statusResponse.json().catch(() => ({}));
+          const err = new Error(`Failed to check PDF status: ${statusResponse.statusText}`);
+          (err as any).responseBody = JSON.stringify(errorData);
+          throw err;
+        }
 
-      // Use a consistent approach for all platforms. `location.assign` with blob urls fails on modern mobile browsers.
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-
-      // Fallback for iOS Safari which might sometimes prefer opening blobs in a new tab if download fails
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isIOS) {
-        link.setAttribute('target', '_blank');
+        const statusPayload = await statusResponse.json();
+        const status = statusPayload?.job?.status;
+        if (status === 'ready' && statusPayload.job.downloadUrl) {
+          const downloadUrl = `${statusPayload.job.downloadUrl}?filename=${encodeURIComponent(safeName)}`;
+          setPdfDownloadUrl(downloadUrl);
+          triggerDownload(downloadUrl);
+          return;
+        }
+        if (status === 'failed' || status === 'expired') {
+          throw new Error(statusPayload?.job?.error || 'PDF generation failed. Please try again.');
+        }
       }
 
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      // Clean up after a delay to ensure mobile browser handled it
-      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
-      if (currentUser && downloadQuota?.limit !== null) {
-        setDownloadQuota((current) => {
-          if (!current || current.limit === null) return current;
-          const used = current.used + 1;
-          const remaining = Math.max(current.limit - used, 0);
-          return { ...current, used, remaining, reached: remaining <= 0 };
-        });
-      }
+      throw new Error('PDF is taking longer than expected. Please try again.');
     } catch (error: any) {
       console.error("Error generating PDF:", error);
 
@@ -790,201 +794,33 @@ export default function Home() {
     <>
       <AnimatePresence>
         {(isInitialLoading || isLoadingSavedDocument) && (
-          <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className={`fixed inset-0 flex flex-col items-center justify-center z-200 ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}
-          >
-            <div className="relative mb-6">
-              <div className={`w-20 h-20 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
-              <img src="/brand/faviconblack.svg" alt="NexCV" className="absolute inset-0 m-auto h-12 w-12 rounded-2xl" />
-            </div>
-            <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
-              NexCV
-            </h2>
-            <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Preparing your workspace...</p>
-          </motion.div>
+          <BuilderLoadingOverlay isDarkMode={isDarkMode} />
         )}
       </AnimatePresence>
 
       <div className={`flex flex-col min-h-0 h-full w-full font-sans overflow-hidden print:relative print:inset-auto print:h-auto print:bg-white print:overflow-visible transition-colors duration-500 ${isDarkMode ? 'dark-cv bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
-        {/* Top Navigation Bar */}
-        <header
-          aria-hidden={isPopupVisible}
-          className={`border-b flex flex-col lg:flex-row items-center justify-between px-4 py-3 lg:px-8 lg:py-4 shrink-0 z-50 print:hidden gap-3 lg:gap-0 sticky top-0 shadow-sm transition-[opacity,background-color,border-color] duration-300 ${isPopupVisible ? 'pointer-events-none opacity-0' : 'opacity-100'} ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-200/80'}`}
-        >
-            <div className="flex items-center justify-between w-full lg:w-auto">
-              <h1 className="text-lg lg:text-2xl font-extrabold flex items-center">
-                <div className={`p-1.5 rounded-xl mr-2.5 lg:mr-3 shadow-md transition-colors duration-500 ${isDarkMode ? 'bg-slate-800 shadow-black/20 ring-1 ring-slate-700' : 'bg-white shadow-violet-600/10 ring-1 ring-violet-100'}`}>
-                  <img src="/brand/faviconblack.svg" alt="" className="h-6 w-6 rounded-lg lg:h-7 lg:w-7" />
-                </div>
-                <div className="flex flex-col justify-center">
-                  <span className={`bg-clip-text text-transparent bg-linear-to-r leading-tight ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
-                    NexCV
-                  </span>
-                </div>
-              </h1>
-              <div className="lg:hidden flex items-center gap-2">
-                {!authLoaded ? (
-                  <div
-                    className={`h-10 w-10 rounded-full border shadow-lg ${isDarkMode ? 'border-slate-700 bg-slate-800 shadow-black/20' : 'border-gray-200 bg-white shadow-slate-900/10'}`}
-                    aria-hidden="true"
-                  />
-                ) : currentUser ? (
-                  <AccountMenu isDarkMode={isDarkMode} size="sm" displayName={currentUser.displayName} profileImage={currentUser.profileImage} />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={openBuilderLogin}
-                    className={`inline-flex h-10 w-10 items-center justify-center rounded-full border shadow-lg transition-all active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
-                    aria-label="Login"
-                  >
-                    <LogIn size={15} />
-                  </button>
-                )}
-                <button
-                  onClick={handleThemeToggle}
-                  data-keep-builder-dropdown-open="true"
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border shadow-lg transition-all active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
-                  aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                  {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
-              </div>
-            </div>
+        <BuilderHeader
+          authLoaded={authLoaded}
+          cloudSaveStatus={cloudSaveStatus}
+          currentUser={currentUser}
+          isDarkMode={isDarkMode}
+          isPopupVisible={isPopupVisible}
+          mobileView={mobileView}
+          onCloudSave={() => { handleCloudSave('completed'); }}
+          onLogin={openBuilderLogin}
+          onMobileViewChange={setMobileView}
+          onThemeToggle={handleThemeToggle}
+        />
 
-            {/* Mobile View Toggle - Segmented Control */}
-            <div className={`lg:hidden flex p-1 rounded-2xl w-full max-w-sm mx-auto border shadow-inner transition-colors duration-500 ${isDarkMode ? 'bg-slate-800/70 border-slate-700/70' : 'bg-gray-100/50 border-gray-200/40'}`}>
-              <button
-                onClick={() => setMobileView('edit')}
-                className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'edit' ? (isDarkMode ? 'bg-slate-700 text-violet-300 shadow-sm ring-1 ring-violet-200/10 scale-100' : 'bg-white text-violet-600 shadow-sm ring-1 ring-slate-800/5 scale-100') : (isDarkMode ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/80 scale-95' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 scale-95')}`}
-              >
-                <FileText size={16} className="mr-2" />
-                Edit
-              </button>
-              <button
-                onClick={() => setMobileView('preview')}
-                className={`flex-1 flex items-center justify-center py-2 px-4 text-sm font-semibold rounded-xl transition-all duration-300 ${mobileView === 'preview' ? (isDarkMode ? 'bg-slate-700 text-violet-300 shadow-sm ring-1 ring-violet-200/10 scale-100' : 'bg-white text-violet-600 shadow-sm ring-1 ring-slate-800/5 scale-100') : (isDarkMode ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/80 scale-95' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 scale-95')}`}
-              >
-                <LayoutTemplate size={16} className="mr-2" />
-                Preview
-              </button>
-            </div>
-
-            <div className="hidden lg:flex items-center gap-2">
-              {currentUser && (
-                <button
-                  onClick={() => { handleCloudSave('completed'); }}
-                  disabled={cloudSaveStatus === 'saving'}
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-500 active:scale-95 disabled:opacity-70"
-                  aria-label="Save CV"
-                >
-                  {cloudSaveStatus === 'saving' ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : cloudSaveStatus === 'saved' ? (
-                    <CheckCircle2 size={18} />
-                  ) : (
-                    <Save size={18} />
-                  )}
-                </button>
-              )}
-              {!authLoaded ? (
-                <div
-                  className={`h-12 w-12 rounded-full border shadow-lg ${isDarkMode ? 'border-slate-700 bg-slate-800 shadow-black/20' : 'border-gray-200 bg-white shadow-slate-900/10'}`}
-                  aria-hidden="true"
-                />
-              ) : currentUser ? (
-                <AccountMenu isDarkMode={isDarkMode} displayName={currentUser.displayName} profileImage={currentUser.profileImage} showName />
-              ) : (
-                <button
-                  type="button"
-                  onClick={openBuilderLogin}
-                  className={`inline-flex h-12 items-center justify-center gap-2 rounded-full border px-4 text-sm font-extrabold shadow-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
-                >
-                  <LogIn size={17} />
-                  Login
-                </button>
-              )}
-              <button
-                onClick={handleThemeToggle}
-                data-keep-builder-dropdown-open="true"
-                className={`flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-95 ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 shadow-black/20 hover:bg-slate-700' : 'border-gray-200 bg-white text-slate-700 shadow-slate-900/10 hover:bg-gray-100'}`}
-                aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
-            </div>
-        </header>
-
-        <AnimatePresence initial={false}>
-          {!isPopupVisible && planExpiryReminder && (
-            <motion.div
-              key="builder-plan-expiry-banner"
-              className="shrink-0 overflow-hidden print:hidden"
-              initial={{ height: 0, opacity: 0, y: -8 }}
-              animate={{ height: 'auto', opacity: 1, y: 0 }}
-              exit={{ height: 0, opacity: 0, y: -8 }}
-              transition={{ duration: 0.24, ease: 'easeOut' }}
-            >
-              <div className="px-3 py-2 sm:px-4">
-                <div className={`mx-auto grid max-w-xl gap-2 rounded-2xl border py-2.5 pl-3 pr-3 shadow-lg sm:flex sm:max-w-2xl sm:items-center sm:justify-between sm:gap-3 sm:px-4 ${isDarkMode ? 'border-violet-300/20 bg-violet-950/80 shadow-black/20' : 'border-violet-200 bg-violet-50 shadow-violet-900/5'}`}>
-                  <div className="flex min-w-0 items-start gap-2 sm:items-center">
-                    <Clock3 size={17} className={`mt-0.5 shrink-0 sm:mt-0 ${isDarkMode ? 'text-violet-200' : 'text-violet-700'}`} />
-                    <p className={`text-xs font-extrabold leading-5 sm:text-sm ${isDarkMode ? 'text-violet-100' : 'text-violet-950'}`}>
-                      Your {planExpiryReminder.planName} plan expires in {planExpiryReminder.daysLeft} day{planExpiryReminder.daysLeft === 1 ? '' : 's'} on {planExpiryReminder.expiresAt}.
-                    </p>
-                  </div>
-                  <Link
-                    to={`/checkout?plan=${planExpiryReminder.renewalPlan}`}
-                    className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3 text-[11px] font-extrabold transition active:scale-95 sm:h-9 sm:px-4 sm:text-xs ${isDarkMode ? 'bg-violet-300 text-slate-950 hover:bg-violet-200' : 'bg-violet-600 text-white hover:bg-violet-500'}`}
-                  >
-                    Renew plan
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {!isPopupVisible && currentUser && !currentUser.emailVerified && !verificationBannerDismissed && (
-            <motion.div
-              key="verify-email-banner"
-              className="shrink-0 overflow-hidden print:hidden"
-              initial={{ height: 0, opacity: 0, y: -8 }}
-              animate={{ height: 'auto', opacity: 1, y: 0 }}
-              exit={{ height: 0, opacity: 0, y: -8 }}
-              transition={{ duration: 0.24, ease: 'easeOut' }}
-            >
-              <div className="px-3 py-2 sm:px-4">
-                <div className={`relative mx-auto grid max-w-xl gap-2 rounded-2xl border py-2.5 pl-3 pr-12 shadow-lg sm:flex sm:max-w-2xl sm:items-center sm:justify-between sm:gap-3 sm:px-4 ${isDarkMode ? 'border-amber-300/20 bg-amber-950/80 shadow-black/20' : 'border-amber-200 bg-amber-50 shadow-amber-900/5'}`}>
-                  <div className="flex min-w-0 items-start gap-2 sm:items-center">
-                    <AlertCircle size={17} className={`mt-0.5 shrink-0 sm:mt-0 ${isDarkMode ? 'text-amber-300' : 'text-amber-600'}`} />
-                    <p className={`text-xs font-extrabold leading-5 sm:text-sm ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
-                      Verify your email to save and download.
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setVerificationModalOpen(true)}
-                      className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3 text-[11px] font-extrabold transition active:scale-95 disabled:opacity-70 sm:h-9 sm:px-4 sm:text-xs ${isDarkMode ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
-                    >
-                      Verify
-                    </button>
-                    <button
-                      type="button"
-                      onClick={dismissVerificationBanner}
-                      className={`absolute right-2 top-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition active:scale-95 sm:static sm:h-9 sm:w-9 ${isDarkMode ? 'border-amber-200/20 text-amber-100 hover:bg-amber-200/10' : 'border-amber-700/20 text-amber-900 hover:bg-amber-100'}`}
-                      aria-label="Dismiss verification banner"
-                    >
-                      <X size={15} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <BuilderStatusBanners
+          currentUser={currentUser}
+          isDarkMode={isDarkMode}
+          isPopupVisible={isPopupVisible}
+          planExpiryReminder={planExpiryReminder}
+          verificationBannerDismissed={verificationBannerDismissed}
+          onDismissVerificationBanner={dismissVerificationBanner}
+          onOpenVerificationModal={() => setVerificationModalOpen(true)}
+        />
 
         <div className="flex-1 overflow-hidden relative flex flex-col lg:flex-row print:overflow-visible print:block">
           {/* Left Side: Form */}
@@ -1133,306 +969,89 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Download Confirmation Modal */}
-        <AnimatePresence>
-          {showDownloadConfirm && (
-            <motion.div
-              className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-            >
-              <motion.div
-                className={`relative w-full max-w-sm overflow-hidden rounded-2xl border shadow-2xl ${isDarkMode ? 'bg-slate-900 border-slate-700/80 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
-                <div className="p-7">
-                  <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm ${isDarkMode ? 'bg-violet-500/10 border-violet-400/30' : 'bg-violet-50 border-violet-100'}`}>
-                    <Download className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
-                  </div>
-                  <h3 className="mb-2 text-center text-xl font-bold">Download Resume</h3>
-                  <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Your resume will be exported as a PDF.
-                    <br />
-                    This usually takes a few seconds.
-                  </p>
-                  <div className="flex flex-col gap-3">
-                    <button
-                      onClick={handlePrint}
-                      disabled={isGeneratingPDF || downloadBlocked}
-                      className="flex w-full items-center justify-center rounded-xl bg-violet-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100"
-                    >
-                      <Download size={18} className="mr-2" /> {downloadBlocked ? downloadBlockedLabel : 'Yes, Download PDF'}
-                    </button>
-                    <button
-                      onClick={() => setShowDownloadConfirm(false)}
-                      className={`w-full rounded-xl border px-4 py-3.5 font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <DownloadConfirmModal
+          downloadBlocked={downloadBlocked}
+          downloadBlockedLabel={downloadBlockedLabel}
+          isDarkMode={isDarkMode}
+          isGeneratingPDF={isGeneratingPDF}
+          isOpen={showDownloadConfirm}
+          onCancel={() => setShowDownloadConfirm(false)}
+          onConfirm={handlePrint}
+        />
 
-        {/* Upgrade Prompt Modal */}
+        <UpgradePromptModal
+          isDarkMode={isDarkMode}
+          prompt={upgradePrompt}
+          savedCvLimitLabel={savedCvLimitLabel}
+          savedCvRemainingLabel={savedCvRemainingLabel}
+          savedCvUsed={savedCvUsed}
+          selectedPlan={selectedUpgradePlan}
+          onClose={() => setUpgradePrompt(null)}
+          onSelectedPlanChange={setSelectedUpgradePlan}
+        />
+        <ThemeTransitionOverlay transition={themeTransition} onComplete={() => setThemeTransition(null)} />
+
+        <DownloadErrorModal
+          error={downloadError}
+          isDarkMode={isDarkMode}
+          onDismiss={() => setDownloadError(null)}
+          onRetry={() => { setDownloadError(null); handlePrint(); }}
+        />
+
+        <PdfLoadingOverlay isDarkMode={isDarkMode} isGeneratingPDF={isGeneratingPDF} />
+
         <AnimatePresence>
-          {upgradePrompt && (
+          {pdfDownloadUrl && !isGeneratingPDF && (
             <motion.div
-              className="fixed inset-0 z-110 flex items-end justify-center bg-slate-950/55 p-2 backdrop-blur-sm sm:items-center sm:p-4"
-              onClick={() => setUpgradePrompt(null)}
+              className={`fixed inset-0 z-100 flex items-center justify-center px-4 backdrop-blur-md ${isDarkMode ? 'bg-slate-950/75' : 'bg-slate-950/35'}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
+              transition={{ duration: 0.2 }}
             >
               <motion.div
-                className={`relative flex max-h-[calc(100svh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border shadow-2xl sm:max-h-[calc(100svh-2rem)] sm:max-w-3xl sm:rounded-3xl ${isDarkMode ? 'bg-slate-900 border-violet-300/20 text-slate-100' : 'bg-white border-violet-100 text-slate-900'}`}
-                onClick={(event) => event.stopPropagation()}
-                initial={{ opacity: 0, scale: 0.96, y: 14 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 14 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                className={`relative w-full max-w-sm rounded-3xl border p-7 text-center shadow-2xl ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100 shadow-black/40' : 'border-white/80 bg-white text-slate-900 shadow-slate-900/20'}`}
+                initial={{ opacity: 0, y: 18, scale: 0.94 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="absolute inset-x-0 top-0 h-1.5 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
                 <button
                   type="button"
-                  onClick={() => setUpgradePrompt(null)}
-                  className={`absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
-                  aria-label="Close upgrade prompt"
+                  onClick={() => setPdfDownloadUrl(null)}
+                  className={`absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full transition-colors ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                  aria-label="Close PDF ready message"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
-
-                <div className="overflow-y-auto px-4 pb-4 pt-5 sm:p-9">
-                  <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl border sm:mb-5 sm:h-14 sm:w-14 ${isDarkMode ? 'border-violet-300/25 bg-violet-400/10' : 'border-violet-100 bg-violet-50'}`}>
-                    <Crown className="h-6 w-6 text-violet-600 sm:h-7 sm:w-7" strokeWidth={1.8} />
-                  </div>
-                  <h3 className="pr-12 text-xl font-black tracking-tight sm:text-2xl">{upgradePrompt.title}</h3>
-                  <p className={`mt-2 max-w-xl text-sm font-semibold leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {upgradePrompt.message}
-                  </p>
-
-                  <div className={`mt-3 grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl border p-3 sm:hidden ${isDarkMode ? 'border-emerald-300/20 bg-emerald-400/10' : 'border-emerald-100 bg-emerald-50'}`}>
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isDarkMode ? 'bg-emerald-300/15 text-emerald-200' : 'bg-white text-emerald-600'}`}>
-                      <Save size={18} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className={`text-[11px] font-black uppercase tracking-wide ${isDarkMode ? 'text-emerald-100/75' : 'text-emerald-700'}`}>Saved CVs</p>
-                      <p className={`truncate text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{savedCvRemainingLabel}</p>
-                    </div>
-                    <div className={`text-right text-2xl font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-950'}`}>
-                      {savedCvUsed}<span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>/{savedCvLimitLabel}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-2.5 sm:mt-7 sm:grid-cols-4 sm:gap-4">
-                    <div className="flex flex-col h-full">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedUpgradePlan('free')}
-                        className={`w-full h-full min-h-[14.75rem] flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-5 rounded-xl border p-3 ${selectedUpgradePlan === 'free' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-slate-50'}`}
-                      >
-                        <div className="text-sm font-black">Free</div>
-                        <div className="mt-1.5 flex items-baseline gap-1.5 whitespace-nowrap font-black sm:mt-2">
-                          <span className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">LKR</span>
-                          <span className="text-xl sm:text-2xl">0</span>
-                        </div>
-                        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Starter access • Free forever</div>
-                        <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>1 saved CV, 1 watermarked download.</p>
-                      </button>
-                      {selectedUpgradePlan === 'free' && renderMobileUpgradeActions('free')}
-                    </div>
-                    <div className="flex flex-col h-full">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedUpgradePlan('payg')}
-                        className={`w-full h-full min-h-[14.75rem] flex flex-col text-left ring-2 ring-violet-500/40 transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-5 rounded-xl border p-3 ${isDarkMode ? 'border-violet-300/30 bg-violet-400/10' : 'border-violet-200 bg-violet-50'}`}
-                      >
-                        <div className="flex items-center gap-2 text-sm font-black"><Zap size={15} className="text-violet-600" /> Single CV Pass</div>
-                        <div className="mt-1.5 flex items-baseline gap-1.5 whitespace-nowrap font-black sm:mt-2">
-                          <span className="text-[11px] uppercase tracking-wide text-violet-300/90">LKR</span>
-                          <span className="text-xl sm:text-2xl">499</span>
-                        </div>
-                        <div className="text-[10px] font-bold text-violet-400/90 dark:text-violet-300/90 mt-0.5">7 days access • One-time payment</div>
-                        <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-violet-100/75' : 'text-violet-900/65'}`}>1 extra CV, any template, unlimited edits, and faster PDF downloads for 7 days.</p>
-                      </button>
-                      {selectedUpgradePlan === 'payg' && renderMobileUpgradeActions('payg')}
-                    </div>
-                    <div className="flex flex-col h-full">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedUpgradePlan('monthly')}
-                        className={`w-full h-full min-h-[14.75rem] flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-5 rounded-xl border p-3 ${selectedUpgradePlan === 'monthly' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-slate-700 bg-slate-950/45' : 'border-slate-200 bg-white'}`}
-                      >
-                        <div className="text-sm font-black">Monthly Pro</div>
-                        <div className="mt-1.5 flex items-baseline gap-1.5 whitespace-nowrap font-black sm:mt-2">
-                          <span className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">LKR</span>
-                          <span className="text-xl sm:text-2xl">2199</span>
-                        </div>
-                        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">30 days access • One-time payment</div>
-                        <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Unlimited CV creation, saves, faster PDF downloads, and AI features.</p>
-                      </button>
-                      {selectedUpgradePlan === 'monthly' && renderMobileUpgradeActions('monthly')}
-                    </div>
-                    <div className="flex flex-col h-full">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedUpgradePlan('quarterly')}
-                        className={`w-full h-full min-h-[14.75rem] flex flex-col text-left transition active:scale-[0.99] sm:pointer-events-none sm:rounded-2xl sm:p-5 rounded-xl border p-3 ${selectedUpgradePlan === 'quarterly' ? 'ring-2 ring-violet-500/40' : ''} ${isDarkMode ? 'border-emerald-300/30 bg-emerald-400/10' : 'border-emerald-200 bg-emerald-50'}`}
-                      >
-                        <div className="text-sm font-black">Pro Quarterly</div>
-                        <div className="mt-1.5 flex items-baseline gap-1.5 whitespace-nowrap font-black sm:mt-2">
-                          <span className="text-[11px] uppercase tracking-wide text-emerald-300">LKR</span>
-                          <span className="text-xl sm:text-2xl">4999</span>
-                        </div>
-                        <div className="text-[10px] font-bold text-emerald-500 dark:text-emerald-300 mt-0.5">90 days access &bull; Most popular</div>
-                        <p className={`mt-2 text-xs font-semibold leading-5 flex-1 sm:mt-3 ${isDarkMode ? 'text-emerald-100/75' : 'text-emerald-950/65'}`}>Unlimited CV creation, saves, downloads, and AI tools for a focused job search.</p>
-                      </button>
-                      {selectedUpgradePlan === 'quarterly' && renderMobileUpgradeActions('quarterly')}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 hidden gap-3 sm:flex sm:flex-row">
-                    <Link
-                      to="/pricing"
-                      onClick={() => setUpgradePrompt(null)}
-                      className="inline-flex h-12 flex-1 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-700 active:scale-[0.98]"
-                    >
-                      View upgrade options
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => setUpgradePrompt(null)}
-                      className={`inline-flex h-12 flex-1 items-center justify-center rounded-xl border px-4 text-sm font-black transition active:scale-[0.98] ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
-                    >
-                      Continue editing
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {themeTransition && (
-          <motion.div
-            key={themeTransition.key}
-            className="fixed inset-0 pointer-events-none z-120 overflow-hidden"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 0 }}
-            transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
-            onAnimationComplete={() => setThemeTransition(null)}
-          >
-            <motion.div
-              className={`absolute rounded-full ${themeTransition.targetDark ? 'bg-slate-950' : 'bg-slate-50'}`}
-              style={{
-                left: themeTransition.x,
-                top: themeTransition.y,
-                width: Math.hypot(window.innerWidth, window.innerHeight) * 2,
-                height: Math.hypot(window.innerWidth, window.innerHeight) * 2,
-                transform: 'translate(-50%, -50%)',
-              }}
-              initial={{ scale: 0, opacity: 0.9 }}
-              animate={{ scale: 1, opacity: 0 }}
-              transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
-            />
-          </motion.div>
-        )}
-
-        {/* Download Error Modal */}
-        <AnimatePresence>
-          {downloadError && (
-            <motion.div
-              className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-            >
-              <motion.div
-                className={`relative w-full max-w-sm overflow-hidden rounded-3xl border shadow-2xl ${isDarkMode ? 'bg-slate-900 border-red-500/20 text-slate-100' : 'bg-white border-red-100 text-slate-900'}`}
-                initial={{ opacity: 0, scale: 0.95, y: 12 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 12 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {/* Red accent bar */}
-                <div className="absolute inset-x-0 top-0 h-1.5 bg-linear-to-r from-red-500 via-rose-500 to-orange-500" />
-
-                <div className="p-7 pt-8">
-                  {/* Icon */}
-                  <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border shadow-sm ${isDarkMode ? 'bg-red-500/10 border-red-400/20' : 'bg-red-50 border-red-100'}`}>
-                    <AlertCircle className="h-8 w-8 text-red-500" strokeWidth={1.7} />
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="mb-2 text-center text-xl font-bold tracking-tight">{downloadError.title}</h3>
-
-                  {/* Message */}
-                  <p className={`mb-7 text-center text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {downloadError.message}
-                  </p>
-
-                  {/* Hint */}
-                  <div className={`mb-6 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-xs font-medium ${isDarkMode ? 'border-slate-700 bg-slate-800 text-slate-400' : 'border-slate-100 bg-slate-50 text-slate-500'}`}>
-                    <AlertCircle size={13} className="mt-0.5 shrink-0 text-amber-400" />
-                    <span>If this keeps happening, try switching templates or reducing image size before downloading.</span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col gap-3">
-                    <button
-                      onClick={() => { setDownloadError(null); handlePrint(); }}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 active:scale-[0.98]"
-                    >
-                      <RotateCcw size={16} /> Try Again
-                    </button>
-                    <button
-                      onClick={() => setDownloadError(null)}
-                      className={`w-full rounded-xl border px-4 py-3.5 text-sm font-semibold transition-all active:scale-[0.98] ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Global Loading Overlay */}
-        <AnimatePresence>
-          {isGeneratingPDF && (
-            <motion.div
-              className={`fixed inset-0 z-100 flex flex-col items-center justify-center backdrop-blur-md ${isDarkMode ? 'bg-slate-950/80' : 'bg-white/80'}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-            >
-              <motion.div
-                className={`p-8 rounded-3xl shadow-2xl flex flex-col items-center border ${isDarkMode ? 'bg-slate-900 border-slate-700/70' : 'bg-white border-gray-100'}`}
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <div className="relative mb-6">
-                  <div className={`w-16 h-16 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
-                  <FileText className="absolute inset-0 m-auto text-violet-600" size={24} />
-                </div>
-                <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Generating PDF</h3>
-                <p className={`text-center max-w-[200px] ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                  Please wait while we prepare your professional resume...
+                <motion.div
+                  className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 ring-8 ring-emerald-500/10"
+                  initial={{ scale: 0.5, rotate: -12 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                >
+                  <motion.div
+                    className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.12, type: 'spring', stiffness: 300, damping: 16 }}
+                  >
+                    <CheckCircle2 size={34} />
+                  </motion.div>
+                </motion.div>
+                <h3 className="text-2xl font-black tracking-normal">Your PDF is ready</h3>
+                <p className={`mt-3 text-sm font-semibold leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Your download should start automatically.
                 </p>
+                <a
+                  href={pdfDownloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-extrabold text-white shadow-xl shadow-violet-600/20 transition-colors hover:bg-violet-500"
+                >
+                  <Download size={17} />
+                  Download not started? Click here.
+                </a>
               </motion.div>
             </motion.div>
           )}

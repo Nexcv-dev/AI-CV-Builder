@@ -1,6 +1,13 @@
 import express, { Router, Request, Response } from 'express';
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
+import {
+    checkoutExpiryDate,
+    LEMON_SQUEEZY_CHECKOUT_EXPIRY_MS,
+    markExpiredPendingCheckouts,
+    PAYHERE_CHECKOUT_EXPIRY_MS,
+    stalePaymentProcessingDate,
+} from '../services/checkoutSessionService';
 
 type RouteDeps = Record<string, any>;
 
@@ -47,13 +54,6 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         verifyLemonSqueezySignature,
         verifyPayHereMd5Signature,
     } = bindDeps(deps);
-
-    const markExpiredPendingCheckouts = async () => {
-        await CheckoutSession.updateMany(
-            { status: 'pending', expiresAt: { $lt: new Date() } },
-            { $set: { status: 'expired', billingReviewStatus: 'resolved', expiredAt: new Date() } }
-        );
-    };
 
     const alertPayHereIpnFailure = async (
         event: string,
@@ -202,7 +202,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.status(400).send('Invalid payment signature.');
             }
 
-            await markExpiredPendingCheckouts();
+            await markExpiredPendingCheckouts(CheckoutSession);
 
             const context = resolvePayHerePaymentContext(payload);
             const checkoutSession = await CheckoutSession.findOne({ orderId: payload.order_id });
@@ -372,7 +372,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.status(200).send('OK');
             }
 
-            const staleProcessingBefore = new Date(Date.now() - 10 * 60 * 1000);
+            const staleProcessingBefore = stalePaymentProcessingDate();
             const processingStartedAt = new Date();
             const claimedTransaction = await PaymentTransaction.findOneAndUpdate(
                 {
@@ -515,7 +515,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const userId = currentUserId(req).toString();
             const quote = await quoteCheckout(plan, req.body.couponCode, billingContext.market);
             if ('error' in quote) return res.status(400).json({ error: quote.error });
-            await markExpiredPendingCheckouts();
+            await markExpiredPendingCheckouts(CheckoutSession);
             const orderId = `${generateTransactionId()}-${userId}-${plan}`;
             await CheckoutSession.create({
                 orderId,
@@ -527,7 +527,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 finalAmountCents: quote.finalAmountCents,
                 couponCode: quote.couponCode || undefined,
                 status: 'pending',
-                expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+                expiresAt: checkoutExpiryDate(PAYHERE_CHECKOUT_EXPIRY_MS),
             });
             const frontendOrigin = getFrontendOrigin(req);
             const notifyUrl = process.env.PAYHERE_NOTIFY_URL?.trim() || `${getApiOrigin(req)}/api/payhere/ipn`;
@@ -605,7 +605,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             if ('error' in quote) return res.status(400).json({ error: quote.error });
 
             const orderId = `${generateTransactionId()}-${userId}-${plan}-ls`;
-            await markExpiredPendingCheckouts();
+            await markExpiredPendingCheckouts(CheckoutSession);
             await CheckoutSession.create({
                 orderId,
                 userId,
@@ -616,7 +616,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 finalAmountCents: quote.finalAmountCents,
                 couponCode: quote.couponCode || undefined,
                 status: 'pending',
-                expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+                expiresAt: checkoutExpiryDate(LEMON_SQUEEZY_CHECKOUT_EXPIRY_MS),
             });
             const frontendOrigin = getFrontendOrigin(req);
             const checkout = await createLemonSqueezyCheckout({
@@ -681,7 +681,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.status(400).send('Invalid payment context.');
             }
 
-            await markExpiredPendingCheckouts();
+            await markExpiredPendingCheckouts(CheckoutSession);
             const checkoutSession = await CheckoutSession.findOne({ orderId });
             const expectedCents = checkoutSession?.finalAmountCents;
             const paidCents = Number(attributes.total || attributes.total_usd || 0);
@@ -746,7 +746,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.status(200).send('OK');
             }
 
-            const staleProcessingBefore = new Date(Date.now() - 10 * 60 * 1000);
+            const staleProcessingBefore = stalePaymentProcessingDate();
             const processingStartedAt = new Date();
             const claimedTransaction = await PaymentTransaction.findOneAndUpdate(
                 {

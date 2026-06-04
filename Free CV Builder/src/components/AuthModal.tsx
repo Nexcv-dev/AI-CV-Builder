@@ -1,197 +1,19 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, FileText, LayoutTemplate, Lock, Mail, Palette, RotateCcw, ShieldCheck, Sparkles, User, Wand2, X, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, X, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
-
-type AuthMode = 'login' | 'signup';
-type WizardStep = 'choice' | 'email' | 'password' | 'name' | 'signup-password' | 'otp';
-
-interface AuthModalProps {
-  isOpen: boolean;
-  initialMode: AuthMode;
-  onClose: () => void;
-  redirectTo?: string;
-  onAuthenticated?: (user: AuthUser) => void;
-}
-
-function GoogleLogo() {
-  return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
-    </svg>
-  );
-}
-
-function LinkedInLogo() {
-  return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="#0A66C2" d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45z" />
-    </svg>
-  );
-}
-
-function GitHubLogo() {
-  return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.56v-2.13c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18A10.96 10.96 0 0 1 12 6.08c.98 0 1.97.13 2.89.39 2.2-1.49 3.16-1.18 3.16-1.18.63 1.58.23 2.75.11 3.04.74.8 1.19 1.83 1.19 3.08 0 4.42-2.69 5.39-5.25 5.67.41.36.78 1.06.78 2.14v3.15c0 .31.21.67.79.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
-    </svg>
-  );
-}
-
-function authNextParam(redirectTo: string) {
-  if (redirectTo.includes('download=1')) return '?next=download';
-  if (redirectTo.includes('import=1')) return '?next=import';
-  if (redirectTo.startsWith('/dashboard')) return '?next=dashboard';
-  if (redirectTo.startsWith('/my-cvs')) return '?next=my-cvs';
-  if (redirectTo.startsWith('/profile')) return '?next=profile';
-  if (redirectTo.startsWith('/admin')) return '?next=admin';
-  return '?next=builder';
-}
-
-const prefetchBuilderRoute = () => {
-  void import('../pages/Home');
-  void import('./CVForm');
-  void import('./CVPreview');
-};
-
-const allowedAuthEmailDomains = [
-  'gmail.com',
-  'googlemail.com',
-  'yahoo.com',
-  'hotmail.com',
-  'outlook.com',
-  'live.com',
-  'msn.com',
-  'icloud.com',
-  'me.com',
-  'proton.me',
-  'protonmail.com',
-  'aol.com',
-];
-
-const blockedAuthEmailDomains = new Set([
-  'mailinator.com',
-  'guerrillamail.com',
-  'guerrillamail.net',
-  'guerrillamail.org',
-  'yopmail.com',
-  'tempmail.com',
-  'temp-mail.org',
-  '10minutemail.com',
-  'throwawaymail.com',
-  'trashmail.com',
-  'sharklasers.com',
-  'getairmail.com',
-]);
-
-const commonDomainTypos: Record<string, string> = {
-  'gmai.com': 'gmail.com',
-  'gmial.com': 'gmail.com',
-  'gamil.com': 'gmail.com',
-  'gmail.con': 'gmail.com',
-  'gmail.co': 'gmail.com',
-  'gmail.cm': 'gmail.com',
-  'gmail.om': 'gmail.com',
-  'gmail.comm': 'gmail.com',
-  'yaho.com': 'yahoo.com',
-  'yahoo.con': 'yahoo.com',
-  'yahoo.co': 'yahoo.com',
-  'yhoo.com': 'yahoo.com',
-  'hotmial.com': 'hotmail.com',
-  'hotmai.com': 'hotmail.com',
-  'hotmail.con': 'hotmail.com',
-  'outlok.com': 'outlook.com',
-  'outlook.con': 'outlook.com',
-  'iclod.com': 'icloud.com',
-  'icloud.con': 'icloud.com',
-  'protonmail.con': 'protonmail.com',
-};
-
-const levenshteinDistance = (left: string, right: string) => {
-  const rows = Array.from({ length: left.length + 1 }, (_, index) => [index]);
-  for (let index = 1; index <= right.length; index += 1) rows[0][index] = index;
-
-  for (let row = 1; row <= left.length; row += 1) {
-    for (let col = 1; col <= right.length; col += 1) {
-      const cost = left[row - 1] === right[col - 1] ? 0 : 1;
-      rows[row][col] = Math.min(
-        rows[row - 1][col] + 1,
-        rows[row][col - 1] + 1,
-        rows[row - 1][col - 1] + cost
-      );
-    }
-  }
-
-  return rows[left.length][right.length];
-};
-
-const getEmailParts = (value: string) => {
-  const trimmed = value.trim().toLowerCase();
-  const [localPart, domain, ...rest] = trimmed.split('@');
-  if (!localPart || !domain || rest.length) return null;
-  return { localPart, domain, email: `${localPart}@${domain}` };
-};
-
-const getSuggestedEmail = (value: string) => {
-  const parts = getEmailParts(value);
-  if (!parts) return '';
-
-  const directSuggestion = commonDomainTypos[parts.domain];
-  if (directSuggestion) return `${parts.localPart}@${directSuggestion}`;
-
-  const nearest = allowedAuthEmailDomains
-    .map((domain) => ({ domain, distance: levenshteinDistance(parts.domain, domain) }))
-    .filter(({ distance }) => distance > 0 && distance <= 2)
-    .sort((a, b) => a.distance - b.distance)[0];
-
-  return nearest ? `${parts.localPart}@${nearest.domain}` : '';
-};
-
-const getAuthEmailError = (value: string) => {
-  const parts = getEmailParts(value);
-  if (!parts) return 'Enter a valid email address.';
-  if (blockedAuthEmailDomains.has(parts.domain)) return 'Enter a valid email address.';
-  if (!allowedAuthEmailDomains.includes(parts.domain)) {
-    return 'Enter a valid email address.';
-  }
-  return '';
-};
-
-const passwordPolicyMessage = 'Use 8+ characters with uppercase, lowercase, number, and symbol.';
-
-const getPasswordError = (value: string) => {
-  if (
-    value.length >= 8 &&
-    /[a-z]/.test(value) &&
-    /[A-Z]/.test(value) &&
-    /\d/.test(value) &&
-    /[^A-Za-z0-9]/.test(value)
-  ) {
-    return '';
-  }
-  return passwordPolicyMessage;
-};
-
-const getPasswordChecks = (value: string) => [
-  { label: '8+ characters', passed: value.length >= 8 },
-  { label: 'Uppercase', passed: /[A-Z]/.test(value) },
-  { label: 'Lowercase', passed: /[a-z]/.test(value) },
-  { label: 'Number', passed: /\d/.test(value) },
-  { label: 'Symbol', passed: /[^A-Za-z0-9]/.test(value) },
-];
-
-const visualItems = [
-  { icon: FileText, className: 'left-[12%] top-[41%] border-sky-300/25 bg-sky-400/18 text-sky-100' },
-  { icon: LayoutTemplate, className: 'left-[23%] top-[26%] border-emerald-300/25 bg-emerald-400/18 text-emerald-100' },
-  { icon: Sparkles, className: 'left-[42%] top-[18%] border-violet-300/25 bg-violet-400/20 text-violet-100' },
-  { icon: Wand2, className: 'right-[27%] top-[23%] border-fuchsia-300/25 bg-fuchsia-400/18 text-fuchsia-100' },
-  { icon: Palette, className: 'right-[13%] top-[39%] border-amber-300/25 bg-amber-300/18 text-amber-100' },
-  { icon: Mail, className: 'right-[19%] top-[57%] border-indigo-300/25 bg-indigo-400/18 text-indigo-100' },
-];
+import { AuthChoiceStep } from './auth/AuthChoiceStep';
+import { AuthEmailStep } from './auth/AuthEmailStep';
+import { AuthNameStep } from './auth/AuthNameStep';
+import { AuthOtpStep } from './auth/AuthOtpStep';
+import { AuthPasswordStep } from './auth/AuthPasswordStep';
+import { AuthSignupPasswordStep } from './auth/AuthSignupPasswordStep';
+import { AuthVisualPanel } from './auth/AuthVisualPanel';
+import { prefetchBuilderRoute } from './auth/authHelpers';
+import type { AuthMode, AuthModalProps, WizardStep } from './auth/authTypes';
+import { getAuthEmailError, getPasswordChecks, getPasswordError, getSuggestedEmail } from './auth/authValidation';
+import { useModalScrollLock } from './auth/useModalScrollLock';
 
 export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder?import=1', onAuthenticated }: AuthModalProps) {
   const navigate = useNavigate();
@@ -246,41 +68,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     setIsResendingOtp(false);
   }, [initialMode, isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const scrollY = window.scrollY;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousBodyPosition = document.body.style.position;
-    const previousBodyTop = document.body.style.top;
-    const previousBodyWidth = document.body.style.width;
-    const previousBodyPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      document.body.style.overflow = previousBodyOverflow;
-      document.body.style.position = previousBodyPosition;
-      document.body.style.top = previousBodyTop;
-      document.body.style.width = previousBodyWidth;
-      document.body.style.paddingRight = previousBodyPaddingRight;
-      window.scrollTo(0, scrollY);
-    };
-  }, [isOpen, onClose]);
+  useModalScrollLock(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -520,375 +308,111 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
           </div>
 
           {step === 'choice' && (
-            <div className="auth-mode-fade space-y-4">
-              <p className="max-w-md text-base font-semibold leading-7 text-slate-300">
-                {isLogin
-                  ? 'Login to continue editing, saving, and downloading your CVs.'
-                  : 'Create your NexCV account and verify your email with a one-time password.'}
-              </p>
-              <a
-                href={`/api/auth/google${authNextParam(redirectTo)}`}
-                className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white px-4 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-white/10 transition hover:bg-slate-100 active:scale-[0.99]"
-              >
-                <GoogleLogo />
-                Continue with Google
-              </a>
-              <a
-                href={`/api/auth/linkedin${authNextParam(redirectTo)}`}
-                className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#0A66C2] px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-sky-950/35 transition hover:bg-[#0959AA] active:scale-[0.99]"
-              >
-                <span className="flex h-6 w-6 items-center justify-center rounded bg-white">
-                  <LinkedInLogo />
-                </span>
-                Continue with LinkedIn
-              </a>
-              <a
-                href={`/api/auth/github${authNextParam(redirectTo)}`}
-                className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-slate-900 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-black/25 transition hover:bg-slate-800 active:scale-[0.99]"
-              >
-                <GitHubLogo />
-                Continue with GitHub
-              </a>
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-3 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 active:scale-[0.99]"
-                onClick={() => setStep('email')}
-              >
-                <Mail size={18} />
-                Continue with email
-              </button>
-              <p className="pt-2 text-center text-sm font-semibold text-slate-400">
-                {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
-                <button type="button" className="font-black text-emerald-300 hover:text-emerald-200" onClick={() => switchMode(isLogin ? 'signup' : 'login')}>
-                  {isLogin ? 'Sign up' : 'Login'}
-                </button>
-              </p>
-            </div>
+            <AuthChoiceStep
+              isLogin={isLogin}
+              redirectTo={redirectTo}
+              onEmailClick={() => setStep('email')}
+              onSwitchMode={switchMode}
+            />
           )}
 
           {step === 'email' && (
-            <form className="auth-mode-fade space-y-5" onSubmit={handleEmailSubmit}>
-              <p className="max-w-md text-base font-semibold leading-7 text-slate-300">
-                {isLogin
-                  ? 'Enter your email to continue to password sign-in.'
-                  : 'Enter your email to continue account creation.'}
-              </p>
-              <label className="block">
-                <span className="mb-3 block text-sm font-black text-slate-200">Email address</span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                    setError('');
-                  }}
-                  className="h-13 w-full rounded-xl border border-white/12 bg-slate-900 px-4 text-[16px] font-semibold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15"
-                  autoComplete="email"
-                  required
-                />
-              </label>
-              {emailSuggestion && emailSuggestion !== normalizedEmail && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail(emailSuggestion);
-                    setError('');
-                  }}
-                  className="flex w-full items-center gap-3 rounded-xl border border-emerald-300/20 bg-emerald-400/10 px-3 py-2.5 text-left text-sm font-bold text-emerald-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15"
-                >
-                  <Mail size={16} className="shrink-0 text-emerald-200" />
-                  <span>
-                    Did you mean <span className="font-black text-white">{emailSuggestion}</span>?
-                  </span>
-                </button>
-              )}
-              {error && (
-                <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">
-                  <p>{error}</p>
-                  {showLoginFromSignupError && (
-                    <button
-                      type="button"
-                      className="mt-2 font-black text-emerald-200 underline underline-offset-4 hover:text-emerald-100"
-                      onClick={() => {
-                        setMode('login');
-                        setStep('password');
-                        setPassword('');
-                        setError('');
-                        window.setTimeout(() => document.getElementById('auth-password')?.focus(), 0);
-                      }}
-                    >
-                      Log in with this email
-                    </button>
-                  )}
-                </div>
-              )}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSubmitting ? 'Checking...' : 'Continue'}
-                {!isSubmitting && <ArrowRight size={17} />}
-              </button>
-            </form>
+            <AuthEmailStep
+              email={email}
+              emailSuggestion={emailSuggestion}
+              error={error}
+              isLogin={isLogin}
+              isSubmitting={isSubmitting}
+              normalizedEmail={normalizedEmail}
+              showLoginFromSignupError={showLoginFromSignupError}
+              onEmailChange={(nextEmail) => {
+                setEmail(nextEmail);
+                setError('');
+              }}
+              onEmailSuggestionClick={(nextEmail) => {
+                setEmail(nextEmail);
+                setError('');
+              }}
+              onExistingAccountLogin={() => {
+                setMode('login');
+                setStep('password');
+                setPassword('');
+                setError('');
+                window.setTimeout(() => document.getElementById('auth-password')?.focus(), 0);
+              }}
+              onSubmit={handleEmailSubmit}
+            />
           )}
 
           {step === 'password' && (
-            <form className="auth-mode-fade space-y-5" onSubmit={handlePasswordSubmit}>
-              <p className="max-w-md text-base font-semibold leading-7 text-slate-300">
-                Logging in as <span className="font-black text-white">{normalizedEmail}</span>.
-              </p>
-              <div className="block">
-                <span className="mb-3 flex items-center justify-between text-sm font-black text-slate-200">
-                  <span>Password</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate('/forgot-password');
-                      onClose();
-                    }}
-                    className="text-xs font-black text-emerald-300 transition hover:text-emerald-200"
-                  >
-                    Forgot password?
-                  </button>
-                </span>
-                <span className="flex h-13 items-center gap-3 rounded-xl border border-white/12 bg-slate-900 px-4 transition focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-500/15">
-                  <Lock size={18} className="text-slate-500" />
-                  <input
-                    id="auth-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    className="w-full bg-transparent text-[16px] font-semibold text-white outline-none"
-                    autoComplete="current-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/8 hover:text-slate-200"
-                    onClick={() => setShowPassword((visible) => !visible)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </span>
-              </div>
-              {error && <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">{error}</p>}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSubmitting ? 'Signing in...' : 'Login'}
-              </button>
-            </form>
+            <AuthPasswordStep
+              error={error}
+              isSubmitting={isSubmitting}
+              normalizedEmail={normalizedEmail}
+              password={password}
+              showPassword={showPassword}
+              onForgotPassword={() => {
+                navigate('/forgot-password');
+                onClose();
+              }}
+              onPasswordChange={setPassword}
+              onShowPasswordChange={setShowPassword}
+              onSubmit={handlePasswordSubmit}
+            />
           )}
 
           {step === 'name' && (
-            <form className="auth-mode-fade space-y-5" onSubmit={handleNameSubmit}>
-              <p className="max-w-md text-base font-semibold leading-7 text-slate-300">
-                Add your name, then create a password before we send an OTP to <span className="font-black text-white">{normalizedEmail}</span>.
-              </p>
-              <label className="block">
-                <span className="mb-3 block text-sm font-black text-slate-200">Full name</span>
-                <span className="flex h-13 items-center gap-3 rounded-xl border border-white/12 bg-slate-900 px-4 transition focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-500/15">
-                  <User size={18} className="text-slate-500" />
-                  <input
-                    id="auth-display-name"
-                    value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    className="w-full bg-transparent text-[16px] font-semibold text-white outline-none"
-                    autoComplete="name"
-                    required
-                  />
-                </span>
-              </label>
-              <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={(event) => setAcceptedTerms(event.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-violet-600 focus:ring-violet-500"
-                  required
-                />
-                <span className="text-xs font-semibold leading-5 text-slate-300">
-                  I agree to the{' '}
-                  <Link to="/terms" className="font-black text-emerald-300 hover:text-emerald-200" onClick={onClose}>
-                    Terms and Conditions
-                  </Link>{' '}
-                  and{' '}
-                  <Link to="/privacy-policy" className="font-black text-emerald-300 hover:text-emerald-200" onClick={onClose}>
-                    Privacy Policy
-                  </Link>
-                  .
-                </span>
-              </label>
-              {error && <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">{error}</p>}
-              <button
-                type="submit"
-                disabled={isSubmitting || !acceptedTerms}
-                className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSubmitting ? 'Please wait...' : 'Continue'}
-                {!isSubmitting && <ArrowRight size={17} />}
-              </button>
-            </form>
+            <AuthNameStep
+              acceptedTerms={acceptedTerms}
+              displayName={displayName}
+              error={error}
+              isSubmitting={isSubmitting}
+              normalizedEmail={normalizedEmail}
+              onAcceptedTermsChange={setAcceptedTerms}
+              onClose={onClose}
+              onDisplayNameChange={setDisplayName}
+              onSubmit={handleNameSubmit}
+            />
           )}
 
           {step === 'signup-password' && (
-            <form className="auth-mode-fade space-y-5" onSubmit={handleSignupPasswordSubmit}>
-              <p className="max-w-md text-base font-semibold leading-7 text-slate-300">
-                This password will be used next time you login as <span className="font-black text-white">{normalizedEmail}</span>.
-              </p>
-              <div className="space-y-4">
-                <label className="block">
-                  <span className="mb-3 block text-sm font-black text-slate-200">Password</span>
-                  <span className="flex h-13 items-center gap-3 rounded-xl border border-white/12 bg-slate-900 px-4 transition focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-500/15">
-                    <Lock size={18} className="text-slate-500" />
-                    <input
-                      id="auth-signup-password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(event) => {
-                        setPassword(event.target.value);
-                        setError('');
-                      }}
-                      className="w-full bg-transparent text-[16px] font-semibold text-white outline-none"
-                      autoComplete="new-password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/8 hover:text-slate-200"
-                      onClick={() => setShowPassword((visible) => !visible)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                    </button>
-                  </span>
-                </label>
-                <label className="block">
-                  <span className="mb-3 block text-sm font-black text-slate-200">Confirm password</span>
-                  <span className="flex h-13 items-center gap-3 rounded-xl border border-white/12 bg-slate-900 px-4 transition focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-500/15">
-                    <Lock size={18} className="text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(event) => {
-                        setConfirmPassword(event.target.value);
-                        setError('');
-                      }}
-                      className="w-full bg-transparent text-[16px] font-semibold text-white outline-none"
-                      autoComplete="new-password"
-                      required
-                    />
-                  </span>
-                </label>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                <div className="mb-3 flex justify-end">
-                  <span className={`text-xs font-black ${passwordStrengthTextClass}`}>
-                    {password ? passwordStrengthLabel : ''}
-                  </span>
-                </div>
-                <div className="grid grid-cols-5 gap-1">
-                  {passwordChecks.map((item, index) => (
-                    <span
-                      key={item.label}
-                      className={`h-1.5 rounded-full transition ${index < passwordStrengthSegments ? passwordStrengthClass : 'bg-slate-700'}`}
-                    />
-                  ))}
-                </div>
-              </div>
-              {error && <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">{error}</p>}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSubmitting ? 'Sending OTP...' : 'Confirm password'}
-                {!isSubmitting && <ArrowRight size={17} />}
-              </button>
-            </form>
+            <AuthSignupPasswordStep
+              confirmPassword={confirmPassword}
+              error={error}
+              isSubmitting={isSubmitting}
+              normalizedEmail={normalizedEmail}
+              password={password}
+              passwordChecks={passwordChecks}
+              passwordStrengthClass={passwordStrengthClass}
+              passwordStrengthLabel={passwordStrengthLabel}
+              passwordStrengthSegments={passwordStrengthSegments}
+              passwordStrengthTextClass={passwordStrengthTextClass}
+              showPassword={showPassword}
+              onConfirmPasswordChange={setConfirmPassword}
+              onErrorClear={() => setError('')}
+              onPasswordChange={setPassword}
+              onShowPasswordChange={setShowPassword}
+              onSubmit={handleSignupPasswordSubmit}
+            />
           )}
 
           {step === 'otp' && (
-            <form className="auth-mode-fade space-y-5" onSubmit={handleVerifyOtp}>
-              <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4">
-                <p className="flex items-center gap-2 text-xs font-black uppercase text-emerald-200">
-                  <ShieldCheck size={15} />
-                  OTP Verification
-                </p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-emerald-50/85">
-                  Enter the 6-digit code sent to {normalizedEmail}.
-                </p>
-              </div>
-              <div className="flex justify-center gap-2 py-2 sm:gap-3" onPaste={handleOtpPaste}>
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <input
-                    key={index}
-                    id={`auth-otp-${index}`}
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]"
-                    maxLength={1}
-                    value={verificationCode[index] || ''}
-                    onChange={(event) => handleOtpChange(index, event.target.value)}
-                    onKeyDown={(event) => handleOtpKeyDown(index, event)}
-                    className="h-12 w-10 rounded-xl border border-white/12 bg-slate-900 text-center font-montserrat text-xl font-black text-white outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/15 sm:w-12"
-                    autoComplete="one-time-code"
-                    required
-                  />
-                ))}
-              </div>
-              {error && <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-200">{error}</p>}
-              <button
-                type="submit"
-                disabled={isSubmitting || isResendingOtp || verificationCode.length !== 6}
-                className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSubmitting ? 'Verifying...' : 'Confirm OTP'}
-                {!isSubmitting && <Check size={17} />}
-              </button>
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={isSubmitting || isResendingOtp}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 text-sm font-black text-slate-200 transition hover:bg-white/10 active:scale-[0.99] disabled:opacity-70"
-              >
-                <RotateCcw size={16} />
-                {isResendingOtp ? 'Sending OTP...' : 'Resend OTP'}
-              </button>
-            </form>
+            <AuthOtpStep
+              error={error}
+              isResendingOtp={isResendingOtp}
+              isSubmitting={isSubmitting}
+              normalizedEmail={normalizedEmail}
+              verificationCode={verificationCode}
+              onOtpChange={handleOtpChange}
+              onOtpKeyDown={handleOtpKeyDown}
+              onOtpPaste={handleOtpPaste}
+              onResendOtp={handleResendOtp}
+              onSubmit={handleVerifyOtp}
+            />
           )}
         </section>
 
-        <section className="relative hidden min-h-[540px] overflow-hidden bg-slate-900 lg:block">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(20,184,166,0.34),transparent_30%),radial-gradient(circle_at_58%_36%,rgba(168,85,247,0.38),transparent_32%),linear-gradient(145deg,rgba(15,23,42,1),rgba(17,24,39,1)_42%,rgba(88,28,135,0.55))]" />
-          <div className="absolute inset-x-0 top-16 mx-auto h-64 w-64 rounded-full bg-cyan-400/18 blur-3xl" />
-          <div className="absolute bottom-10 right-4 h-64 w-64 rounded-full bg-violet-500/18 blur-3xl" />
-          <div className="absolute left-1/2 top-[45%] flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white shadow-2xl shadow-violet-950/40 backdrop-blur">
-            <img src="/brand/faviconblack.svg" alt="" className="h-18 w-18 rounded-3xl" />
-          </div>
-          {visualItems.map(({ icon: Icon, className }, index) => (
-            <div
-              key={index}
-              className={`absolute flex h-14 w-14 items-center justify-center rounded-2xl border shadow-xl shadow-black/20 backdrop-blur ${className}`}
-            >
-              <Icon size={25} strokeWidth={2.6} />
-            </div>
-          ))}
-          <div className="absolute bottom-8 left-8 right-8 rounded-2xl border border-white/10 bg-slate-950/35 p-4 backdrop-blur">
-            <p className="text-xs font-black uppercase tracking-widest text-emerald-200">NexCV workspace</p>
-            <p className="mt-2 text-sm font-semibold leading-6 text-slate-200">
-              Secure access for templates, AI tools, saved CVs, and launch-ready downloads.
-            </p>
-          </div>
-          <Sparkles className="absolute left-[20%] top-[28%] text-white/80" size={22} />
-          <Sparkles className="absolute right-[17%] top-[24%] text-white/80" size={24} />
-          <Sparkles className="absolute bottom-[36%] left-[20%] text-white/70" size={18} />
-          <Sparkles className="absolute bottom-[31%] right-[9%] text-white/70" size={18} />
-        </section>
+        <AuthVisualPanel />
 
       </div>
     </div>

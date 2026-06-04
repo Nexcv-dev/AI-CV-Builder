@@ -2,6 +2,14 @@
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
 import type { TemplateName } from '../src/templates';
+import {
+    createPdfJob,
+    findUserPdfJob,
+    isPdfJobStorageConfigured,
+    processPdfJob,
+    queuePdfJob,
+    sendPdfJobDownload,
+} from '../services/pdfJobService';
 
 type RouteDeps = Record<string, any>;
 
@@ -569,6 +577,136 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
     
     // SVG Icons for PDF (Lucide style)
 
+
+    router.post('/api/pdf-jobs', requireAuth, pdfLimiter, pdfJsonParser, async (req: Request, res: Response) => {
+        let quotaReserved = false;
+        try {
+            if (!isPdfJobStorageConfigured()) {
+                return res.status(503).json({ error: 'PDF queue storage is not configured.' });
+            }
+
+            const { cvData, template } = req.body;
+
+            if (!cvData || typeof cvData !== 'object') {
+                return res.status(400).json({ error: 'Missing or invalid CV data' });
+            }
+
+            const downloadQuota = await getDownloadQuota(req.user);
+            if (downloadQuota.reached) {
+                return res.status(403).json({
+                    error: 'PDF download limit reached.',
+                    quota: downloadQuota,
+                    upgradeRequired: true,
+                });
+            }
+
+            const templateSetting = await getActiveTemplateForKey(template);
+            const requestedTemplate = (templateSetting?.key || DEFAULT_TEMPLATE) as TemplateName;
+            const requestedTemplateIsPaid = templateSetting
+                ? templateSetting.access === 'paid'
+                : templateRequiresPaidPlan(requestedTemplate);
+            if (downloadQuota.plan === 'free' && requestedTemplateIsPaid) {
+                return res.status(403).json({
+                    error: 'Premium templates require an upgrade to download.',
+                    quota: downloadQuota,
+                    upgradeRequired: true,
+                    reason: 'premium_template',
+                });
+            }
+
+            const reservedDownloadQuota = await consumeDownloadQuota(req.user);
+            if (!reservedDownloadQuota.reserved) {
+                return res.status(403).json({
+                    error: 'PDF download limit reached.',
+                    quota: reservedDownloadQuota,
+                    upgradeRequired: true,
+                });
+            }
+            quotaReserved = reservedDownloadQuota.limit !== null;
+
+            const safeCvData = sanitizeCvData(cvData);
+            const watermark = reservedDownloadQuota.plan === 'free';
+            const job = await createPdfJob({
+                userId: currentUserId(req),
+                cvData: safeCvData,
+                template: requestedTemplate,
+                watermark,
+                quotaReserved,
+            });
+
+            const queuedInSqs = await queuePdfJob(job);
+            if (!queuedInSqs) {
+                setTimeout(() => {
+                    void processPdfJob(String(job._id), deps).catch(() => undefined);
+                }, 0);
+            }
+
+            return res.status(202).json({
+                job: {
+                    id: String(job._id),
+                    status: job.status,
+                    queuedInSqs,
+                    pollUrl: `/api/pdf-jobs/${String(job._id)}`,
+                },
+                quota: { ...reservedDownloadQuota, reserved: undefined },
+            });
+        } catch (error: any) {
+            if (quotaReserved) {
+                await rollbackDownloadQuota(req.user).catch((rollbackError: any) => {
+                    logError('pdf.job_quota_rollback_failed', rollbackError, {
+                        userId: req.user ? currentUserId(req) : undefined,
+                    });
+                });
+            }
+            return sendError(res, 500, 'Could not queue PDF download. Please try again.', error);
+        }
+    });
+
+    router.get('/api/pdf-jobs/:id', requireAuth, async (req: Request, res: Response) => {
+        try {
+            if (!isValidDocumentId(req.params.id)) {
+                return res.status(400).json({ error: 'Invalid PDF job id.' });
+            }
+
+            const job = await findUserPdfJob(req.params.id, currentUserId(req));
+            if (!job) return res.status(404).json({ error: 'PDF job not found.' });
+
+            if (job.expiresAt.getTime() < Date.now() && job.status !== 'ready') {
+                job.status = 'expired';
+                await job.save();
+            }
+
+            const downloadUrl = job.status === 'ready' ? `/api/pdf-jobs/${String(job._id)}/download` : undefined;
+            return res.json({
+                job: {
+                    id: String(job._id),
+                    status: job.status,
+                    error: job.error,
+                    downloadUrl,
+                    expiresAt: job.expiresAt,
+                },
+            });
+        } catch (error) {
+            return sendError(res, 500, 'Could not check PDF job status.', error);
+        }
+    });
+
+    router.get('/api/pdf-jobs/:id/download', requireAuth, async (req: Request, res: Response) => {
+        try {
+            if (!isValidDocumentId(req.params.id)) {
+                return res.status(400).json({ error: 'Invalid PDF job id.' });
+            }
+
+            const job = await findUserPdfJob(req.params.id, currentUserId(req));
+            if (!job) return res.status(404).json({ error: 'PDF job not found.' });
+
+            const requestedName = typeof req.query.filename === 'string' ? req.query.filename : 'CV';
+            const safeName = `${sanitizeContextField(requestedName) || 'CV'}_Resume.pdf`;
+            await sendPdfJobDownload(job, res, safeName);
+        } catch (error) {
+            return sendError(res, 500, 'Could not download PDF.', error);
+        }
+    });
 
     router.post('/api/generate-pdf', requireAuth, pdfLimiter, pdfJsonParser, async (req: Request, res: Response) => {
         let quotaReserved = false;
