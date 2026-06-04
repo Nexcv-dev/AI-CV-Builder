@@ -25,6 +25,7 @@ npm run build
 npm run launch:check
 npm run validate:templates
 npm run build:pdf-lambda
+npm run build:email-worker-lambda
 ```
 
 ## Documentation

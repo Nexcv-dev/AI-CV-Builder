@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import * as dotenv from 'dotenv';
+import { enqueueEmail, isEmailQueueConfigured } from './emailQueueService';
 import { logError, logEvent } from '../server-utils/logger';
 
 dotenv.config();
@@ -121,7 +122,8 @@ export const getAppEmailFrom = () => {
 export const isEmailServiceConfigured = () => Boolean(
     getAppEmailFrom() &&
     (process.env.RESEND_API_KEY?.trim() ||
-        hasSmtpConfig())
+        hasSmtpConfig() ||
+        isEmailQueueConfigured())
 );
 
 export const sendSystemEmail = async (options: Omit<AppEmailOptions, 'from'>) => {
@@ -130,7 +132,13 @@ export const sendSystemEmail = async (options: Omit<AppEmailOptions, 'from'>) =>
         throw new Error('Email sender is not configured.');
     }
 
-    await sendAppEmail({ ...options, from });
+    const email = { ...options, from };
+    if (isEmailQueueConfigured()) {
+        await enqueueEmail(email);
+        return;
+    }
+
+    await sendAppEmail(email);
 };
 
 export const sendNotificationEmail = async (options: Omit<AppEmailOptions, 'from'>) => {
