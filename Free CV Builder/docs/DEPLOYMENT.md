@@ -13,6 +13,7 @@ Required services:
 - PayHere merchant account for paid plans.
 - Lemon Squeezy account for global USD paid plans.
 - SMTP, Gmail OAuth, or Resend for transactional email.
+- Optional AWS SQS queue and Lambda worker for asynchronous email delivery.
 
 ## Main App Deployment
 
@@ -89,6 +90,8 @@ EMAIL_FROM="NexCV <support@example.com>"
 ADMIN_NOTIFICATION_EMAIL=admin@example.com
 RESEND_API_KEY=optional_resend_key
 GMAIL_REFRESH_TOKEN=optional_gmail_refresh_token
+EMAIL_QUEUE_URL=optional_email_sqs_queue_url
+EMAIL_QUEUE_REGION=eu-north-1
 
 PAYHERE_MERCHANT_ID=your_payhere_merchant_id
 PAYHERE_MERCHANT_SECRET=your_payhere_secret
@@ -138,7 +141,37 @@ If you use public app coupons for global/USD checkouts, create the same discount
 
 PayHere local/LKR checkout amounts are rounded to a whole rupee before sending to the gateway, then formatted with two decimals for PayHere signing, for example `3749.00`. Use matching live or sandbox merchant credentials and checkout URLs. Sandbox checkouts require PayHere sandbox test card numbers; live cards should be tested only against live credentials.
 
-Transactional email supports both plain text and branded HTML generated with React Email. Resend is recommended for production; set a verified `EMAIL_FROM` domain before launch. SMTP fallback also sends the same HTML when configured.
+Transactional email supports both plain text and branded HTML generated with React Email. Resend is recommended for production; set a verified `EMAIL_FROM` domain before launch. SMTP fallback also sends the same HTML when configured. If `EMAIL_QUEUE_URL` or `SQS_EMAIL_QUEUE_URL` is configured, the app queues system emails to SQS and the email worker sends them through Resend or SMTP.
+
+## Email Worker Lambda Deployment
+
+Build the email worker artifact from the app folder:
+
+```bash
+cd "Free CV Builder"
+npm run build:email-worker-lambda
+```
+
+Deploy the generated ZIP from `lambda-email-worker/dist/` to AWS Lambda with an SQS trigger on the email queue.
+
+Recommended Lambda settings:
+
+- Runtime: Node.js 20.x
+- Handler: `handler.handler`
+- Timeout: 30 seconds
+
+Email worker environment variables:
+
+```env
+AWS_REGION=eu-north-1
+EMAIL_FROM="NexCV <support@example.com>"
+RESEND_API_KEY=your_resend_key
+# or SMTP fallback:
+EMAIL_USER=your_smtp_user
+EMAIL_PASS=your_smtp_password
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+```
 
 Optional quota values:
 

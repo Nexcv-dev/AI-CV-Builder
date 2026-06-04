@@ -335,6 +335,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         sanitizeDisplayName,
         sanitizeProfileField,
         sendAppEmail,
+        sendSystemEmail,
         sendEmailVerificationWithRetry,
         sendError,
         sendNewAccountNotification,
@@ -726,14 +727,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 return res.status(400).json({ error: emailError });
             }
 
-            const resendApiKey = process.env.RESEND_API_KEY?.trim();
-            const emailUser = process.env.EMAIL_USER?.trim();
-            const emailPass = process.env.EMAIL_PASS?.trim();
-            const emailFromFallback = resendApiKey
-                    ? 'NexCV <onboarding@resend.dev>'
-                    : emailUser || '';
-            const emailFrom = normalizeEmailFrom(process.env.EMAIL_FROM, emailFromFallback);
-            if (!emailFrom || (!resendApiKey && (!emailUser || !emailPass))) {
+            if (!isEmailServiceConfigured()) {
                 return res.status(500).json({ error: 'Email service is not configured.' });
             }
 
@@ -763,7 +757,6 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             );
             const mailOptions = {
                 to: user.email,
-                from: emailFrom,
                 subject: passwordResetTemplate.subject,
                 text: passwordResetTemplate.text,
                 html: await buildBrandedEmailHtml({
@@ -776,7 +769,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             };
     
             try {
-                await sendAppEmail(mailOptions);
+                await sendSystemEmail(mailOptions);
             } catch (emailError) {
                 await User.updateOne(
                     { _id: user._id, resetPasswordToken: tokenHash },
