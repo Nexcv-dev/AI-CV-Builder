@@ -229,6 +229,20 @@ const sanitizePdfImageSource = (value: unknown) => {
   if (!SAFE_IMAGE_DATA_URI.test(source)) return '';
   return source.replace(/\\s/g, '');
 };
+const PDF_FONT_MAP: Record<string, string> = {
+  'Inter': "'Inter', sans-serif",
+  'Lora': "'Lora', serif",
+  'Roboto': "'Roboto', sans-serif",
+  'Montserrat': "'Montserrat', sans-serif",
+  'Merriweather': "'Merriweather', serif",
+  'Playfair Display': "'Playfair Display', serif",
+  'JetBrains Mono': "'JetBrains Mono', monospace",
+};
+const sanitizePdfFontFamily = (value: unknown) => {
+  if (typeof value !== 'string') return 'Inter';
+  const fontFamily = value.trim();
+  return Object.prototype.hasOwnProperty.call(PDF_FONT_MAP, fontFamily) ? fontFamily : 'Inter';
+};
 
 const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
 const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\\/+|\\/+$/g, '');
