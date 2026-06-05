@@ -1,6 +1,6 @@
 # NexCV Architecture
 
-NexCV is a monolithic full-stack web application with a separate PDF-rendering worker. The main app serves the React frontend, exposes the Express API, manages sessions and MongoDB persistence, and delegates expensive PDF rendering to AWS Lambda when `PDF_LAMBDA_URL` is configured.
+NexCV is a monolithic full-stack web application with AWS-backed workers for expensive asynchronous tasks. The main app serves the React frontend, exposes the Express API, manages sessions and MongoDB persistence, and delegates expensive CV import parsing, PDF rendering, and optional email delivery to SQS/Lambda workers.
 
 ## Runtime Shape
 
@@ -15,6 +15,8 @@ Browser
        SMTP/Gmail/Resend
        S3 templates
        PDF Lambda
+       SQS queues
+       Worker Lambdas
 ```
 
 ## Frontend
@@ -44,7 +46,7 @@ Shared backend support is split into:
 - `middlewares/` for sessions, Passport auth, security headers/CORS, and rate limiters.
 - `server-models/` for Mongoose schemas and quota utilities.
 - `server-utils/` for admin IP allowlisting, PayHere helpers, template admin helpers, validation, and user-auth helpers.
-- `services/` for email, PDF, and S3 access.
+- `services/` for email, PDF, CV import, SQS queue, and S3 access.
 
 ## Data Model
 
@@ -67,17 +69,29 @@ NexCV supports two template sources:
 
 Template data is normalized before rendering so the same CV model can be used by built-in previews, custom template previews, and PDF export. Template validation scripts protect against missing files, unsafe markup, missing print rules, and common authoring mistakes.
 
+## CV Import Architecture
+
+CV import is initiated by `POST /api/cv-import-jobs`.
+
+1. The route validates the uploaded file payload and reserves import quota.
+2. The app creates a `CvImportJob` document in MongoDB.
+3. If `CV_IMPORT_QUEUE_URL` is configured, the app sends the job ID to SQS.
+4. The CV import worker Lambda consumes the job, calls the OCR Lambda when configured, runs AI parsing when allowed, and stores the parsed result on the job.
+5. The frontend polls `GET /api/cv-import-jobs/:id` until the result is ready.
+
+The OCR Lambda lives in `lambda-ocr/`. The queue worker lives in `lambda-cv-import-worker/`. Production should set `CV_IMPORT_LOCAL_WORKER_DISABLED=true` so OCR and AI parsing do not run inside the main app process.
+
 ## PDF Architecture
 
-PDF export is initiated by `POST /api/generate-pdf`.
+PDF export is initiated by `POST /api/pdf-jobs`.
 
 1. The route checks authentication, document/template access, plan state, and quotas.
-2. The app prepares CV data, selected template metadata, and watermark state.
-3. `services/pdfService.ts` tries the configured Lambda renderer when `PDF_LAMBDA_URL` exists.
-4. If Lambda is unavailable or not configured, the service can use a local Puppeteer-based renderer.
-5. The API returns the PDF buffer to the browser.
+2. The app creates a `PdfJob` document with CV data, selected template metadata, and watermark state.
+3. If `PDF_QUEUE_URL` is configured, the app sends the job ID to SQS.
+4. The PDF worker Lambda consumes the job, calls the PDF renderer Lambda, stores the generated PDF in S3, and marks the job ready.
+5. The frontend polls `GET /api/pdf-jobs/:id`, then downloads through `GET /api/pdf-jobs/:id/download`.
 
-The Lambda implementation lives in `lambda-pdf/` and can fetch template assets from S3 using `S3_TEMPLATE_BUCKET_NAME` and `S3_TEMPLATE_PREFIX`.
+The PDF renderer Lambda implementation lives in `lambda-pdf/` and can fetch template assets from S3 using `S3_TEMPLATE_BUCKET_NAME` and `S3_TEMPLATE_PREFIX`. The SQS worker lives in `lambda-pdf-worker/`.
 
 ## Security Posture
 
@@ -99,4 +113,4 @@ The main app can run on Render or another Node host:
 - `npm start` runs the Express server through `tsx server.ts`.
 - `render.yaml` points Render at the `Free CV Builder` root.
 
-The PDF Lambda is built separately with `npm run build:pdf-lambda` and deployed to AWS Lambda or a compatible function URL/API Gateway setup.
+The PDF Lambda and queue workers are built separately with scripts such as `npm run build:pdf-lambda`, `npm run build:pdf-worker-lambda`, and `npm run build:cv-import-worker-lambda`. See [AWS Services Configuration](AWS_SERVICES.md) for the complete queue, Lambda, S3, and IAM setup.

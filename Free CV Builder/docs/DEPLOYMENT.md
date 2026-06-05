@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers deploying the main NexCV app and the separate PDF Lambda renderer.
+This guide covers deploying the main NexCV app and the AWS-backed Lambda/queue workers. For the full AWS setup with exact SQS settings, IAM policies, worker roles, and S3 bucket rules, see [AWS Services Configuration](AWS_SERVICES.md).
 
 ## Infrastructure
 
@@ -9,11 +9,13 @@ Required services:
 - Node.js host for the Express/Vite app, such as Render, Heroku, EC2, or a container platform.
 - MongoDB, preferably MongoDB Atlas in production.
 - S3 bucket for managed template HTML/CSS/thumbnail files.
-- AWS Lambda or compatible function host for PDF generation.
+- AWS Lambda or compatible function host for PDF generation, OCR import, and queue workers.
+- AWS SQS queues for CV import jobs, PDF jobs, and optional async email delivery.
 - PayHere merchant account for paid plans.
 - Lemon Squeezy account for global USD paid plans.
 - SMTP, Gmail OAuth, or Resend for transactional email.
-- Optional AWS SQS queue and Lambda worker for asynchronous email delivery.
+- S3 bucket for temporary PDF job outputs.
+- S3 bucket for temporary OCR documents if the OCR Lambda uses Textract.
 
 ## Main App Deployment
 
@@ -112,6 +114,15 @@ AWS_REGION=eu-north-1
 PDF_LAMBDA_URL=https://your-lambda-url.example
 PDF_LAMBDA_TIMEOUT_MS=45000
 
+PDF_QUEUE_URL=https://sqs.eu-north-1.amazonaws.com/040769423342/nexcv-pdf-jobs-prod1
+PDF_QUEUE_REGION=eu-north-1
+PDF_OUTPUT_BUCKET_NAME=nexcv-pdf-jobs-prod1
+PDF_OUTPUT_PREFIX=pdf-jobs
+
+CV_IMPORT_QUEUE_URL=https://sqs.eu-central-1.amazonaws.com/040769423342/nexcv-cv-import-jobs-prod1
+CV_IMPORT_QUEUE_REGION=eu-central-1
+CV_IMPORT_LOCAL_WORKER_DISABLED=true
+
 OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
 OCR_LAMBDA_REGION=eu-central-1
 OCR_LAMBDA_TIMEOUT_MS=45000
@@ -142,6 +153,8 @@ If you use public app coupons for global/USD checkouts, create the same discount
 PayHere local/LKR checkout amounts are rounded to a whole rupee before sending to the gateway, then formatted with two decimals for PayHere signing, for example `3749.00`. Use matching live or sandbox merchant credentials and checkout URLs. Sandbox checkouts require PayHere sandbox test card numbers; live cards should be tested only against live credentials.
 
 Transactional email supports both plain text and branded HTML generated with React Email. Resend is recommended for production; set a verified `EMAIL_FROM` domain before launch. SMTP fallback also sends the same HTML when configured. If `EMAIL_QUEUE_URL` or `SQS_EMAIL_QUEUE_URL` is configured, the app queues system emails to SQS and the email worker sends them through Resend or SMTP.
+
+Queue and Lambda workers use `handler.handler` as the Lambda handler. Do not use `index.handler` unless the deployed ZIP explicitly contains `index.js`.
 
 ## Email Worker Lambda Deployment
 
@@ -183,6 +196,73 @@ MONTHLY_DAILY_DOWNLOAD_LIMIT=50
 ```
 
 Quarterly plans currently use the monthly daily download limit.
+
+## CV Import Worker Lambda Deployment
+
+Build the CV import worker artifact from the app folder:
+
+```bash
+cd "Free CV Builder"
+npm run build:cv-import-worker-lambda
+```
+
+Deploy the generated ZIP from `lambda-cv-import-worker/dist/` to AWS Lambda with an SQS trigger on the CV import queue.
+
+Recommended Lambda settings:
+
+- Runtime: Node.js 20.x
+- Handler: `handler.handler`
+- Architecture: x86_64
+- Memory: 1024 MB minimum
+- Timeout: 120 seconds
+- SQS batch size: 1
+- SQS maximum concurrency: 5
+- Report batch item failures: enabled
+
+Worker environment variables:
+
+```env
+AWS_REGION=eu-central-1
+MONGODB_URI=your_mongodb_connection_string
+GEMINI_API_KEY=your_gemini_key
+OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
+OCR_LAMBDA_REGION=eu-central-1
+OCR_LAMBDA_TIMEOUT_MS=45000
+```
+
+The worker consumes `CvImportJob` IDs from SQS, calls the OCR Lambda when configured, stores the parsed CV result in MongoDB, and clears uploaded base64 data from completed or failed jobs.
+
+## PDF Worker Lambda Deployment
+
+Build the PDF worker artifact from the app folder:
+
+```bash
+cd "Free CV Builder"
+npm run build:pdf-worker-lambda
+```
+
+Deploy the generated ZIP from `lambda-pdf-worker/dist/` to AWS Lambda with an SQS trigger on the PDF jobs queue.
+
+Recommended Lambda settings:
+
+- Runtime: Node.js 20.x
+- Handler: `handler.handler`
+- Memory: 512 MB minimum
+- Timeout: 90 seconds
+- SQS batch size: 1
+- SQS maximum concurrency: 10
+- Report batch item failures: enabled
+
+Worker environment variables:
+
+```env
+AWS_REGION=eu-north-1
+MONGODB_URI=your_mongodb_connection_string
+PDF_LAMBDA_URL=https://your-pdf-renderer-lambda-url
+PDF_LAMBDA_TIMEOUT_MS=45000
+PDF_OUTPUT_BUCKET_NAME=nexcv-pdf-jobs-prod1
+PDF_OUTPUT_PREFIX=pdf-jobs
+```
 
 ## PDF Lambda Deployment
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, FileUp, Upload, Loader2 } from 'lucide-react';
+import { FileText, FileUp, Upload, Loader2, X, Sparkles, Lock, Image as ImageIcon } from 'lucide-react';
 import { MODAL_OVERLAY_CLASS, MODAL_CONTAINER_BASE } from './constants';
 
 interface ImportModalsProps {
@@ -94,77 +94,98 @@ export const ImportModals = React.memo(({
             ) : (
               <motion.div
                 key="cv-upload-modal"
-                className={`${MODAL_CONTAINER_BASE} ${modalSurface} max-w-lg p-6 sm:p-7 ${isDarkMode ? 'bg-slate-900 border-slate-700/80 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                className={`${MODAL_CONTAINER_BASE} relative w-[calc(100vw-1rem)] max-w-2xl overflow-hidden rounded-3xl border border-sky-400/70 bg-[#071123] p-4 text-slate-100 shadow-[0_0_0_1px_rgba(168,85,247,0.45),0_0_38px_rgba(59,130,246,0.32),0_0_70px_rgba(168,85,247,0.18)] sm:p-6`}
                 initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.98 }}
                 transition={modalTransition}
               >
-                <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-violet-600 via-fuchsia-500 to-sky-500" />
-                <div className="mb-6 flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-bold">Upload Resume or LinkedIn PDF</h3>
-                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>PDF, JPG, or PNG. OCR handles basic import, with AI cleanup on paid plans.</p>
+                <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_8%_4%,rgba(168,85,247,0.22),transparent_24%),radial-gradient(circle_at_96%_92%,rgba(56,189,248,0.14),transparent_30%)]" />
+                <div className="pointer-events-none absolute inset-0 rounded-3xl border border-violet-400/55" />
+                <div className="relative max-h-[calc(100vh-1.5rem)] overflow-y-auto pr-1 scrollbar-hide">
+                  <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
+                    <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-violet-400/30 bg-white/[0.06] shadow-[0_0_20px_rgba(139,92,246,0.16)] sm:h-14 sm:w-14">
+                        <FileUp className="h-6 w-6 text-sky-300 sm:h-7 sm:w-7" strokeWidth={1.9} />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-xl font-extrabold leading-tight tracking-normal text-white sm:text-3xl">
+                          Import your Resume<br className="hidden sm:block" /> or LinkedIn PDF
+                        </h3>
+                        <p className="mt-2 max-w-xl text-xs leading-relaxed text-slate-400 sm:text-sm">
+                          Upload your file and let AI clean it up, extract key details, and build a professional resume for you.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowUploadModal(false);
+                        onImportSkipped?.();
+                      }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-600/80 bg-white/[0.04] text-slate-300 transition-colors hover:border-sky-300/80 hover:bg-sky-400/10 hover:text-white sm:h-10 sm:w-10"
+                      aria-label="Close upload modal"
+                    >
+                      <X size={20} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setShowUploadModal(false);
-                      onImportSkipped?.();
-                    }}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full border text-xl leading-none transition-colors ${isDarkMode ? 'border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-100' : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}
-                    aria-label="Close upload modal"
-                  >
-                    &times;
-                  </button>
-                </div>
-                <div className="relative overflow-hidden">
+
                   <label
                     htmlFor="cv-upload-modal"
-                    className={`group relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 transition-all duration-300 sm:p-9 ${isImporting
-                      ? (isDarkMode ? 'border-slate-600 bg-slate-800/70 cursor-not-allowed' : 'border-slate-300 bg-slate-50 cursor-not-allowed')
-                      : (isDarkMode
-                        ? 'border-violet-500/70 bg-slate-800/60 hover:border-violet-400 hover:bg-slate-800'
-                        : 'border-violet-300 bg-violet-50/50 hover:border-violet-400 hover:bg-violet-50')
-                      }`}
+                    className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed px-3 py-5 text-center transition-all duration-300 sm:px-6 sm:py-7 ${
+                      isImporting
+                        ? 'cursor-not-allowed border-slate-600 bg-slate-900/70'
+                        : 'border-sky-400/70 bg-slate-950/45 hover:border-violet-300 hover:bg-slate-900/70 hover:shadow-[0_0_35px_rgba(96,165,250,0.18)]'
+                    }`}
                   >
-                    <div className={`${iconShell} mb-5 ${isDarkMode ? 'bg-violet-500/10 border-violet-400/30' : 'bg-white border-violet-100'}`}>
-                      <FileUp className="h-8 w-8 text-violet-600" strokeWidth={1.8} />
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(96,165,250,0.12),transparent_48%)] opacity-80" />
+                    <div className="relative z-10 mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-fuchsia-500 via-violet-500 to-sky-400 shadow-[0_14px_30px_rgba(99,102,241,0.32)] sm:h-16 sm:w-16">
+                      {isImporting ? (
+                        <Loader2 className="h-7 w-7 animate-spin text-white sm:h-8 sm:w-8" strokeWidth={2} />
+                      ) : (
+                        <Upload className="h-7 w-7 text-white sm:h-8 sm:w-8" strokeWidth={2.1} />
+                      )}
                     </div>
 
-                    <h3 className="relative z-10 mb-2 text-lg font-bold sm:text-xl">
-                      {isImporting ? 'Processing your CV...' : 'Drop your CV here'}
+                    <h3 className="relative z-10 mb-1.5 text-lg font-extrabold text-white sm:text-xl">
+                      {isImporting ? 'Processing your CV...' : 'Drag & drop your resume'}
                     </h3>
-                    <p className={`relative z-10 mb-5 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {isImporting ? 'Reading and matching CV sections' : 'or click to browse files'}
+                    <p className="relative z-10 mb-4 text-xs text-slate-400 sm:text-sm">
+                      {isImporting ? 'Extracting and matching CV sections' : (
+                        <>
+                          or <span className="font-bold text-violet-300">browse files</span> from your device
+                        </>
+                      )}
                     </p>
 
-                    <div className="flex items-center gap-2 mb-5 relative z-10">
-                      {['PDF', 'JPG', 'PNG'].map((format) => (
-                        <span
-                          key={format}
-                          className={`px-3 py-1 text-[11px] font-semibold rounded-full border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-500'}`}
-                        >
-                          {format}
-                        </span>
-                      ))}
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold rounded-full border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-500'}`}>
+                    <div className="relative z-10 mb-5 flex flex-wrap items-center justify-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2.5 py-1 text-[11px] font-bold text-slate-200">
+                        <FileText size={13} className="text-rose-400" />
+                        PDF
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2.5 py-1 text-[11px] font-bold text-slate-200">
+                        <ImageIcon size={13} className="text-emerald-400" />
+                        JPG
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2.5 py-1 text-[11px] font-bold text-slate-200">
+                        <ImageIcon size={13} className="text-amber-400" />
+                        PNG
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2.5 py-1 text-[11px] font-bold text-slate-200">
                         <LinkedInMark />
                         LinkedIn PDF
                       </span>
                     </div>
 
                     <div className="relative z-10">
-                      {isImporting ? (
-                        <div className={`flex items-center gap-3 px-6 py-3 rounded-xl border shadow-sm ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
-                          <Loader2 size={20} className="animate-spin text-violet-600" />
-                          <span className={`text-sm font-semibold ${isDarkMode ? 'text-slate-200' : 'text-gray-700'}`}>Parsing Document...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 px-8 py-3 bg-linear-to-r from-violet-600 via-fuchsia-600 to-violet-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-200/50 group-hover:shadow-xl group-hover:shadow-violet-300/60 transition-all duration-300 group-hover:scale-[1.03] group-active:scale-[0.97]">
-                          <Upload size={18} />
-                          Upload CV
-                        </div>
-                      )}
+                      <div className="flex min-h-12 items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-fuchsia-500 via-violet-500 to-blue-500 px-7 py-3 text-sm font-extrabold text-white shadow-[0_14px_32px_rgba(124,58,237,0.28)] transition-transform duration-300 group-hover:scale-[1.02] group-active:scale-[0.98] sm:min-w-72">
+                        {isImporting ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                        {isImporting ? 'Parsing Document...' : 'Upload Resume'}
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 mt-4 flex items-center justify-center gap-2 text-xs font-medium text-slate-400">
+                      <Lock size={14} />
+                      Your files are secure and never shared.
                     </div>
 
                     <input
@@ -179,33 +200,51 @@ export const ImportModals = React.memo(({
                     />
                   </label>
 
-                  <p className={`text-center text-xs mt-4 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`}>
-                    LinkedIn: Profile &gt; More &gt; Save to PDF, then upload it here
-                  </p>
-
                   {importMessage && (
-                    <div className={`mt-5 p-4 rounded-xl text-sm text-center font-medium shadow-sm border ${
+                    <div className={`mt-4 rounded-2xl border p-3 text-center text-sm font-semibold shadow-sm ${
                       importMessage.type === 'success'
-                        ? (isDarkMode ? 'bg-green-900/30 text-green-300 border-green-700/50' : 'bg-green-50 text-green-700 border-green-200')
-                        : (isDarkMode ? 'bg-red-900/30 text-red-300 border-red-700/50' : 'bg-red-50 text-red-700 border-red-200')
+                        ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
+                        : 'border-red-400/40 bg-red-500/10 text-red-200'
                     }`}>
                       {importMessage.text}
                     </div>
                   )}
-                </div>
-                {!isImporting && (
-                  <div className="mt-6 flex justify-end">
-                    <button
-                      onClick={() => {
-                        setShowUploadModal(false);
+
+                  <div className="mt-4 flex items-start gap-3 rounded-2xl border border-violet-400/25 bg-white/[0.05] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:p-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/10 text-violet-300">
+                      <Sparkles size={21} />
+                    </div>
+                    <p className="text-xs leading-relaxed text-slate-300 sm:text-sm">
+                      <span className="font-bold text-white">We will extract your experience, skills, and education automatically.</span>
+                      <br />
+                      <span className="text-slate-400">You can review and edit everything before you finalize.</span>
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex flex-col gap-3 border-t border-slate-700/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3 text-xs leading-relaxed text-slate-400 sm:text-sm">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-400/20 bg-sky-400/10">
+                        <LinkedInMark />
+                      </span>
+                      <span>
+                        <span className="font-bold text-slate-200">LinkedIn:</span> Profile &gt; More &gt; Save to PDF
+                        <br />
+                        Then upload it here to get started.
+                      </span>
+                    </div>
+                    {!isImporting && (
+                      <button
+                        onClick={() => {
+                          setShowUploadModal(false);
                         onImportSkipped?.();
                       }}
-                      className={`px-6 py-2.5 text-sm font-bold rounded-xl border transition-all ${isDarkMode ? 'text-slate-300 border-slate-700 hover:text-slate-100 hover:bg-slate-800 hover:border-slate-600' : 'text-gray-600 border-gray-200 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300'}`}
-                    >
-                      Skip for now
-                    </button>
+                        className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-600/80 bg-white/[0.03] px-6 text-sm font-extrabold text-slate-200 transition-colors hover:border-sky-300/80 hover:bg-sky-400/10 hover:text-white sm:min-w-40"
+                      >
+                        Skip for now
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
