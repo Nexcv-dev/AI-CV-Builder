@@ -844,6 +844,7 @@ export default function Home() {
                   showTemplatesOnMount={showTemplatesOnLoad.current}
                   skipTemplatesAfterImport={hasTemplateSelectionOnLoad.current}
                   isFreePlan={isFreePlan}
+                  onAuthRequired={openBuilderLogin}
                   onUpgradeRequired={(source) => openUpgradePrompt(
                     source,
                     source === 'ai'

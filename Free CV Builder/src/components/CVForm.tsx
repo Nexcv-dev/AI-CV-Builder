@@ -57,6 +57,7 @@ interface CVFormProps {
   skipTemplatesAfterImport?: boolean;
   isFreePlan?: boolean;
   onUpgradeRequired?: (source: 'save' | 'download' | 'ai') => void;
+  onAuthRequired?: () => void;
 }
 
 function FormChunkFallback({ isDarkMode = false }: { isDarkMode?: boolean }) {
@@ -67,7 +68,7 @@ function FormChunkFallback({ isDarkMode = false }: { isDarkMode?: boolean }) {
   );
 }
 
-export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, template: templateProp, setTemplate: setTemplateProp, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, skipTemplatesAfterImport = false, isFreePlan = false, onUpgradeRequired }: CVFormProps) {
+export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, template: templateProp, setTemplate: setTemplateProp, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, skipTemplatesAfterImport = false, isFreePlan = false, onUpgradeRequired, onAuthRequired }: CVFormProps) {
   const { templates, isTemplatePaid, getTemplateLabel } = useTemplateConfig();
   const storeCvData = useBuilderStore((state) => state.cvData);
   const storeSetCvData = useBuilderStore((state) => state.setCvData);
@@ -378,6 +379,11 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
             let errorMessage = queueResponse.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Unknown server error";
             try {
               const errorJson = JSON.parse(errorText);
+              if (queueResponse.status === 401) {
+                setImportMessage({ type: 'error', text: 'Please sign in to import your CV.' });
+                onAuthRequired?.();
+                return;
+              }
               if (errorJson.upgradeRequired && errorJson.reason !== 'basic_import') {
                 onUpgradeRequired?.('ai');
                 return;
