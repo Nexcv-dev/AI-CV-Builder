@@ -9,7 +9,7 @@ export const Type = {
     INTEGER: 'INTEGER',
 } as const;
 
-export async function generateGeminiText(contents: any[], config?: Record<string, any>): Promise<string> {
+export async function generateGeminiText(contents: any[], config?: Record<string, any>, options: { signal?: AbortSignal } = {}): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error('Gemini API key is not configured.');
@@ -17,6 +17,8 @@ export async function generateGeminiText(contents: any[], config?: Record<string
     const timeoutMs = Number.parseInt(process.env.GEMINI_REQUEST_TIMEOUT_MS || '35000', 10) || 35000;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const abortFromCaller = () => controller.abort();
+    options.signal?.addEventListener('abort', abortFromCaller, { once: true });
 
     const normalizedContents = contents.every(item => item && typeof item === 'object' && Array.isArray(item.parts))
         ? contents
@@ -45,6 +47,7 @@ export async function generateGeminiText(contents: any[], config?: Record<string
             }
         ));
     } finally {
+        options.signal?.removeEventListener('abort', abortFromCaller);
         clearTimeout(timeout);
     }
 
