@@ -3,11 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #223 from bimanthaperera-lab/test/overview (dc06a40) - Bimantha Perera, 9 seconds ago
-* Improve CV Import Card UI (c5fa8ae) - Bimantha Perera, 14 minutes ago
-* fix import error not authenticated for guest users (7f8e226) - Bimantha Perera, 49 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 69 minutes ago
-* Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 69 minutes ago
+* Merge pull request #224 from bimanthaperera-lab/test/overview (43b3f94) - Bimantha Perera, 10 seconds ago
+* update docs (9242fc0) - Bimantha Perera, 9 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (6789503) - bimanthaperera-lab, 9 minutes ago
+* Merge pull request #223 from bimanthaperera-lab/test/overview (dc06a40) - Bimantha Perera, 9 minutes ago
+* Improve CV Import Card UI (c5fa8ae) - Bimantha Perera, 23 minutes ago
+* fix import error not authenticated for guest users (7f8e226) - Bimantha Perera, 58 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 78 minutes ago
+* Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 78 minutes ago
 * add cv import queue (b178a94) - Bimantha Perera, 2 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 12 hours ago
 * Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 12 hours ago
