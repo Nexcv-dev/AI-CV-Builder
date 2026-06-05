@@ -3,14 +3,17 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #227 from bimanthaperera-lab/test/overview (1f07d18) - Bimantha Perera, 23 seconds ago
-* add test and create database backup S3 automation workflow (1dc977b) - Bimantha Perera, 4 minutes ago
-* fix bug and improve UX (f4ca2ca) - Bimantha Perera, 66 minutes ago
+* Merge pull request #228 from bimanthaperera-lab/test/overview (a79296c) - Bimantha Perera, 9 seconds ago
+* Update mongodb-backup.yml (8a97e67) - Bimantha Perera, 81 seconds ago
+* docs: auto-update CHANGELOG.md [skip ci] (2577f85) - bimanthaperera-lab, 15 minutes ago
+* Merge pull request #227 from bimanthaperera-lab/test/overview (1f07d18) - Bimantha Perera, 15 minutes ago
+* add test and create database backup S3 automation workflow (1dc977b) - Bimantha Perera, 19 minutes ago
+* fix bug and improve UX (f4ca2ca) - Bimantha Perera, 82 minutes ago
 * Update ImportModals.tsx (19b40f6) - Bimantha Perera, 2 hours ago
 * fix pdf issues (24b980a) - Bimantha Perera, 6 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (5e80e12) - bimanthaperera-lab, 7 hours ago
 * Merge pull request #226 from bimanthaperera-lab/test/overview (e379f16) - Bimantha Perera, 7 hours ago
-* fix template render bug (fd76b58) - Bimantha Perera, 7 hours ago
+* fix template render bug (fd76b58) - Bimantha Perera, 8 hours ago
 * chore: bump version to 0.1.12 (99ce2be) - bimanthaperera-lab, 9 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (b47e989) - bimanthaperera-lab, 9 hours ago
 * Merge pull request #225 from bimanthaperera-lab/test/overview (f0fe322) - Bimantha Perera, 9 hours ago
@@ -21,7 +24,7 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (6789503) - bimanthaperera-lab, 10 hours ago
 * Merge pull request #223 from bimanthaperera-lab/test/overview (dc06a40) - Bimantha Perera, 10 hours ago
 * Improve CV Import Card UI (c5fa8ae) - Bimantha Perera, 10 hours ago
-* fix import error not authenticated for guest users (7f8e226) - Bimantha Perera, 10 hours ago
+* fix import error not authenticated for guest users (7f8e226) - Bimantha Perera, 11 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 11 hours ago
 * Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 11 hours ago
 * add cv import queue (b178a94) - Bimantha Perera, 12 hours ago
@@ -53,7 +56,7 @@ All notable changes to this project will be documented in this file.
 * improve data parsing (93dc62c) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (9a4ed06) - bimanthaperera-lab, 2 days ago
 * Merge pull request #213 from bimanthaperera-lab/test/overview (7535bda) - Bimantha Perera, 2 days ago
-* improve data parsing (8cf80b5) - Bimantha Perera, 2 days ago
+* improve data parsing (8cf80b5) - Bimantha Perera, 3 days ago
 * Improve OCR text extract (2dccdb2) - Bimantha Perera, 3 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (1dcb31b) - bimanthaperera-lab, 3 days ago
 * Merge pull request #212 from bimanthaperera-lab/test/overview (3a07360) - Bimantha Perera, 3 days ago
@@ -165,10 +168,10 @@ All notable changes to this project will be documented in this file.
 * Update MyCvs.tsx (bf9e59c) - Bimantha Perera, 12 days ago
 * fix landing page carousel bug (dc27d02) - Bimantha Perera, 12 days ago
 * fix startup template bug (7e78fd1) - Bimantha Perera, 12 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (8812e6c) - bimanthaperera-lab, 12 days ago
-* Merge pull request #175 from bimanthaperera-lab/test/overview (0935cd8) - Bimantha Perera, 12 days ago
-* Update CVPreview.test.tsx (e6db45e) - Bimantha Perera, 12 days ago
-* fix template render issue (831163d) - Bimantha Perera, 12 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (8812e6c) - bimanthaperera-lab, 13 days ago
+* Merge pull request #175 from bimanthaperera-lab/test/overview (0935cd8) - Bimantha Perera, 13 days ago
+* Update CVPreview.test.tsx (e6db45e) - Bimantha Perera, 13 days ago
+* fix template render issue (831163d) - Bimantha Perera, 13 days ago
 * remove templates (c916ca0) - Bimantha Perera, 13 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (b6c1248) - bimanthaperera-lab, 13 days ago
 * Merge pull request #171 from bimanthaperera-lab/test/overview (333ee89) - Bimantha Perera, 13 days ago
@@ -597,8 +600,8 @@ All notable changes to this project will be documented in this file.
 * Update server.ts (e91b077) - Bimantha Perera, 7 weeks ago
 * Update server.ts (3a47f97) - Bimantha Perera, 7 weeks ago
 * Delete test.js (5c7ca97) - Bimantha Perera, 7 weeks ago
-* Update server.ts (fdfffa8) - Bimantha Perera, 7 weeks ago
-* Pdf bug fixing (c29d3d5) - Bimantha Perera, 7 weeks ago
+* Update server.ts (fdfffa8) - Bimantha Perera, 8 weeks ago
+* Pdf bug fixing (c29d3d5) - Bimantha Perera, 8 weeks ago
 * remove unnecessary files and  install puppeteer light version (ed63a3e) - Bimantha Perera, 8 weeks ago
 * fix pdf download (7b6473a) - Bimantha Perera, 8 weeks ago
 * fix issues (9b528a3) - Bimantha Perera, 8 weeks ago
