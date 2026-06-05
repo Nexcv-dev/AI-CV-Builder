@@ -91,18 +91,21 @@ export const processPdfJob = async (jobId: string, deps: Record<string, any>) =>
             const customTemplate = await TemplateSetting
                 .findOne({ key: requestedTemplate, source: 'custom', status: 'active' })
                 .select('indexS3Key styleS3Key');
-            if (!customTemplate?.indexS3Key) throw new Error('Could not load selected template files.');
+            if (customTemplate?.indexS3Key) {
+                const indexHtml = await fetchS3Text(customTemplate.indexS3Key);
+                if (!indexHtml) throw new Error('Could not load selected template HTML.');
 
-            const indexHtml = await fetchS3Text(customTemplate.indexS3Key);
-            if (!indexHtml) throw new Error('Could not load selected template HTML.');
-
-            const css = customTemplate.styleS3Key ? await fetchS3Text(customTemplate.styleS3Key) : '';
-            const templateHtml = css
-                ? indexHtml.includes('</head>')
-                    ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
-                    : `<style>\n${css}\n</style>\n${indexHtml}`
-                : indexHtml;
-            s3Html = renderCvTemplateString(templateHtml, { ...job.cvData, template: requestedTemplate }, { watermark: job.watermark });
+                const css = customTemplate.styleS3Key ? await fetchS3Text(customTemplate.styleS3Key) : '';
+                const templateHtml = css
+                    ? indexHtml.includes('</head>')
+                        ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
+                        : `<style>\n${css}\n</style>\n${indexHtml}`
+                    : indexHtml;
+                s3Html = renderCvTemplateString(templateHtml, { ...job.cvData, template: requestedTemplate }, { watermark: job.watermark });
+            } else {
+                s3Html = await generateS3CVHTML(job.cvData, requestedTemplate, { watermark: job.watermark }).catch(() => null);
+                if (!s3Html) throw new Error('Could not load selected template files.');
+            }
         } else {
             s3Html = await generateS3CVHTML(job.cvData, requestedTemplate, { watermark: job.watermark }).catch(() => null);
         }

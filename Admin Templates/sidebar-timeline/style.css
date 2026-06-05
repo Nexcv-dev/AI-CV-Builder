@@ -11,7 +11,7 @@ body {
 body {
   background: #edf0f4;
   color: #1f2937;
-  font-family: "{{fontFamily}}", "Inter", "Roboto", Arial, sans-serif;
+  font-family: {{{computed.fontFamilyCSS}}}, "Inter", "Roboto", Arial, sans-serif;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }

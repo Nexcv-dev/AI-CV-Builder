@@ -1,5 +1,6 @@
 import TemplateSetting from '../server-models/TemplateSetting';
 import { CV_TEMPLATES, DEFAULT_TEMPLATE, isTemplateName, type TemplateName } from '../src/templates';
+import templateReleaseMap from '../config/template-release-map.json';
 
 export const TEMPLATE_CATEGORIES = ['Modern', 'ATS Friendly', 'Minimal', 'Executive', 'Creative', 'Tech', 'Corporate'] as const;
 export const TEMPLATE_STATUSES = ['draft', 'active', 'archived'] as const;
@@ -45,6 +46,44 @@ const customThumbnail = (setting: any) => {
     return setting.thumbnail || templateThumbnailPath(setting.key, version);
 };
 
+const releaseTemplateMap = new Map(
+    (templateReleaseMap as Array<{
+        targetKey: string;
+        label: string;
+        category: string;
+        access: 'free' | 'paid';
+        surfaceColorRole: 'none' | 'sidebar' | 'header';
+        surfaceColorLabel?: string;
+        defaultThemeColor?: string;
+    }>).map((template) => [template.targetKey, template])
+);
+
+const releasedTemplateSummary = (template: NonNullable<ReturnType<typeof releaseTemplateMap.get>>, setting: any = null, usageCount = 0) => ({
+    key: template.targetKey,
+    label: setting?.label || template.label,
+    category: setting?.category || template.category || defaultTemplateCategory(template.targetKey),
+    access: setting?.access || template.access || 'paid',
+    thumbnail: customThumbnail({
+        key: template.targetKey,
+        thumbnail: setting?.thumbnail,
+        thumbnailS3Key: setting?.thumbnailS3Key || `${process.env.S3_TEMPLATE_PREFIX || 'templates'}/${template.targetKey}/thumbnail.webp`,
+        updatedAt: setting?.updatedAt,
+    }),
+    builtInThumbnail: customThumbnail({
+        key: template.targetKey,
+        thumbnail: setting?.thumbnail,
+        thumbnailS3Key: setting?.thumbnailS3Key || `${process.env.S3_TEMPLATE_PREFIX || 'templates'}/${template.targetKey}/thumbnail.webp`,
+        updatedAt: setting?.updatedAt,
+    }),
+    surfaceColorRole: setting?.surfaceColorRole || template.surfaceColorRole || 'none',
+    surfaceColorLabel: setting?.surfaceColorLabel || template.surfaceColorLabel || null,
+    defaultThemeColor: setting?.defaultThemeColor || template.defaultThemeColor || '#000000',
+    source: 'custom',
+    status: setting?.status || 'active',
+    usageCount,
+    updatedAt: setting?.updatedAt,
+});
+
 const builtInTemplateSummary = (template: any, setting: any, usageCount = 0) => ({
     key: template.key,
     label: setting?.label || template.label,
@@ -85,6 +124,8 @@ export const getTemplateSettingForKey = async (key: string) => {
     const template = CV_TEMPLATES.find((item) => item.key === key);
     if (!template) {
         const setting = await TemplateSetting.findOne({ key, source: 'custom', status: { $ne: 'archived' } });
+        const releasedTemplate = releaseTemplateMap.get(key);
+        if (releasedTemplate) return releasedTemplateSummary(releasedTemplate, setting, 0);
         return setting ? customTemplateSummary(setting, 0) : null;
     }
     const setting = await TemplateSetting.findOne({ key });
@@ -100,6 +141,11 @@ export const getActiveTemplateForKey = async (key: unknown) => {
         return summary.status === 'archived' ? null : summary;
     }
     const custom = await TemplateSetting.findOne({ key, source: 'custom', status: 'active' });
+    const releasedTemplate = releaseTemplateMap.get(key);
+    if (releasedTemplate) {
+        if (custom && custom.status !== 'active') return null;
+        return releasedTemplateSummary(releasedTemplate, custom, 0);
+    }
     return custom ? customTemplateSummary(custom, 0) : null;
 };
 
