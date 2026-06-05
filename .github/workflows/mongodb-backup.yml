@@ -1,0 +1,64 @@
+name: MongoDB Daily Backup
+
+on:
+  schedule:
+    # Runs daily at 02:00 Asia/Colombo (20:30 UTC).
+    - cron: "30 20 * * *"
+  workflow_dispatch:
+
+env:
+  S3_BUCKET: mongodb-database-backup1
+  S3_PREFIX: mongodb/daily
+  MONGODB_TOOLS_VERSION: "100.13.0"
+
+jobs:
+  backup:
+    name: Dump MongoDB and upload to S3
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Install MongoDB Database Tools
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2404-x86_64-${MONGODB_TOOLS_VERSION}.deb" -o mongodb-database-tools.deb
+          sudo apt-get update
+          sudo apt-get install -y ./mongodb-database-tools.deb
+          mongodump --version
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Create MongoDB backup archive
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          TZ: Asia/Colombo
+        run: |
+          set -euo pipefail
+          if [ -z "${MONGODB_URI}" ]; then
+            echo "MONGODB_URI secret is missing."
+            exit 1
+          fi
+
+          BACKUP_NAME="mongodb-$(date +'%Y-%m-%d_%H-%M-%S')-asia-colombo.archive.gz"
+          BACKUP_FILE="/tmp/${BACKUP_NAME}"
+
+          mongodump --uri="${MONGODB_URI}" --archive="${BACKUP_FILE}" --gzip
+          test -s "${BACKUP_FILE}"
+
+          echo "BACKUP_NAME=${BACKUP_NAME}" >> "${GITHUB_ENV}"
+          echo "BACKUP_FILE=${BACKUP_FILE}" >> "${GITHUB_ENV}"
+
+      - name: Upload backup to S3
+        run: |
+          set -euo pipefail
+          aws s3 cp "${BACKUP_FILE}" "s3://${S3_BUCKET}/${S3_PREFIX}/${BACKUP_NAME}" --sse AES256
+
+      - name: Remove local backup archive
+        if: always()
+        run: |
+          rm -f "${BACKUP_FILE:-}"

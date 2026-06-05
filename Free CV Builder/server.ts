@@ -74,7 +74,7 @@ import { mergeEmailTemplates, renderEmailTemplate } from './src/emailTemplateDef
 import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildCvImportQuota, getCvImportQuotaPeriod } from './server-models/cvImportQuota';
 import { buildDownloadQuota, getNextUtcDayResetAt, getUtcDayKey } from './server-models/downloadQuotaUtils';
-import { createPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
+import { createPlanExpiry, createRenewedPlanExpiry, getEffectivePlan, isPaidPlan } from './server-models/userPlan';
 import type { BillingPlan } from './server-models/userPlan';
 import { isAdminIpAllowed, requireAdminAllowedIp, requireAdminPageAllowedIp } from './server-utils/adminIpAllowlist';
 import { logError, logEvent } from './server-utils/logger';
@@ -907,7 +907,7 @@ const routeDeps = {
     PAYHERE_PLAN_PRICES, payHereAmountToCents, getPayHereMerchantConfig, getPayHereCheckoutUrl,
     buildPayHereCheckoutHash, verifyPayHereMd5Signature, resolvePayHerePaymentContext,
     createLemonSqueezyCheckout, deleteLemonSqueezyDiscount, deleteLemonSqueezyDiscountsByCode, getLemonSqueezyConfigIssues, getMissingLemonSqueezyConfigKeys, isLemonSqueezyConfigured, syncLemonSqueezyDiscount, verifyLemonSqueezySignature,
-    generateTransactionId, planDisplayName, createPlanExpiry, getEffectivePlan, isPaidPlan,
+    generateTransactionId, planDisplayName, createPlanExpiry, createRenewedPlanExpiry, getEffectivePlan, isPaidPlan,
     markSessionCurrent, invalidateUserSessions,
     documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
     extractCvText, parseCvTextToStructuredData, withImportMeta,

@@ -10,6 +10,7 @@ export interface ICheckoutSession extends Document {
   discountCents: number;
   finalAmountCents: number;
   couponCode?: string;
+  couponReserved: boolean;
   status: 'pending' | 'paid' | 'failed' | 'expired' | 'cancelled';
   billingReviewStatus?: 'open' | 'resolved';
   reviewedAt?: Date;
@@ -32,6 +33,7 @@ const CheckoutSessionSchema = new Schema<ICheckoutSession>(
     discountCents: { type: Number, required: true, min: 0 },
     finalAmountCents: { type: Number, required: true, min: 0 },
     couponCode: { type: String, uppercase: true, trim: true },
+    couponReserved: { type: Boolean, required: true, default: false },
     status: { type: String, enum: ['pending', 'paid', 'failed', 'expired', 'cancelled'], default: 'pending', required: true, index: true },
     billingReviewStatus: { type: String, enum: ['open', 'resolved'], default: 'open', index: true },
     reviewedAt: { type: Date },

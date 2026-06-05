@@ -9,6 +9,7 @@ This folder is the main documentation hub for the NexCV application.
 - [Billing And Plans](BILLING.md) - paid plan keys, PayHere/Lemon Squeezy flows, coupons, and revenue reporting.
 - [Deployment](DEPLOYMENT.md) - production setup, Render notes, Lambda deployment, and environment variables.
 - [AWS Services](AWS_SERVICES.md) - S3, Lambda, SQS queues, workers, environment variables, and IAM policies.
+- [Backup And Restore](BACKUP_RESTORE.md) - daily MongoDB S3 backups, GitHub Actions secrets, and restore steps.
 - [Operations Runbook](OPERATIONS_RUNBOOK.md) - incident response and routine maintenance.
 - [Launch Checklist](LAUNCH_CHECKLIST.md) - pre-launch verification across code, payments, PDF, admin, and recovery.
 - [Codebase Cleanup Plan](CODEBASE_CLEANUP_PLAN.md) - phased structure cleanup plan for scaling after launch.

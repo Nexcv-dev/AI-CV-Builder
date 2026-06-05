@@ -349,7 +349,45 @@ const escTemplateValue = (str: string) => (
 );
 
 function renderCvTemplateString(templateHtml: string, cvData: any, options: { watermark?: boolean } = {}) {
-  const root = { ...cvData, watermark: Boolean(options.watermark) };
+  const personalInfo = cvData?.personalInfo || {};
+  const headline = cvData?.experience?.[0]?.position || cvData?.education?.[0]?.degree || '';
+  const location = personalInfo.address || '';
+  const hasSummary = Boolean(personalInfo.summary);
+  const hasPersonalDetails = Boolean(cvData?.flags?.hasPersonalDetails);
+  const hasContact = Boolean(personalInfo.email || personalInfo.phone || location);
+  const hasExperience = Boolean(cvData?.experience?.length);
+  const hasEducation = Boolean(cvData?.education?.length);
+  const hasSkills = Boolean(cvData?.skills?.length);
+  const hasCourses = Boolean(cvData?.courses?.length);
+  const hasProjects = Boolean(cvData?.projects?.length);
+  const hasAwards = Boolean(cvData?.awards?.length);
+  const hasLanguages = Boolean(cvData?.languages?.length);
+  const hasReferences = Boolean(cvData?.references?.length);
+  const root = {
+    ...cvData,
+    headline,
+    location,
+    hasHeader: Boolean(personalInfo.fullName || headline || hasSummary),
+    hasSummary,
+    hasContact,
+    hasPersonalDetails,
+    hasProfileCard: Boolean(cvData?.profileImage || hasContact || hasPersonalDetails),
+    hasExperience,
+    hasExperienceContinuation: false,
+    experienceLeadItems: cvData?.experience || [],
+    experienceContinuationItems: [],
+    hasEducation,
+    hasSkills,
+    hasCourses,
+    hasProjects,
+    hasAwards,
+    hasLanguages,
+    hasReferences,
+    hasMainColumn: Boolean(hasExperience || hasEducation || hasCourses || hasAwards),
+    hasSideColumn: Boolean(hasSkills || hasProjects || hasLanguages || hasReferences || hasPersonalDetails),
+    hasBody: Boolean(hasExperience || hasEducation || hasSkills || hasCourses || hasProjects || hasAwards || hasLanguages || hasReferences || hasPersonalDetails),
+    watermark: Boolean(options.watermark),
+  };
 
   const renderBlock = (source: string, context: any): string => {
     let html = source.replace(/{{#\\s*([\\w.]+)\\s*}}([\\s\\S]*?){{\\/\\s*\\1\\s*}}/g, (_match, pathValue, block) => {
@@ -380,7 +418,12 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
     ));
   };
 
-  return renderBlock(templateHtml, root);
+  const renderedHtml = renderBlock(templateHtml, root);
+  const newline = String.fromCharCode(10);
+  const htmlWithPaginationRules = renderedHtml.includes('</head>')
+    ? renderedHtml.replace('</head>', '<style>' + newline + CV_TEMPLATE_PAGINATION_RULES + newline + '</style>' + newline + '</head>')
+    : '<style>' + newline + CV_TEMPLATE_PAGINATION_RULES + newline + '</style>' + newline + renderedHtml;
+  return scaleCssFontSizes(htmlWithPaginationRules, root?.computed?.textScale ?? cvData?.textScale);
 }
 
 ${s3TemplatePreprocessorTs}
@@ -412,6 +455,7 @@ async function launchBrowser() {
 
 async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
   const requestedTemplate = isTemplateName(template) ? template : DEFAULT_TEMPLATE;
+  const isBuiltInTemplate = TEMPLATE_KEYS.includes(requestedTemplate as any);
   const safeCvData = sanitizeCvData(cvData);
   let html: string | null = null;
   try {
@@ -421,6 +465,9 @@ async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
     console.warn('S3 template unavailable; falling back to built-in PDF template.', error);
   }
   const templateSource = html ? 's3' : 'built-in';
+  if (!html && !isBuiltInTemplate) {
+    throw new Error('S3 template unavailable for "' + requestedTemplate + '" (' + lastS3TemplateDebug + ').');
+  }
   html = html || generateCVHTML(safeCvData, requestedTemplate, { watermark });
   const browser = await launchBrowser();
   let page: any = null;

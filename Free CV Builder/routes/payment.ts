@@ -20,7 +20,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         billingQuoteLimiter,
         User,
         buildPayHereCheckoutHash,
-        createPlanExpiry,
+        createRenewedPlanExpiry,
         currentUserId,
         generateTransactionId,
         createLemonSqueezyCheckout,
@@ -54,6 +54,41 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         verifyLemonSqueezySignature,
         verifyPayHereMd5Signature,
     } = bindDeps(deps);
+
+    const reserveCouponRedemption = async (couponCode?: string) => {
+        if (!couponCode) return false;
+        const reserved = await Coupon.findOneAndUpdate(
+            {
+                code: couponCode,
+                $or: [
+                    { maxRedemptions: { $exists: false } },
+                    { maxRedemptions: null },
+                    { $expr: { $lt: ['$redeemedCount', '$maxRedemptions'] } },
+                ],
+            },
+            { $inc: { redeemedCount: 1 } },
+            { returnDocument: 'after' }
+        );
+        return Boolean(reserved);
+    };
+
+    const releaseCouponRedemption = async (checkoutSession: any, session?: any) => {
+        if (!checkoutSession?.couponCode || !checkoutSession?.couponReserved) return;
+        const options = session ? { session } : undefined;
+        const claimed = await CheckoutSession.updateOne(
+            { _id: checkoutSession._id, couponReserved: true },
+            { $set: { couponReserved: false } },
+            options
+        );
+        if (claimed.modifiedCount > 0) {
+            checkoutSession.couponReserved = false;
+            await Coupon.updateOne(
+                { code: checkoutSession.couponCode, redeemedCount: { $gt: 0 } },
+                { $inc: { redeemedCount: -1 } },
+                options
+            );
+        }
+    };
 
     const alertPayHereIpnFailure = async (
         event: string,
@@ -202,7 +237,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.status(400).send('Invalid payment signature.');
             }
 
-            await markExpiredPendingCheckouts(CheckoutSession);
+            await markExpiredPendingCheckouts(CheckoutSession, Coupon);
 
             const context = resolvePayHerePaymentContext(payload);
             const checkoutSession = await CheckoutSession.findOne({ orderId: payload.order_id });
@@ -238,6 +273,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     { upsert: true, new: true, setDefaultsOnInsert: true }
                 );
                 if (checkoutSession && checkoutSession.status === 'pending') {
+                    await releaseCouponRedemption(checkoutSession);
                     checkoutSession.status = 'failed';
                     await checkoutSession.save();
                 }
@@ -399,7 +435,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             try {
                 await session.withTransaction(async () => {
                     const planStartedAt = new Date();
-                    const planExpiresAt = createPlanExpiry(purchasedPlan);
+                    const planExpiresAt = createRenewedPlanExpiry(purchasedPlan, user, planStartedAt);
                     const userUpdate: Record<string, unknown> = {
                         $set: {
                             plan: purchasedPlan,
@@ -424,14 +460,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     if (checkoutSession) {
                         await CheckoutSession.updateOne(
                             { _id: checkoutSession._id },
-                            { $set: { status: 'paid' } },
-                            { session }
-                        );
-                    }
-                    if (checkoutSession?.couponCode) {
-                        await Coupon.updateOne(
-                            { code: checkoutSession.couponCode },
-                            { $inc: { redeemedCount: 1 } },
+                            { $set: { status: 'paid', couponReserved: false } },
                             { session }
                         );
                     }
@@ -515,20 +544,35 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const userId = currentUserId(req).toString();
             const quote = await quoteCheckout(plan, req.body.couponCode, billingContext.market);
             if ('error' in quote) return res.status(400).json({ error: quote.error });
-            await markExpiredPendingCheckouts(CheckoutSession);
+            await markExpiredPendingCheckouts(CheckoutSession, Coupon);
+            const couponReserved = quote.couponCode ? await reserveCouponRedemption(quote.couponCode) : false;
+            if (quote.couponCode && !couponReserved) {
+                return res.status(400).json({ error: 'Coupon redemption limit reached. Please refresh checkout and try again.' });
+            }
             const orderId = `${generateTransactionId()}-${userId}-${plan}`;
-            await CheckoutSession.create({
-                orderId,
-                userId,
-                plan,
-                currency: quote.currency,
-                baseAmountCents: quote.baseAmountCents,
-                discountCents: quote.discountCents,
-                finalAmountCents: quote.finalAmountCents,
-                couponCode: quote.couponCode || undefined,
-                status: 'pending',
-                expiresAt: checkoutExpiryDate(PAYHERE_CHECKOUT_EXPIRY_MS),
-            });
+            try {
+                await CheckoutSession.create({
+                    orderId,
+                    userId,
+                    plan,
+                    currency: quote.currency,
+                    baseAmountCents: quote.baseAmountCents,
+                    discountCents: quote.discountCents,
+                    finalAmountCents: quote.finalAmountCents,
+                    couponCode: quote.couponCode || undefined,
+                    couponReserved,
+                    status: 'pending',
+                    expiresAt: checkoutExpiryDate(PAYHERE_CHECKOUT_EXPIRY_MS),
+                });
+            } catch (error) {
+                if (couponReserved && quote.couponCode) {
+                    await Coupon.updateOne(
+                        { code: quote.couponCode, redeemedCount: { $gt: 0 } },
+                        { $inc: { redeemedCount: -1 } }
+                    );
+                }
+                throw error;
+            }
             const frontendOrigin = getFrontendOrigin(req);
             const notifyUrl = process.env.PAYHERE_NOTIFY_URL?.trim() || `${getApiOrigin(req)}/api/payhere/ipn`;
             const checkoutPayload = {
@@ -605,19 +649,34 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             if ('error' in quote) return res.status(400).json({ error: quote.error });
 
             const orderId = `${generateTransactionId()}-${userId}-${plan}-ls`;
-            await markExpiredPendingCheckouts(CheckoutSession);
-            await CheckoutSession.create({
-                orderId,
-                userId,
-                plan,
-                currency: quote.currency,
-                baseAmountCents: quote.baseAmountCents,
-                discountCents: quote.discountCents,
-                finalAmountCents: quote.finalAmountCents,
-                couponCode: quote.couponCode || undefined,
-                status: 'pending',
-                expiresAt: checkoutExpiryDate(LEMON_SQUEEZY_CHECKOUT_EXPIRY_MS),
-            });
+            await markExpiredPendingCheckouts(CheckoutSession, Coupon);
+            const couponReserved = quote.couponCode ? await reserveCouponRedemption(quote.couponCode) : false;
+            if (quote.couponCode && !couponReserved) {
+                return res.status(400).json({ error: 'Coupon redemption limit reached. Please refresh checkout and try again.' });
+            }
+            try {
+                await CheckoutSession.create({
+                    orderId,
+                    userId,
+                    plan,
+                    currency: quote.currency,
+                    baseAmountCents: quote.baseAmountCents,
+                    discountCents: quote.discountCents,
+                    finalAmountCents: quote.finalAmountCents,
+                    couponCode: quote.couponCode || undefined,
+                    couponReserved,
+                    status: 'pending',
+                    expiresAt: checkoutExpiryDate(LEMON_SQUEEZY_CHECKOUT_EXPIRY_MS),
+                });
+            } catch (error) {
+                if (couponReserved && quote.couponCode) {
+                    await Coupon.updateOne(
+                        { code: quote.couponCode, redeemedCount: { $gt: 0 } },
+                        { $inc: { redeemedCount: -1 } }
+                    );
+                }
+                throw error;
+            }
             const frontendOrigin = getFrontendOrigin(req);
             const checkout = await createLemonSqueezyCheckout({
                 plan,
@@ -681,7 +740,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.status(400).send('Invalid payment context.');
             }
 
-            await markExpiredPendingCheckouts(CheckoutSession);
+            await markExpiredPendingCheckouts(CheckoutSession, Coupon);
             const checkoutSession = await CheckoutSession.findOne({ orderId });
             const expectedCents = checkoutSession?.finalAmountCents;
             const paidCents = Number(attributes.total || attributes.total_usd || 0);
@@ -773,7 +832,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                         $set: {
                             plan: purchasedPlan,
                             planStartedAt: new Date(),
-                            planExpiresAt: createPlanExpiry(purchasedPlan),
+                            planExpiresAt: createRenewedPlanExpiry(purchasedPlan, user),
                         },
                     };
                     if (purchasedPlan === 'payg') {
@@ -785,10 +844,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     processedUser = updatedUser;
 
                     if (checkoutSession) {
-                        await CheckoutSession.updateOne({ _id: checkoutSession._id }, { $set: { status: 'paid' } }, { session });
-                    }
-                    if (checkoutSession?.couponCode) {
-                        await Coupon.updateOne({ code: checkoutSession.couponCode }, { $inc: { redeemedCount: 1 } }, { session });
+                        await CheckoutSession.updateOne({ _id: checkoutSession._id }, { $set: { status: 'paid', couponReserved: false } }, { session });
                     }
 
                     await PaymentTransaction.findOneAndUpdate(
@@ -868,6 +924,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.json({ status: 'ignored' });
             }
 
+            await releaseCouponRedemption(checkoutSession);
             checkoutSession.status = 'cancelled';
             checkoutSession.billingReviewStatus = 'resolved';
             checkoutSession.cancelledAt = new Date();

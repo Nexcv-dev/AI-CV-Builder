@@ -32,3 +32,13 @@ export function isPaidPlan(user: Pick<IUser, 'role' | 'plan' | 'planExpiresAt'> 
 export function createPlanExpiry(plan: Exclude<BillingPlan, 'free'>, now = new Date()) {
   return new Date(now.getTime() + PLAN_DURATIONS_MS[plan]);
 }
+
+export function createRenewedPlanExpiry(
+  plan: Exclude<BillingPlan, 'free'>,
+  user: Pick<IUser, 'planExpiresAt'> | null | undefined,
+  now = new Date(),
+) {
+  const existingExpiry = user?.planExpiresAt;
+  const baseDate = existingExpiry && existingExpiry.getTime() > now.getTime() ? existingExpiry : now;
+  return createPlanExpiry(plan, baseDate);
+}

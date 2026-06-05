@@ -85,6 +85,8 @@ const callPdfLambda = async (job: any) => {
       return {
         buffer: Buffer.from(await response.arrayBuffer()),
         templateSource: response.headers.get('x-pdf-template-source') || 'unknown',
+        s3TemplateDebug: response.headers.get('x-pdf-s3-debug') || '',
+        lambdaBuild: response.headers.get('x-pdf-lambda-build') || '',
         renderer: 'lambda',
       };
     }
@@ -94,6 +96,8 @@ const callPdfLambda = async (job: any) => {
       return {
         buffer: Buffer.from(payload.body, 'base64'),
         templateSource: payload.headers?.['X-PDF-Template-Source'] || payload.headers?.['x-pdf-template-source'] || 'unknown',
+        s3TemplateDebug: payload.headers?.['X-PDF-S3-Debug'] || payload.headers?.['x-pdf-s3-debug'] || '',
+        lambdaBuild: payload.headers?.['X-PDF-Lambda-Build'] || payload.headers?.['x-pdf-lambda-build'] || '',
         renderer: 'lambda',
       };
     }
@@ -153,6 +157,8 @@ const processPdfJob = async (jobId: string) => {
           status: 'ready',
           renderer: pdf.renderer,
           templateSource: pdf.templateSource,
+          s3TemplateDebug: pdf.s3TemplateDebug,
+          lambdaBuild: pdf.lambdaBuild,
           outputBucket: PDF_OUTPUT_BUCKET,
           outputKey,
           outputBytes: pdf.buffer.length,
