@@ -3,21 +3,24 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #228 from bimanthaperera-lab/test/overview (a79296c) - Bimantha Perera, 9 seconds ago
-* Update mongodb-backup.yml (8a97e67) - Bimantha Perera, 81 seconds ago
-* docs: auto-update CHANGELOG.md [skip ci] (2577f85) - bimanthaperera-lab, 15 minutes ago
-* Merge pull request #227 from bimanthaperera-lab/test/overview (1f07d18) - Bimantha Perera, 15 minutes ago
-* add test and create database backup S3 automation workflow (1dc977b) - Bimantha Perera, 19 minutes ago
-* fix bug and improve UX (f4ca2ca) - Bimantha Perera, 82 minutes ago
-* Update ImportModals.tsx (19b40f6) - Bimantha Perera, 2 hours ago
+* Merge pull request #229 from bimanthaperera-lab/test/overview (bc1760c) - Bimantha Perera, 9 seconds ago
+* Update mongodb-backup.yml (1ff6e8a) - Bimantha Perera, 8 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (fb71b00) - bimanthaperera-lab, 15 minutes ago
+* Merge pull request #228 from bimanthaperera-lab/test/overview (a79296c) - Bimantha Perera, 15 minutes ago
+* Update mongodb-backup.yml (8a97e67) - Bimantha Perera, 16 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (2577f85) - bimanthaperera-lab, 30 minutes ago
+* Merge pull request #227 from bimanthaperera-lab/test/overview (1f07d18) - Bimantha Perera, 30 minutes ago
+* add test and create database backup S3 automation workflow (1dc977b) - Bimantha Perera, 34 minutes ago
+* fix bug and improve UX (f4ca2ca) - Bimantha Perera, 2 hours ago
+* Update ImportModals.tsx (19b40f6) - Bimantha Perera, 3 hours ago
 * fix pdf issues (24b980a) - Bimantha Perera, 6 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (5e80e12) - bimanthaperera-lab, 7 hours ago
-* Merge pull request #226 from bimanthaperera-lab/test/overview (e379f16) - Bimantha Perera, 7 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (5e80e12) - bimanthaperera-lab, 8 hours ago
+* Merge pull request #226 from bimanthaperera-lab/test/overview (e379f16) - Bimantha Perera, 8 hours ago
 * fix template render bug (fd76b58) - Bimantha Perera, 8 hours ago
 * chore: bump version to 0.1.12 (99ce2be) - bimanthaperera-lab, 9 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (b47e989) - bimanthaperera-lab, 9 hours ago
 * Merge pull request #225 from bimanthaperera-lab/test/overview (f0fe322) - Bimantha Perera, 9 hours ago
-* Update ImportModals.tsx (8008853) - Bimantha Perera, 9 hours ago
+* Update ImportModals.tsx (8008853) - Bimantha Perera, 10 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (63acb76) - bimanthaperera-lab, 10 hours ago
 * Merge pull request #224 from bimanthaperera-lab/test/overview (43b3f94) - Bimantha Perera, 10 hours ago
 * update docs (9242fc0) - Bimantha Perera, 10 hours ago
@@ -161,7 +164,7 @@ All notable changes to this project will be documented in this file.
 * Merge pull request #177 from bimanthaperera-lab/test/overview (f52109e) - Bimantha Perera, 11 days ago
 * fix default color bug in design panel (eb0b089) - Bimantha Perera, 11 days ago
 * add script to validate new templates (dcb9e7b) - Bimantha Perera, 11 days ago
-* Improve Template Rendering (b2408d6) - Bimantha Perera, 11 days ago
+* Improve Template Rendering (b2408d6) - Bimantha Perera, 12 days ago
 * fix template issues (e165f72) - Bimantha Perera, 12 days ago
 * fix mobile preview bug (2f68c3d) - Bimantha Perera, 12 days ago
 * Create cv_templates_mobile_preview_safe.zip (e0842f5) - Bimantha Perera, 12 days ago
