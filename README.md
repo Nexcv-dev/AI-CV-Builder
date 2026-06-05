@@ -1,8 +1,8 @@
 # NexCV - AI CV Builder
 
-NexCV is a full-stack CV builder for creating, saving, previewing, and exporting professional resumes. The project combines a React/Vite frontend, an Express/TypeScript API, MongoDB persistence, AI-assisted writing through Gemini, PayHere billing, S3-backed custom templates, and a separate Lambda-ready PDF renderer.
+NexCV is a full-stack CV builder for creating, saving, previewing, importing, and exporting professional resumes. The project combines a React/Vite frontend, an Express/TypeScript API, MongoDB persistence, AI-assisted writing through Gemini, PayHere/Lemon Squeezy billing, S3-backed custom templates, and AWS Lambda/SQS workers for expensive import, PDF, and email tasks.
 
-Current release focus: production hardening, admin operations, template reliability, payment/PDF readiness, and launch preparation.
+Current release focus: production hardening, admin operations, template reliability, payment readiness, queued PDF export, queued CV import, and launch preparation.
 
 ## Features
 
@@ -12,7 +12,8 @@ Current release focus: production hardening, admin operations, template reliabil
 - Built-in and admin-managed templates with free/premium metadata.
 - Profile image crop, position, zoom, and template-specific rendering.
 - AI import, summary generation, and text refinement with Gemini.
-- PDF export with quota and plan checks.
+- CV import from PDF/JPG/PNG/LinkedIn PDF through an SQS-backed worker and OCR Lambda.
+- PDF export with quota and plan checks through an SQS-backed worker and renderer Lambda.
 
 ### Templates
 - Built-in templates in the frontend bundle.
@@ -33,7 +34,9 @@ Current release focus: production hardening, admin operations, template reliabil
 - Express session cookies, Helmet, CORS controls, request-size limits, and route-level rate limiters.
 - Email verification, password reset, Google OAuth, and local email/password auth.
 - PayHere checkout and IPN verification helpers.
-- PDF rendering via Lambda when configured, with local Puppeteer fallback.
+- PDF rendering via Lambda when configured, with queued S3-backed downloads.
+- CV import queue workers so OCR/Textract and AI parsing do not run inside the main app host.
+- Optional SQS email worker for transactional email delivery.
 
 ## Documentation
 
@@ -43,6 +46,7 @@ Main documentation lives in [Free CV Builder/docs](Free%20CV%20Builder/docs/READ
 - [API Docs](Free%20CV%20Builder/docs/API_DOCS.md)
 - [Admin Panel](Free%20CV%20Builder/docs/ADMIN_PANEL.md)
 - [Deployment](Free%20CV%20Builder/docs/DEPLOYMENT.md)
+- [AWS Services](Free%20CV%20Builder/docs/AWS_SERVICES.md)
 - [Operations Runbook](Free%20CV%20Builder/docs/OPERATIONS_RUNBOOK.md)
 - [PDF Rendering](Free%20CV%20Builder/docs/PDF_RENDERING.md)
 - [Template System](Free%20CV%20Builder/docs/TEMPLATES.md)
@@ -65,11 +69,15 @@ AI-CV-Builder/
     middlewares/               # Session, auth, security, and rate limits
     server-models/             # Mongoose models
     server-utils/              # Shared backend helpers
-    services/                  # Email, PDF, and S3 services
+    services/                  # Email, PDF, CV import, queue, and S3 services
     scripts/                   # Build, validation, and template release scripts
     docs/                      # Project documentation
     tests/                     # Vitest server and frontend tests
+    lambda-cv-import-worker/   # SQS worker for background CV import jobs
+    lambda-email-worker/       # SQS worker for async transactional email
+    lambda-ocr/                # OCR/Textract Lambda for CV import text extraction
     lambda-pdf/                # AWS Lambda PDF renderer
+    lambda-pdf-worker/         # SQS worker for background PDF export jobs
 ```
 
 ## Local Development
@@ -129,6 +137,8 @@ EMAIL_USER=your_smtp_user
 EMAIL_PASS=your_smtp_password
 EMAIL_FROM="NexCV <support@nexcv.com>"
 ADMIN_NOTIFICATION_EMAIL=admin@example.com
+EMAIL_QUEUE_URL=https://sqs.eu-north-1.amazonaws.com/040769423342/nexcv-email-jobs-prod1
+EMAIL_QUEUE_REGION=eu-north-1
 
 PAYHERE_MERCHANT_ID=your_payhere_merchant_id
 PAYHERE_MERCHANT_SECRET=your_payhere_secret
@@ -140,6 +150,19 @@ AWS_REGION=eu-north-1
 
 PDF_LAMBDA_URL=https://your-lambda-url.example.com
 PDF_LAMBDA_TIMEOUT_MS=45000
+PDF_QUEUE_URL=https://sqs.eu-north-1.amazonaws.com/040769423342/nexcv-pdf-jobs-prod1
+PDF_QUEUE_REGION=eu-north-1
+PDF_OUTPUT_BUCKET_NAME=nexcv-pdf-jobs-prod1
+PDF_OUTPUT_PREFIX=pdf-jobs
+
+CV_IMPORT_QUEUE_URL=https://sqs.eu-central-1.amazonaws.com/040769423342/nexcv-cv-import-jobs-prod1
+CV_IMPORT_QUEUE_REGION=eu-central-1
+CV_IMPORT_LOCAL_WORKER_DISABLED=true
+
+OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
+OCR_LAMBDA_REGION=eu-central-1
+OCR_LAMBDA_TIMEOUT_MS=45000
+OCR_DOCUMENT_BUCKET=your-temp-ocr-bucket
 
 SENTRY_DSN=https://your-backend-dsn@sentry.io/project-id
 SENTRY_ENVIRONMENT=production
@@ -170,7 +193,11 @@ npm run lint                        # TypeScript compile check
 npm run test:run                    # Run Vitest once
 npm run build                       # Production frontend build
 npm run launch:check                # Run launch readiness checks
-npm run build:pdf-lambda            # Build Lambda ZIP
+npm run build:pdf-lambda            # Build PDF renderer Lambda ZIP
+npm run build:pdf-worker-lambda     # Build PDF SQS worker Lambda ZIP
+npm run build:cv-import-worker-lambda # Build CV import SQS worker Lambda ZIP
+npm run build:ocr-lambda            # Build OCR/Textract Lambda ZIP
+npm run build:email-worker-lambda   # Build email SQS worker Lambda ZIP
 npm run validate:templates          # Validate Admin Templates folders
 npm run templates:release:dry-run   # Validate and dry-run template release
 npm run templates:release           # Validate and release admin templates
@@ -184,4 +211,7 @@ npm run templates:release           # Validate and release admin templates
 - Use a MongoDB replica set or managed cluster; PayHere IPN processing uses MongoDB transactions.
 - Use `/api/ready` for autoscaling/load-balancer readiness checks and `/api/health` for monitoring.
 - Configure `PAYHERE_NOTIFY_URL` to the deployed `/api/payhere/ipn` endpoint.
-- Use `PDF_LAMBDA_URL` for production PDF generation; local Puppeteer fallback is intended for development and backup.
+- Use `PDF_QUEUE_URL` and `CV_IMPORT_QUEUE_URL` in production so heavy jobs run in Lambda workers instead of the main app process.
+- Set `CV_IMPORT_LOCAL_WORKER_DISABLED=true` when the CV import queue is configured.
+- All Lambda ZIPs generated by this repo use `handler.handler` as the AWS Lambda handler.
+- See [AWS Services](Free%20CV%20Builder/docs/AWS_SERVICES.md) for SQS trigger settings, DLQs, worker environment variables, and IAM policies.
