@@ -139,11 +139,7 @@ export const ImportModals = React.memo(({
                   >
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(96,165,250,0.12),transparent_48%)] opacity-80" />
                     <div className="relative z-10 mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-fuchsia-500 via-violet-500 to-sky-400 shadow-[0_14px_30px_rgba(99,102,241,0.32)] sm:h-16 sm:w-16">
-                      {isImporting ? (
-                        <Loader2 className="h-7 w-7 animate-spin text-white sm:h-8 sm:w-8" strokeWidth={2} />
-                      ) : (
-                        <Upload className="h-7 w-7 text-white sm:h-8 sm:w-8" strokeWidth={2.1} />
-                      )}
+                      <Upload className="h-7 w-7 text-white sm:h-8 sm:w-8" strokeWidth={2.1} />
                     </div>
 
                     <h3 className="relative z-10 mb-1.5 text-lg font-extrabold text-white sm:text-xl">
