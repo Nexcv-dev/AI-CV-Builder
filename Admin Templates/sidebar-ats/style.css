@@ -11,7 +11,7 @@ body {
 body {
   background: #eef1f5;
   color: #1f2937;
-  font-family: "{{fontFamily}}", "Inter", "Roboto", Arial, sans-serif;
+  font-family: {{{computed.fontFamilyCSS}}}, "Inter", "Roboto", Arial, sans-serif;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -51,8 +51,8 @@ a {
 
 .sidebar {
   padding: 18mm 9mm 16mm;
-  background: #f7f8fa;
-  border-right: 1px solid #d9dee7;
+  background: color-mix(in srgb, {{themeColor}} 8%, #ffffff);
+  border-right: 1px solid color-mix(in srgb, {{themeColor}} 24%, #d9dee7);
   page-break-inside: auto;
   break-inside: auto;
 }

@@ -903,22 +903,26 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 const customTemplate = await TemplateSetting
                     .findOne({ key: requestedTemplate, source: 'custom', status: 'active' })
                     .select('indexS3Key styleS3Key');
-                if (!customTemplate?.indexS3Key) {
-                    return res.status(500).json({ error: 'Could not load selected template files.' });
-                }
 
-                const indexHtml = await fetchS3Text(customTemplate.indexS3Key);
-                if (!indexHtml) {
-                    return res.status(500).json({ error: 'Could not load selected template HTML.' });
-                }
+                if (customTemplate?.indexS3Key) {
+                    const indexHtml = await fetchS3Text(customTemplate.indexS3Key);
+                    if (!indexHtml) {
+                        return res.status(500).json({ error: 'Could not load selected template HTML.' });
+                    }
 
-                const css = customTemplate.styleS3Key ? await fetchS3Text(customTemplate.styleS3Key) : '';
-                const templateHtml = css
-                    ? indexHtml.includes('</head>')
-                        ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
-                        : `<style>\n${css}\n</style>\n${indexHtml}`
-                    : indexHtml;
-                s3Html = renderCvTemplateString(templateHtml, { ...safeCvData, template: requestedTemplate }, { watermark });
+                    const css = customTemplate.styleS3Key ? await fetchS3Text(customTemplate.styleS3Key) : '';
+                    const templateHtml = css
+                        ? indexHtml.includes('</head>')
+                            ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
+                            : `<style>\n${css}\n</style>\n${indexHtml}`
+                        : indexHtml;
+                    s3Html = renderCvTemplateString(templateHtml, { ...safeCvData, template: requestedTemplate }, { watermark });
+                } else {
+                    s3Html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark }).catch(() => null);
+                    if (!s3Html) {
+                        return res.status(500).json({ error: 'Could not load selected template files.' });
+                    }
+                }
             } else {
                 s3Html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark }).catch(() => null);
             }
