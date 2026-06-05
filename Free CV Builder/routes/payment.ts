@@ -67,7 +67,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 ],
             },
             { $inc: { redeemedCount: 1 } },
-            { new: true }
+            { returnDocument: 'after' }
         );
         return Boolean(reserved);
     };

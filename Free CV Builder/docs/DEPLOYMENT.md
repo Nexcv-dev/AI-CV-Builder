@@ -38,6 +38,25 @@ npm start
 
 `npm start` runs `tsx server.ts`. Make sure the host installs production dependencies that include `tsx`, or change the start command to a compiled JavaScript entrypoint if you introduce a separate backend build step.
 
+## Database Backup Automation
+
+The repository includes a GitHub Actions workflow at `.github/workflows/mongodb-backup.yml`. It runs daily at **02:00 Asia/Colombo** and uploads a compressed MongoDB archive to:
+
+```text
+s3://mongodb-database-backup1/mongodb/daily/
+```
+
+Set these GitHub Actions secrets before relying on the scheduled backup:
+
+```text
+MONGODB_URI
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_REGION
+```
+
+The workflow can also be triggered manually from GitHub Actions for the first backup test. See [Backup And Restore](BACKUP_RESTORE.md) for S3 bucket requirements, verification, and restore steps.
+
 ## Required Environment Variables
 
 Minimum production values:

@@ -155,6 +155,7 @@ If the database is down, app-level maintenance mode may not be available. Use ho
 ## Routine Maintenance
 
 - Confirm MongoDB automated backups.
+- Confirm the GitHub Actions `MongoDB Daily Backup` workflow is passing and that S3 receives new objects under `s3://mongodb-database-backup1/mongodb/daily/`.
 - Search logs for `mongodb.connection_failed` after deploys or environment changes.
 - Take a manual snapshot before risky data operations.
 - Review failed PayHere transactions.
@@ -165,3 +166,15 @@ If the database is down, app-level maintenance mode may not be available. Use ho
 - Export audit logs externally if longer retention is required.
 - Rotate secrets on a planned schedule.
 - Keep a rollback target for both the main app and PDF Lambda.
+
+## Database Backup And Restore
+
+Daily MongoDB archives are uploaded by GitHub Actions to `s3://mongodb-database-backup1/mongodb/daily/`. For setup, verification, and restore commands, use [Backup And Restore](BACKUP_RESTORE.md).
+
+Before a production restore:
+
+1. Take a fresh current backup.
+2. Enable maintenance mode or otherwise stop writes.
+3. Restore the selected archive to a staging or temporary database first.
+4. Verify users, CV documents, templates, payments, coupons, and settings.
+5. Restore production only during a maintenance window.

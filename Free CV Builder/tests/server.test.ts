@@ -33,6 +33,7 @@ import { buildCvImportQuota, getCvImportQuotaPeriod } from '../server-models/cvI
 import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getNextUtcDayResetAt, getUtcDayKey } from '../server-models/downloadQuotaUtils';
 import { createPlanExpiry, createRenewedPlanExpiry, getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
 import { logEvent } from '../server-utils/logger';
+import { markExpiredPendingCheckouts } from '../services/checkoutSessionService';
 
 describe('Server Utils', () => {
   describe('structured logging', () => {
@@ -726,6 +727,58 @@ describe('Server Utils', () => {
       expect(createRenewedPlanExpiry('monthly', { planExpiresAt: activeExpiry } as any, now).toISOString()).toBe('2026-06-25T00:00:00.000Z');
       expect(createRenewedPlanExpiry('monthly', { planExpiresAt: expiredExpiry } as any, now).toISOString()).toBe('2026-06-15T00:00:00.000Z');
       expect(createRenewedPlanExpiry('payg', null, now).toISOString()).toBe('2026-05-23T00:00:00.000Z');
+    });
+  });
+
+  describe('checkout session cleanup', () => {
+    it('should release reserved coupon slots when pending checkouts expire', async () => {
+      const expiredCheckouts = [{ _id: 'checkout-1', couponCode: 'SAVE10' }];
+      const select = vi.fn().mockResolvedValue(expiredCheckouts);
+      const CheckoutSession = {
+        find: vi.fn(() => ({ select })),
+        updateOne: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
+        updateMany: vi.fn().mockResolvedValue({ modifiedCount: 0 }),
+      };
+      const Coupon = {
+        updateOne: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
+      };
+
+      await markExpiredPendingCheckouts(CheckoutSession, Coupon);
+
+      expect(CheckoutSession.find).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'pending',
+        couponReserved: true,
+        couponCode: { $exists: true, $ne: '' },
+      }));
+      expect(select).toHaveBeenCalledWith('_id couponCode');
+      expect(CheckoutSession.updateOne).toHaveBeenCalledWith(
+        { _id: 'checkout-1', status: 'pending', couponReserved: true },
+        { $set: expect.objectContaining({ status: 'expired', billingReviewStatus: 'resolved', couponReserved: false }) }
+      );
+      expect(Coupon.updateOne).toHaveBeenCalledWith(
+        { code: 'SAVE10', redeemedCount: { $gt: 0 } },
+        { $inc: { redeemedCount: -1 } }
+      );
+      expect(CheckoutSession.updateMany).toHaveBeenCalledWith(
+        { status: 'pending', expiresAt: { $lt: expect.any(Date) } },
+        { $set: expect.objectContaining({ status: 'expired', billingReviewStatus: 'resolved' }) }
+      );
+    });
+
+    it('should not release a coupon slot if another cleanup already claimed the checkout', async () => {
+      const CheckoutSession = {
+        find: vi.fn(() => ({ select: vi.fn().mockResolvedValue([{ _id: 'checkout-1', couponCode: 'SAVE10' }]) })),
+        updateOne: vi.fn().mockResolvedValue({ modifiedCount: 0 }),
+        updateMany: vi.fn().mockResolvedValue({ modifiedCount: 0 }),
+      };
+      const Coupon = {
+        updateOne: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
+      };
+
+      await markExpiredPendingCheckouts(CheckoutSession, Coupon);
+
+      expect(Coupon.updateOne).not.toHaveBeenCalled();
+      expect(CheckoutSession.updateMany).toHaveBeenCalled();
     });
   });
 

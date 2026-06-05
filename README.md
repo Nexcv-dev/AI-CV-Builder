@@ -47,6 +47,7 @@ Main documentation lives in [Free CV Builder/docs](Free%20CV%20Builder/docs/READ
 - [Admin Panel](Free%20CV%20Builder/docs/ADMIN_PANEL.md)
 - [Deployment](Free%20CV%20Builder/docs/DEPLOYMENT.md)
 - [AWS Services](Free%20CV%20Builder/docs/AWS_SERVICES.md)
+- [Backup And Restore](Free%20CV%20Builder/docs/BACKUP_RESTORE.md)
 - [Operations Runbook](Free%20CV%20Builder/docs/OPERATIONS_RUNBOOK.md)
 - [PDF Rendering](Free%20CV%20Builder/docs/PDF_RENDERING.md)
 - [Template System](Free%20CV%20Builder/docs/TEMPLATES.md)
