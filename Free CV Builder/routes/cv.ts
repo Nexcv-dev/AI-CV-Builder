@@ -22,6 +22,43 @@ type RouteDeps = Record<string, any>;
 export function registerCvRoutes(router: Router, deps: RouteDeps) {
     const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, aiLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
 
+    const expireJobAndRollbackQuota = async (
+        job: any,
+        rollbackQuota: (user: any) => Promise<void>,
+        logName: string,
+    ) => {
+        const model = job.constructor;
+        const canRollbackReservedQuota = job.quotaReserved && ['queued', 'processing'].includes(job.status);
+        const claimed = canRollbackReservedQuota
+            ? await model.updateOne(
+                { _id: job._id, quotaReserved: true },
+                { $set: { status: 'expired', quotaReserved: false } }
+            )
+            : await model.updateOne(
+                { _id: job._id },
+                { $set: { status: 'expired' } }
+            );
+
+        job.status = 'expired';
+        if (canRollbackReservedQuota && claimed.modifiedCount > 0) {
+            job.quotaReserved = false;
+            const user = await User.findById(job.userId);
+            if (user) {
+                await rollbackQuota(user).catch((rollbackError: any) => {
+                    logError?.(logName, rollbackError, {
+                        userId: String(job.userId),
+                        jobId: String(job._id),
+                    });
+                });
+            } else {
+                logEvent?.('warn', `${logName}.user_missing`, {
+                    userId: String(job.userId),
+                    jobId: String(job._id),
+                });
+            }
+        }
+    };
+
     router.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
         try {
             const documents = await CVDocument.find({ userId: currentUserId(req) })
@@ -517,8 +554,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             if (!job) return res.status(404).json({ error: 'CV import job not found.' });
 
             if (job.expiresAt.getTime() < Date.now() && job.status !== 'ready') {
-                job.status = 'expired';
-                await job.save();
+                await expireJobAndRollbackQuota(job, rollbackCvImportQuota, 'cv_import.job_expired_quota_rollback_failed');
             }
 
             return res.json({
@@ -810,8 +846,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             if (!job) return res.status(404).json({ error: 'PDF job not found.' });
 
             if (job.expiresAt.getTime() < Date.now() && job.status !== 'ready') {
-                job.status = 'expired';
-                await job.save();
+                await expireJobAndRollbackQuota(job, rollbackDownloadQuota, 'pdf.job_expired_quota_rollback_failed');
             }
 
             const downloadUrl = job.status === 'ready' ? `/api/pdf-jobs/${String(job._id)}/download` : undefined;

@@ -31,7 +31,7 @@ import { hasAdminPermission } from '../src/adminAccess';
 import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
 import { buildCvImportQuota, getCvImportQuotaPeriod } from '../server-models/cvImportQuota';
 import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getNextUtcDayResetAt, getUtcDayKey } from '../server-models/downloadQuotaUtils';
-import { createPlanExpiry, getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
+import { createPlanExpiry, createRenewedPlanExpiry, getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
 import { logEvent } from '../server-utils/logger';
 
 describe('Server Utils', () => {
@@ -716,6 +716,16 @@ describe('Server Utils', () => {
       expect(createPlanExpiry('payg', start).toISOString()).toBe('2026-05-23T00:00:00.000Z');
       expect(createPlanExpiry('monthly', start).toISOString()).toBe('2026-06-15T00:00:00.000Z');
       expect(createPlanExpiry('quarterly', start).toISOString()).toBe('2026-08-14T00:00:00.000Z');
+    });
+
+    it('should extend renewals from the active expiry instead of shortening paid time', () => {
+      const now = new Date('2026-05-16T00:00:00.000Z');
+      const activeExpiry = new Date('2026-05-26T00:00:00.000Z');
+      const expiredExpiry = new Date('2026-05-10T00:00:00.000Z');
+
+      expect(createRenewedPlanExpiry('monthly', { planExpiresAt: activeExpiry } as any, now).toISOString()).toBe('2026-06-25T00:00:00.000Z');
+      expect(createRenewedPlanExpiry('monthly', { planExpiresAt: expiredExpiry } as any, now).toISOString()).toBe('2026-06-15T00:00:00.000Z');
+      expect(createRenewedPlanExpiry('payg', null, now).toISOString()).toBe('2026-05-23T00:00:00.000Z');
     });
   });
 

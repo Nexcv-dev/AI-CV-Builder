@@ -7,6 +7,26 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
     const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getAdminBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, isPaidBillingPlan, PAYHERE_PLAN_PRICES, recordAdminAuditLog, syncLemonSqueezyDiscount, deleteLemonSqueezyDiscount, deleteLemonSqueezyDiscountsByCode } = bindDeps(deps);
 
     const markExpiredPendingCheckouts = async () => {
+        const expiringReservedCheckouts = await CheckoutSession.find({
+            status: 'pending',
+            expiresAt: { $lt: new Date() },
+            couponReserved: true,
+            couponCode: { $exists: true, $ne: '' },
+        }).select('_id couponCode');
+
+        for (const checkout of expiringReservedCheckouts) {
+            const claimed = await CheckoutSession.updateOne(
+                { _id: checkout._id, status: 'pending', couponReserved: true },
+                { $set: { status: 'expired', billingReviewStatus: 'resolved', expiredAt: new Date(), couponReserved: false } }
+            );
+            if (claimed.modifiedCount > 0) {
+                await Coupon.updateOne(
+                    { code: checkout.couponCode, redeemedCount: { $gt: 0 } },
+                    { $inc: { redeemedCount: -1 } }
+                );
+            }
+        }
+
         await CheckoutSession.updateMany(
             { status: 'pending', expiresAt: { $lt: new Date() } },
             { $set: { status: 'expired', billingReviewStatus: 'resolved', expiredAt: new Date() } }
