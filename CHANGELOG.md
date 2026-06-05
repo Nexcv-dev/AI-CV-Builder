@@ -3,14 +3,18 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 10 seconds ago
-* add cv import queue (b178a94) - Bimantha Perera, 52 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 11 hours ago
-* Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 11 hours ago
-* add email to AWS que system (7f08638) - Bimantha Perera, 11 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (d5598a2) - bimanthaperera-lab, 18 hours ago
-* Merge pull request #220 from bimanthaperera-lab/test/overview (f626f2c) - Bimantha Perera, 18 hours ago
-* Code optimization and add pdf generation que system (6091eec) - Bimantha Perera, 19 hours ago
+* Merge pull request #223 from bimanthaperera-lab/test/overview (dc06a40) - Bimantha Perera, 9 seconds ago
+* Improve CV Import Card UI (c5fa8ae) - Bimantha Perera, 14 minutes ago
+* fix import error not authenticated for guest users (7f8e226) - Bimantha Perera, 49 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 69 minutes ago
+* Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 69 minutes ago
+* add cv import queue (b178a94) - Bimantha Perera, 2 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 12 hours ago
+* Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 12 hours ago
+* add email to AWS que system (7f08638) - Bimantha Perera, 12 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (d5598a2) - bimanthaperera-lab, 19 hours ago
+* Merge pull request #220 from bimanthaperera-lab/test/overview (f626f2c) - Bimantha Perera, 19 hours ago
+* Code optimization and add pdf generation que system (6091eec) - Bimantha Perera, 20 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (a72941a) - bimanthaperera-lab, 2 days ago
 * Merge pull request #219 from bimanthaperera-lab/test/overview (c4fe5de) - Bimantha Perera, 2 days ago
 * fix logging bug (ddf18ba) - Bimantha Perera, 2 days ago
@@ -40,7 +44,7 @@ All notable changes to this project will be documented in this file.
 * make gest users can import cv data (1f35b0b) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (fb7e0f9) - bimanthaperera-lab, 2 days ago
 * Merge pull request #211 from bimanthaperera-lab/test/overview (e6f2b38) - Bimantha Perera, 2 days ago
-* Add AWS Textract OCR Pdf data extarcting & Add new Social Logins (16478c8) - Bimantha Perera, 2 days ago
+* Add AWS Textract OCR Pdf data extarcting & Add new Social Logins (16478c8) - Bimantha Perera, 3 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (01488c5) - bimanthaperera-lab, 3 days ago
 * Merge pull request #210 from bimanthaperera-lab/test/overview (b62522b) - Bimantha Perera, 3 days ago
 * add test case for plan expire (e98c78b) - Bimantha Perera, 3 days ago
