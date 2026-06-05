@@ -1,6 +1,6 @@
 # NexCV App
 
-This folder contains the main NexCV application: a React/Vite frontend, an Express/TypeScript API, MongoDB models, admin tooling, and the Lambda PDF renderer source.
+This folder contains the main NexCV application: a React/Vite frontend, an Express/TypeScript API, MongoDB models, admin tooling, and AWS Lambda/SQS worker sources for PDF export, CV import, OCR, and email.
 
 ## Quick Start
 
@@ -13,7 +13,7 @@ Default local URLs:
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:3002`
 
-Create `.env` in this folder before running backend features that need MongoDB, sessions, Gemini, PayHere, S3, PDF Lambda, or email. The root [README](../README.md) has the full variable list.
+Create `.env` in this folder before running backend features that need MongoDB, sessions, Gemini, PayHere, S3, Lambda workers, SQS queues, or email. The root [README](../README.md) has the main variable list, and [AWS Services](docs/AWS_SERVICES.md) has the full AWS setup.
 
 ## Common Commands
 
@@ -25,6 +25,9 @@ npm run build
 npm run launch:check
 npm run validate:templates
 npm run build:pdf-lambda
+npm run build:pdf-worker-lambda
+npm run build:cv-import-worker-lambda
+npm run build:ocr-lambda
 npm run build:email-worker-lambda
 ```
 
@@ -34,4 +37,5 @@ npm run build:email-worker-lambda
 - [Architecture](docs/ARCHITECTURE.md)
 - [API Docs](docs/API_DOCS.md)
 - [Deployment](docs/DEPLOYMENT.md)
+- [AWS Services](docs/AWS_SERVICES.md)
 - [Template Authoring Guide](docs/template-authoring-guide.md)
