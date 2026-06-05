@@ -3,6 +3,12 @@ import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
 import type { TemplateName } from '../src/templates';
 import {
+    createCvImportJob,
+    findUserCvImportJob,
+    processCvImportJob,
+    queueCvImportJob,
+} from '../services/cvImportJobService';
+import {
     createPdfJob,
     findUserPdfJob,
     isPdfJobStorageConfigured,
@@ -14,7 +20,7 @@ import {
 type RouteDeps = Record<string, any>;
 
 export function registerCvRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, aiLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
+    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, aiLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
 
     router.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
         try {
@@ -147,6 +153,31 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
 
 
     router.post('/api/parse-cv', cvImportLimiter, cvImportJsonParser, async (req: Request, res: Response) => {
+        const importAbortController = new AbortController();
+        let clientDisconnected = false;
+        let importQuotaReserved = false;
+        const abortForClientDisconnect = () => {
+            if (res.writableEnded) return;
+            clientDisconnected = true;
+            importAbortController.abort();
+        };
+        res.on('close', abortForClientDisconnect);
+        const assertImportActive = () => {
+            if (clientDisconnected || importAbortController.signal.aborted) {
+                const error = new Error('CV import cancelled by client.');
+                (error as any).name = 'AbortError';
+                throw error;
+            }
+        };
+        const rollbackImportQuotaIfNeeded = async () => {
+            if (!importQuotaReserved || !req.user) return;
+            importQuotaReserved = false;
+            await rollbackCvImportQuota(req.user).catch((rollbackError: any) => {
+                logError?.('cv_import.quota_rollback_failed', rollbackError, {
+                    userId: req.user ? currentUserId(req) : undefined,
+                });
+            });
+        };
         try {
             const { base64Data, mimeType } = req.body;
     
@@ -170,14 +201,18 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     upgradeRequired: importQuota.plan === 'free',
                 });
             }
+            importQuotaReserved = Boolean(importQuota?.reserved && importQuota.limit !== null);
             const attachImportQuota = (payload: any) => importQuota
                 ? { ...payload, importQuota: { ...importQuota, reserved: undefined } }
                 : payload;
 
-            const { text: extractedText, usedOcr, ocrProvider, parsedCv, structuredProvider } = await extractCvText(base64Data, validatedMimeType);
+            assertImportActive();
+            const { text: extractedText, usedOcr, ocrProvider, parsedCv, structuredProvider } = await extractCvText(base64Data, validatedMimeType, { signal: importAbortController.signal });
+            assertImportActive();
             const basicResult = parsedCv || parseCvTextToStructuredData(extractedText || '');
 
             if (parsedCv) {
+                importQuotaReserved = false;
                 return res.json(attachImportQuota(withImportMeta(basicResult, {
                     source: 'ai',
                     extractedTextLength: extractedText.length,
@@ -193,11 +228,13 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
 
             if (!userCanUseAi) {
                 if (!extractedText.trim()) {
+                    importQuotaReserved = false;
                     return res.status(422).json({
                         error: 'We could not read enough text from this file. Try a clearer image or a text-based PDF.',
                     });
                 }
 
+                importQuotaReserved = false;
                 return res.json(attachImportQuota(withImportMeta(basicResult, {
                     source: 'basic',
                     extractedTextLength: extractedText.length,
@@ -210,6 +247,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             }
 
             if (!process.env.GEMINI_API_KEY) {
+                importQuotaReserved = false;
                 return res.json(attachImportQuota(withImportMeta(basicResult, {
                     source: 'basic',
                     extractedTextLength: extractedText.length,
@@ -230,6 +268,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
               If a field is not found, leave it as an empty string or empty array.`;
     
             try {
+                assertImportActive();
                 const jsonStr = await generateGeminiText(
                     [
                         {
@@ -360,13 +399,16 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                                 }
                             }
                         }
-                    }
+                    },
+                    { signal: importAbortController.signal }
                 );
+                assertImportActive();
 
                 if (!jsonStr) throw new Error('No data returned.');
                 // Strip markdown code fences if present
                 const cleanJson = jsonStr.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
                 const result = JSON.parse(cleanJson);
+                importQuotaReserved = false;
                 return res.json(attachImportQuota(withImportMeta(result, {
                     source: 'ai',
                     extractedTextLength: extractedText.length,
@@ -379,9 +421,11 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             } catch (aiError) {
                 logError?.('cv_import.ai_fallback', aiError, { usedOcr, extractedTextLength: extractedText.length });
                 if (!extractedText.trim()) {
+                    importQuotaReserved = false;
                     return sendError(res, 500, "Failed to process document. Please try again.", aiError);
                 }
 
+                importQuotaReserved = false;
                 return res.json(attachImportQuota(withImportMeta(basicResult, {
                     source: 'basic',
                     extractedTextLength: extractedText.length,
@@ -393,7 +437,101 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 })));
             }
         } catch (error: any) {
+            if (error?.name === 'AbortError' || importAbortController.signal.aborted || clientDisconnected) {
+                await rollbackImportQuotaIfNeeded();
+                return;
+            }
+            await rollbackImportQuotaIfNeeded();
             return sendError(res, 500, "Failed to process document. Please try again.", error);
+        } finally {
+            res.off?.('close', abortForClientDisconnect);
+        }
+    });
+
+    router.post('/api/cv-import-jobs', requireAuth, cvImportLimiter, cvImportJsonParser, async (req: Request, res: Response) => {
+        let importQuotaReserved = false;
+        try {
+            const { base64Data, mimeType } = req.body;
+
+            if (!base64Data || typeof base64Data !== 'string') {
+                return res.status(400).json({ error: 'Missing or invalid base64Data in request body' });
+            }
+
+            if (base64Data.length > MAX_BASE64_LENGTH) {
+                return res.status(400).json({ error: 'File too large. Maximum allowed size is 10 MB.' });
+            }
+
+            const validatedMimeType = ALLOWED_MIME_TYPES.includes(mimeType) ? mimeType : 'application/pdf';
+            const importQuota = await consumeCvImportQuota(req.user);
+            if (!importQuota.reserved) {
+                return res.status(403).json({
+                    error: 'CV import limit reached for your plan.',
+                    importQuota: { ...importQuota, reserved: undefined },
+                    upgradeRequired: importQuota.plan === 'free',
+                });
+            }
+            importQuotaReserved = importQuota.limit !== null;
+
+            const job = await createCvImportJob({
+                userId: currentUserId(req),
+                base64Data,
+                mimeType: validatedMimeType,
+                quotaReserved: importQuotaReserved,
+            });
+
+            const queuedInSqs = await queueCvImportJob(job);
+            if (!queuedInSqs || process.env.CV_IMPORT_LOCAL_WORKER_DISABLED !== 'true') {
+                setTimeout(() => {
+                    void processCvImportJob(String(job._id), deps).catch(() => undefined);
+                }, 0);
+            }
+
+            return res.status(202).json({
+                job: {
+                    id: String(job._id),
+                    status: job.status,
+                    queuedInSqs,
+                    pollUrl: `/api/cv-import-jobs/${String(job._id)}`,
+                },
+                importQuota: { ...importQuota, reserved: undefined },
+            });
+        } catch (error: any) {
+            if (importQuotaReserved && req.user) {
+                await rollbackCvImportQuota(req.user).catch((rollbackError: any) => {
+                    logError?.('cv_import.job_create_quota_rollback_failed', rollbackError, {
+                        userId: req.user ? currentUserId(req) : undefined,
+                    });
+                });
+            }
+            return sendError(res, 500, 'Could not queue CV import. Please try again.', error);
+        }
+    });
+
+    router.get('/api/cv-import-jobs/:id', requireAuth, async (req: Request, res: Response) => {
+        try {
+            if (!isValidDocumentId(req.params.id)) {
+                return res.status(400).json({ error: 'Invalid CV import job id.' });
+            }
+
+            const job = await findUserCvImportJob(req.params.id, currentUserId(req));
+            if (!job) return res.status(404).json({ error: 'CV import job not found.' });
+
+            if (job.expiresAt.getTime() < Date.now() && job.status !== 'ready') {
+                job.status = 'expired';
+                await job.save();
+            }
+
+            return res.json({
+                job: {
+                    id: String(job._id),
+                    status: job.status,
+                    error: job.error,
+                    result: job.status === 'ready' ? job.result : undefined,
+                    expiresAt: job.expiresAt,
+                },
+            });
+        } catch (error) {
+            return sendError(res, 500, 'Could not check CV import job status.', error);
         }
     });
     

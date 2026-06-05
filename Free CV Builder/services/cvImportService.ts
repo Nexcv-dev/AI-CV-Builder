@@ -107,6 +107,11 @@ const OCR_LAMBDA_CONFIGURED = Boolean(OCR_LAMBDA_FUNCTION_NAME || OCR_LAMBDA_URL
 
 let lambdaClient: LambdaClient | null = null;
 
+const abortError = () => Object.assign(new Error('Import cancelled.'), { name: 'AbortError' });
+const throwIfAborted = (signal?: AbortSignal) => {
+  if (signal?.aborted) throw abortError();
+};
+
 const getLambdaClient = () => {
   if (!lambdaClient) {
     lambdaClient = new LambdaClient({ region: OCR_LAMBDA_REGION || process.env.AWS_REGION || 'eu-north-1' });
@@ -567,10 +572,13 @@ const normalizeLambdaPayload = (payload: any): { text: string; usedOcr: boolean;
   };
 };
 
-const extractWithLambdaUrl = async (base64Data: string, mimeType: string) => {
+const extractWithLambdaUrl = async (base64Data: string, mimeType: string, signal?: AbortSignal) => {
   if (!OCR_LAMBDA_URL) return null;
+  throwIfAborted(signal);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), OCR_LAMBDA_TIMEOUT_MS);
+  const abortFromCaller = () => controller.abort();
+  signal?.addEventListener('abort', abortFromCaller, { once: true });
 
   try {
     const response = await fetch(OCR_LAMBDA_URL, {
@@ -583,18 +591,24 @@ const extractWithLambdaUrl = async (base64Data: string, mimeType: string) => {
       signal: controller.signal,
     });
     if (!response.ok) return null;
+    throwIfAborted(signal);
     return normalizeLambdaPayload(await response.json().catch(() => null));
-  } catch {
+  } catch (error: any) {
+    if (signal?.aborted) throw abortError();
     return null;
   } finally {
+    signal?.removeEventListener('abort', abortFromCaller);
     clearTimeout(timeout);
   }
 };
 
-const extractWithLambdaFunction = async (base64Data: string, mimeType: string) => {
+const extractWithLambdaFunction = async (base64Data: string, mimeType: string, signal?: AbortSignal) => {
   if (!OCR_LAMBDA_FUNCTION_NAME) return null;
+  throwIfAborted(signal);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), OCR_LAMBDA_TIMEOUT_MS);
+  const abortFromCaller = () => controller.abort();
+  signal?.addEventListener('abort', abortFromCaller, { once: true });
   try {
     const response = await getLambdaClient().send(new InvokeCommand({
       FunctionName: OCR_LAMBDA_FUNCTION_NAME,
@@ -603,18 +617,21 @@ const extractWithLambdaFunction = async (base64Data: string, mimeType: string) =
     }), { abortSignal: controller.signal });
 
     if (response.FunctionError || !response.Payload) return null;
+    throwIfAborted(signal);
     const raw = Buffer.from(response.Payload).toString('utf8');
     return normalizeLambdaPayload(JSON.parse(raw));
-  } catch {
+  } catch (error: any) {
+    if (signal?.aborted) throw abortError();
     return null;
   } finally {
+    signal?.removeEventListener('abort', abortFromCaller);
     clearTimeout(timeout);
   }
 };
 
-const extractWithConfiguredLambda = async (base64Data: string, mimeType: string) => {
-  const lambdaResult = await extractWithLambdaFunction(base64Data, mimeType)
-    || await extractWithLambdaUrl(base64Data, mimeType);
+const extractWithConfiguredLambda = async (base64Data: string, mimeType: string, signal?: AbortSignal) => {
+  const lambdaResult = await extractWithLambdaFunction(base64Data, mimeType, signal)
+    || await extractWithLambdaUrl(base64Data, mimeType, signal);
   return lambdaResult && lambdaResult.text.length >= 20 ? lambdaResult : null;
 };
 
@@ -658,24 +675,28 @@ export const parseCvTextToStructuredData = (text: string): ParsedCvImport => {
   return result;
 };
 
-export const extractCvText = async (base64Data: string, mimeType: string): Promise<{ text: string; usedOcr: boolean; ocrProvider: OcrProvider; parsedCv?: ParsedCvImport; structuredProvider?: StructuredProvider }> => {
-  const lambdaResult = await extractWithConfiguredLambda(base64Data, mimeType);
+export const extractCvText = async (base64Data: string, mimeType: string, options: { signal?: AbortSignal } = {}): Promise<{ text: string; usedOcr: boolean; ocrProvider: OcrProvider; parsedCv?: ParsedCvImport; structuredProvider?: StructuredProvider }> => {
+  throwIfAborted(options.signal);
+  const lambdaResult = await extractWithConfiguredLambda(base64Data, mimeType, options.signal);
   if (lambdaResult) return lambdaResult;
 
   if (OCR_LAMBDA_CONFIGURED) return emptyLambdaFallbackResult();
 
+  throwIfAborted(options.signal);
   const buffer = Buffer.from(base64Data, 'base64');
   if (mimeType === 'application/pdf') {
     const { PDFParse } = await import('pdf-parse');
     const parser = new PDFParse({ data: buffer });
     try {
       const parsed = await parser.getText().catch(() => ({ text: '' }));
+      throwIfAborted(options.signal);
       const text = cleanExtractedText(parsed.text || '');
       if (text.length >= 120) {
         return { text, usedOcr: false, ocrProvider: 'pdf-text' };
       }
 
       const ocrText = await ocrPdfPages(parser).catch(() => '');
+      throwIfAborted(options.signal);
       return {
         text: cleanExtractedText(ocrText || text),
         usedOcr: Boolean(ocrText),
@@ -687,7 +708,9 @@ export const extractCvText = async (base64Data: string, mimeType: string): Promi
   }
 
   if (mimeType.startsWith('image/')) {
-    return { text: cleanExtractedText(await recognizeImageBuffer(buffer)), usedOcr: true, ocrProvider: 'local-tesseract' };
+    const text = await recognizeImageBuffer(buffer);
+    throwIfAborted(options.signal);
+    return { text: cleanExtractedText(text), usedOcr: true, ocrProvider: 'local-tesseract' };
   }
 
   return { text: '', usedOcr: false, ocrProvider: 'none' };

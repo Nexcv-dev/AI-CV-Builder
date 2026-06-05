@@ -326,7 +326,7 @@ const Type = {
     INTEGER: 'INTEGER',
 } as const;
 
-async function generateGeminiText(contents: any[], config?: Record<string, any>): Promise<string> {
+async function generateGeminiText(contents: any[], config?: Record<string, any>, options: { signal?: AbortSignal } = {}): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error('Gemini API key is not configured.');
@@ -334,6 +334,8 @@ async function generateGeminiText(contents: any[], config?: Record<string, any>)
     const timeoutMs = Number.parseInt(process.env.GEMINI_REQUEST_TIMEOUT_MS || '35000', 10) || 35000;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const abortFromCaller = () => controller.abort();
+    options.signal?.addEventListener('abort', abortFromCaller, { once: true });
 
     const normalizedContents = contents.every(item => item && typeof item === 'object' && Array.isArray(item.parts))
         ? contents
@@ -362,6 +364,7 @@ async function generateGeminiText(contents: any[], config?: Record<string, any>)
             }
         ));
     } finally {
+        options.signal?.removeEventListener('abort', abortFromCaller);
         clearTimeout(timeout);
     }
 
@@ -528,6 +531,15 @@ const consumeCvImportQuota = async (user: any) => {
     }
 
     return { ...(await getCvImportQuota(user)), reserved: true };
+};
+
+const rollbackCvImportQuota = async (user: any) => {
+    const { period } = getCvImportQuotaPeriod(user);
+    if (period === 'unlimited') return;
+    await CvImportQuota.updateOne(
+        { userId: user._id || user.id, period, count: { $gt: 0 } },
+        { $inc: { count: -1 } }
+    );
 };
 
 const getDownloadQuota = async (user: any) => {
@@ -899,7 +911,7 @@ const routeDeps = {
     markSessionCurrent, invalidateUserSessions,
     documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
     extractCvText, parseCvTextToStructuredData, withImportMeta,
-    getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, buildCvCreationQuota, buildDownloadQuota,
+    getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, buildCvCreationQuota, buildDownloadQuota,
     requireVerifiedEmail, requirePaidPlan,
     startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, adminPaymentSummary,
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,

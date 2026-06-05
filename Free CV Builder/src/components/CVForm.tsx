@@ -298,6 +298,40 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
     }
   };
 
+  const waitForImportJob = useCallback(async (jobId: string) => {
+    const signal = importAbortControllerRef.current?.signal;
+    const startedAt = Date.now();
+    const timeoutMs = 2 * 60 * 1000;
+
+    while (Date.now() - startedAt < timeoutMs) {
+      if (signal?.aborted) throw Object.assign(new Error('Import cancelled.'), { name: 'AbortError' });
+
+      const statusResponse = await csrfFetch(`/api/cv-import-jobs/${jobId}`, { signal });
+      if (!statusResponse.ok) {
+        const errorText = await statusResponse.text();
+        let errorMessage = statusResponse.status === 429 ? 'Too many requests. Please wait a moment and try again.' : 'Could not check import status.';
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || errorText;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await statusResponse.json();
+      if (data.job?.status === 'ready' && data.job.result) return data.job.result;
+      if (data.job?.status === 'failed' || data.job?.status === 'expired') {
+        throw new Error(data.job.error || 'CV import failed. Please try again.');
+      }
+
+      setImportMessage({ type: 'success', text: data.job?.status === 'processing' ? 'Extracting and matching CV sections...' : 'Import queued. Starting shortly...' });
+      await new Promise((resolve) => window.setTimeout(resolve, 1800));
+    }
+
+    throw new Error('Import is taking longer than expected. Please try again in a moment.');
+  }, []);
+
   const handleCVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (importInFlightRef.current) {
       event.target.value = '';
@@ -332,16 +366,16 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
           const base64Data = (reader.result as string).split(',')[1];
           const mimeType = file.type || "application/pdf";
 
-          const parseResponse = await csrfFetch('/api/parse-cv', {
+          const queueResponse = await csrfFetch('/api/cv-import-jobs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ base64Data, mimeType }),
             signal: importAbortControllerRef.current.signal,
           });
 
-          if (!parseResponse.ok) {
-            const errorText = await parseResponse.text();
-            let errorMessage = parseResponse.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Unknown server error";
+          if (!queueResponse.ok) {
+            const errorText = await queueResponse.text();
+            let errorMessage = queueResponse.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Unknown server error";
             try {
               const errorJson = JSON.parse(errorText);
               if (errorJson.upgradeRequired && errorJson.reason !== 'basic_import') {
@@ -355,7 +389,10 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
             throw new Error(errorMessage);
           }
 
-          const result = await parseResponse.json();
+          const queuedImport = await queueResponse.json();
+          const result = queuedImport.job?.id
+            ? await waitForImportJob(queuedImport.job.id)
+            : queuedImport;
           if (result) {
             const hasImportedItems = (items: unknown): items is any[] => Array.isArray(items) && items.length > 0;
             setCvData(prev => ({

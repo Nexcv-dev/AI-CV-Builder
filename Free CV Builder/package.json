@@ -10,6 +10,7 @@
     "build": "vite build",
     "build:pdf-lambda": "node scripts/build-pdf-lambda.mjs",
     "build:pdf-worker-lambda": "node scripts/build-pdf-worker-lambda.mjs",
+    "build:cv-import-worker-lambda": "node scripts/build-cv-import-worker-lambda.mjs",
     "build:email-worker-lambda": "node scripts/build-email-worker-lambda.mjs",
     "build:ocr-lambda": "node scripts/build-ocr-lambda.mjs",
     "templates:release": "npm run validate:template-map && npm run validate:templates && node scripts/release-admin-templates.mjs",
