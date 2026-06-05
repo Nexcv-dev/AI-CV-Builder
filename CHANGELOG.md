@@ -3,24 +3,28 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #225 from bimanthaperera-lab/test/overview (f0fe322) - Bimantha Perera, 8 seconds ago
-* Update ImportModals.tsx (8008853) - Bimantha Perera, 13 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (63acb76) - bimanthaperera-lab, 44 minutes ago
-* Merge pull request #224 from bimanthaperera-lab/test/overview (43b3f94) - Bimantha Perera, 45 minutes ago
-* update docs (9242fc0) - Bimantha Perera, 53 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (6789503) - bimanthaperera-lab, 54 minutes ago
-* Merge pull request #223 from bimanthaperera-lab/test/overview (dc06a40) - Bimantha Perera, 54 minutes ago
-* Improve CV Import Card UI (c5fa8ae) - Bimantha Perera, 67 minutes ago
-* fix import error not authenticated for guest users (7f8e226) - Bimantha Perera, 2 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 2 hours ago
-* Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 2 hours ago
-* add cv import queue (b178a94) - Bimantha Perera, 3 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 13 hours ago
-* Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 13 hours ago
-* add email to AWS que system (7f08638) - Bimantha Perera, 13 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (d5598a2) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #220 from bimanthaperera-lab/test/overview (f626f2c) - Bimantha Perera, 20 hours ago
-* Code optimization and add pdf generation que system (6091eec) - Bimantha Perera, 21 hours ago
+* Merge pull request #226 from bimanthaperera-lab/test/overview (e379f16) - Bimantha Perera, 10 seconds ago
+* fix template render bug (fd76b58) - Bimantha Perera, 9 minutes ago
+* chore: bump version to 0.1.12 (99ce2be) - bimanthaperera-lab, 85 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (b47e989) - bimanthaperera-lab, 2 hours ago
+* Merge pull request #225 from bimanthaperera-lab/test/overview (f0fe322) - Bimantha Perera, 2 hours ago
+* Update ImportModals.tsx (8008853) - Bimantha Perera, 2 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (63acb76) - bimanthaperera-lab, 2 hours ago
+* Merge pull request #224 from bimanthaperera-lab/test/overview (43b3f94) - Bimantha Perera, 2 hours ago
+* update docs (9242fc0) - Bimantha Perera, 2 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (6789503) - bimanthaperera-lab, 2 hours ago
+* Merge pull request #223 from bimanthaperera-lab/test/overview (dc06a40) - Bimantha Perera, 2 hours ago
+* Improve CV Import Card UI (c5fa8ae) - Bimantha Perera, 3 hours ago
+* fix import error not authenticated for guest users (7f8e226) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 4 hours ago
+* add cv import queue (b178a94) - Bimantha Perera, 4 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 14 hours ago
+* Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 14 hours ago
+* add email to AWS que system (7f08638) - Bimantha Perera, 15 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (d5598a2) - bimanthaperera-lab, 22 hours ago
+* Merge pull request #220 from bimanthaperera-lab/test/overview (f626f2c) - Bimantha Perera, 22 hours ago
+* Code optimization and add pdf generation que system (6091eec) - Bimantha Perera, 23 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (a72941a) - bimanthaperera-lab, 2 days ago
 * Merge pull request #219 from bimanthaperera-lab/test/overview (c4fe5de) - Bimantha Perera, 2 days ago
 * fix logging bug (ddf18ba) - Bimantha Perera, 2 days ago
