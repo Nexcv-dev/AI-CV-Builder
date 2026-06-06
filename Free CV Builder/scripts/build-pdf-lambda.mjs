@@ -10,6 +10,8 @@ const projectRoot = path.resolve(path.dirname(__filename), '..');
 const repoRoot = path.resolve(projectRoot, '..');
 const pdfServicePath = path.join(projectRoot, 'services', 'pdfService.ts');
 const cvTemplateRulesPath = path.join(projectRoot, 'src', 'utils', 'cvTemplateRules.ts');
+const cvFontsPath = path.join(projectRoot, 'src', 'utils', 'cvFonts.ts');
+const templateReleaseMapPath = path.join(projectRoot, 'config', 'template-release-map.json');
 const outRoot = path.join(projectRoot, 'lambda-pdf');
 const buildDir = path.join(outRoot, 'build');
 const distDir = path.join(outRoot, 'dist');
@@ -155,16 +157,27 @@ const pdfIcons = extractConstObject(pdfServiceSource, 'PDF_ICONS');
 const generateCvHtmlTs = extractBetween(pdfServiceSource, 'export function generateCVHTML', '// AI Generate PDF via Puppeteer').replace('export function', 'function');
 const sanitizeCvDataTs = extractFunction(pdfServiceSource, 'export function sanitizeCvData').replace('export function', 'function');
 
-function inlineTemplateDataPreprocessor(source) {
+function inlineSharedModule(source) {
   return source
+    .replace(/^import\s+.*$/gm, '')
+    .replace(/^export\s+/gm, '');
+}
+
+function inlineTemplateDataPreprocessor(source, releaseMapJson) {
+  return source
+    .replace(/^import\s+templateReleaseMap\s+from\s+['"].*template-release-map\.json['"];$/m, `const templateReleaseMap = ${releaseMapJson};`)
+    .replace(/^import\s+.*cvFonts.*$/gm, '')
     .replace(/^export\s+/gm, '')
     .replace(/safeHexColor\(cvData\?\.templateSurfaceColor, themeColor\)/g, 'safeHexColor(cvData?.templateSurfaceColor, getTemplateSurfaceColorFallback(cvData?.template, { themeColor, sidebarColor }))')
     .replace(/const profileImage = cvData\?\.profileImage \|\| '';/g, 'const profileImage = sanitizePdfImageSource(cvData?.profileImage);');
 }
 
+const cvFontsSource = fs.readFileSync(cvFontsPath, 'utf8');
+const cvFontsTs = inlineSharedModule(cvFontsSource);
+const templateReleaseMapJson = fs.readFileSync(templateReleaseMapPath, 'utf8');
 const templateDataPath = path.join(projectRoot, 'src', 'utils', 'templateData.ts');
 const templateDataSource = fs.readFileSync(templateDataPath, 'utf8');
-const s3TemplatePreprocessorTs = inlineTemplateDataPreprocessor(templateDataSource);
+const s3TemplatePreprocessorTs = inlineTemplateDataPreprocessor(templateDataSource, templateReleaseMapJson);
 
 const handlerTs = `
 import puppeteer from 'puppeteer-core';
@@ -229,20 +242,8 @@ const sanitizePdfImageSource = (value: unknown) => {
   if (!SAFE_IMAGE_DATA_URI.test(source)) return '';
   return source.replace(/\\s/g, '');
 };
-const PDF_FONT_MAP: Record<string, string> = {
-  'Inter': "'Inter', sans-serif",
-  'Lora': "'Lora', serif",
-  'Roboto': "'Roboto', sans-serif",
-  'Montserrat': "'Montserrat', sans-serif",
-  'Merriweather': "'Merriweather', serif",
-  'Playfair Display': "'Playfair Display', serif",
-  'JetBrains Mono': "'JetBrains Mono', monospace",
-};
-const sanitizePdfFontFamily = (value: unknown) => {
-  if (typeof value !== 'string') return 'Inter';
-  const fontFamily = value.trim();
-  return Object.prototype.hasOwnProperty.call(PDF_FONT_MAP, fontFamily) ? fontFamily : 'Inter';
-};
+
+${cvFontsTs}
 
 const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
 const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\\/+|\\/+$/g, '');

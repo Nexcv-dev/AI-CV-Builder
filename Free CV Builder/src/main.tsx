@@ -4,6 +4,18 @@ import * as Sentry from '@sentry/react';
 import './sentry';
 import App from './App.tsx';
 import './index.css';
+import { CV_GOOGLE_FONTS_URL } from './utils/cvFonts';
+
+const loadCvFonts = () => {
+  if (document.querySelector('link[data-nexcv-cv-fonts="true"]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = CV_GOOGLE_FONTS_URL;
+  link.dataset.nexcvCvFonts = 'true';
+  document.head.appendChild(link);
+};
+
+loadCvFonts();
 
 if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual';

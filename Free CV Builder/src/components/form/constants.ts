@@ -1,4 +1,5 @@
 import { FileText, User, Briefcase, GraduationCap, Wrench, CheckCircle2 } from 'lucide-react';
+import { CV_FONT_OPTIONS } from '../../utils/cvFonts';
 
 // Shared CSS class constants to eliminate duplication across form components
 export const INPUT_CLASS =
@@ -88,13 +89,7 @@ export const MODAL_CONTAINER_BASE = 'rounded-3xl shadow-2xl overflow-hidden bord
 
 // Static data
 export const fonts = [
-  { name: 'Inter', description: 'Modern, Clean', className: 'font-sans' },
-  { name: 'Lora', description: 'Serif, Classic', className: 'font-serif' },
-  { name: 'Roboto', description: 'Structured, Technical', className: 'font-roboto' },
-  { name: 'Montserrat', description: 'Geometric, Bold', className: 'font-montserrat' },
-  { name: 'Merriweather', description: 'Elegant Serif', className: 'font-merriweather' },
-  { name: 'Playfair Display', description: 'Stylish Serif', className: 'font-playfair' },
-  { name: 'JetBrains Mono', description: 'Technical, Code', className: 'font-mono' },
+  ...CV_FONT_OPTIONS,
 ];
 
 // Wizard configuration — module-level to avoid re-creation every render
