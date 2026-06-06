@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 env:
-  S3_BUCKET: mongodb-database-backup1
-  S3_PREFIX: mongodb/daily
+  S3_BUCKET: ${{ vars.MONGODB_BACKUP_S3_BUCKET || 'mongodb-database-backup1' }}
+  S3_PREFIX: ${{ vars.MONGODB_BACKUP_S3_PREFIX || 'mongodb/daily' }}
   MONGODB_TOOLS_VERSION: "100.13.0"
 
 jobs:
@@ -30,9 +30,15 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1
+          aws-access-key-id: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.BACKUP_AWS_REGION || vars.BACKUP_AWS_REGION || secrets.AWS_REGION || 'eu-north-1' }}
+
+      - name: Show AWS backup target
+        run: |
+          set -euo pipefail
+          echo "AWS identity: $(aws sts get-caller-identity --query Arn --output text)"
+          echo "Backup target: s3://${S3_BUCKET}/${S3_PREFIX}/"
 
       - name: Create MongoDB backup archive
         env:
@@ -57,6 +63,10 @@ jobs:
       - name: Upload backup to S3
         run: |
           set -euo pipefail
+          if [ -z "${BACKUP_FILE:-}" ] || [ -z "${BACKUP_NAME:-}" ]; then
+            echo "Backup file environment was not created."
+            exit 1
+          fi
           aws s3 cp "${BACKUP_FILE}" "s3://${S3_BUCKET}/${S3_PREFIX}/${BACKUP_NAME}" --sse AES256
 
       - name: Remove local backup archive
