@@ -71,6 +71,8 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 
 Run this after deploy, before public announcement:
 
+Use [QA Test Cases](QA_TEST_CASES.md) for the detailed manual test matrix.
+
 1. Open `/api/health`.
 2. Sign up as a new user and verify email.
 3. Create, save, reopen, and delete a CV.
