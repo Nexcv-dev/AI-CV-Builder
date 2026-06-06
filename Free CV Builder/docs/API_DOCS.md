@@ -48,12 +48,19 @@ fetch(url, { credentials: 'include' })
 | `POST` | `/api/documents` | Create a CV document. |
 | `PUT` | `/api/documents/:id` | Update a CV document. |
 | `DELETE` | `/api/documents/:id` | Delete a CV document. |
-| `POST` | `/api/parse-cv` | Parse uploaded/pasted CV text with Gemini. |
+| `POST` | `/api/parse-cv` | Legacy/direct CV parsing endpoint. Prefer queued import jobs for normal UI imports. |
+| `POST` | `/api/cv-import-jobs` | Queue an authenticated CV import job from PDF/JPG/PNG/LinkedIn PDF base64 data. |
+| `GET` | `/api/cv-import-jobs/:id` | Poll the current user's CV import job until it is ready, failed, or expired. |
 | `POST` | `/api/generate-summary` | Generate a professional summary with Gemini. |
 | `POST` | `/api/refine-text` | Refine user-provided CV text with Gemini. |
+| `POST` | `/api/pdf-jobs` | Queue an authenticated PDF generation job. |
+| `GET` | `/api/pdf-jobs/:id` | Poll the current user's PDF job status. |
+| `GET` | `/api/pdf-jobs/:id/download` | Download a ready queued PDF. |
 | `POST` | `/api/generate-pdf` | Generate a PDF for the selected CV/template. |
 
 PDF generation requires authentication and is subject to quota, plan, and premium-template checks.
+
+CV import also requires authentication. The frontend opens the login modal before starting file reading or queueing for guests. Failed imports should return user-safe messages such as "We could not find clear resume details in this file" rather than raw OCR, parser, or AI provider details.
 
 ## Billing And Payment Routes
 

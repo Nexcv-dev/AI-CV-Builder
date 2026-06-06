@@ -92,10 +92,17 @@ npm run validate:template-map
 npm run validate:templates
 npm run templates:release:dry-run
 npm run templates:release
+npm run templates:verify-s3
 npm run templates:sync-thumbnails
 ```
 
 `templates:release` uploads `index.html`, `style.css`, and `thumbnail.webp` for templates listed in `config/template-release-map.json`.
+
+`templates:verify-s3` checks that each released template has `index.html`, `style.css`, and a thumbnail object in S3. Run it after command-line release and before syncing/publishing metadata. To check one key:
+
+```bash
+npm run templates:verify-s3 -- --key=modular-card
+```
 
 `templates:sync-thumbnails` updates MongoDB `TemplateSetting` records so public template cards point at the current WebP thumbnails. Run it after S3 upload, especially when replacing old PNG/SVG thumbnails or changing cache-bust URLs.
 

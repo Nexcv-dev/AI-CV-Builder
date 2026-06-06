@@ -46,6 +46,7 @@ Main documentation lives in [Free CV Builder/docs](Free%20CV%20Builder/docs/READ
 - [API Docs](Free%20CV%20Builder/docs/API_DOCS.md)
 - [Admin Panel](Free%20CV%20Builder/docs/ADMIN_PANEL.md)
 - [Deployment](Free%20CV%20Builder/docs/DEPLOYMENT.md)
+- [Environment Variables](Free%20CV%20Builder/docs/ENVIRONMENT.md)
 - [AWS Services](Free%20CV%20Builder/docs/AWS_SERVICES.md)
 - [Backup And Restore](Free%20CV%20Builder/docs/BACKUP_RESTORE.md)
 - [Operations Runbook](Free%20CV%20Builder/docs/OPERATIONS_RUNBOOK.md)
@@ -96,6 +97,7 @@ Default local URLs:
 ## Environment Variables
 
 Create `.env` inside `Free CV Builder/`. Do not commit real secrets.
+For the complete app, worker, script, and GitHub Actions secret reference, see [`Free CV Builder/docs/ENVIRONMENT.md`](Free%20CV%20Builder/docs/ENVIRONMENT.md).
 
 ```env
 NODE_ENV=development
@@ -133,6 +135,10 @@ GEMINI_API_KEY=your_gemini_key
 
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
+GITHUB_CLIENT_ID=optional_github_client_id
+GITHUB_CLIENT_SECRET=optional_github_client_secret
+LINKEDIN_CLIENT_ID=optional_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=optional_linkedin_client_secret
 
 EMAIL_USER=your_smtp_user
 EMAIL_PASS=your_smtp_password
@@ -164,6 +170,7 @@ OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
 OCR_LAMBDA_REGION=eu-central-1
 OCR_LAMBDA_TIMEOUT_MS=45000
 OCR_DOCUMENT_BUCKET=your-temp-ocr-bucket
+OCR_DOCUMENT_PREFIX=ocr-imports
 
 SENTRY_DSN=https://your-backend-dsn@sentry.io/project-id
 SENTRY_ENVIRONMENT=production

@@ -844,6 +844,7 @@ export default function Home() {
                   showTemplatesOnMount={showTemplatesOnLoad.current}
                   skipTemplatesAfterImport={hasTemplateSelectionOnLoad.current}
                   isFreePlan={isFreePlan}
+                  canImportCv={authLoaded && Boolean(currentUser)}
                   onAuthRequired={openBuilderLogin}
                   onUpgradeRequired={(source) => openUpgradePrompt(
                     source,

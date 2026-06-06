@@ -942,7 +942,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 if (customTemplate?.indexS3Key) {
                     const indexHtml = await fetchS3Text(customTemplate.indexS3Key);
                     if (!indexHtml) {
-                        return res.status(500).json({ error: 'Could not load selected template HTML.' });
+                        throw new Error('Could not load selected template HTML.');
                     }
 
                     const css = customTemplate.styleS3Key ? await fetchS3Text(customTemplate.styleS3Key) : '';
@@ -955,7 +955,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 } else {
                     s3Html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark }).catch(() => null);
                     if (!s3Html) {
-                        return res.status(500).json({ error: 'Could not load selected template files.' });
+                        throw new Error('Could not load selected template files.');
                     }
                 }
             } else {

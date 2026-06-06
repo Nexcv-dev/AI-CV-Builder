@@ -56,6 +56,7 @@ interface CVFormProps {
   showTemplatesOnMount?: boolean;
   skipTemplatesAfterImport?: boolean;
   isFreePlan?: boolean;
+  canImportCv?: boolean;
   onUpgradeRequired?: (source: 'save' | 'download' | 'ai') => void;
   onAuthRequired?: () => void;
 }
@@ -68,7 +69,7 @@ function FormChunkFallback({ isDarkMode = false }: { isDarkMode?: boolean }) {
   );
 }
 
-export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, template: templateProp, setTemplate: setTemplateProp, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, skipTemplatesAfterImport = false, isFreePlan = false, onUpgradeRequired, onAuthRequired }: CVFormProps) {
+export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, template: templateProp, setTemplate: setTemplateProp, isDarkMode = false, onPopupVisibleChange, onFinish, showImportPromptOnMount = false, showTemplatesOnMount = false, skipTemplatesAfterImport = false, isFreePlan = false, canImportCv = true, onUpgradeRequired, onAuthRequired }: CVFormProps) {
   const { templates, isTemplatePaid, getTemplateLabel } = useTemplateConfig();
   const storeCvData = useBuilderStore((state) => state.cvData);
   const storeSetCvData = useBuilderStore((state) => state.setCvData);
@@ -333,6 +334,19 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
     throw new Error('Import is taking longer than expected. Please try again in a moment.');
   }, []);
 
+  const friendlyImportError = useCallback((error: any) => {
+    const rawMessage = String(error?.message || '').trim();
+    if (!rawMessage || error?.name === 'TypeError') {
+      return 'Something went wrong. Please try again in a moment.';
+    }
+
+    if (/No data returned|JSON|Unexpected token|Failed to process document|model|gemini|ai service|parse/i.test(rawMessage)) {
+      return 'We could not find clear resume details in this file. Please upload a clearer resume, a text-based PDF, or a LinkedIn profile PDF.';
+    }
+
+    return rawMessage;
+  }, []);
+
   const handleCVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (importInFlightRef.current) {
       event.target.value = '';
@@ -341,6 +355,13 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
 
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (!canImportCv) {
+      event.target.value = '';
+      setImportMessage({ type: 'error', text: 'Please sign in to import your CV.' });
+      onAuthRequired?.();
+      return;
+    }
 
     importInFlightRef.current = true;
     setIsImporting(true);
@@ -491,12 +512,8 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
             return;
           }
           console.error('Error importing CV:', error);
-          // Use a friendly message — avoid exposing technical details to end users
-          const isNetworkError = !error?.message?.trim() || error?.name === 'TypeError';
-          const errorMsg = isNetworkError
-            ? 'Something went wrong. Please try again in a moment.'
-            : error.message;
-          setImportMessage({ type: 'error', text: errorMsg });
+          // Use a friendly message without exposing technical details to end users.
+          setImportMessage({ type: 'error', text: friendlyImportError(error) });
         } finally {
           importInFlightRef.current = false;
           setIsImporting(false);
@@ -1011,7 +1028,9 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
           isImporting={isImporting}
           importMessage={importMessage}
           handleCVImport={handleCVImport}
+          canImportCv={canImportCv}
           isDarkMode={isDarkMode}
+          onAuthRequired={onAuthRequired}
           onImportSkipped={completeLoginImportStep}
         />
       </Suspense>
