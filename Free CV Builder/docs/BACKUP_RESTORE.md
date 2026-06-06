@@ -25,10 +25,12 @@ Set these in GitHub repository settings under **Settings > Secrets and variables
 
 ```text
 MONGODB_URI
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_REGION
+BACKUP_AWS_ACCESS_KEY_ID
+BACKUP_AWS_SECRET_ACCESS_KEY
+BACKUP_AWS_REGION
 ```
+
+`BACKUP_AWS_*` should belong to a dedicated IAM user for database backups. The backup workflow intentionally does not fall back to the main app/template S3 secrets, so a missing backup secret fails clearly instead of uploading with the wrong IAM user.
 
 `mongodb-database-backup1` is stored in the workflow as a normal bucket name, not a secret.
 
@@ -41,16 +43,52 @@ Keep the backup bucket private:
 - Versioning recommended.
 - Lifecycle rule recommended, for example retain daily backups for 30 or 90 days.
 
-The AWS key used by GitHub Actions should have only the permissions needed for this bucket. Minimum upload policy shape:
+The AWS key used by GitHub Actions should have only the permissions needed for this bucket. Attach this policy to the backup IAM user. It fixes `AccessDenied` errors like:
+
+```text
+not authorized to perform: s3:PutObject on resource arn:aws:s3:::mongodb-database-backup1/mongodb/daily/...
+```
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListBackupPrefix",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::mongodb-database-backup1",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": "mongodb/daily/*"
+        }
+      }
+    },
+    {
+      "Sid": "WriteMongoBackupArchives",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:AbortMultipartUpload"
+      ],
+      "Resource": "arn:aws:s3:::mongodb-database-backup1/mongodb/daily/*",
+      "Condition": {
+        "StringEquals": {
+          "s3:x-amz-server-side-encryption": "AES256"
+        }
+      }
+    }
+  ]
+}
+```
+
+For restore drills, use a separate read-only key or temporarily add:
 
 ```json
 {
   "Effect": "Allow",
-  "Action": ["s3:PutObject", "s3:ListBucket"],
-  "Resource": [
-    "arn:aws:s3:::mongodb-database-backup1",
-    "arn:aws:s3:::mongodb-database-backup1/*"
-  ]
+  "Action": "s3:GetObject",
+  "Resource": "arn:aws:s3:::mongodb-database-backup1/mongodb/daily/*"
 }
 ```
 
