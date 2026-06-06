@@ -1,4 +1,5 @@
 import templateReleaseMap from '../../config/template-release-map.json';
+import { CV_FONT_CSS_MAP, googleFontFamilyParam, sanitizeCvFontFamily } from './cvFonts';
 
 export interface TemplateRenderOptions {
   watermark?: boolean;
@@ -118,24 +119,6 @@ const getContrastColor = (hex: string) => {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#1a1a1a' : '#ffffff';
 };
 
-const templateFontMap: Record<string, string> = {
-  Inter: "'Inter', sans-serif",
-  Lora: "'Lora', serif",
-  Roboto: "'Roboto', sans-serif",
-  Montserrat: "'Montserrat', sans-serif",
-  Merriweather: "'Merriweather', serif",
-  'Playfair Display': "'Playfair Display', serif",
-  'JetBrains Mono': "'JetBrains Mono', monospace",
-};
-
-const sanitizeTemplateFontFamily = (value: unknown) => {
-  if (typeof value !== 'string') return 'Inter';
-  const fontFamily = value.trim();
-  return Object.prototype.hasOwnProperty.call(templateFontMap, fontFamily) ? fontFamily : 'Inter';
-};
-
-const googleFontFamilyParam = (fontFamily: string) => fontFamily.replace(/\s+/g, '+');
-
 const formatDateInline = (startDate?: string, endDate?: string) =>
   [startDate || '', endDate || ''].filter(Boolean).join(startDate && endDate ? ' - ' : '');
 
@@ -165,7 +148,7 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
   const startupHeaderBackground = cvData?.templateSurfaceColor
     ? templateSurfaceColor
     : `linear-gradient(135deg, ${themeColor} 0%, #047857 100%)`;
-  const fontFamily = sanitizeTemplateFontFamily(cvData?.fontFamily);
+  const fontFamily = sanitizeCvFontFamily(cvData?.fontFamily);
   const imageCss = profileImageCss(cvData);
   const profileImage = cvData?.profileImage || '';
   const lineSpacing = safeNumber(cvData?.lineSpacing, 1.5, 1, 2.5);
@@ -271,7 +254,7 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
       startupHeaderMutedColor,
       startupHeaderBackground,
       fontFamily,
-      fontFamilyCSS: templateFontMap[fontFamily],
+      fontFamilyCSS: CV_FONT_CSS_MAP[fontFamily],
       googleFontName: googleFontFamilyParam(fontFamily),
       lineSpacing,
       sectionGap,

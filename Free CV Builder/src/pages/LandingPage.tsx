@@ -4,7 +4,7 @@ import { ArrowRight, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Cr
 import { AuthModal } from '../components/AuthModal';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { usePublicContent } from '../hooks/usePublicContent';
-import { apiFetch } from '../utils/api';
+import { apiFetch, getCurrentUser, type AuthUser } from '../utils/api';
 import { detectClientBillingCountry } from '../utils/countries';
 
 type StatItem = {
@@ -302,6 +302,8 @@ export default function LandingPage() {
     isOpen: false,
     mode: 'signup',
   });
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   
   const [planPrices, setPlanPrices] = useState<Record<string, {
     cents: number;
@@ -409,6 +411,33 @@ export default function LandingPage() {
   };
 
   useEffect(() => {
+    let ignore = false;
+
+    getCurrentUser()
+      .then((user) => {
+        if (!ignore) setCurrentUser(user);
+      })
+      .catch(() => {
+        if (!ignore) setCurrentUser(null);
+      })
+      .finally(() => {
+        if (!ignore) setAuthLoaded(true);
+      });
+
+    const handleAuthUserChanged = (event: Event) => {
+      const nextUser = (event as CustomEvent<AuthUser | undefined>).detail ?? null;
+      setCurrentUser(nextUser);
+      setAuthLoaded(true);
+    };
+
+    window.addEventListener('auth-user-changed', handleAuthUserChanged);
+    return () => {
+      ignore = true;
+      window.removeEventListener('auth-user-changed', handleAuthUserChanged);
+    };
+  }, []);
+
+  useEffect(() => {
     const revealItems = document.querySelectorAll<HTMLElement>('.landing-scroll-reveal');
     if (!revealItems.length) return;
 
@@ -512,20 +541,41 @@ export default function LandingPage() {
 
           {/* Desktop Auth */}
           <div className="hidden items-center gap-3 md:flex">
-            <button
-              type="button"
-              onClick={() => openAuthModal('login')}
-              className="inline-flex items-center justify-center rounded-xl border border-white/35 bg-white/6 px-5 py-2.5 text-sm font-extrabold text-white shadow-sm shadow-black/10 transition-all hover:border-white/50 hover:bg-white/10 active:scale-[0.98]"
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => openAuthModal('signup')}
-              className="inline-flex items-center justify-center rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-violet-950/30 transition-all hover:bg-violet-500 active:scale-[0.98]"
-            >
-              Sign up
-            </button>
+            {!authLoaded && <div className="h-10 w-40" aria-hidden="true" />}
+            {authLoaded && currentUser && (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center justify-center rounded-xl border border-white/35 bg-white/6 px-5 py-2.5 text-sm font-extrabold text-white shadow-sm shadow-black/10 transition-all hover:border-white/50 hover:bg-white/10 active:scale-[0.98]"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/builder?import=1"
+                  className="inline-flex items-center justify-center rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-violet-950/30 transition-all hover:bg-violet-500 active:scale-[0.98]"
+                >
+                  Builder
+                </Link>
+              </>
+            )}
+            {authLoaded && !currentUser && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('login')}
+                  className="inline-flex items-center justify-center rounded-xl border border-white/35 bg-white/6 px-5 py-2.5 text-sm font-extrabold text-white shadow-sm shadow-black/10 transition-all hover:border-white/50 hover:bg-white/10 active:scale-[0.98]"
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('signup')}
+                  className="inline-flex items-center justify-center rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-violet-950/30 transition-all hover:bg-violet-500 active:scale-[0.98]"
+                >
+                  Sign up
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Hamburger */}
@@ -1079,6 +1129,11 @@ export default function LandingPage() {
         isOpen={authModal.isOpen}
         initialMode={authModal.mode}
         onClose={closeAuthModal}
+        onAuthenticated={(user) => {
+          setCurrentUser(user);
+          setAuthLoaded(true);
+          closeAuthModal();
+        }}
       />
     </div>
   );

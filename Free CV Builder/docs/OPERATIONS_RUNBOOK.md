@@ -37,6 +37,32 @@ Resolution:
 - Validate the affected template with `npm run validate:templates`.
 - Use admin/support messaging if users are affected during recovery.
 
+## CV Import Failing
+
+Symptoms:
+
+- Guest users see the login modal when they try to import, and no import job should start until they sign in.
+- Authenticated users see an import error after uploading a PDF/JPG/PNG/LinkedIn PDF.
+- Import stays queued or processing for too long.
+- Imported fields are empty or incomplete.
+
+Diagnosis:
+
+- Check Express logs for `POST /api/cv-import-jobs` and `GET /api/cv-import-jobs/:id`.
+- Search logs for `cv_import.job_failed`, `cv_import.job_ai_fallback`, or `cv_import.job_expired_quota_rollback_failed`.
+- Check the `cvimportjobs` collection. A healthy job moves from `queued` to `processing` to `ready`, and uploaded `base64Data` is cleared after completion or failure.
+- If jobs remain queued, confirm `CV_IMPORT_QUEUE_URL`, `CV_IMPORT_QUEUE_REGION`, the SQS trigger, and the CV import worker Lambda logs.
+- If OCR fails, confirm `OCR_LAMBDA_FUNCTION_NAME` or `OCR_LAMBDA_URL`, `OCR_LAMBDA_REGION`, Lambda timeout, and Textract/S3 temp bucket permissions.
+- If paid AI parsing fails but basic extraction works, confirm `GEMINI_API_KEY` and Gemini logs/circuit breaker state.
+- If users see "could not find clear resume details", ask them to retry with a text-based PDF, clearer image, or LinkedIn profile PDF.
+
+Resolution:
+
+- Fix queue/Lambda/IAM settings, then retry with a known readable resume file.
+- Keep `CV_IMPORT_LOCAL_WORKER_DISABLED=true` in production when the SQS worker is active.
+- Increase OCR/CV import timeouts only after confirming the file is valid and worker memory/timeouts are sufficient.
+- Do not expose raw OCR, parser, or AI provider errors to end users; keep user-facing messages clear and actionable.
+
 ## PayHere Payments Not Activating
 
 Symptoms:

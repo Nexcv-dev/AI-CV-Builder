@@ -50,16 +50,18 @@ Set these GitHub Actions secrets before relying on the scheduled backup:
 
 ```text
 MONGODB_URI
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_REGION
+BACKUP_AWS_ACCESS_KEY_ID
+BACKUP_AWS_SECRET_ACCESS_KEY
+BACKUP_AWS_REGION
 ```
+
+Use access keys from the dedicated backup IAM user, not the main app/template S3 user. The workflow still falls back to `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` for older setups, but dedicated backup credentials keep database backup permissions isolated. Optional repository variables `MONGODB_BACKUP_S3_BUCKET` and `MONGODB_BACKUP_S3_PREFIX` can override the default bucket/prefix without editing the workflow.
 
 The workflow can also be triggered manually from GitHub Actions for the first backup test. See [Backup And Restore](BACKUP_RESTORE.md) for S3 bucket requirements, verification, and restore steps.
 
 ## Required Environment Variables
 
-Minimum production values:
+For the complete environment/secrets matrix, including optional aliases and worker-only variables, see [Environment Variables](ENVIRONMENT.md). Minimum production values:
 
 ```env
 NODE_ENV=production
@@ -104,6 +106,10 @@ GEMINI_API_KEY=your_gemini_key
 
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
+GITHUB_CLIENT_ID=optional_github_client_id
+GITHUB_CLIENT_SECRET=optional_github_client_secret
+LINKEDIN_CLIENT_ID=optional_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=optional_linkedin_client_secret
 
 EMAIL_USER=your_smtp_user
 EMAIL_PASS=your_smtp_password
@@ -146,6 +152,7 @@ OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
 OCR_LAMBDA_REGION=eu-central-1
 OCR_LAMBDA_TIMEOUT_MS=45000
 OCR_DOCUMENT_BUCKET=your-temp-ocr-bucket
+OCR_DOCUMENT_PREFIX=ocr-imports
 
 SENTRY_DSN=https://your-backend-dsn@sentry.io/project-id
 SENTRY_ENVIRONMENT=production

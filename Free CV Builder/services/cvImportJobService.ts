@@ -2,6 +2,18 @@ import CvImportJob, { ICvImportJob } from '../server-models/CvImportJob';
 import { enqueueCvImportJob, isCvImportQueueConfigured } from './cvImportQueueService';
 
 const CV_IMPORT_JOB_TTL_MS = Number(process.env.CV_IMPORT_JOB_TTL_MS || 24 * 60 * 60 * 1000);
+const UNCLEAR_CV_IMPORT_MESSAGE = 'We could not find clear resume details in this file. Please upload a clearer resume, a text-based PDF, or a LinkedIn profile PDF.';
+const UNREADABLE_CV_IMPORT_MESSAGE = 'We could not read enough text from this file. Try a clearer image, a text-based PDF, or a LinkedIn profile PDF.';
+
+const friendlyCvImportJobError = (error: any) => {
+    const message = String(error?.message || '').trim();
+    if (!message) return UNCLEAR_CV_IMPORT_MESSAGE;
+    if (/could not read enough text/i.test(message)) return UNREADABLE_CV_IMPORT_MESSAGE;
+    if (/No data returned|JSON|Unexpected token|Failed to process document|model|gemini|ai service|parse/i.test(message)) {
+        return UNCLEAR_CV_IMPORT_MESSAGE;
+    }
+    return message;
+};
 
 export const cvImportJobExpiresAt = () => new Date(Date.now() + CV_IMPORT_JOB_TTL_MS);
 
@@ -190,7 +202,7 @@ export const processCvImportJob = async (jobId: string, deps: Record<string, any
             });
         } else if (!isPaidPlan(user) || !process.env.GEMINI_API_KEY) {
             if (!extractedText.trim()) {
-                throw new Error('We could not read enough text from this file. Try a clearer image or a text-based PDF.');
+                throw new Error(UNREADABLE_CV_IMPORT_MESSAGE);
             }
             result = withImportMeta(basicResult, {
                 source: 'basic',
@@ -281,7 +293,7 @@ export const processCvImportJob = async (jobId: string, deps: Record<string, any
             {
                 $set: {
                     status: 'failed',
-                    error: String(error?.message || 'CV import failed.').slice(0, 500),
+                    error: friendlyCvImportJobError(error).slice(0, 500),
                     completedAt: new Date(),
                 },
                 $unset: { base64Data: '' },

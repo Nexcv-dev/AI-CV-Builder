@@ -11,7 +11,9 @@ interface ImportModalsProps {
   isImporting: boolean;
   importMessage: { type: 'success' | 'error'; text: string } | null;
   handleCVImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  canImportCv?: boolean;
   isDarkMode?: boolean;
+  onAuthRequired?: () => void;
   onImportSkipped?: () => void;
 }
 
@@ -36,10 +38,18 @@ export const ImportModals = React.memo(({
   isImporting,
   importMessage,
   handleCVImport,
+  canImportCv = true,
   isDarkMode,
+  onAuthRequired,
   onImportSkipped
 }: ImportModalsProps) => {
   const activeModal = showInitialPrompt ? 'prompt' : showUploadModal ? 'upload' : null;
+  const requireAuthBeforeUpload = (event: React.MouseEvent) => {
+    if (canImportCv) return;
+    event.preventDefault();
+    setShowUploadModal(false);
+    onAuthRequired?.();
+  };
 
   return (
     <AnimatePresence>
@@ -94,7 +104,7 @@ export const ImportModals = React.memo(({
             ) : (
               <motion.div
                 key="cv-upload-modal"
-                className={`${MODAL_CONTAINER_BASE} relative w-[calc(100vw-1rem)] max-w-xl overflow-hidden rounded-3xl border border-sky-400/70 bg-[#071123] p-4 text-slate-100 shadow-[0_0_0_1px_rgba(168,85,247,0.45),0_0_38px_rgba(59,130,246,0.32),0_0_70px_rgba(168,85,247,0.18)] sm:p-5`}
+                className={`${MODAL_CONTAINER_BASE} relative w-[calc(100vw-1rem)] max-w-xl overflow-hidden rounded-3xl border border-sky-400/70 bg-[#071123] p-3 text-slate-100 shadow-[0_0_0_1px_rgba(168,85,247,0.45),0_0_38px_rgba(59,130,246,0.32),0_0_70px_rgba(168,85,247,0.18)] sm:p-5`}
                 initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -103,16 +113,16 @@ export const ImportModals = React.memo(({
                 <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_8%_4%,rgba(168,85,247,0.22),transparent_24%),radial-gradient(circle_at_96%_92%,rgba(56,189,248,0.14),transparent_30%)]" />
                 <div className="pointer-events-none absolute inset-0 rounded-3xl border border-violet-400/55" />
                 <div className="relative max-h-[calc(100vh-1.5rem)] overflow-y-auto pr-1 scrollbar-hide">
-                  <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-violet-400/30 bg-white/[0.06] shadow-[0_0_20px_rgba(139,92,246,0.16)] sm:h-12 sm:w-12">
-                        <FileUp className="h-6 w-6 text-sky-300" strokeWidth={1.9} />
+                  <div className="mb-2 flex items-start justify-between gap-2 sm:mb-4 sm:gap-3">
+                    <div className="flex min-w-0 items-start gap-2 sm:gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-violet-400/30 bg-white/[0.06] shadow-[0_0_20px_rgba(139,92,246,0.16)] sm:h-12 sm:w-12">
+                        <FileUp className="h-5 w-5 text-sky-300 sm:h-6 sm:w-6" strokeWidth={1.9} />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-xl font-extrabold leading-tight tracking-normal text-white sm:text-2xl">
+                        <h3 className="text-lg font-extrabold leading-tight tracking-normal text-white sm:text-2xl">
                           Import your Resume<br className="hidden sm:block" /> or LinkedIn PDF
                         </h3>
-                        <p className="mt-2 max-w-lg text-xs leading-relaxed text-slate-400 sm:text-sm">
+                        <p className="mt-1 max-w-lg text-xs leading-snug text-slate-400 sm:mt-2 sm:text-sm sm:leading-relaxed">
                           Upload your file and let AI clean it up, extract key details, and build a professional resume for you.
                         </p>
                       </div>
@@ -131,21 +141,22 @@ export const ImportModals = React.memo(({
 
                   <label
                     htmlFor="cv-upload-modal"
-                    className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed px-3 py-4 text-center transition-all duration-300 sm:px-5 sm:py-6 ${
+                    onClick={requireAuthBeforeUpload}
+                    className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed px-3 py-3 text-center transition-all duration-300 sm:px-5 sm:py-6 ${
                       isImporting
                         ? 'cursor-not-allowed border-slate-600 bg-slate-900/70'
                         : 'border-sky-400/70 bg-slate-950/45 hover:border-violet-300 hover:bg-slate-900/70 hover:shadow-[0_0_35px_rgba(96,165,250,0.18)]'
                     }`}
                   >
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(96,165,250,0.12),transparent_48%)] opacity-80" />
-                    <div className="relative z-10 mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-fuchsia-500 via-violet-500 to-sky-400 shadow-[0_14px_30px_rgba(99,102,241,0.32)] sm:h-14 sm:w-14">
-                      <Upload className="h-7 w-7 text-white" strokeWidth={2.1} />
+                    <div className="relative z-10 mb-2 flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-fuchsia-500 via-violet-500 to-sky-400 shadow-[0_14px_30px_rgba(99,102,241,0.32)] sm:mb-3 sm:h-14 sm:w-14">
+                      <Upload className="h-5 w-5 text-white sm:h-7 sm:w-7" strokeWidth={2.1} />
                     </div>
 
-                    <h3 className="relative z-10 mb-1 text-lg font-extrabold text-white">
+                    <h3 className="relative z-10 mb-1 text-base font-extrabold text-white sm:text-lg">
                       {isImporting ? 'Processing your CV...' : 'Drag & drop your resume'}
                     </h3>
-                    <p className="relative z-10 mb-3 text-xs text-slate-400 sm:text-sm">
+                    <p className="relative z-10 mb-2 text-xs text-slate-400 sm:mb-3 sm:text-sm">
                       {isImporting ? 'Extracting and matching CV sections' : (
                         <>
                           or <span className="font-bold text-violet-300">browse files</span> from your device
@@ -153,33 +164,33 @@ export const ImportModals = React.memo(({
                       )}
                     </p>
 
-                    <div className="relative z-10 mb-4 flex flex-wrap items-center justify-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2.5 py-1 text-[11px] font-bold text-slate-200">
+                    <div className="relative z-10 mb-3 flex flex-wrap items-center justify-center gap-1.5 sm:mb-4 sm:gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2 py-0.5 text-[11px] font-bold text-slate-200 sm:px-2.5 sm:py-1">
                         <FileText size={13} className="text-rose-400" />
                         PDF
                       </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2.5 py-1 text-[11px] font-bold text-slate-200">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2 py-0.5 text-[11px] font-bold text-slate-200 sm:px-2.5 sm:py-1">
                         <ImageIcon size={13} className="text-emerald-400" />
                         JPG
                       </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2.5 py-1 text-[11px] font-bold text-slate-200">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2 py-0.5 text-[11px] font-bold text-slate-200 sm:px-2.5 sm:py-1">
                         <ImageIcon size={13} className="text-amber-400" />
                         PNG
                       </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2.5 py-1 text-[11px] font-bold text-slate-200">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600/80 bg-slate-950/70 px-2 py-0.5 text-[11px] font-bold text-slate-200 sm:px-2.5 sm:py-1">
                         <LinkedInMark />
                         LinkedIn PDF
                       </span>
                     </div>
 
                     <div className="relative z-10">
-                      <div className="flex min-h-11 items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-fuchsia-500 via-violet-500 to-blue-500 px-7 py-2.5 text-sm font-extrabold text-white shadow-[0_14px_32px_rgba(124,58,237,0.28)] transition-transform duration-300 group-hover:scale-[1.02] group-active:scale-[0.98] sm:min-w-64">
+                      <div className="flex min-h-10 items-center justify-center gap-2.5 rounded-2xl bg-linear-to-r from-fuchsia-500 via-violet-500 to-blue-500 px-6 py-2 text-sm font-extrabold text-white shadow-[0_14px_32px_rgba(124,58,237,0.28)] transition-transform duration-300 group-hover:scale-[1.02] group-active:scale-[0.98] sm:min-h-11 sm:min-w-64 sm:gap-3 sm:px-7 sm:py-2.5">
                         {isImporting ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
                         {isImporting ? 'Parsing Document...' : 'Upload Resume'}
                       </div>
                     </div>
 
-                    <div className="relative z-10 mt-3 flex items-center justify-center gap-2 text-xs font-medium text-slate-400">
+                    <div className="relative z-10 mt-2 flex items-center justify-center gap-2 text-xs font-medium text-slate-400 sm:mt-3">
                       <Lock size={14} />
                       Your files are secure and never shared.
                     </div>
@@ -206,7 +217,7 @@ export const ImportModals = React.memo(({
                     </div>
                   )}
 
-                  <div className="mt-3 flex items-start gap-3 rounded-2xl border border-violet-400/25 bg-white/[0.05] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                  <div className="mt-3 hidden items-start gap-3 rounded-2xl border border-violet-400/25 bg-white/[0.05] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:flex">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/10 text-violet-300">
                       <Sparkles size={19} />
                     </div>
@@ -217,7 +228,7 @@ export const ImportModals = React.memo(({
                     </p>
                   </div>
 
-                  <div className="mt-3 flex flex-col gap-3 border-t border-slate-700/70 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mt-2 flex flex-col gap-2 border-t border-slate-700/70 pt-2 sm:mt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:pt-3">
                     <div className="flex items-center gap-3 text-xs leading-relaxed text-slate-400 sm:text-sm">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-400/20 bg-sky-400/10">
                         <LinkedInMark />

@@ -6,6 +6,7 @@ import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName } from '../src/templates';
 import { CV_TEMPLATE_PAGINATION_RULES } from '../src/utils/cvTemplateRules';
+import { CV_FONT_CSS_MAP, googleFontFamilyParam, sanitizeCvFontFamily } from '../src/utils/cvFonts';
 import { logError, logEvent } from '../server-utils/logger';
 import { withCircuitBreaker } from '../server-utils/circuitBreaker';
 
@@ -16,16 +17,6 @@ const DOMPurify = createDOMPurify(window);
 const MAX_TEXT_LENGTH = 10000;
 const MAX_IMAGE_DATA_URI_LENGTH = 2 * 1024 * 1024;
 const SAFE_IMAGE_DATA_URI = /^data:image\/(?:png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i;
-const PDF_FONT_MAP: Record<string, string> = {
-    'Inter': "'Inter', sans-serif",
-    'Lora': "'Lora', serif",
-    'Roboto': "'Roboto', sans-serif",
-    'Montserrat': "'Montserrat', sans-serif",
-    'Merriweather': "'Merriweather', serif",
-    'Playfair Display': "'Playfair Display', serif",
-    'JetBrains Mono': "'JetBrains Mono', monospace",
-};
-
 const sanitizePdfImageSource = (value: unknown) => {
     if (typeof value !== 'string') return '';
     const source = value.trim();
@@ -33,14 +24,6 @@ const sanitizePdfImageSource = (value: unknown) => {
     if (!SAFE_IMAGE_DATA_URI.test(source)) return '';
     return source.replace(/\s/g, '');
 };
-
-const sanitizePdfFontFamily = (value: unknown) => {
-    if (typeof value !== 'string') return 'Inter';
-    const fontFamily = value.trim();
-    return Object.prototype.hasOwnProperty.call(PDF_FONT_MAP, fontFamily) ? fontFamily : 'Inter';
-};
-
-const googleFontFamilyParam = (fontFamily: string) => fontFamily.replace(/\s+/g, '+');
 
 const safeNumber = (value: unknown, fallback: number, min: number, max: number) => {
     const number = Number(value);
@@ -79,7 +62,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
         cvData.templateSurfaceColor,
         getTemplateSurfaceColorFallback(safeTemplate, { themeColor, sidebarColor })
     );
-    const fontFamily = sanitizePdfFontFamily(cvData.fontFamily);
+    const fontFamily = sanitizeCvFontFamily(cvData.fontFamily);
     const lineSpacing = safeNumber(cvData.lineSpacing, 1.5, 1, 2.5);
     const sectionGap = safeNumber(cvData.sectionGap, 2, 0.5, 4);
     const textScale = safeNumber(cvData.textScale, 1, 0.85, 1.2);
@@ -671,7 +654,7 @@ export function generateCVHTML(cvData: any, template: string, options: { waterma
     </div>`;
     }
 
-    const fontFamilyCSS = PDF_FONT_MAP[fontFamily];
+    const fontFamilyCSS = CV_FONT_CSS_MAP[fontFamily];
     const googleFontName = googleFontFamilyParam(fontFamily);
     const watermarkHtml = options.watermark ? `
       <div class="nexcv-watermark" aria-hidden="true">

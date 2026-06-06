@@ -15,6 +15,7 @@
     "build:ocr-lambda": "node scripts/build-ocr-lambda.mjs",
     "templates:release": "npm run validate:template-map && npm run validate:templates && node scripts/release-admin-templates.mjs",
     "templates:release:dry-run": "npm run validate:template-map && npm run validate:templates && node scripts/release-admin-templates.mjs --dry-run",
+    "templates:verify-s3": "node scripts/verify-s3-template-assets.mjs",
     "templates:sync-thumbnails": "tsx scripts/sync-template-thumbnail-metadata.mjs",
     "templates:thumbnails": "tsx scripts/generate-template-thumbnails.mjs",
     "launch:check": "npm run lint && npm run test:run && npm run build && npm run validate:template-map && npm run validate:templates",

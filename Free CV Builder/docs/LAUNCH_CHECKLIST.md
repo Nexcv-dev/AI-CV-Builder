@@ -16,6 +16,7 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 - `SUPER_ADMIN_EMAILS` contains only launch owners.
 - `ADMIN_ALLOWED_IPS` is set to trusted public admin IPs so `/api/admin/*` routes can be used by admins.
 - `GEMINI_API_KEY`, email provider credentials, PayHere credentials, Lemon Squeezy credentials, S3 bucket, and PDF Lambda URL are configured.
+- `CV_IMPORT_QUEUE_URL`, `CV_IMPORT_QUEUE_REGION`, `OCR_LAMBDA_FUNCTION_NAME` or `OCR_LAMBDA_URL`, and `CV_IMPORT_LOCAL_WORKER_DISABLED=true` are configured for production imports.
 - `LEMON_SQUEEZY_STORE_ID`, `LEMON_SQUEEZY_PAYG_VARIANT_ID`, `LEMON_SQUEEZY_MONTHLY_VARIANT_ID`, and `LEMON_SQUEEZY_QUARTERLY_VARIANT_ID` are numeric IDs from the same test/live store.
 
 ## Payments
@@ -46,6 +47,8 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 ## Auth, Admin, And Data
 
 - Signup, login, logout, email verification, forgot password, and reset password work on the live domain.
+- Guest CV import click opens login before the file picker/import processing starts.
+- Authenticated CV import works with a readable PDF/LinkedIn PDF, and unclear or image-only files show a friendly retry message.
 - Verification OTP, reset-password, payment receipt, and support reply emails render correctly as branded HTML and still have readable plain-text fallbacks.
 - Account deletion removes the user's saved CV documents and user record.
 - Saved CV deletion works from dashboard/profile flows.
@@ -68,14 +71,19 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 
 Run this after deploy, before public announcement:
 
+Use [QA Test Cases](QA_TEST_CASES.md) for the detailed manual test matrix.
+
 1. Open `/api/health`.
 2. Sign up as a new user and verify email.
 3. Create, save, reopen, and delete a CV.
-4. Generate one free PDF.
-5. Complete one local/LKR paid checkout through PayHere.
-6. Complete one global/USD paid checkout through Lemon Squeezy.
-7. Confirm Single CV Pass, Monthly Pro, and Pro Quarterly each unlock premium export.
-8. Open admin summary, settings, users, templates, billing, support, and audit pages.
-9. Confirm admin Dashboard and Billing show separate LKR and USD revenue, including date-wise rows.
-10. Send a support/contact message and confirm notification delivery.
-11. Toggle maintenance mode in a controlled window, verify public behavior, then disable it.
+4. As a guest, click CV import and confirm login opens before file processing.
+5. As a signed-in user, import a readable PDF or LinkedIn PDF and confirm parsed data appears.
+6. Upload an unclear/empty document and confirm the error message is friendly.
+7. Generate one free PDF.
+8. Complete one local/LKR paid checkout through PayHere.
+9. Complete one global/USD paid checkout through Lemon Squeezy.
+10. Confirm Single CV Pass, Monthly Pro, and Pro Quarterly each unlock premium export.
+11. Open admin summary, settings, users, templates, billing, support, and audit pages.
+12. Confirm admin Dashboard and Billing show separate LKR and USD revenue, including date-wise rows.
+13. Send a support/contact message and confirm notification delivery.
+14. Toggle maintenance mode in a controlled window, verify public behavior, then disable it.

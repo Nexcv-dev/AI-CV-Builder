@@ -61,20 +61,47 @@ const sanitizePdfImageSource = (value: unknown) => {
   if (!SAFE_IMAGE_DATA_URI.test(source)) return '';
   return source.replace(/\s/g, '');
 };
-const PDF_FONT_MAP: Record<string, string> = {
-  'Inter': "'Inter', sans-serif",
-  'Lora': "'Lora', serif",
-  'Roboto': "'Roboto', sans-serif",
-  'Montserrat': "'Montserrat', sans-serif",
-  'Merriweather': "'Merriweather', serif",
-  'Playfair Display': "'Playfair Display', serif",
-  'JetBrains Mono': "'JetBrains Mono', monospace",
+
+type CvFontOption = {
+  name: string;
+  description: string;
+  className: string;
+  cssFamily: string;
+  googleFamilyQuery: string;
 };
-const sanitizePdfFontFamily = (value: unknown) => {
+
+const CV_FONT_OPTIONS: CvFontOption[] = [
+  { name: 'Inter', description: 'Modern, Clean', className: 'font-sans', cssFamily: "'Inter', sans-serif", googleFamilyQuery: 'Inter:wght@400;500;600;700' },
+  { name: 'Poppins', description: 'Rounded, Modern', className: 'font-poppins', cssFamily: "'Poppins', sans-serif", googleFamilyQuery: 'Poppins:wght@400;500;600;700;800' },
+  { name: 'Source Sans 3', description: 'Readable, Professional', className: 'font-source-sans', cssFamily: "'Source Sans 3', sans-serif", googleFamilyQuery: 'Source+Sans+3:wght@400;500;600;700;800' },
+  { name: 'Work Sans', description: 'Corporate, Precise', className: 'font-work-sans', cssFamily: "'Work Sans', sans-serif", googleFamilyQuery: 'Work+Sans:wght@400;500;600;700;800' },
+  { name: 'Manrope', description: 'Clean, Contemporary', className: 'font-manrope', cssFamily: "'Manrope', sans-serif", googleFamilyQuery: 'Manrope:wght@400;500;600;700;800' },
+  { name: 'Lora', description: 'Serif, Classic', className: 'font-serif', cssFamily: "'Lora', serif", googleFamilyQuery: 'Lora:ital,wght@0,400;0,500;0,600;0,700;1,400' },
+  { name: 'Roboto', description: 'Structured, Technical', className: 'font-roboto', cssFamily: "'Roboto', sans-serif", googleFamilyQuery: 'Roboto:wght@400;500;700' },
+  { name: 'Montserrat', description: 'Geometric, Bold', className: 'font-montserrat', cssFamily: "'Montserrat', sans-serif", googleFamilyQuery: 'Montserrat:wght@400;500;600;700' },
+  { name: 'Merriweather', description: 'Elegant Serif', className: 'font-merriweather', cssFamily: "'Merriweather', serif", googleFamilyQuery: 'Merriweather:wght@300;400;700' },
+  { name: 'Noto Serif', description: 'Readable Serif', className: 'font-noto-serif', cssFamily: "'Noto Serif', serif", googleFamilyQuery: 'Noto+Serif:wght@400;500;600;700;800' },
+  { name: 'Playfair Display', description: 'Stylish Serif', className: 'font-playfair', cssFamily: "'Playfair Display', serif", googleFamilyQuery: 'Playfair+Display:wght@400;500;600;700' },
+  { name: 'JetBrains Mono', description: 'Technical, Code', className: 'font-mono', cssFamily: "'JetBrains Mono', monospace", googleFamilyQuery: 'JetBrains+Mono:wght@400;500;700' },
+];
+
+const CV_FONT_CSS_MAP: Record<string, string> = Object.fromEntries(
+  CV_FONT_OPTIONS.map((font) => [font.name, font.cssFamily])
+);
+
+const sanitizeCvFontFamily = (value: unknown) => {
   if (typeof value !== 'string') return 'Inter';
   const fontFamily = value.trim();
-  return Object.prototype.hasOwnProperty.call(PDF_FONT_MAP, fontFamily) ? fontFamily : 'Inter';
+  return Object.prototype.hasOwnProperty.call(CV_FONT_CSS_MAP, fontFamily) ? fontFamily : 'Inter';
 };
+
+const googleFontFamilyParam = (fontFamily: string) => fontFamily.replace(/\s+/g, '+');
+
+const CV_GOOGLE_FONTS_URL =
+  `https://fonts.googleapis.com/css2?${CV_FONT_OPTIONS
+    .map((font) => `family=${font.googleFamilyQuery}`)
+    .join('&')}&display=swap`;
+
 
 const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
 const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\/+|\/+$/g, '');
@@ -258,7 +285,155 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
   return scaleCssFontSizes(htmlWithPaginationRules, root?.computed?.textScale ?? cvData?.textScale);
 }
 
-import templateReleaseMap from '../../config/template-release-map.json';
+const templateReleaseMap = [
+  {
+    "sourceFolder": "violet-executive-template",
+    "targetKey": "creative-executive",
+    "label": "Creative Executive",
+    "category": "Creative",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#6d28d9"
+  },
+  {
+    "sourceFolder": "Tech template",
+    "targetKey": "tech-1",
+    "label": "Tech",
+    "category": "Tech",
+    "access": "paid",
+    "surfaceColorRole": "header",
+    "surfaceColorLabel": "Header",
+    "defaultThemeColor": "#22d3ee"
+  },
+  {
+    "sourceFolder": "tech_style_cv_template_v2",
+    "targetKey": "tech-v2",
+    "label": "Tech Creative",
+    "category": "Tech",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#2563eb"
+  },
+  {
+    "sourceFolder": "executive_cv_template_v3",
+    "targetKey": "executive-v2",
+    "label": "Executive Pro",
+    "category": "Executive",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#b88a44"
+  },
+  {
+    "sourceFolder": "creative_cv_template_v4",
+    "targetKey": "creative-v3",
+    "label": "Creative Creator",
+    "category": "Creative",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#7c3aed"
+  },
+  {
+    "sourceFolder": "corporate_blue_cv_template_v5",
+    "targetKey": "corporate-v1",
+    "label": "Corporate",
+    "category": "Corporate",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#0f3d75"
+  },
+  {
+    "sourceFolder": "corporate-split",
+    "targetKey": "corporate-split",
+    "label": "Corporate Split",
+    "category": "Modern",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#243b67"
+  },
+  {
+    "sourceFolder": "tech-gradient",
+    "targetKey": "tech-gradient",
+    "label": "Tech Gradient",
+    "category": "Tech",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#38bdf8"
+  },
+  {
+    "sourceFolder": "elegant-sidebar",
+    "targetKey": "elegant-sidebar",
+    "label": "Elegant Sidebar",
+    "category": "Modern",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#b45309"
+  },
+  {
+    "sourceFolder": "compact-timeline",
+    "targetKey": "compact-timeline",
+    "label": "Compact Timeline",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#fca311"
+  },
+  {
+    "sourceFolder": "ats-clean-sample",
+    "targetKey": "ats-clean-sample",
+    "label": "ATS Clean Sample",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#2563eb"
+  },
+  {
+    "sourceFolder": "sidebar-ats",
+    "targetKey": "sidebar-ats",
+    "label": "Sidebar ATS",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#1d4ed8"
+  },
+  {
+    "sourceFolder": "ats-two-column",
+    "targetKey": "ats-two-column",
+    "label": "ATS Two Column",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#0f766e"
+  },
+  {
+    "sourceFolder": "sidebar-timeline",
+    "targetKey": "sidebar-timeline",
+    "label": "Sidebar Timeline",
+    "category": "Modern",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#2563eb"
+  },
+  {
+    "sourceFolder": "ats-timeline",
+    "targetKey": "ats-timeline",
+    "label": "ATS Timeline",
+    "category": "ATS Friendly",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#2563eb"
+  },
+  {
+    "sourceFolder": "modular-card",
+    "targetKey": "modular-card",
+    "label": "Modular Card",
+    "category": "Modern",
+    "access": "paid",
+    "surfaceColorRole": "none",
+    "defaultThemeColor": "#14b8a6"
+  }
+]
+;
+
 
 interface TemplateRenderOptions {
   watermark?: boolean;
@@ -378,24 +553,6 @@ const getContrastColor = (hex: string) => {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#1a1a1a' : '#ffffff';
 };
 
-const templateFontMap: Record<string, string> = {
-  Inter: "'Inter', sans-serif",
-  Lora: "'Lora', serif",
-  Roboto: "'Roboto', sans-serif",
-  Montserrat: "'Montserrat', sans-serif",
-  Merriweather: "'Merriweather', serif",
-  'Playfair Display': "'Playfair Display', serif",
-  'JetBrains Mono': "'JetBrains Mono', monospace",
-};
-
-const sanitizeTemplateFontFamily = (value: unknown) => {
-  if (typeof value !== 'string') return 'Inter';
-  const fontFamily = value.trim();
-  return Object.prototype.hasOwnProperty.call(templateFontMap, fontFamily) ? fontFamily : 'Inter';
-};
-
-const googleFontFamilyParam = (fontFamily: string) => fontFamily.replace(/\s+/g, '+');
-
 const formatDateInline = (startDate?: string, endDate?: string) =>
   [startDate || '', endDate || ''].filter(Boolean).join(startDate && endDate ? ' - ' : '');
 
@@ -425,7 +582,7 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
   const startupHeaderBackground = cvData?.templateSurfaceColor
     ? templateSurfaceColor
     : `linear-gradient(135deg, ${themeColor} 0%, #047857 100%)`;
-  const fontFamily = sanitizeTemplateFontFamily(cvData?.fontFamily);
+  const fontFamily = sanitizeCvFontFamily(cvData?.fontFamily);
   const imageCss = profileImageCss(cvData);
   const profileImage = sanitizePdfImageSource(cvData?.profileImage);
   const lineSpacing = safeNumber(cvData?.lineSpacing, 1.5, 1, 2.5);
@@ -531,7 +688,7 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
       startupHeaderMutedColor,
       startupHeaderBackground,
       fontFamily,
-      fontFamilyCSS: templateFontMap[fontFamily],
+      fontFamilyCSS: CV_FONT_CSS_MAP[fontFamily],
       googleFontName: googleFontFamilyParam(fontFamily),
       lineSpacing,
       sectionGap,
@@ -728,7 +885,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
         cvData.templateSurfaceColor,
         getTemplateSurfaceColorFallback(safeTemplate, { themeColor, sidebarColor })
     );
-    const fontFamily = sanitizePdfFontFamily(cvData.fontFamily);
+    const fontFamily = sanitizeCvFontFamily(cvData.fontFamily);
     const lineSpacing = safeNumber(cvData.lineSpacing, 1.5, 1, 2.5);
     const sectionGap = safeNumber(cvData.sectionGap, 2, 0.5, 4);
     const textScale = safeNumber(cvData.textScale, 1, 0.85, 1.2);
@@ -1320,7 +1477,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
     </div>`;
     }
 
-    const fontFamilyCSS = PDF_FONT_MAP[fontFamily];
+    const fontFamilyCSS = CV_FONT_CSS_MAP[fontFamily];
     const googleFontName = googleFontFamilyParam(fontFamily);
     const watermarkHtml = options.watermark ? `
       <div class="nexcv-watermark" aria-hidden="true">
