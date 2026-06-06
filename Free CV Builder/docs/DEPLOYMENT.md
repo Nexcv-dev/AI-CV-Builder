@@ -50,14 +50,12 @@ Set these GitHub Actions secrets before relying on the scheduled backup:
 
 ```text
 MONGODB_URI
-BACKUP_AWS_ACCESS_KEY_ID
-BACKUP_AWS_SECRET_ACCESS_KEY
-BACKUP_AWS_REGION
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_REGION
 ```
 
-The workflow can also be triggered manually from GitHub Actions for the first backup test. Use a dedicated backup IAM user with `s3:PutObject` access to `arn:aws:s3:::mongodb-database-backup1/mongodb/daily/*`; see [Backup And Restore](BACKUP_RESTORE.md) for the exact IAM policy, S3 bucket requirements, verification, and restore steps.
-
-The workflow uses only `BACKUP_AWS_*` secrets for S3 upload credentials. It does not fall back to the main application `AWS_*` secrets.
+The workflow can also be triggered manually from GitHub Actions for the first backup test. See [Backup And Restore](BACKUP_RESTORE.md) for S3 bucket requirements, verification, and restore steps.
 
 ## Required Environment Variables
 
