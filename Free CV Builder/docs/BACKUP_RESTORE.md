@@ -25,12 +25,19 @@ Set these in GitHub repository settings under **Settings > Secrets and variables
 
 ```text
 MONGODB_URI
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_REGION
+BACKUP_AWS_ACCESS_KEY_ID
+BACKUP_AWS_SECRET_ACCESS_KEY
+BACKUP_AWS_REGION
 ```
 
-`mongodb-database-backup1` is stored in the workflow as a normal bucket name, not a secret.
+The workflow falls back to `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` for older setups, but dedicated backup credentials are recommended so the app/template S3 user does not need database backup access.
+
+`mongodb-database-backup1` is stored in the workflow as a normal bucket name, not a secret. To override it without editing the workflow, set repository variables:
+
+```text
+MONGODB_BACKUP_S3_BUCKET
+MONGODB_BACKUP_S3_PREFIX
+```
 
 ## S3 Bucket Requirements
 
@@ -46,10 +53,9 @@ The AWS key used by GitHub Actions should have only the permissions needed for t
 ```json
 {
   "Effect": "Allow",
-  "Action": ["s3:PutObject", "s3:ListBucket"],
+  "Action": ["s3:PutObject"],
   "Resource": [
-    "arn:aws:s3:::mongodb-database-backup1",
-    "arn:aws:s3:::mongodb-database-backup1/*"
+    "arn:aws:s3:::mongodb-database-backup1/mongodb/daily/*"
   ]
 }
 ```
