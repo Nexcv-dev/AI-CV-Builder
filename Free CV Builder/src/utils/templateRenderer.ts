@@ -98,7 +98,7 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
     hasReferences,
     hasMainColumn: Boolean(hasExperience || hasEducation || hasCourses || hasAwards),
     hasSideColumn: Boolean(hasSkills || hasProjects || hasLanguages || hasReferences || hasPersonalDetails),
-    hasBody: Boolean(hasExperience || hasEducation || hasSkills || hasCourses || hasProjects || hasAwards || hasLanguages || hasReferences || hasPersonalDetails),
+    hasBody: Boolean(personalInfo.fullName || headline || hasSummary || hasContact || hasExperience || hasEducation || hasSkills || hasCourses || hasProjects || hasAwards || hasLanguages || hasReferences || hasPersonalDetails),
     watermark: Boolean(options.watermark),
   };
 

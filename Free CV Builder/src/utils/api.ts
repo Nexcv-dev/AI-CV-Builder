@@ -30,6 +30,21 @@ export class ApiError extends Error {
   }
 }
 
+export const NETWORK_ERROR_MESSAGE = "Could not connect to the server. Check your internet connection and try again.";
+
+function isFetchNetworkError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  return error.name === 'TypeError'
+    || /failed to fetch|networkerror|load failed|fetch/i.test(error.message);
+}
+
+export function normalizeApiError(error: unknown, fallback = 'Something went wrong. Please try again.') {
+  if (error instanceof ApiError) return error;
+  if (isFetchNetworkError(error)) return new ApiError(NETWORK_ERROR_MESSAGE, 0, { networkError: true });
+  if (error instanceof Error) return new ApiError(error.message || fallback, 0, {});
+  return new ApiError(fallback, 0, {});
+}
+
 let csrfToken: string | null = null;
 let csrfTokenPromise: Promise<string> | null = null;
 
@@ -53,6 +68,9 @@ async function getCsrfToken(forceRefresh = false) {
         }
         csrfToken = data.csrfToken;
         return csrfToken;
+      })
+      .catch((error) => {
+        throw normalizeApiError(error, 'Could not prepare a secure request.');
       })
       .finally(() => {
         csrfTokenPromise = null;
@@ -82,11 +100,21 @@ export async function csrfFetch(input: RequestInfo | URL, options: RequestInit =
     credentials: 'include',
   };
 
-  let response = await fetch(input, requestOptions);
+  let response: Response;
+  try {
+    response = await fetch(input, requestOptions);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+
   if (unsafe && await isCsrfFailure(response)) {
     csrfToken = null;
     headers.set('X-CSRF-Token', await getCsrfToken(true));
-    response = await fetch(input, { ...requestOptions, headers });
+    try {
+      response = await fetch(input, { ...requestOptions, headers });
+    } catch (error) {
+      throw normalizeApiError(error);
+    }
   }
 
   return response;
@@ -101,6 +129,8 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
   const response = await csrfFetch(url, {
     ...options,
     headers,
+  }).catch((error) => {
+    throw normalizeApiError(error);
   });
 
   const data = await response.json().catch(() => ({}));

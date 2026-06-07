@@ -48,6 +48,7 @@ const customThumbnail = (setting: any) => {
 
 const releaseTemplateMap = new Map(
     (templateReleaseMap as Array<{
+        sourceFolder: string;
         targetKey: string;
         label: string;
         category: string;
@@ -56,6 +57,17 @@ const releaseTemplateMap = new Map(
         surfaceColorLabel?: string;
         defaultThemeColor?: string;
     }>).map((template) => [template.targetKey, template])
+);
+
+export const getReleasedTemplateDefinition = (key: string) => releaseTemplateMap.get(key) || null;
+
+export const getReleasedTemplateSummaries = (settings: Map<string, any>, usageCount = 0) => (
+    [...releaseTemplateMap.values()]
+        .filter((template) => {
+            const setting = settings.get(template.targetKey);
+            return !setting || setting.status === 'active';
+        })
+        .map((template) => releasedTemplateSummary(template, settings.get(template.targetKey), usageCount))
 );
 
 const releasedTemplateSummary = (template: NonNullable<ReturnType<typeof releaseTemplateMap.get>>, setting: any = null, usageCount = 0) => ({
