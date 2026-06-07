@@ -352,9 +352,9 @@ export default function HtmlToPdf() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <SiteHeader />
-      <div className="mx-auto flex min-h-screen w-full max-w-[1800px] flex-col px-3 pb-4 pt-20 sm:px-5 lg:px-7">
-        <main className="flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#070d1c] py-4">
-          <div className="flex flex-col gap-4 border-b border-white/8 pb-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-8 pt-24 sm:px-6 lg:px-8">
+        <main className="flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#070d1c]">
+          <div className="flex flex-col gap-4 border-b border-white/8 pb-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <h1 className="text-[22px] font-black tracking-tight text-white sm:text-2xl">HTML to PDF Generator</h1>
               <p className="mt-1 text-sm font-semibold text-slate-400">Upload a self-contained HTML file and export it as a clean PDF. Guests get a small daily quota; paid plans get more room.</p>
@@ -424,7 +424,7 @@ export default function HtmlToPdf() {
             </div>
           )}
 
-          <div className="grid min-h-[680px] min-w-0 flex-1 gap-4 pt-5 xl:grid-cols-[330px_minmax(0,1fr)] xl:gap-5">
+          <div className="grid min-h-[680px] min-w-0 flex-1 gap-4 pt-6 xl:grid-cols-[330px_minmax(0,1fr)] xl:gap-5">
             <section className="flex min-h-0 min-w-0 flex-col gap-4 rounded-lg border border-white/10 bg-[#10182b]/95 p-3 shadow-2xl shadow-black/20 sm:p-5">
               <div className="flex items-center gap-2 text-sm font-black text-white">
                 <FileText size={17} className="text-emerald-300" />
