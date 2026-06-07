@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, FileText, LayoutDashboard, User } from 'lucide-react';
 import { AccountMenu } from './AccountMenu';
+import { AuthUser, getCurrentUser } from '../utils/api';
 
 const mobileNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -13,7 +14,30 @@ const mobileNavItems = [
 export function AppShellHeader() {
   const location = useLocation();
   const [mobileNavVisible, setMobileNavVisible] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const lastScrollYRef = useRef(0);
+  const visibleMobileNavItems = user ? mobileNavItems : mobileNavItems.filter((item) => item.to === '/tips');
+
+  useEffect(() => {
+    let ignore = false;
+    getCurrentUser()
+      .then((currentUser) => {
+        if (!ignore) setUser(currentUser);
+      })
+      .catch(() => {
+        if (!ignore) setUser(null);
+      });
+
+    const handleAuthUserChanged = (event: Event) => {
+      setUser((event as CustomEvent<AuthUser | undefined>).detail || null);
+    };
+
+    window.addEventListener('auth-user-changed', handleAuthUserChanged);
+    return () => {
+      ignore = true;
+      window.removeEventListener('auth-user-changed', handleAuthUserChanged);
+    };
+  }, []);
 
   useEffect(() => {
     lastScrollYRef.current = window.scrollY;
@@ -46,7 +70,7 @@ export function AppShellHeader() {
     <>
       <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/92 text-white shadow-sm shadow-black/20 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6 lg:px-8">
-          <Link to="/dashboard" className="flex items-center gap-3">
+          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-lg shadow-black/20 ring-1 ring-white/10 sm:h-10 sm:w-10 sm:rounded-2xl">
               <img src="/brand/faviconblack.svg" alt="" className="h-7 w-7 rounded-lg sm:h-8 sm:w-8 sm:rounded-xl" />
             </span>
@@ -64,7 +88,7 @@ export function AppShellHeader() {
         aria-label="Mobile dashboard navigation"
       >
         <div className="mx-auto grid max-w-md grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-white/[0.035] p-1">
-          {mobileNavItems.map((item) => {
+          {visibleMobileNavItems.map((item) => {
             const Icon = item.icon;
             const active = location.pathname === item.to;
             return (
