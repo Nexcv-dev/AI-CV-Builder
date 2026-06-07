@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, FileText, LayoutDashboard, LogOut, Plus, Shield, User } from 'lucide-react';
-import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification } from '../utils/api';
+import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification, notifyAuthUserChanged } from '../utils/api';
 import { isAdminUser } from '../adminPermissions';
 
 const navItems = [
@@ -48,6 +48,8 @@ export function AppSidebar() {
 
   const signOut = async () => {
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+    setUser(null);
+    notifyAuthUserChanged();
     navigate('/');
   };
 
@@ -55,11 +57,13 @@ export function AppSidebar() {
   const initial = visibleName.charAt(0).toUpperCase() || 'U';
   const visibleNavItems = isAdminUser(user)
     ? [...navItems, { to: '/admin', label: 'Admin', icon: Shield }]
-    : navItems;
+    : user
+      ? navItems
+      : navItems.filter((item) => item.to === '/tips');
 
   return (
     <aside className="hidden h-dvh w-72 shrink-0 border-r border-white/10 bg-slate-950/95 px-4 py-5 text-white shadow-2xl shadow-black/20 lg:sticky lg:top-0 lg:flex lg:flex-col">
-      <Link to="/dashboard" className="flex items-center gap-3 px-2">
+      <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-3 px-2">
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/20 ring-1 ring-white/10">
           <img src="/brand/faviconblack.svg" alt="" className="h-9 w-9 rounded-xl" />
         </span>
@@ -99,7 +103,7 @@ export function AppSidebar() {
         })}
       </nav>
 
-      <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+      {user && <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.035] p-3">
         <div className="flex min-w-0 items-center gap-3">
           {user?.profileImage ? (
             <img src={user.profileImage} alt="" className="h-10 w-10 rounded-full object-cover" referrerPolicy="no-referrer" />
@@ -121,7 +125,7 @@ export function AppSidebar() {
           <LogOut size={16} />
           Sign out
         </button>
-      </div>
+      </div>}
     </aside>
   );
 }

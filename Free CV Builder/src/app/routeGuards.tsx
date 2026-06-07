@@ -89,6 +89,9 @@ export function ProtectedRoute({ children }: { children: React.ReactElement }) {
 
   useLayoutEffect(() => {
     let ignore = false;
+    setStatus('loading');
+    setLoginOpen(false);
+
     getCurrentUser()
       .then(() => {
         if (!ignore) setStatus('authed');
@@ -100,7 +103,7 @@ export function ProtectedRoute({ children }: { children: React.ReactElement }) {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [redirectTo]);
 
   useEffect(() => {
     if (status === 'guest') setLoginOpen(true);

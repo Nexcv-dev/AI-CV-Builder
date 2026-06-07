@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FileText, LayoutDashboard, LogOut, User } from 'lucide-react';
-import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification } from '../utils/api';
+import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification, notifyAuthUserChanged } from '../utils/api';
 
 interface AccountMenuProps {
   isDarkMode?: boolean;
@@ -29,6 +29,7 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
   const visibleName = (displayName || loadedUser?.displayName || '').trim();
   const visibleImage = profileImage || loadedUser?.profileImage || '';
   const initial = visibleName.charAt(0).toUpperCase() || 'U';
+  const isSignedIn = Boolean(displayName || profileImage || loadedUser);
 
   useEffect(() => {
     if (displayName || profileImage) return;
@@ -78,6 +79,8 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
   const signOut = async () => {
     setMenuOpen(false);
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+    setLoadedUser(null);
+    notifyAuthUserChanged();
     navigate('/');
   };
 
@@ -119,7 +122,7 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
               : 'border-slate-200 bg-white text-slate-800 shadow-slate-900/15'
           } max-w-[calc(100vw-2rem)]`}
         >
-          {menuItems.map((item) => {
+          {isSignedIn ? menuItems.map((item) => {
             const Icon = item.icon;
             const active = location.pathname === item.to;
             return (
@@ -144,16 +147,31 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
                 )}
               </Link>
             );
-          })}
-          <div className={`my-1 border-t ${isDarkMode ? 'border-white/10' : 'border-slate-200'}`} />
-          <button
-            type="button"
-            onClick={signOut}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-red-400 transition hover:bg-red-500/10"
-          >
-            <LogOut size={16} />
-            Sign out
-          </button>
+          }) : (
+            <Link
+              to="/"
+              onClick={() => setMenuOpen(false)}
+              className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                isDarkMode ? 'hover:bg-white/8' : 'hover:bg-violet-500/10'
+              }`}
+            >
+              <User size={16} className="text-slate-400" />
+              Sign in
+            </Link>
+          )}
+          {isSignedIn && (
+            <>
+              <div className={`my-1 border-t ${isDarkMode ? 'border-white/10' : 'border-slate-200'}`} />
+              <button
+                type="button"
+                onClick={signOut}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-red-400 transition hover:bg-red-500/10"
+              >
+                <LogOut size={16} />
+                Sign out
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
