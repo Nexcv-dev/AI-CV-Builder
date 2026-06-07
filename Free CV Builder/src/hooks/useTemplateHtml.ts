@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TemplateName } from '../templates';
+import { normalizeApiError } from '../utils/api';
 
 const templateHtmlCache = new Map<string, string>();
 
@@ -37,7 +38,7 @@ export function useTemplateHtml(template: TemplateName) {
       })
       .catch((fetchError) => {
         if (fetchError?.name === 'AbortError') return;
-        if (!ignore) setError(fetchError instanceof Error ? fetchError.message : 'Could not load template.');
+        if (!ignore) setError(normalizeApiError(fetchError, 'Could not load template.').message);
       })
       .finally(() => {
         if (!ignore) setLoading(false);

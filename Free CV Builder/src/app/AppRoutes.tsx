@@ -115,7 +115,7 @@ export function AppRoutes() {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/builder" element={<Home />} />
-            <Route path="/tips" element={<TipsAndResources />} />
+            <Route path="/tips" element={<ProtectedRoute><TipsAndResources /></ProtectedRoute>} />
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />

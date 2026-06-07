@@ -1,5 +1,6 @@
 ﻿import express, { Router, Request, Response, NextFunction } from 'express';
 import path from 'path';
+import { readFile } from 'fs/promises';
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
 import type { TemplateName } from '../src/templates';
@@ -13,7 +14,16 @@ const publicCacheControl = (browserMaxAgeSeconds: number, cdnMaxAgeSeconds = bro
 );
 
 export function registerPublicRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash } = bindDeps(deps);
+    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, getReleasedTemplateDefinition, getReleasedTemplateSummaries } = bindDeps(deps);
+
+    const localAdminTemplateFile = async (sourceFolder: string | undefined, fileName: string) => {
+        if (!sourceFolder) return null;
+        try {
+            return await readFile(path.resolve(process.cwd(), '..', 'Admin Templates', sourceFolder, fileName));
+        } catch {
+            return null;
+        }
+    };
 
     router.get('/api/health', (req: Request, res: Response) => {
         if (req.accepts(['json', 'html']) === 'html') {
@@ -118,10 +128,13 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
                     const builtIns = CV_TEMPLATES
                         .map((template) => adminTemplateSummary(template, settingMap.get(template.key), 0))
                         .filter((template) => template.status !== 'archived');
+                    const releasedTemplates = getReleasedTemplateSummaries(settingMap, 0)
+                        .filter((template: any) => !builtInKeys.has(template.key));
                     const customTemplates = settings
                         .filter((setting) => setting.source === 'custom' && setting.status === 'active' && !builtInKeys.has(setting.key))
                         .map((setting) => customTemplateSummary(setting, 0));
-                    return { templates: [...builtIns, ...customTemplates] };
+                    const releasedKeys = new Set(releasedTemplates.map((template: any) => template.key));
+                    return { templates: [...builtIns, ...releasedTemplates, ...customTemplates.filter((template: any) => !releasedKeys.has(template.key))] };
                 }
             );
             res.setHeader('Cache-Control', publicCacheControl(60, 300));
@@ -141,26 +154,32 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
                 `public:templates:html:${key}`,
                 parseCacheTtlMs(process.env.TEMPLATE_HTML_CACHE_TTL_MS, 10 * 60_000),
                 async () => {
-                    const setting = await TemplateSetting.findOne({ key, source: 'custom', status: 'active' }).select('indexS3Key styleS3Key');
+                    const setting = await TemplateSetting.findOne({ key, source: 'custom' }).select('indexS3Key styleS3Key status');
                     const builtInTemplate = CV_TEMPLATES.find((template: any) => template.key === key);
+                    const releasedTemplate = getReleasedTemplateDefinition(key);
+                    if (setting && setting.status !== 'active') return '';
+                    if (!setting && !builtInTemplate && !releasedTemplate) return '';
                     const s3Prefix = setting?.indexS3Key
                         ? ''
                         : builtInTemplate
                             ? (S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key)
-                            : '';
+                            : releasedTemplate
+                                ? (S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key)
+                                : '';
                     const indexS3Key = setting?.indexS3Key || (s3Prefix ? `${s3Prefix}/index.html` : '');
                     const styleS3Key = setting?.styleS3Key || (s3Prefix ? `${s3Prefix}/style.css` : '');
-                    if (!indexS3Key) return '';
+                    if (!indexS3Key && !releasedTemplate) return '';
 
-                    const indexHtml = await fetchS3Text(indexS3Key);
-                    if (!indexHtml) return '';
+                    const indexHtml = indexS3Key ? await fetchS3Text(indexS3Key) : '';
+                    const localIndexHtml = indexHtml || (await localAdminTemplateFile(releasedTemplate?.sourceFolder, 'index.html'))?.toString('utf8') || '';
+                    if (!localIndexHtml) return '';
 
-                    const css = styleS3Key ? await fetchS3Text(styleS3Key) : '';
+                    const css = (styleS3Key ? await fetchS3Text(styleS3Key) : '') || (await localAdminTemplateFile(releasedTemplate?.sourceFolder, 'style.css'))?.toString('utf8') || '';
                     return css
-                        ? indexHtml.includes('</head>')
-                            ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
-                            : `<style>\n${css}\n</style>\n${indexHtml}`
-                        : indexHtml;
+                        ? localIndexHtml.includes('</head>')
+                            ? localIndexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
+                            : `<style>\n${css}\n</style>\n${localIndexHtml}`
+                        : localIndexHtml;
                 }
             );
             if (!html) return res.status(404).json({ error: 'Template HTML not found.' });
@@ -178,14 +197,16 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         try {
             const key = validateCustomTemplateKey(req.params.key);
             if (!key) return res.status(400).json({ error: 'Invalid template key.' });
-            const setting = await TemplateSetting.findOne({ key, source: 'custom', thumbnailS3Key: { $exists: true, $ne: '' } });
-            if (!setting?.thumbnailS3Key) return res.status(404).json({ error: 'Template thumbnail not found.' });
+            const releasedTemplate = getReleasedTemplateDefinition(key);
+            const setting = await TemplateSetting.findOne({ key, source: 'custom' });
+            if (setting?.status === 'archived') return res.status(404).json({ error: 'Template thumbnail not found.' });
+            if (!setting?.thumbnailS3Key && !releasedTemplate) return res.status(404).json({ error: 'Template thumbnail not found.' });
             const currentPrefix = S3_TEMPLATE_PREFIX ? `${S3_TEMPLATE_PREFIX}/${key}` : key;
-            const storedPrefix = setting.s3Prefix || '';
+            const storedPrefix = setting?.s3Prefix || '';
             const thumbnailKeys = [
                 `${currentPrefix}/thumbnail.webp`,
                 storedPrefix ? `${storedPrefix}/thumbnail.webp` : '',
-                setting.thumbnailS3Key,
+                setting?.thumbnailS3Key,
             ].filter((item, index, list) => item && list.indexOf(item) === index);
 
             let response: any = null;
@@ -198,7 +219,16 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
                     if (code !== 'NoSuchKey' && code !== 'NotFound' && error?.$metadata?.httpStatusCode !== 404) throw error;
                 }
             }
-            if (!response) return res.status(404).json({ error: 'Template thumbnail not configured.' });
+            if (!response) {
+                const localThumbnail = await localAdminTemplateFile(releasedTemplate?.sourceFolder, 'thumbnail.webp')
+                    || await localAdminTemplateFile(releasedTemplate?.sourceFolder, 'thumbnail.png')
+                    || await localAdminTemplateFile(releasedTemplate?.sourceFolder, 'thumbnail.jpg')
+                    || await localAdminTemplateFile(releasedTemplate?.sourceFolder, 'thumbnail.svg');
+                if (!localThumbnail) return res.status(404).json({ error: 'Template thumbnail not configured.' });
+                res.setHeader('Content-Type', 'image/webp');
+                res.setHeader('Cache-Control', 'public, max-age=3600');
+                return res.send(localThumbnail);
+            }
             res.setHeader('Content-Type', response.ContentType || 'image/webp');
             res.setHeader('Cache-Control', 'public, max-age=3600');
             if (response.Body && typeof (response.Body as any).pipe === 'function') {
