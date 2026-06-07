@@ -1,8 +1,8 @@
 ﻿import React, { ChangeEvent, CSSProperties, DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Crown, Download, Eye, FileText, FileUp, Info, Loader2, UploadCloud, X, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
 import { ApiError, apiFetch } from '../utils/api';
-import { AppSidebar } from '../components/AppSidebar';
-import { AppShellHeader } from '../components/AppShellHeader';
+import { AuthModal } from '../components/AuthModal';
+import { SiteHeader } from '../components/SiteHeader';
 import { HtmlPdfRuleCheck, validateHtmlPdfRules } from '../utils/htmlPdfValidation';
 
 type HtmlPdfJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'expired';
@@ -13,6 +13,7 @@ interface HtmlPdfQuota {
   used: number;
   remaining: number | null;
   reached: boolean;
+  plan?: 'guest' | 'free' | 'payg' | 'monthly' | 'quarterly' | 'unlimited';
   resetAt?: string | null;
 }
 
@@ -78,6 +79,7 @@ export default function HtmlToPdf() {
   const [ruleChecks, setRuleChecks] = useState<HtmlPdfRuleCheck[]>(INITIAL_RULE_CHECKS);
   const [validatingRules, setValidatingRules] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const pollTimerRef = useRef<number | null>(null);
@@ -334,19 +336,28 @@ export default function HtmlToPdf() {
     : quota?.limit === null
       ? 'Unlimited'
       : `${quota?.remaining ?? 0} of ${quota?.limit ?? 3} left today`;
+  const quotaPlanLabel = quota?.plan === 'guest'
+    ? 'Guest'
+    : quota?.plan === 'payg'
+      ? 'Pass'
+      : quota?.plan === 'monthly'
+        ? 'Monthly'
+        : quota?.plan === 'quarterly'
+          ? 'Quarterly'
+          : quota?.plan === 'unlimited'
+            ? 'Admin'
+            : 'Free';
   const uploadProgress = Math.min(Math.round((inputBytes / MAX_UPLOAD_BYTES) * 100), 100);
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-white">
-      <AppSidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <AppShellHeader />
-
-        <main className="flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#070d1c] px-3 py-4 sm:px-5 lg:px-7">
+    <div className="min-h-screen bg-slate-950 text-white">
+      <SiteHeader />
+      <div className="mx-auto flex min-h-screen w-full max-w-[1800px] flex-col px-3 pb-4 pt-20 sm:px-5 lg:px-7">
+        <main className="flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#070d1c] py-4">
           <div className="flex flex-col gap-4 border-b border-white/8 pb-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <h1 className="text-[22px] font-black tracking-tight text-white sm:text-2xl">HTML to PDF Generator</h1>
-              <p className="mt-1 text-sm font-semibold text-slate-400">Upload a self-contained HTML file and export it as a clean PDF.</p>
+              <p className="mt-1 text-sm font-semibold text-slate-400">Upload a self-contained HTML file and export it as a clean PDF. Guests get a small daily quota; paid plans get more room.</p>
             </div>
 
             <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:gap-3">
@@ -354,7 +365,7 @@ export default function HtmlToPdf() {
                 quota?.reached ? 'border-red-400/30 bg-red-500/10 text-red-200' : 'border-emerald-400/25 bg-emerald-400/8 text-emerald-200'
               }`}>
                 <Crown size={15} className="shrink-0" />
-                <span className="truncate">{quotaText}</span>
+                <span className="truncate">{quotaPlanLabel}: {quotaText}</span>
               </span>
               <button
                 type="button"
@@ -368,21 +379,34 @@ export default function HtmlToPdf() {
             </div>
           </div>
 
+          {quota?.plan === 'guest' && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-300/25 bg-indigo-400/10 px-4 py-3 text-sm font-semibold text-indigo-100">
+              <span>Using the guest quota. Sign in to get more daily HTML to PDF exports.</span>
+              <button
+                type="button"
+                onClick={() => setAuthModalOpen(true)}
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-white px-4 text-xs font-black text-slate-950 transition hover:bg-indigo-100"
+              >
+                Sign in
+              </button>
+            </div>
+          )}
+
           {(error || inputTooLarge || job?.error) && (
-            <div className="rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-3 text-sm font-semibold leading-5 text-red-100 sm:px-4">
+            <div className="mt-4 rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-3 text-sm font-semibold leading-5 text-red-100 sm:px-4">
               {inputTooLarge ? 'HTML and CSS must stay under 250 KB combined.' : error || job?.error}
             </div>
           )}
 
           {readabilityWarning && !error && !job?.error && (
-            <div className="flex items-center gap-2 rounded-lg border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-sm font-semibold text-amber-100">
+            <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-sm font-semibold text-amber-100">
               <AlertTriangle size={16} className="shrink-0 text-amber-300" />
               {readabilityWarning}
             </div>
           )}
 
           {job && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-4 py-3 text-sm font-bold text-slate-300">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-4 py-3 text-sm font-bold text-slate-300">
               <div className="flex min-w-0 items-center gap-2">
                 <FileText size={16} className="shrink-0 text-emerald-300" />
                 <span>Job {job.status}</span>
@@ -615,6 +639,16 @@ export default function HtmlToPdf() {
             </section>
           </div>
         </main>
+        <AuthModal
+          isOpen={authModalOpen}
+          initialMode="login"
+          redirectTo="/html-to-pdf"
+          onClose={() => setAuthModalOpen(false)}
+          onAuthenticated={() => {
+            setAuthModalOpen(false);
+            void loadQuota();
+          }}
+        />
       </div>
     </div>
   );

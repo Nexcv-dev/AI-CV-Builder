@@ -130,20 +130,23 @@ export const calculateHtmlPdfAutoScale = ({
 
 export const createHtmlPdfJob = async ({
     userId,
+    guestKey,
     html,
     css,
     filename,
     pageSize,
     quotaReserved,
 }: {
-    userId: string;
+    userId?: string;
+    guestKey?: string;
     html: string;
     css: string;
     filename: string;
     pageSize: HtmlPdfPageSize;
     quotaReserved: boolean;
 }) => HtmlPdfJob.create({
-    userId,
+    ...(userId ? { userId } : {}),
+    ...(guestKey ? { guestKey } : {}),
     html,
     css,
     filename,
@@ -317,7 +320,7 @@ export const processHtmlPdfJob = async (jobId: string, deps: Record<string, any>
             Body: buffer,
             ContentType: 'application/pdf',
             Metadata: {
-                userId: String(job.userId),
+                userId: job.userId ? String(job.userId) : 'guest',
                 jobId: String(job._id),
                 source: 'html-pdf',
             },
@@ -345,8 +348,9 @@ export const processHtmlPdfJob = async (jobId: string, deps: Record<string, any>
             { $set: { status: 'failed', error: String(error?.message || 'HTML PDF generation failed.').slice(0, 500), completedAt: new Date() } }
         );
         if (job.quotaReserved) {
-            const user = deps.User ? await deps.User.findById(job.userId) : null;
-            if (user && deps.rollbackHtmlPdfQuota) await deps.rollbackHtmlPdfQuota(user).catch((rollbackError: any) => {
+            const user = job.userId && deps.User ? await deps.User.findById(job.userId) : null;
+            const quotaOwner = user ? { user } : job.guestKey ? { guestKey: job.guestKey } : null;
+            if (quotaOwner && deps.rollbackHtmlPdfQuota) await deps.rollbackHtmlPdfQuota(quotaOwner).catch((rollbackError: any) => {
                 logError?.('html_pdf.job_quota_rollback_failed', rollbackError, { userId: String(job.userId), jobId: String(job._id) });
             });
         }
@@ -355,7 +359,14 @@ export const processHtmlPdfJob = async (jobId: string, deps: Record<string, any>
     }
 };
 
-export const findUserHtmlPdfJob = async (jobId: string, userId: string) => HtmlPdfJob.findOne({ _id: jobId, userId });
+export const findUserHtmlPdfJob = async (jobId: string, owner: string | { userId?: string; guestKey?: string }) => {
+    const ownerFilter = typeof owner === 'string'
+        ? { userId: owner }
+        : owner.userId
+            ? { userId: owner.userId }
+            : { guestKey: owner.guestKey };
+    return HtmlPdfJob.findOne({ _id: jobId, ...ownerFilter });
+};
 
 export const sendHtmlPdfJobDownload = async (job: IHtmlPdfJob, res: Response) => {
     const client = getHtmlPdfS3Client();

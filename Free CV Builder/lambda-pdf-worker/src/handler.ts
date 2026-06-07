@@ -15,6 +15,7 @@ const HTML_PDF_JOBS_COLLECTION = process.env.HTML_PDF_JOBS_COLLECTION || 'htmlpd
 const USERS_COLLECTION = process.env.USERS_COLLECTION || 'users';
 const DOWNLOAD_QUOTAS_COLLECTION = process.env.DOWNLOAD_QUOTAS_COLLECTION || 'downloadquotas';
 const HTML_PDF_QUOTAS_COLLECTION = process.env.HTML_PDF_QUOTAS_COLLECTION || 'htmlpdfquotas';
+const HTML_PDF_GUEST_QUOTAS_COLLECTION = process.env.HTML_PDF_GUEST_QUOTAS_COLLECTION || 'htmlpdfguestquotas';
 const HTML_PDF_RENDER_TIMEOUT_MS = Number(process.env.HTML_PDF_RENDER_TIMEOUT_MS || 30000);
 const MAX_HTML_PDF_DATA_URI_LENGTH = 2 * 1024 * 1024;
 const HTML_PDF_PAGE_PIXELS = {
@@ -143,10 +144,14 @@ const rollbackDownloadQuota = async (db: any, userId: ObjectId) => {
   );
 };
 
-const rollbackHtmlPdfQuota = async (db: any, userId: ObjectId) => {
+const rollbackHtmlPdfQuota = async (db: any, owner: { userId?: ObjectId; guestKey?: string }) => {
   const day = new Date().toISOString().slice(0, 10);
-  await db.collection(HTML_PDF_QUOTAS_COLLECTION).updateOne(
-    { userId, day, count: { $gt: 0 } },
+  const collection = owner.userId ? HTML_PDF_QUOTAS_COLLECTION : HTML_PDF_GUEST_QUOTAS_COLLECTION;
+  const filter = owner.userId
+    ? { userId: owner.userId, day, count: { $gt: 0 } }
+    : { guestKey: owner.guestKey, day, count: { $gt: 0 } };
+  await db.collection(collection).updateOne(
+    filter,
     { $inc: { count: -1 } }
   );
 };
@@ -390,7 +395,7 @@ const processHtmlPdfJob = async (jobId: string) => {
       Body: buffer,
       ContentType: 'application/pdf',
       Metadata: {
-        userId: String(job.userId),
+        userId: job.userId ? String(job.userId) : 'guest',
         jobId,
         source: 'html-pdf',
       },
@@ -415,8 +420,8 @@ const processHtmlPdfJob = async (jobId: string) => {
       { _id: objectId },
       { $set: { status: 'failed', error: String(error?.message || 'HTML PDF generation failed.').slice(0, 500), completedAt: new Date() } }
     );
-    if (job.quotaReserved && job.userId) {
-      await rollbackHtmlPdfQuota(db, job.userId).catch((rollbackError: any) => {
+    if (job.quotaReserved && (job.userId || job.guestKey)) {
+      await rollbackHtmlPdfQuota(db, { userId: job.userId, guestKey: job.guestKey }).catch((rollbackError: any) => {
         console.error(`HTML PDF quota rollback failed for job ${jobId}.`, rollbackError);
       });
     }

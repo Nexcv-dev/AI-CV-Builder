@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { createHash } from 'crypto';
 import { bindDeps } from './_shared';
 import {
     createHtmlPdfJob,
@@ -30,6 +31,21 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
         logError,
     } = bindDeps(deps);
 
+    const getHtmlPdfGuestKey = (req: Request) => {
+        const forwardedFor = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+        const ip = forwardedFor || req.ip || req.socket.remoteAddress || 'unknown';
+        const userAgent = String(req.headers['user-agent'] || '').slice(0, 300);
+        return createHash('sha256').update(`${ip}|${userAgent}`).digest('hex').slice(0, 48);
+    };
+
+    const getHtmlPdfOwner = (req: Request) => (
+        req.user ? { user: req.user } : { guestKey: getHtmlPdfGuestKey(req) }
+    );
+
+    const getHtmlPdfJobOwnerFilter = (req: Request) => (
+        req.user ? { userId: String(currentUserId(req)) } : { guestKey: getHtmlPdfGuestKey(req) }
+    );
+
     const expireJobAndRollbackQuota = async (job: any) => {
         const canRollbackReservedQuota = job.quotaReserved && ['queued', 'processing'].includes(job.status);
         const claimed = canRollbackReservedQuota
@@ -45,11 +61,12 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
         job.status = 'expired';
         if (canRollbackReservedQuota && claimed.modifiedCount > 0) {
             job.quotaReserved = false;
-            const user = await User.findById(job.userId);
-            if (user) {
-                await rollbackHtmlPdfQuota(user).catch((rollbackError: any) => {
+            const user = job.userId && User ? await User.findById(job.userId) : null;
+            const quotaOwner = user ? { user } : job.guestKey ? { guestKey: job.guestKey } : null;
+            if (quotaOwner) {
+                await rollbackHtmlPdfQuota(quotaOwner).catch((rollbackError: any) => {
                     logError?.('html_pdf.job_expired_quota_rollback_failed', rollbackError, {
-                        userId: String(job.userId),
+                        userId: job.userId ? String(job.userId) : undefined,
                         jobId: String(job._id),
                     });
                 });
@@ -57,15 +74,15 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
         }
     };
 
-    router.get('/api/html-pdf-quota', requireAuth, async (req: Request, res: Response) => {
+    router.get('/api/html-pdf-quota', async (req: Request, res: Response) => {
         try {
-            res.json({ quota: await getHtmlPdfQuota(req.user) });
+            res.json({ quota: await getHtmlPdfQuota(getHtmlPdfOwner(req)) });
         } catch (error) {
             return sendError(res, 500, 'Could not load HTML PDF quota.', error);
         }
     });
 
-    router.post('/api/html-pdf-jobs', requireAuth, pdfLimiter, htmlPdfJsonParser, async (req: Request, res: Response) => {
+    router.post('/api/html-pdf-jobs', pdfLimiter, htmlPdfJsonParser, async (req: Request, res: Response) => {
         let quotaReserved = false;
         try {
             if (!isHtmlPdfJobStorageConfigured()) {
@@ -73,7 +90,8 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
             }
 
             const input = sanitizeHtmlPdfInput({ html: req.body?.html, css: req.body?.css });
-            const quota = await consumeHtmlPdfQuota(req.user);
+            const owner = getHtmlPdfOwner(req);
+            const quota = await consumeHtmlPdfQuota(owner);
             if (!quota.reserved) {
                 return res.status(403).json({
                     error: 'Daily HTML to PDF limit reached.',
@@ -84,7 +102,7 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
             quotaReserved = quota.limit !== null;
 
             const job = await createHtmlPdfJob({
-                userId: currentUserId(req),
+                ...(req.user ? { userId: String(currentUserId(req)) } : { guestKey: owner.guestKey }),
                 html: input.html,
                 css: input.css,
                 filename: sanitizeHtmlPdfFilename(req.body?.filename),
@@ -111,9 +129,9 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
             });
         } catch (error: any) {
             if (quotaReserved) {
-                await rollbackHtmlPdfQuota(req.user).catch((rollbackError: any) => {
+                await rollbackHtmlPdfQuota(getHtmlPdfOwner(req)).catch((rollbackError: any) => {
                     logError?.('html_pdf.quota_rollback_failed', rollbackError, {
-                        userId: req.user ? currentUserId(req) : undefined,
+                        userId: req.user ? String(currentUserId(req)) : undefined,
                     });
                 });
             }
@@ -122,13 +140,13 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
         }
     });
 
-    router.get('/api/html-pdf-jobs/:id', requireAuth, async (req: Request, res: Response) => {
+    router.get('/api/html-pdf-jobs/:id', async (req: Request, res: Response) => {
         try {
             if (!isValidDocumentId(req.params.id)) {
                 return res.status(400).json({ error: 'Invalid HTML PDF job id.' });
             }
 
-            const job = await findUserHtmlPdfJob(req.params.id, currentUserId(req));
+            const job = await findUserHtmlPdfJob(req.params.id, getHtmlPdfJobOwnerFilter(req));
             if (!job) return res.status(404).json({ error: 'HTML PDF job not found.' });
 
             if (job.expiresAt.getTime() < Date.now() && job.status !== 'ready') {
@@ -150,13 +168,13 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
         }
     });
 
-    router.get('/api/html-pdf-jobs/:id/download', requireAuth, async (req: Request, res: Response) => {
+    router.get('/api/html-pdf-jobs/:id/download', async (req: Request, res: Response) => {
         try {
             if (!isValidDocumentId(req.params.id)) {
                 return res.status(400).json({ error: 'Invalid HTML PDF job id.' });
             }
 
-            const job = await findUserHtmlPdfJob(req.params.id, currentUserId(req));
+            const job = await findUserHtmlPdfJob(req.params.id, getHtmlPdfJobOwnerFilter(req));
             if (!job) return res.status(404).json({ error: 'HTML PDF job not found.' });
             await sendHtmlPdfJobDownload(job, res);
         } catch (error) {

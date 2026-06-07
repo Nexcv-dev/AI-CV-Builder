@@ -4,7 +4,8 @@ export type HtmlPdfJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'e
 export type HtmlPdfPageSize = 'A4' | 'Letter';
 
 export interface IHtmlPdfJob extends Document {
-  userId: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId;
+  guestKey?: string;
   status: HtmlPdfJobStatus;
   html: string;
   css: string;
@@ -26,7 +27,8 @@ export interface IHtmlPdfJob extends Document {
 
 const HtmlPdfJobSchema = new Schema(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+    guestKey: { type: String, trim: true, index: true },
     status: {
       type: String,
       enum: ['queued', 'processing', 'ready', 'failed', 'expired'],
@@ -54,6 +56,7 @@ const HtmlPdfJobSchema = new Schema(
 );
 
 HtmlPdfJobSchema.index({ userId: 1, createdAt: -1 });
+HtmlPdfJobSchema.index({ guestKey: 1, createdAt: -1 }, { partialFilterExpression: { guestKey: { $exists: true } } });
 HtmlPdfJobSchema.index({ status: 1, createdAt: 1 });
 
 const HtmlPdfJob =

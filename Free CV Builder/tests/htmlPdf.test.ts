@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import express from 'express';
 import type { Server } from 'node:http';
 import { registerHtmlPdfRoutes } from '../routes/htmlPdf';
-import { buildHtmlPdfQuota, getHtmlPdfDailyLimit } from '../server-models/htmlPdfQuota';
+import {
+  buildHtmlPdfQuota,
+  getHtmlPdfDailyLimit,
+  getHtmlPdfGuestDailyLimit,
+  getHtmlPdfMonthlyDailyLimit,
+  getHtmlPdfPaygDailyLimit,
+  getHtmlPdfQuarterlyDailyLimit,
+} from '../server-models/htmlPdfQuota';
 import { calculateHtmlPdfAutoScale, calculateHtmlPdfFitScale, sanitizeHtmlPdfFilename, sanitizeHtmlPdfInput } from '../services/htmlPdfJobService';
 
 const validHtml = `
@@ -41,6 +48,33 @@ describe('HTML to PDF feature', () => {
     } else {
       process.env.HTML_PDF_DAILY_FREE_LIMIT = original;
     }
+  });
+
+  it('uses plan-based daily HTML PDF export limits', () => {
+    const originals = {
+      guest: process.env.HTML_PDF_DAILY_GUEST_LIMIT,
+      payg: process.env.HTML_PDF_DAILY_PAYG_LIMIT,
+      monthly: process.env.HTML_PDF_DAILY_MONTHLY_LIMIT,
+      quarterly: process.env.HTML_PDF_DAILY_QUARTERLY_LIMIT,
+    };
+    delete process.env.HTML_PDF_DAILY_GUEST_LIMIT;
+    delete process.env.HTML_PDF_DAILY_PAYG_LIMIT;
+    delete process.env.HTML_PDF_DAILY_MONTHLY_LIMIT;
+    delete process.env.HTML_PDF_DAILY_QUARTERLY_LIMIT;
+
+    expect(getHtmlPdfGuestDailyLimit()).toBe(1);
+    expect(getHtmlPdfPaygDailyLimit()).toBe(10);
+    expect(getHtmlPdfMonthlyDailyLimit()).toBe(25);
+    expect(getHtmlPdfQuarterlyDailyLimit()).toBe(50);
+    expect(buildHtmlPdfQuota(null, 0)).toMatchObject({ limit: 1, plan: 'guest', remaining: 1 });
+    expect(buildHtmlPdfQuota({ role: 'user', plan: 'payg', planExpiresAt: new Date(Date.now() + 1000) } as any, 2)).toMatchObject({ limit: 10, remaining: 8 });
+    expect(buildHtmlPdfQuota({ role: 'user', plan: 'monthly', planExpiresAt: new Date(Date.now() + 1000) } as any, 5)).toMatchObject({ limit: 25, remaining: 20 });
+    expect(buildHtmlPdfQuota({ role: 'user', plan: 'quarterly', planExpiresAt: new Date(Date.now() + 1000) } as any, 5)).toMatchObject({ limit: 50, remaining: 45 });
+
+    if (originals.guest === undefined) delete process.env.HTML_PDF_DAILY_GUEST_LIMIT; else process.env.HTML_PDF_DAILY_GUEST_LIMIT = originals.guest;
+    if (originals.payg === undefined) delete process.env.HTML_PDF_DAILY_PAYG_LIMIT; else process.env.HTML_PDF_DAILY_PAYG_LIMIT = originals.payg;
+    if (originals.monthly === undefined) delete process.env.HTML_PDF_DAILY_MONTHLY_LIMIT; else process.env.HTML_PDF_DAILY_MONTHLY_LIMIT = originals.monthly;
+    if (originals.quarterly === undefined) delete process.env.HTML_PDF_DAILY_QUARTERLY_LIMIT; else process.env.HTML_PDF_DAILY_QUARTERLY_LIMIT = originals.quarterly;
   });
 
   it('does not limit super admins', () => {
@@ -104,15 +138,15 @@ describe('HTML to PDF feature', () => {
     })).toBe(1);
   });
 
-  it('requires authentication for job creation', async () => {
+  it('exposes HTML PDF quota to guests', async () => {
     const app = express();
     const router = express.Router();
     app.use(express.json());
     registerHtmlPdfRoutes(router, {
-      requireAuth: (_req: any, res: any) => res.status(401).json({ error: 'Not authenticated' }),
       htmlPdfJsonParser: express.json({ limit: '300kb' }),
       pdfLimiter: (_req: any, _res: any, next: any) => next(),
       sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
+      getHtmlPdfQuota: vi.fn().mockResolvedValue({ limit: 1, used: 0, remaining: 1, reached: false, plan: 'guest' }),
     });
     app.use(router);
 
@@ -123,15 +157,11 @@ describe('HTML to PDF feature', () => {
     if (!address || typeof address === 'string') throw new Error('Test server did not bind to a TCP port.');
 
     try {
-      const response = await fetch(`http://127.0.0.1:${address.port}/api/html-pdf-jobs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: validHtml, css: '' }),
-      });
-      const body = await response.json() as { error: string };
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/html-pdf-quota`);
+      const body = await response.json() as { quota: { plan: string; limit: number } };
 
-      expect(response.status).toBe(401);
-      expect(body.error).toContain('Not authenticated');
+      expect(response.status).toBe(200);
+      expect(body.quota).toMatchObject({ plan: 'guest', limit: 1 });
     } finally {
       await new Promise<void>((resolve, reject) => {
         server.close((error) => error ? reject(error) : resolve());
