@@ -3,19 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #234 from Nexcv-dev/test/overview (f364f7b) - Bimantha Perera, 9 seconds ago
-* fix bug (468d253) - Bimantha Perera, 7 minutes ago
-* Delete Screenshot 2026-06-03 151939.png (2248cb7) - Bimantha Perera, 14 hours ago
+* Merge pull request #235 from Nexcv-dev/test/overview (c3cd0d1) - Bimantha Perera, 10 seconds ago
+* improve error handling and bug fixing (fc55f1c) - Bimantha Perera, 4 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (10b5b7f) - bimanthaperera-lab, 38 minutes ago
+* Merge pull request #234 from Nexcv-dev/test/overview (f364f7b) - Bimantha Perera, 39 minutes ago
+* fix bug (468d253) - Bimantha Perera, 46 minutes ago
+* Delete Screenshot 2026-06-03 151939.png (2248cb7) - Bimantha Perera, 15 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (cd9c70d) - bimanthaperera-lab, 15 hours ago
 * Merge pull request #233 from Nexcv-dev/test/overview (4e79580) - Bimantha Perera, 15 hours ago
 * add QA docs (0e00cc9) - Bimantha Perera, 15 hours ago
 * add new  fonts and improve UX (a5e31c9) - Bimantha Perera, 15 hours ago
 * fix bugs and update documentation (8cd86b9) - Bimantha Perera, 16 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (25b9c5a) - bimanthaperera-lab, 17 hours ago
-* Merge pull request #232 from Nexcv-dev/test/overview (4896973) - Bimantha Perera, 17 hours ago
-* fix database backup action issue (3304f5f) - Bimantha Perera, 17 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (321b64b) - bimanthaperera-lab, 28 hours ago
-* Revert accidental main backup changes (51d1142) - Bimantha Perera, 28 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (25b9c5a) - bimanthaperera-lab, 18 hours ago
+* Merge pull request #232 from Nexcv-dev/test/overview (4896973) - Bimantha Perera, 18 hours ago
+* fix database backup action issue (3304f5f) - Bimantha Perera, 18 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (321b64b) - bimanthaperera-lab, 29 hours ago
+* Revert accidental main backup changes (51d1142) - Bimantha Perera, 29 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (96b7da7) - bimanthaperera-lab, 29 hours ago
 * fix backup issue (afe214a) - Bimantha Perera, 29 hours ago
 * fix backup issue (235614a) - Bimantha Perera, 29 hours ago
@@ -50,7 +53,7 @@ All notable changes to this project will be documented in this file.
 * add cv import queue (b178a94) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 2 days ago
 * Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 2 days ago
-* add email to AWS que system (7f08638) - Bimantha Perera, 2 days ago
+* add email to AWS que system (7f08638) - Bimantha Perera, 3 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (d5598a2) - bimanthaperera-lab, 3 days ago
 * Merge pull request #220 from bimanthaperera-lab/test/overview (f626f2c) - Bimantha Perera, 3 days ago
 * Code optimization and add pdf generation que system (6091eec) - Bimantha Perera, 3 days ago
