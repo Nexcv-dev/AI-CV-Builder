@@ -1,14 +1,28 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { MongoClient, ObjectId } from 'mongodb';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 
 const MONGODB_URI = (process.env.MONGODB_URI || process.env.MONGO_URI || '').trim();
 const PDF_LAMBDA_URL = (process.env.PDF_LAMBDA_URL || '').trim();
 const PDF_OUTPUT_BUCKET = (process.env.PDF_OUTPUT_BUCKET_NAME || process.env.S3_PDF_BUCKET_NAME || '').trim();
 const PDF_OUTPUT_PREFIX = (process.env.PDF_OUTPUT_PREFIX || 'pdf-jobs').replace(/^\/+|\/+$/g, '');
+const HTML_PDF_OUTPUT_BUCKET = (process.env.HTML_PDF_OUTPUT_BUCKET_NAME || PDF_OUTPUT_BUCKET).trim();
+const HTML_PDF_OUTPUT_PREFIX = (process.env.HTML_PDF_OUTPUT_PREFIX || 'html-pdf-jobs').replace(/^\/+|\/+$/g, '');
 const PDF_LAMBDA_TIMEOUT_MS = Number(process.env.PDF_LAMBDA_TIMEOUT_MS || 45000);
 const PDF_JOBS_COLLECTION = process.env.PDF_JOBS_COLLECTION || 'pdfjobs';
+const HTML_PDF_JOBS_COLLECTION = process.env.HTML_PDF_JOBS_COLLECTION || 'htmlpdfjobs';
 const USERS_COLLECTION = process.env.USERS_COLLECTION || 'users';
 const DOWNLOAD_QUOTAS_COLLECTION = process.env.DOWNLOAD_QUOTAS_COLLECTION || 'downloadquotas';
+const HTML_PDF_QUOTAS_COLLECTION = process.env.HTML_PDF_QUOTAS_COLLECTION || 'htmlpdfquotas';
+const HTML_PDF_RENDER_TIMEOUT_MS = Number(process.env.HTML_PDF_RENDER_TIMEOUT_MS || 30000);
+const MAX_HTML_PDF_DATA_URI_LENGTH = 2 * 1024 * 1024;
+const HTML_PDF_PAGE_PIXELS = {
+  A4: { width: 794, height: 1122 },
+  Letter: { width: 816, height: 1056 },
+} as const;
+const MIN_HTML_PDF_SCALE = 0.1;
+const HTML_PDF_SINGLE_PAGE_FIT_MAX_PAGES = 2;
 
 let mongoClient: MongoClient | null = null;
 let s3Client: S3Client | null = null;
@@ -45,7 +59,10 @@ const parseSqsJobIds = (event: any) => {
     if (!payload.jobId || typeof payload.jobId !== 'string') {
       throw new Error('SQS message is missing jobId.');
     }
-    return payload.jobId;
+    return {
+      jobId: payload.jobId,
+      type: payload.type || process.env.PDF_WORKER_MODE || 'cv-pdf',
+    };
   });
 };
 
@@ -53,6 +70,12 @@ const pdfOutputKey = (job: any) => {
   const createdAt = job.createdAt instanceof Date ? job.createdAt : new Date();
   const createdDay = createdAt.toISOString().slice(0, 10);
   return `${PDF_OUTPUT_PREFIX}/${createdDay}/${String(job._id)}.pdf`;
+};
+
+const htmlPdfOutputKey = (job: any) => {
+  const createdAt = job.createdAt instanceof Date ? job.createdAt : new Date();
+  const createdDay = createdAt.toISOString().slice(0, 10);
+  return `${HTML_PDF_OUTPUT_PREFIX}/${createdDay}/${String(job._id)}.pdf`;
 };
 
 const callPdfLambda = async (job: any) => {
@@ -118,6 +141,158 @@ const rollbackDownloadQuota = async (db: any, userId: ObjectId) => {
     { userId, day, count: { $gt: 0 } },
     { $inc: { count: -1 } }
   );
+};
+
+const rollbackHtmlPdfQuota = async (db: any, userId: ObjectId) => {
+  const day = new Date().toISOString().slice(0, 10);
+  await db.collection(HTML_PDF_QUOTAS_COLLECTION).updateOne(
+    { userId, day, count: { $gt: 0 } },
+    { $inc: { count: -1 } }
+  );
+};
+
+const buildHtmlPdfDocument = (html: string, css: string) => {
+  const style = `<style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    img { max-width: 100%; }
+    ${css || ''}
+  </style>`;
+  if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, `${style}</head>`);
+  if (/<body[^>]*>/i.test(html)) return html.replace(/<body([^>]*)>/i, `<head>${style}</head><body$1>`);
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">${style}</head><body>${html}</body></html>`;
+};
+
+const calculateHtmlPdfFitScale = ({
+  contentWidth,
+  contentHeight,
+  pageSize,
+}: {
+  contentWidth: number;
+  contentHeight: number;
+  pageSize: keyof typeof HTML_PDF_PAGE_PIXELS;
+}) => {
+  const page = HTML_PDF_PAGE_PIXELS[pageSize];
+  const widthScale = contentWidth > page.width ? page.width / contentWidth : 1;
+  const heightScale = contentHeight > page.height ? page.height / contentHeight : 1;
+  return Math.max(MIN_HTML_PDF_SCALE, Math.min(1, widthScale, heightScale));
+};
+
+const calculateHtmlPdfAutoScale = ({
+  contentWidth,
+  contentHeight,
+  pageSize,
+}: {
+  contentWidth: number;
+  contentHeight: number;
+  pageSize: keyof typeof HTML_PDF_PAGE_PIXELS;
+}) => {
+  const page = HTML_PDF_PAGE_PIXELS[pageSize];
+  const widthScale = contentWidth > page.width ? page.width / contentWidth : 1;
+  const canFitSinglePage = contentHeight <= page.height * HTML_PDF_SINGLE_PAGE_FIT_MAX_PAGES;
+  if (!canFitSinglePage) return Math.max(MIN_HTML_PDF_SCALE, Math.min(1, widthScale));
+  return calculateHtmlPdfFitScale({ contentWidth, contentHeight, pageSize });
+};
+
+const renderHtmlToPdf = async (job: any) => {
+  const launchOptions: any = {
+    args: chromium.args,
+    defaultViewport: (chromium as any).defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: (chromium as any).headless,
+    ignoreHTTPSErrors: true,
+  };
+  const browser = await puppeteer.launch(launchOptions);
+  let page: any = null;
+  try {
+    const pageSize = job.pageSize === 'Letter' ? 'Letter' : 'A4';
+    page = await browser.newPage();
+    await page.setJavaScriptEnabled(false);
+    await page.setRequestInterception(true);
+    page.on('request', (request: any) => {
+      const url = request.url();
+      if (url === 'about:blank' || url.startsWith('data:')) {
+        if (url.startsWith('data:') && url.length > MAX_HTML_PDF_DATA_URI_LENGTH) return request.abort();
+        return request.continue();
+      }
+      return request.abort();
+    });
+    const pageSizePixels = HTML_PDF_PAGE_PIXELS[pageSize];
+    await page.setViewport({ width: pageSizePixels.width, height: pageSizePixels.height, deviceScaleFactor: 1 });
+    await page.setContent(buildHtmlPdfDocument(job.html || '', job.css || ''), { waitUntil: 'domcontentloaded', timeout: HTML_PDF_RENDER_TIMEOUT_MS });
+    await page.evaluate(async () => {
+      const images = Array.from(document.querySelectorAll('img'));
+      await Promise.all(images.map((img: any) => img.decode().catch(() => undefined)));
+    });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const dimensions = await page.evaluate(() => {
+      const body = document.body;
+      const root = document.documentElement;
+      const pageLikeElements = Array.from(document.querySelectorAll('main.cv, .cv, main.page, .page, [data-pdf-page]'))
+        .filter((element): element is HTMLElement => element instanceof HTMLElement)
+        .filter((element) => {
+          const style = window.getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+        });
+
+      if (pageLikeElements.length > 0) {
+        const pageBounds = pageLikeElements.reduce(
+          (acc, element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+              width: Math.max(acc.width, Math.ceil(rect.width)),
+              height: Math.max(acc.height, Math.ceil(Math.max(element.scrollHeight, element.offsetHeight, rect.height))),
+            };
+          },
+          { width: 0, height: 0 }
+        );
+        return {
+          width: Math.max(pageBounds.width, root.clientWidth || 0),
+          height: Math.max(pageBounds.height, root.clientHeight || 0),
+        };
+      }
+
+      const visibleElements = Array.from(document.querySelectorAll('body *'))
+        .filter((element): element is HTMLElement => element instanceof HTMLElement)
+        .filter((element) => {
+          const style = window.getComputedStyle(element);
+          return style.display !== 'none' && style.visibility !== 'hidden';
+        });
+      const bounds = visibleElements.reduce(
+        (acc, element) => {
+          const rect = element.getBoundingClientRect();
+          if (rect.width <= 0 || rect.height <= 0) return acc;
+          return {
+            right: Math.max(acc.right, rect.right),
+            bottom: Math.max(acc.bottom, rect.bottom),
+          };
+        },
+        { right: 0, bottom: 0 }
+      );
+
+      return {
+        width: Math.max(root.scrollWidth, body?.scrollWidth || 0, root.offsetWidth, body?.offsetWidth || 0, Math.ceil(bounds.right)),
+        height: Math.max(root.scrollHeight, body?.scrollHeight || 0, root.offsetHeight, body?.offsetHeight || 0, Math.ceil(bounds.bottom)),
+      };
+    });
+    if (dimensions.height > pageSizePixels.height * 20) throw new Error('Document is too long to render safely.');
+    const fitScale = calculateHtmlPdfAutoScale({
+      contentWidth: dimensions.width,
+      contentHeight: dimensions.height,
+      pageSize,
+    });
+    return Buffer.from(await page.pdf({
+      format: pageSize,
+      printBackground: true,
+      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+      scale: fitScale,
+      timeout: HTML_PDF_RENDER_TIMEOUT_MS,
+    }));
+  } finally {
+    if (page) await page.close().catch(() => undefined);
+    await browser.close().catch(() => undefined);
+  }
 };
 
 const processPdfJob = async (jobId: string) => {
@@ -188,10 +363,75 @@ const processPdfJob = async (jobId: string) => {
   }
 };
 
-export async function handler(event: any) {
-  const jobIds = parseSqsJobIds(event);
-  for (const jobId of jobIds) {
-    await processPdfJob(jobId);
+const processHtmlPdfJob = async (jobId: string) => {
+  if (!HTML_PDF_OUTPUT_BUCKET) throw new Error('HTML_PDF_OUTPUT_BUCKET_NAME is not configured.');
+  const db = await getDatabase();
+  const jobs = db.collection(HTML_PDF_JOBS_COLLECTION);
+  const objectId = new ObjectId(jobId);
+
+  const job = await jobs.findOneAndUpdate(
+    { _id: objectId, status: 'queued' },
+    { $set: { status: 'processing', startedAt: new Date() }, $inc: { attempts: 1 } },
+    { returnDocument: 'after' }
+  );
+
+  if (!job) {
+    console.log(`HTML PDF job ${jobId} is not queued; skipping.`);
+    return;
   }
-  return { processed: jobIds.length };
+
+  try {
+    const buffer = await renderHtmlToPdf(job);
+    const outputKey = htmlPdfOutputKey(job);
+    const client = new S3Client({ region: process.env.HTML_PDF_OUTPUT_REGION || process.env.PDF_OUTPUT_REGION || process.env.AWS_REGION || 'eu-north-1' });
+    await client.send(new PutObjectCommand({
+      Bucket: HTML_PDF_OUTPUT_BUCKET,
+      Key: outputKey,
+      Body: buffer,
+      ContentType: 'application/pdf',
+      Metadata: {
+        userId: String(job.userId),
+        jobId,
+        source: 'html-pdf',
+      },
+    }));
+
+    await jobs.updateOne(
+      { _id: objectId },
+      {
+        $set: {
+          status: 'ready',
+          renderer: 'lambda-worker',
+          outputBucket: HTML_PDF_OUTPUT_BUCKET,
+          outputKey,
+          outputBytes: buffer.length,
+          completedAt: new Date(),
+        },
+      }
+    );
+    console.log(`HTML PDF job ${jobId} ready (${buffer.length} bytes).`);
+  } catch (error: any) {
+    await jobs.updateOne(
+      { _id: objectId },
+      { $set: { status: 'failed', error: String(error?.message || 'HTML PDF generation failed.').slice(0, 500), completedAt: new Date() } }
+    );
+    if (job.quotaReserved && job.userId) {
+      await rollbackHtmlPdfQuota(db, job.userId).catch((rollbackError: any) => {
+        console.error(`HTML PDF quota rollback failed for job ${jobId}.`, rollbackError);
+      });
+    }
+    throw error;
+  }
+};
+
+export async function handler(event: any) {
+  const jobs = parseSqsJobIds(event);
+  for (const job of jobs) {
+    if (job.type === 'html-pdf') {
+      await processHtmlPdfJob(job.jobId);
+    } else {
+      await processPdfJob(job.jobId);
+    }
+  }
+  return { processed: jobs.length };
 }

@@ -150,11 +150,13 @@ import {
 import { registerAdminRoutes } from './routes/admin';
 import { registerAuthRoutes } from './routes/auth';
 import { registerCvRoutes } from './routes/cv';
+import { registerHtmlPdfRoutes } from './routes/htmlPdf';
 import { registerPaymentRoutes } from './routes/payment';
 import { registerPublicRoutes } from './routes/public';
 import { initSentry, setupSentryExpressErrorHandler } from './server-utils/sentry';
 import { getOrSetCachedValue, parseCacheTtlMs } from './server-utils/ttlCache';
 import { withCircuitBreaker } from './server-utils/circuitBreaker';
+import { getHtmlPdfQuota, consumeHtmlPdfQuota, rollbackHtmlPdfQuota } from './services/htmlPdfQuotaService';
 import {
     buildAssetUrl,
     buildCanonicalUrl,
@@ -221,11 +223,12 @@ configureRequestTimeout(app);
 const defaultJsonParser = express.json({ limit: '1mb' });
 const cvImportJsonParser = express.json({ limit: '14mb' });
 const pdfJsonParser = express.json({ limit: '5mb' });
+const htmlPdfJsonParser = express.json({ limit: '300kb' });
 const adminTemplateJsonParser = express.json({ limit: '6mb' });
 
 // Default JSON limit for most endpoints. Larger payloads are allowed only on specific routes.
 app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf' || req.path === '/api/lemonsqueezy/webhook' || req.path.startsWith('/api/admin/templates')) {
+    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf' || req.path === '/api/html-pdf-jobs' || req.path === '/api/lemonsqueezy/webhook' || req.path.startsWith('/api/admin/templates')) {
         return next();
     }
     return defaultJsonParser(req, res, next);
@@ -891,7 +894,7 @@ const routeDeps = {
     User, CVDocument, CvCreationQuota, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, AppSetting, AdminAuditLog,
     CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan,
     requireAuth, requireSuperAdmin, requireAdminPermission, sendError, passport,
-    adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser,
+    adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, htmlPdfJsonParser,
     authLimiter, aiLimiter, billingQuoteLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, passwordResetDailyLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter,
     getRequestOrigin, isAllowedOrigin,
     clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
@@ -913,7 +916,7 @@ const routeDeps = {
     markSessionCurrent, invalidateUserSessions,
     documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
     extractCvText, parseCvTextToStructuredData, withImportMeta,
-    getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, buildCvCreationQuota, buildDownloadQuota,
+    getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, getHtmlPdfQuota, consumeHtmlPdfQuota, rollbackHtmlPdfQuota, buildCvCreationQuota, buildDownloadQuota,
     requireVerifiedEmail, requirePaidPlan,
     startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, adminPaymentSummary,
     SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary,
@@ -945,6 +948,10 @@ app.use(authRouter);
 const cvRouter = express.Router();
 registerCvRoutes(cvRouter, routeDeps);
 app.use(cvRouter);
+
+const htmlPdfRouter = express.Router();
+registerHtmlPdfRoutes(htmlPdfRouter, routeDeps);
+app.use(htmlPdfRouter);
 
 setupSentryExpressErrorHandler(app);
 

@@ -5,6 +5,7 @@ import { Footer } from '../components/Footer';
 const FOOTERLESS_ROUTES = [
   '/dashboard',
   '/my-cvs',
+  '/html-to-pdf',
   '/profile',
   '/tips',
   '/forgot-password',

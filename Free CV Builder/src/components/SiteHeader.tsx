@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowRight, FileText, Home, Info, LayoutTemplate, Mail, Menu, Shield, X, Zap } from 'lucide-react';
+import { ArrowRight, Code2, FileText, Home, Info, LayoutTemplate, Mail, Menu, Shield, X, Zap } from 'lucide-react';
 
 const mainLinks = [
   { label: 'Home', href: '/', icon: Home, delay: '0ms' },
   { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms' },
   { label: 'Pricing', href: '/pricing', icon: Zap, delay: '100ms' },
-  { label: 'Blog', href: '/blog', icon: FileText, delay: '150ms' },
-  { label: 'Features', href: '/#features', icon: Zap, delay: '200ms' },
-  { label: 'FAQ', href: '/#faq', icon: Info, delay: '250ms' },
-  { label: 'About', href: '/about', icon: Info, delay: '300ms' },
+  { label: 'HTML to PDF', href: '/html-to-pdf', icon: Code2, delay: '150ms' },
+  { label: 'Blog', href: '/blog', icon: FileText, delay: '200ms' },
+  { label: 'Features', href: '/#features', icon: Zap, delay: '250ms' },
+  { label: 'FAQ', href: '/#faq', icon: Info, delay: '300ms' },
+  { label: 'About', href: '/about', icon: Info, delay: '350ms' },
 ];
 
 const secondaryLinks = [
@@ -67,9 +68,10 @@ export function SiteHeader() {
             <span className="font-montserrat text-xl font-black text-white sm:text-2xl">NexCV</span>
           </Link>
 
-          <nav className="hidden items-center gap-7 text-sm font-bold text-slate-300 md:flex">
+          <nav className="hidden items-center gap-5 text-sm font-bold text-slate-300 lg:flex">
             <Link to="/templates" className="transition-colors hover:text-white">Templates</Link>
             <Link to="/pricing" className="transition-colors hover:text-white">Pricing</Link>
+            <Link to="/html-to-pdf" className="transition-colors hover:text-white">HTML to PDF</Link>
             <Link to="/blog" className="transition-colors hover:text-white">Blog</Link>
             <Link to="/#features" className="transition-colors hover:text-white">Features</Link>
             <Link to="/#faq" className="transition-colors hover:text-white">FAQ</Link>
