@@ -71,8 +71,8 @@ export function AdminOverviewSection({ summary, maxChartValue }: { summary: Admi
         </article>
       </section>
 
-      <section className="mt-4 grid gap-4 lg:grid-cols-3">
-        <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
+      <section className="mt-4 grid gap-4 lg:grid-cols-3 lg:items-start">
+        <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5 lg:h-[360px]">
           <h2 className="font-montserrat text-lg font-black">Most Used Templates</h2>
           <div className="mt-4 grid gap-3">
             {summary.templateUsage.length ? summary.templateUsage.map((item) => (
@@ -81,9 +81,9 @@ export function AdminOverviewSection({ summary, maxChartValue }: { summary: Admi
           </div>
         </article>
 
-        <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
+        <article className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5 lg:h-[360px]">
           <h2 className="font-montserrat text-lg font-black">Recent Registrations</h2>
-          <div className="mt-4 grid gap-3">
+          <div className="mt-4 grid min-h-0 gap-3 overflow-y-auto pr-1 [scrollbar-color:rgba(148,163,184,0.35)_transparent] [scrollbar-width:thin]">
             {summary.recentRegistrations.map((item) => (
               <div key={item.id} className="min-w-0 border-b border-white/10 pb-3 last:border-b-0 last:pb-0">
                 <p className="truncate text-sm font-black text-slate-100">{item.displayName || item.email}</p>
@@ -94,7 +94,7 @@ export function AdminOverviewSection({ summary, maxChartValue }: { summary: Admi
           </div>
         </article>
 
-        <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5">
+        <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-5 lg:h-[360px]">
           <h2 className="font-montserrat text-lg font-black">Support Tickets</h2>
           <div className="mt-4 grid grid-cols-2 gap-2">
             {Object.entries(summary.widgets.supportTickets).map(([status, count]) => (
