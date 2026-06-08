@@ -19,6 +19,7 @@ vi.mock('../utils/api', () => ({
   apiFetch: vi.fn(async () => ({
     quota: { limit: null, used: 0, remaining: null, reached: false },
   })),
+  getCurrentUser: vi.fn(async () => null),
 }));
 
 function renderPage() {
@@ -37,7 +38,7 @@ describe('HtmlToPdf preview', () => {
   it('shows authoring rules and switches long readable PDFs with the pager', async () => {
     renderPage();
 
-    expect(screen.getByText('HTML rules for best PDF output')).toBeInTheDocument();
+    expect(screen.getByText('CV HTML rules for best PDF output')).toBeInTheDocument();
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File([`<html><head><style>
@@ -49,7 +50,7 @@ describe('HtmlToPdf preview', () => {
 
     fireEvent.change(fileInput, { target: { files: [file] } });
 
-    const frame = await screen.findByTitle('HTML PDF preview');
+    const frame = await screen.findByTitle('CV PDF preview');
     expect(frame).toHaveAttribute('scrolling', 'no');
     expect(frame).toHaveAttribute('sandbox', expect.stringContaining('allow-same-origin'));
     expect(frame).toHaveAttribute('srcdoc', expect.stringContaining('margin:0!important'));
@@ -117,6 +118,6 @@ describe('HtmlToPdf preview', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     expect(await screen.findByText(/HTML file needs a few fixes before export/i)).toBeInTheDocument();
-    expect(screen.queryByTitle('HTML PDF preview')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('CV PDF preview')).not.toBeInTheDocument();
   });
 });

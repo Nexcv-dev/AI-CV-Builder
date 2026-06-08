@@ -7,7 +7,7 @@ import { isAdminUser } from '../adminPermissions';
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/my-cvs', label: 'My CVs', icon: FileText },
-  { to: '/html-to-pdf', label: 'HTML to PDF', icon: Code2 },
+  { to: '/html-to-pdf', label: 'CV PDF Export', icon: Code2 },
   { to: '/tips', label: 'Tips', icon: BookOpen },
   { to: '/profile', label: 'Profile', icon: User },
 ];

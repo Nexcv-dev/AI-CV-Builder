@@ -356,11 +356,11 @@ export default function HtmlToPdf() {
         <main className="flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#070d1c]">
           <div className="flex flex-col gap-4 border-b border-white/8 pb-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
-              <h1 className="text-[22px] font-black tracking-tight text-white sm:text-2xl">HTML to PDF Generator</h1>
-              <p className="mt-1 text-sm font-semibold text-slate-400">Upload a self-contained HTML file and export it as a clean PDF. Guests get a small daily quota; paid plans get more room.</p>
+              <h1 className="text-[22px] font-black tracking-tight text-white sm:text-2xl">Custom CV PDF Exporter</h1>
+              <p className="mt-1 text-sm font-semibold text-slate-400">Upload a finished CV layout as self-contained HTML and export a polished PDF. Guests get a small daily quota; paid plans get more room.</p>
             </div>
 
-            <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+            <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:gap-3 lg:ml-auto lg:w-auto">
               <span className={`inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-extrabold sm:px-4 ${
                 quota?.reached ? 'border-red-400/30 bg-red-500/10 text-red-200' : 'border-emerald-400/25 bg-emerald-400/8 text-emerald-200'
               }`}>
@@ -381,11 +381,11 @@ export default function HtmlToPdf() {
 
           {quota?.plan === 'guest' && (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-300/25 bg-indigo-400/10 px-4 py-3 text-sm font-semibold text-indigo-100">
-              <span>Using the guest quota. Sign in to get more daily HTML to PDF exports.</span>
+              <span>Using the guest quota. Sign in to get more daily custom CV PDF exports.</span>
               <button
                 type="button"
                 onClick={() => setAuthModalOpen(true)}
-                className="inline-flex h-9 items-center justify-center rounded-lg bg-white px-4 text-xs font-black text-slate-950 transition hover:bg-indigo-100"
+                className="ml-auto inline-flex h-9 items-center justify-center rounded-lg bg-white px-4 text-xs font-black text-slate-950 transition hover:bg-indigo-100"
               >
                 Sign in
               </button>
@@ -473,9 +473,9 @@ export default function HtmlToPdf() {
                 <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-emerald-300 text-emerald-300">
                   <UploadCloud size={30} />
                 </span>
-                <h2 className="mt-4 text-base font-black text-white">Upload HTML file</h2>
+                <h2 className="mt-4 text-base font-black text-white">Upload CV HTML file</h2>
                 <p className="mt-2 max-w-60 text-xs font-semibold leading-5 text-slate-400">
-                  Use a self-contained .html file with inline CSS and data URI images.
+                  Use a self-contained CV .html file with inline CSS and data URI images.
                 </p>
                 <button
                   type="button"
@@ -523,12 +523,12 @@ export default function HtmlToPdf() {
 
               <div className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-4 text-xs font-semibold leading-5 text-amber-100">
                 <span className="mb-1 block font-black text-amber-300">Important</span>
-                External CSS, scripts, fonts, and remote images are blocked during PDF rendering. Keep everything inside the HTML file.
+                External CSS, scripts, fonts, and remote images are blocked during PDF rendering. Keep every CV asset inside the HTML file.
               </div>
 
               <div className="rounded-lg border border-white/10 bg-[#0b1223] p-4 text-xs font-semibold leading-5 text-slate-300">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <span className="block font-black text-emerald-300">HTML rules for best PDF output</span>
+                  <span className="block font-black text-emerald-300">CV HTML rules for best PDF output</span>
                   {validatingRules && <Loader2 size={14} className="animate-spin text-emerald-300" />}
                 </div>
                 <ul className="space-y-2">
@@ -572,7 +572,7 @@ export default function HtmlToPdf() {
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Eye size={17} className="text-slate-300" />
                   <span className="text-sm font-black text-white">Preview</span>
-                  <span className="text-xs font-semibold text-slate-500">Generated from uploaded HTML</span>
+                  <span className="text-xs font-semibold text-slate-500">Generated from uploaded CV HTML</span>
                 </div>
                 <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
                   <button
@@ -596,7 +596,7 @@ export default function HtmlToPdf() {
                   {html ? (
                     <iframe
                       key={previewSrcDoc}
-                      title="HTML PDF preview"
+                      title="CV PDF preview"
                       sandbox="allow-same-origin"
                       srcDoc={previewSrcDoc}
                       scrolling="no"
@@ -609,7 +609,7 @@ export default function HtmlToPdf() {
                       className="flex shrink-0 items-center justify-center bg-white text-center text-sm font-bold text-slate-400"
                       style={previewPaper}
                     >
-                      <span className="max-w-xs px-8">Upload an HTML file to preview it here.</span>
+                      <span className="max-w-xs px-8">Upload a CV HTML file to preview it here.</span>
                     </div>
                   )}
                 </div>

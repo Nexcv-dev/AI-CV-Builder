@@ -7,7 +7,7 @@ import { AuthUser, getCurrentUser } from '../utils/api';
 const mobileNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/my-cvs', label: 'My CVs', icon: FileText },
-  { to: '/html-to-pdf', label: 'HTML PDF', icon: Code2 },
+  { to: '/html-to-pdf', label: 'CV PDF', icon: Code2 },
   { to: '/tips', label: 'Tips', icon: BookOpen },
   { to: '/profile', label: 'Profile', icon: User },
 ];

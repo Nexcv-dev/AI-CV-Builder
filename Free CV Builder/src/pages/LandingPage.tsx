@@ -533,7 +533,7 @@ export default function LandingPage() {
           <nav className="hidden items-center gap-7 text-sm font-bold text-slate-300 md:flex">
             <Link to="/templates" className="transition-colors hover:text-white">Templates</Link>
             <a href="#pricing" className="transition-colors hover:text-white">Pricing</a>
-            <Link to="/html-to-pdf" className="transition-colors hover:text-white">HTML to PDF</Link>
+            <Link to="/html-to-pdf" className="transition-colors hover:text-white">CV PDF Export</Link>
             <Link to="/blog" className="transition-colors hover:text-white">Blog</Link>
             <a href="#features" className="transition-colors hover:text-white">Features</a>
             <a href="#faq" className="transition-colors hover:text-white">FAQ</a>
@@ -639,7 +639,7 @@ export default function LandingPage() {
               { label: 'Home', href: '/', icon: Home, delay: '0ms', isLink: true },
               { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms', isLink: true },
               { label: 'Pricing', href: '#pricing', icon: Crown, delay: '100ms', isLink: false },
-              { label: 'HTML to PDF', href: '/html-to-pdf', icon: Code2, delay: '150ms', isLink: true },
+              { label: 'CV PDF Export', href: '/html-to-pdf', icon: Code2, delay: '150ms', isLink: true },
               { label: 'Blog', href: '/blog', icon: BookOpen, delay: '200ms', isLink: true },
               { label: 'Features', href: '#features', icon: Zap, delay: '250ms', isLink: false },
               { label: 'FAQ', href: '#faq', icon: Info, delay: '300ms', isLink: false },
