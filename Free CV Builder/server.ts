@@ -984,7 +984,7 @@ function buildSitemapXml() {
     const now = new Date().toISOString();
     const urls = PUBLIC_SEO_ROUTES.map((route) => {
         const loc = escapeXml(buildCanonicalUrl(route.path, siteUrl));
-        const priority = route.path === '/' ? '1.0' : route.path === '/templates' || route.path === '/tips' ? '0.8' : '0.6';
+        const priority = route.path === '/' ? '1.0' : route.path === '/templates' || route.path === '/tips' || route.path === '/html-to-pdf' ? '0.8' : '0.6';
         return [
             '  <url>',
             `    <loc>${loc}</loc>`,

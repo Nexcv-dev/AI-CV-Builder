@@ -400,6 +400,7 @@ export default function HtmlToPdf() {
           : quota?.plan === 'unlimited'
             ? 'Admin'
             : 'Free';
+  const showPaidQuotaBadge = quota?.plan === 'payg' || quota?.plan === 'monthly' || quota?.plan === 'quarterly';
   const uploadProgress = Math.min(Math.round((inputBytes / MAX_UPLOAD_BYTES) * 100), 100);
 
   return (
@@ -410,16 +411,18 @@ export default function HtmlToPdf() {
           <div className="flex flex-col gap-4 border-b border-white/8 pb-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <h1 className="text-[22px] font-black tracking-tight text-white sm:text-2xl">Custom CV PDF Exporter</h1>
-              <p className="mt-1 text-sm font-semibold text-slate-400">Upload a finished CV layout as self-contained HTML and export a polished PDF. Guests get a small daily quota; paid plans get more room.</p>
+              <p className="mt-1 text-sm font-semibold text-slate-400">Upload a finished CV layout as self-contained HTML and export a polished PDF. Paid plans get more export room.</p>
             </div>
 
             <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:gap-3 lg:ml-auto lg:w-auto">
-              <span className={`inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-extrabold sm:px-4 ${
-                quota?.reached ? 'border-red-400/30 bg-red-500/10 text-red-200' : 'border-emerald-400/25 bg-emerald-400/8 text-emerald-200'
-              }`}>
-                <Crown size={15} className="shrink-0" />
-                <span className="truncate">{quotaPlanLabel}: {quotaText}</span>
-              </span>
+              {showPaidQuotaBadge && (
+                <span className={`inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-extrabold sm:px-4 ${
+                  quota?.reached ? 'border-red-400/30 bg-red-500/10 text-red-200' : 'border-emerald-400/25 bg-emerald-400/8 text-emerald-200'
+                }`}>
+                  <Crown size={15} className="shrink-0" />
+                  <span className="truncate">{quotaPlanLabel}: {quotaText}</span>
+                </span>
+              )}
               <button
                 type="button"
                 onClick={generatePdf}
@@ -434,7 +437,7 @@ export default function HtmlToPdf() {
 
           {quota?.plan === 'guest' && (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-300/25 bg-indigo-400/10 px-4 py-3 text-sm font-semibold text-indigo-100">
-              <span>Using the guest quota. Sign in to get more daily custom CV PDF exports.</span>
+              <span>Sign in to get more daily custom CV PDF exports.</span>
               <button
                 type="button"
                 onClick={() => setAuthModalOpen(true)}
