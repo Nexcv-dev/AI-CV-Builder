@@ -90,6 +90,28 @@ export const PUBLIC_SEO_ROUTES: SeoRoute[] = [
     },
   },
   {
+    path: '/html-to-pdf',
+    title: 'Free CV HTML to PDF Converter | NexCV',
+    description:
+      'Convert a finished CV HTML file into a polished PDF with NexCV. Preview A4 output, adjust font and header color, then export a professional resume PDF.',
+    keywords: ['CV HTML to PDF', 'resume PDF converter', 'HTML CV PDF export', 'free HTML to PDF CV'],
+    image: DEFAULT_OG_IMAGE,
+    structuredData: {
+      '@type': 'WebApplication',
+      '@id': '#html-to-pdf',
+      name: 'NexCV CV HTML to PDF Converter',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      description:
+        'A browser-based tool for previewing self-contained CV HTML and exporting it as a polished PDF.',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+    },
+  },
+  {
     path: '/blog',
     title: 'How to Create a Professional CV | NexCV Blog',
     description:
