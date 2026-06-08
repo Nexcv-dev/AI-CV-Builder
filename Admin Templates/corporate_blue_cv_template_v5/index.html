@@ -28,8 +28,7 @@
                 {{#personalInfo.email}}<span>{{personalInfo.email}}</span>{{/personalInfo.email}}
                 {{#personalInfo.phone}}<span>{{personalInfo.phone}}</span>{{/personalInfo.phone}}
                 {{#personalInfo.address}}<span>{{personalInfo.address}}</span>{{/personalInfo.address}}
-                {{#personalInfo.website}}<span>{{personalInfo.website}}</span>{{/personalInfo.website}}
-                {{#personalInfo.linkedin}}<span>{{personalInfo.linkedin}}</span>{{/personalInfo.linkedin}}
+                {{#socialLinks}}<span>{{{iconSvg}}}{{value}}</span>{{/socialLinks}}
               </div>
             {{/hasContact}}
           </div>
@@ -52,8 +51,6 @@
                   {{#personalInfo.email}}<li><strong>Email</strong><br>{{personalInfo.email}}</li>{{/personalInfo.email}}
                   {{#personalInfo.phone}}<li><strong>Phone</strong><br>{{personalInfo.phone}}</li>{{/personalInfo.phone}}
                   {{#personalInfo.address}}<li><strong>Location</strong><br>{{personalInfo.address}}</li>{{/personalInfo.address}}
-                  {{#personalInfo.website}}<li><strong>Website</strong><br>{{personalInfo.website}}</li>{{/personalInfo.website}}
-                  {{#personalInfo.linkedin}}<li><strong>LinkedIn</strong><br>{{personalInfo.linkedin}}</li>{{/personalInfo.linkedin}}
                 </ul>
               </section>
             {{/hasContact}}

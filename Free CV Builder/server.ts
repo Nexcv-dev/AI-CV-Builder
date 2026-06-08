@@ -696,7 +696,7 @@ const titleFromCvData = (cvData: any) => {
 
 const CV_SECTION_KEYS = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
 const CV_STRING_FIELDS = {
-    personalInfo: ['fullName', 'email', 'phone', 'address', 'summary', 'dob', 'nic', 'gender', 'nationality', 'religion', 'maritalStatus'],
+    personalInfo: ['fullName', 'position', 'email', 'phone', 'address', 'linkedin', 'github', 'website', 'summary', 'dob', 'nic', 'gender', 'nationality', 'religion', 'maritalStatus'],
     experience: ['company', 'position', 'startDate', 'endDate', 'description'],
     education: ['institution', 'degree', 'startDate', 'endDate', 'description'],
     skills: ['name', 'category'],
@@ -708,8 +708,26 @@ const CV_STRING_FIELDS = {
 } as const;
 const MAX_STORED_CV_ITEMS = 50;
 const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'education', 'skills', 'projects', 'courses', 'awards', 'languages', 'references'];
+const STORED_STRING_LIMITS: Record<string, number> = {
+    fullName: 90,
+    position: 180,
+    email: 120,
+    phone: 32,
+    address: 180,
+    linkedin: 240,
+    github: 240,
+    website: 240,
+    link: 240,
+    summary: 1600,
+    description: 1600,
+};
 
 const cleanStoredString = (value: unknown) => typeof value === 'string' ? sanitizeCvData(value).trim() : '';
+const cleanStoredFieldString = (field: string, value: unknown) => {
+    const text = cleanStoredString(value);
+    const limit = STORED_STRING_LIMITS[field] || 180;
+    return text.length > limit ? text.slice(0, limit) : text;
+};
 
 const cleanStoredNumber = (value: unknown, fallback: number, min: number, max: number) => {
     const number = Number(value);
@@ -754,7 +772,7 @@ const cleanStoredItems = (items: unknown, fields: readonly string[], options: { 
             if (id) output.id = id;
 
             for (const field of fields) {
-                output[field] = cleanStoredString(input[field]);
+                output[field] = cleanStoredFieldString(field, input[field]);
             }
 
             if (options.withSkillLevel) {
@@ -770,7 +788,7 @@ const cleanStoredItems = (items: unknown, fields: readonly string[], options: { 
 function sanitizeCvDataForStorage(cvData: any) {
     const safe = sanitizeCvData(cvData || {});
     const personalInfo = CV_STRING_FIELDS.personalInfo.reduce<Record<string, string>>((acc, field) => {
-        acc[field] = cleanStoredString(safe?.personalInfo?.[field]);
+        acc[field] = cleanStoredFieldString(field, safe?.personalInfo?.[field]);
         return acc;
     }, {});
 

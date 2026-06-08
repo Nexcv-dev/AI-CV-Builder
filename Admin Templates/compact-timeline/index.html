@@ -23,6 +23,14 @@
             <header class="header">
               <div class="head-left">
                 <h1>{{personalInfo.fullName}}</h1>
+                {{#headline}}<p class="role">{{headline}}</p>{{/headline}}
+                {{#hasSocialLinks}}
+                  <div class="head-social" aria-label="Social links">
+                    {{#socialLinks}}
+                      <span>{{{iconSvg}}}{{value}}</span>
+                    {{/socialLinks}}
+                  </div>
+                {{/hasSocialLinks}}
               </div>
 
               {{#profileImageUrl}}

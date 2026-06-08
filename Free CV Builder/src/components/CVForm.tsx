@@ -427,9 +427,13 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
               personalInfo: {
                 ...prev.personalInfo,
                 fullName: result.personalInfo?.fullName || prev.personalInfo.fullName || '',
+                position: result.personalInfo?.position || prev.personalInfo.position || '',
                 email: result.personalInfo?.email || prev.personalInfo.email || '',
                 phone: result.personalInfo?.phone || prev.personalInfo.phone || '',
                 address: result.personalInfo?.address || prev.personalInfo.address || '',
+                linkedin: result.personalInfo?.linkedin || prev.personalInfo.linkedin || '',
+                github: result.personalInfo?.github || prev.personalInfo.github || '',
+                website: result.personalInfo?.website || prev.personalInfo.website || '',
                 summary: result.personalInfo?.summary || prev.personalInfo.summary || '',
                 dob: result.personalInfo?.dob || prev.personalInfo.dob || '',
                 nic: result.personalInfo?.nic || prev.personalInfo.nic || '',

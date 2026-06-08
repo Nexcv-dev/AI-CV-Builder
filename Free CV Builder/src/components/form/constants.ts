@@ -48,12 +48,18 @@ export const getPersonalInfoLimit = (field: string): number => {
   switch (field) {
     case 'fullName':
       return TEXT_FIELD_LIMITS.personName;
+    case 'position':
+      return TEXT_FIELD_LIMITS.mediumText;
     case 'email':
       return TEXT_FIELD_LIMITS.email;
     case 'phone':
       return TEXT_FIELD_LIMITS.phone;
     case 'address':
       return TEXT_FIELD_LIMITS.address;
+    case 'linkedin':
+    case 'github':
+    case 'website':
+      return TEXT_FIELD_LIMITS.url;
     case 'dob':
       return TEXT_FIELD_LIMITS.dateText;
     default:

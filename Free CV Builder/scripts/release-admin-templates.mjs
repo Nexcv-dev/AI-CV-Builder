@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +40,8 @@ const keyFor = (template, fileName) => (
   prefix ? `${prefix}/${template}/${fileName}` : `${template}/${fileName}`
 );
 
+const sha256 = (body) => crypto.createHash('sha256').update(body).digest('hex');
+
 const streamToBuffer = async (stream) => {
   const chunks = [];
   for await (const chunk of stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
@@ -77,6 +80,10 @@ const uploadFile = async ({ sourceFolder, targetKey }, fileName) => {
 
   const verify = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
   if (!verify.Body) throw new Error(`Upload verification failed for ${key}.`);
+  const uploadedBody = await streamToBuffer(verify.Body);
+  if (uploadedBody.length !== body.length || sha256(uploadedBody) !== sha256(body)) {
+    throw new Error(`Upload verification mismatch for ${key}.`);
+  }
 
   uploadedKeys.push(key);
   console.log(`uploaded ${key}`);

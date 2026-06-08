@@ -49,9 +49,13 @@ const aiImportSchema = (Type: any) => ({
             type: Type.OBJECT,
             properties: {
                 fullName: { type: Type.STRING },
+                position: { type: Type.STRING },
                 email: { type: Type.STRING },
                 phone: { type: Type.STRING },
                 address: { type: Type.STRING },
+                linkedin: { type: Type.STRING },
+                github: { type: Type.STRING },
+                website: { type: Type.STRING },
                 summary: { type: Type.STRING },
                 dob: { type: Type.STRING },
                 nic: { type: Type.STRING },

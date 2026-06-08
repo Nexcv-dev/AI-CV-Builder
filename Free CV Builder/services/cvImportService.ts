@@ -9,9 +9,13 @@ type PdfParser = import('pdf-parse').PDFParse;
 export interface ParsedCvImport {
   personalInfo: {
     fullName: string;
+    position: string;
     email: string;
     phone: string;
     address: string;
+    linkedin: string;
+    github: string;
+    website: string;
     summary: string;
     dob: string;
     nic: string;
@@ -42,9 +46,13 @@ export interface ParsedCvImport {
 const blankImport = (): ParsedCvImport => ({
   personalInfo: {
     fullName: '',
+    position: '',
     email: '',
     phone: '',
     address: '',
+    linkedin: '',
+    github: '',
+    website: '',
     summary: '',
     dob: '',
     nic: '',
@@ -263,11 +271,17 @@ const extractPersonalDetails = (text: string, lines: string[]) => {
   const religion = compactText.match(/\b(christianity|christian|buddhist|hindu|islam|muslim|catholic)\b/i)?.[1] || '';
   const maritalStatus = compactText.match(/\b(single|married|divorced|widowed)\b/i)?.[1] || '';
   const address = compactText.match(/\bAddress\s*:\s*([^\n]+)/i)?.[1] || '';
+  const linkedin = compactText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/[^\s,;]+/i)?.[0] || '';
+  const github = compactText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[^\s,;]+/i)?.[0] || '';
+  const website = compactText.match(/\b(?:https?:\/\/|www\.)(?!linkedin\.com|github\.com)[a-z0-9-]+(?:\.[a-z0-9-]+)+\/?[^\s,;]*/i)?.[0] || '';
 
   return {
     email: extractEmail(compactText),
     phone: extractPhone(compactText),
     address: cleanText(address, 120),
+    linkedin: cleanText(linkedin, 240),
+    github: cleanText(github, 240),
+    website: cleanText(website, 240),
     dob,
     nic,
     gender: cleanText(gender, 20),
@@ -488,9 +502,13 @@ const normalizeParsedCv = (value: unknown): ParsedCvImport | null => {
     personalInfo: {
       ...blank.personalInfo,
       fullName: cleanText(personalInfo.fullName || '', 120),
+      position: cleanText(personalInfo.position || '', 180),
       email: cleanText(personalInfo.email || '', 160),
       phone: cleanText(personalInfo.phone || '', 80),
       address: cleanText(personalInfo.address || '', 240),
+      linkedin: cleanText(personalInfo.linkedin || '', 240),
+      github: cleanText(personalInfo.github || '', 240),
+      website: cleanText(personalInfo.website || '', 240),
       summary: cleanText(personalInfo.summary || '', 1200),
       dob: cleanText(personalInfo.dob || '', 40),
       nic: cleanText(personalInfo.nic || '', 40),
@@ -653,6 +671,9 @@ export const parseCvTextToStructuredData = (text: string): ParsedCvImport => {
   result.personalInfo.email = email;
   result.personalInfo.phone = phone;
   result.personalInfo.address = personalDetails.address;
+  result.personalInfo.linkedin = personalDetails.linkedin;
+  result.personalInfo.github = personalDetails.github;
+  result.personalInfo.website = personalDetails.website;
   result.personalInfo.fullName = parseName([...personalLines, ...sections.skills], email, phone);
   result.personalInfo.dob = personalDetails.dob;
   result.personalInfo.nic = personalDetails.nic;

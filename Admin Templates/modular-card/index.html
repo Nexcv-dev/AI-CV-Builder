@@ -23,6 +23,14 @@
             <header class="hero">
               <div class="hero-left">
                 <h1>{{personalInfo.fullName}}</h1>
+                {{#headline}}<p class="role">{{headline}}</p>{{/headline}}
+                {{#hasSocialLinks}}
+                  <div class="hero-social" aria-label="Social links">
+                    {{#socialLinks}}
+                      <span>{{{iconSvg}}}{{value}}</span>
+                    {{/socialLinks}}
+                  </div>
+                {{/hasSocialLinks}}
               </div>
 
               {{#profileImageUrl}}

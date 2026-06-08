@@ -17,9 +17,13 @@ const mockUseTemplateHtml = vi.mocked(useTemplateHtml);
 const mockCVData: CVData = {
   personalInfo: {
     fullName: 'Jane Doe',
+    position: 'Frontend Developer',
     email: 'jane@example.com',
     phone: '123456789',
     address: '123 Main St',
+    linkedin: '',
+    github: '',
+    website: '',
     summary: '<p>Experienced developer</p>',
     dob: '',
     nic: '',

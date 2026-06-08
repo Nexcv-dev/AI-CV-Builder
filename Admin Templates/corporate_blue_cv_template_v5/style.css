@@ -121,6 +121,8 @@ img {
 }
 
 .contact span {
+  display: inline-flex;
+  align-items: center;
   color: #e0ecff;
   font-size: 12.5px;
   line-height: 1.45;

@@ -26,6 +26,7 @@
               {{/profileImageUrl}}
 
               <div class="side-name">{{personalInfo.fullName}}</div>
+              {{#headline}}<div class="side-role">{{headline}}</div>{{/headline}}
             </section>
           {{/hasHeader}}
 
@@ -59,6 +60,12 @@
                   <span>{{personalInfo.address}}</span>
                 </div>
               {{/personalInfo.address}}
+              {{#socialLinks}}
+                <div class="contact-item">
+                  <span class="contact-icon" aria-hidden="true">{{{iconSvg}}}</span>
+                  <span>{{value}}</span>
+                </div>
+              {{/socialLinks}}
             </section>
           {{/hasContact}}
 

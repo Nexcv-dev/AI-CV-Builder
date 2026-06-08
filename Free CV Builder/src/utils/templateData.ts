@@ -125,6 +125,12 @@ const formatDateInline = (startDate?: string, endDate?: string) =>
 const formatDateStacked = (startDate?: string, endDate?: string) =>
   (startDate || '') + (startDate && endDate ? '<br>-<br>' : '') + (endDate || '');
 
+const SOCIAL_ICONS = {
+  linkedin: '<svg class="social-icon" width="12" height="12" style="margin-right:5px;vertical-align:-2px;display:inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.61 0 4.27 2.38 4.27 5.47v6.27ZM5.32 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12Zm1.78 13.02H3.53V9H7.1v11.45Z"/></svg>',
+  github: '<svg class="social-icon" width="12" height="12" style="margin-right:5px;vertical-align:-2px;display:inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.02c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.49 11.49 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.49 5.93.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .5Z"/></svg>',
+  website: '<svg class="social-icon" width="12" height="12" style="margin-right:5px;vertical-align:-2px;display:inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>',
+};
+
 export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {}) => {
   const personalInfo = cvData?.personalInfo || {};
   const experience = Array.isArray(cvData?.experience) ? cvData.experience : [];
@@ -162,6 +168,11 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
     personalInfo.nationality ? { label: 'Nationality', value: personalInfo.nationality } : null,
     personalInfo.religion ? { label: 'Religion', value: personalInfo.religion } : null,
   ].filter(Boolean);
+  const socialLinks = [
+    personalInfo.linkedin ? { label: 'LinkedIn', iconLabel: 'in', iconSvg: SOCIAL_ICONS.linkedin, value: personalInfo.linkedin, url: personalInfo.linkedin } : null,
+    personalInfo.github ? { label: 'GitHub', iconLabel: 'GH', iconSvg: SOCIAL_ICONS.github, value: personalInfo.github, url: personalInfo.github } : null,
+    personalInfo.website ? { label: 'Website', iconLabel: 'Web', iconSvg: SOCIAL_ICONS.website, value: personalInfo.website, url: personalInfo.website } : null,
+  ].filter(Boolean);
   const processedExperience = experience.map((item: any) => ({
     ...item,
     position: item.position || '',
@@ -193,6 +204,7 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
   const processedAwards = awards.map((item: any) => ({ ...item, name: item.name || 'Award Name', issuer: item.issuer || 'Issuer' }));
   const processedLanguages = languages.map((item: any) => ({ ...item, label: item.proficiency ? `${item.name || ''} (${item.proficiency})` : (item.name || '') }));
   const processedReferences = references.map((item: any) => ({ ...item, name: item.name || 'Reference Name', sub: [item.position, item.company].filter(Boolean).join(', '), hasContact: Boolean(item.email || item.phone) }));
+  const headline = personalInfo.position || processedExperience[0]?.position || processedEducation[0]?.degree || '';
   const hasPersonalDetails = personalDetails.length > 0;
   const isProfessional = cvData?.template === 'professional';
   const sectionBuilders: Record<string, () => any | null> = {
@@ -220,7 +232,9 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
   return {
     ...cvData,
     personalInfo: { ...personalInfo, fullName: personalInfo.fullName || 'Your Name' },
+    headline,
     contactItems: [personalInfo.email, personalInfo.phone, personalInfo.address].filter(Boolean).map((value: string) => ({ value })),
+    socialLinks,
     experience: processedExperience,
     education: processedEducation,
     skills: processedSkills,
@@ -264,7 +278,7 @@ export const prepareS3TemplateData = (cvData: any, options: TemplateRenderOption
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: imageCss.transform,
-      startupHeadlineTitle: processedExperience[0]?.position || '',
+      startupHeadlineTitle: headline,
     },
     flags: {
       isProfessional,

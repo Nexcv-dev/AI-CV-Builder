@@ -142,14 +142,15 @@ const applyProfileImageAdjustments = (html: string, profileImageUrl: string, sty
 
 export function renderCvTemplateString(templateHtml: string, cvData: any, options: { watermark?: boolean } = {}) {
     const rootData = prepareS3TemplateData(cvData, options);
-    const headline = rootData?.experience?.[0]?.position || rootData?.education?.[0]?.degree || '';
+    const headline = rootData?.headline || rootData?.experience?.[0]?.position || rootData?.education?.[0]?.degree || '';
     const location = rootData?.personalInfo?.address || '';
     const profileImageUrl = rootData?.profileImage || '';
     const imageCss = profileImageCss(rootData);
     const personalInfo = rootData?.personalInfo || {};
     const hasSummary = Boolean(personalInfo.summary);
     const hasPersonalDetails = Boolean(rootData?.flags?.hasPersonalDetails);
-    const hasContact = Boolean(personalInfo.email || personalInfo.phone || location);
+    const hasContact = Boolean(personalInfo.email || personalInfo.phone || location || rootData?.socialLinks?.length);
+    const hasSocialLinks = Boolean(rootData?.socialLinks?.length);
     const hasExperience = Boolean(rootData?.experience?.length);
     const hasEducation = Boolean(rootData?.education?.length);
     const hasSkills = Boolean(rootData?.skills?.length);
@@ -171,6 +172,7 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
         hasHeader: Boolean(personalInfo.fullName || headline || hasSummary),
         hasSummary,
         hasContact,
+        hasSocialLinks,
         hasProfileCard: Boolean(profileImageUrl || hasContact || hasPersonalDetails),
         hasPersonalDetails,
         hasExperience,
@@ -206,8 +208,8 @@ export function renderCvTemplateString(templateHtml: string, cvData: any, option
         html = html.replace(/{{{\s*([\w.]+)\s*}}}/g, (_match, pathValue) => {
             const value = renderTemplateValue(getTemplateValue(pathValue, context, root));
             return DOMPurify.sanitize(value, {
-                ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
-                ALLOWED_ATTR: ['href', 'target', 'rel'],
+                ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span', 'svg', 'path', 'circle'],
+                ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style', 'width', 'height', 'xmlns', 'viewBox', 'aria-hidden', 'cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'd'],
             });
         });
 
