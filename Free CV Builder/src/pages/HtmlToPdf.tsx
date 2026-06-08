@@ -105,6 +105,7 @@ export default function HtmlToPdf() {
   const [currentPage, setCurrentPage] = useState(1);
   const [previewOffsetTop, setPreviewOffsetTop] = useState(0);
   const [previewFitScale, setPreviewFitScale] = useState(1);
+  const [previewAreaWidth, setPreviewAreaWidth] = useState(0);
   const [readabilityWarning, setReadabilityWarning] = useState('');
   const [ruleChecks, setRuleChecks] = useState<HtmlPdfRuleCheck[]>(INITIAL_RULE_CHECKS);
   const [validatingRules, setValidatingRules] = useState(false);
@@ -119,20 +120,24 @@ export default function HtmlToPdf() {
   const basePaper = pageSize === 'Letter'
     ? { width: 816, height: 1056 }
     : { width: 794, height: 1123 };
+  const previewAvailableWidth = Math.max(0, previewAreaWidth - 24);
+  const responsivePreviewZoom = previewAvailableWidth > 0
+    ? Math.max(MIN_HTML_PDF_SCALE, Math.min(previewZoom, previewAvailableWidth / basePaper.width))
+    : previewZoom;
   const previewViewport = {
-    width: `${Math.round(basePaper.width * previewZoom)}px`,
-    height: `${Math.round(basePaper.height * previewZoom)}px`,
+    width: `${Math.round(basePaper.width * responsivePreviewZoom)}px`,
+    height: `${Math.round(basePaper.height * responsivePreviewZoom)}px`,
   };
   const previewPaper: CSSProperties = {
     width: `${basePaper.width}px`,
     height: `${basePaper.height}px`,
-    transform: `scale(${previewZoom})`,
+    transform: `scale(${responsivePreviewZoom})`,
     transformOrigin: 'top left',
   };
   const previewFrame: CSSProperties = {
     width: `${basePaper.width / previewFitScale}px`,
     height: `${(basePaper.height * pageCount + previewOffsetTop) / previewFitScale}px`,
-    transform: `translateY(-${(previewOffsetTop * previewFitScale) + ((currentPage - 1) * basePaper.height)}px) scale(${previewZoom * previewFitScale})`,
+    transform: `translateY(-${(previewOffsetTop * previewFitScale) + ((currentPage - 1) * basePaper.height)}px) scale(${responsivePreviewZoom * previewFitScale})`,
     transformOrigin: 'top left',
   };
   const inputBytes = useMemo(() => new Blob([html, html ? overrideCss : '']).size, [html, overrideCss]);
@@ -189,6 +194,23 @@ export default function HtmlToPdf() {
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, pageCount));
   }, [pageCount]);
+
+  useEffect(() => {
+    const previewArea = previewAreaRef.current;
+    if (!previewArea) return undefined;
+
+    const updatePreviewAreaWidth = () => setPreviewAreaWidth(previewArea.clientWidth);
+    updatePreviewAreaWidth();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updatePreviewAreaWidth);
+      return () => window.removeEventListener('resize', updatePreviewAreaWidth);
+    }
+
+    const observer = new ResizeObserver(updatePreviewAreaWidth);
+    observer.observe(previewArea);
+    return () => observer.disconnect();
+  }, []);
 
   const loadHtmlFile = async (file: File | undefined) => {
     setError('');
@@ -250,7 +272,7 @@ export default function HtmlToPdf() {
   };
 
   const fitPreviewWidth = () => {
-    const availableWidth = (previewAreaRef.current?.clientWidth || basePaper.width) - 24;
+    const availableWidth = Math.max(0, (previewAreaRef.current?.clientWidth || basePaper.width) - 24);
     setZoom(availableWidth / basePaper.width);
   };
 
@@ -604,14 +626,14 @@ export default function HtmlToPdf() {
                   <Eye size={17} className="text-slate-300" />
                   <span className="text-sm font-black text-white">Preview</span>
                 </div>
-                <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
-                  <label className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/8 px-2 text-slate-300">
+                <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+                  <label className="flex h-9 w-full min-w-0 flex-none items-center gap-2 rounded-lg border border-white/10 bg-white/8 px-2 text-slate-300 sm:w-auto">
                     <Type size={15} className="shrink-0" />
                     <span className="sr-only">Font override</span>
                     <select
                       value={fontOverride}
                       onChange={(event) => setFontOverride(event.target.value as FontOverride)}
-                      className="h-7 min-w-24 bg-transparent text-xs font-extrabold text-white outline-none"
+                      className="h-7 min-w-0 flex-1 bg-transparent text-xs font-extrabold text-white outline-none sm:min-w-24"
                     >
                       {FONT_OVERRIDE_OPTIONS.map((option) => (
                         <option key={option.value || 'original'} value={option.value} className="bg-slate-900 text-white">{option.label}</option>
@@ -632,14 +654,14 @@ export default function HtmlToPdf() {
                   <button
                     type="button"
                     onClick={() => setPageSize('A4')}
-                    className={`inline-flex h-9 shrink-0 items-center rounded-lg border px-4 text-xs font-extrabold ${
+                    className={`inline-flex h-9 shrink-0 items-center rounded-lg border px-3 text-xs font-extrabold sm:px-4 ${
                       pageSize === 'A4' ? 'border-emerald-300/40 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-white/8 text-slate-300'
                     }`}
                   >
                     A4
                   </button>
-                  <button type="button" onClick={fitPreviewWidth} className="h-9 shrink-0 rounded-lg bg-white/8 px-4 text-xs font-extrabold text-white transition hover:bg-white/12">Fit Width</button>
-                  <button type="button" onClick={() => setZoom(MAX_PREVIEW_ZOOM)} className="h-9 shrink-0 rounded-lg bg-white/8 px-4 text-xs font-extrabold text-white transition hover:bg-white/12">{Math.round((previewZoom / MAX_PREVIEW_ZOOM) * 100)}%</button>
+                  <button type="button" onClick={fitPreviewWidth} className="h-9 shrink-0 rounded-lg bg-white/8 px-3 text-xs font-extrabold text-white transition hover:bg-white/12 sm:px-4"><span className="sm:hidden">Fit</span><span className="hidden sm:inline">Fit Width</span></button>
+                  <button type="button" onClick={() => setZoom(MAX_PREVIEW_ZOOM)} className="h-9 shrink-0 rounded-lg bg-white/8 px-3 text-xs font-extrabold text-white transition hover:bg-white/12 sm:px-4">{Math.round((responsivePreviewZoom / MAX_PREVIEW_ZOOM) * 100)}%</button>
                   <button type="button" onClick={() => setZoom(previewZoom - 0.1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/8 text-slate-300 transition hover:bg-white/12" aria-label="Zoom out"><ZoomOut size={16} /></button>
                   <button type="button" onClick={() => setZoom(previewZoom + 0.1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/8 text-slate-300 transition hover:bg-white/12" aria-label="Zoom in"><ZoomIn size={16} /></button>
                 </div>
