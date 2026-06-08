@@ -27,6 +27,7 @@ await esbuild.build({
   target: 'node20',
   format: 'cjs',
   outfile: path.join(buildDir, 'handler.js'),
+  external: ['@sparticuz/chromium'],
   minify: true,
 });
 
@@ -35,15 +36,46 @@ fs.writeFileSync(path.join(buildDir, 'package.json'), JSON.stringify({
   version: '1.0.0',
   private: true,
   main: 'handler.js',
+  dependencies: {
+    '@sparticuz/chromium': '^147.0.0',
+  },
 }, null, 2), 'utf8');
+
+function copyDir(src, dest) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.cpSync(src, dest, { recursive: true, force: true });
+}
+
+function copyDirIfExists(src, dest) {
+  if (fs.existsSync(src)) copyDir(src, dest);
+}
+
+copyDir(path.join(projectRoot, 'node_modules', '@sparticuz'), path.join(buildDir, 'node_modules', '@sparticuz'));
+[
+  'follow-redirects',
+  'tar-fs',
+  'tar-stream',
+  'pump',
+  'end-of-stream',
+  'once',
+  'wrappy',
+  'streamx',
+  'events-universal',
+  'fast-fifo',
+  'text-decoder',
+  'bare-events',
+  'bare-fs',
+  'bare-os',
+  'bare-path',
+  'bare-stream',
+  'bare-url',
+].forEach((name) => {
+  copyDirIfExists(path.join(projectRoot, 'node_modules', name), path.join(buildDir, 'node_modules', name));
+});
 
 if (fs.existsSync(zipPath)) fs.rmSync(zipPath, { force: true });
 if (process.platform === 'win32') {
-  execFileSync('powershell.exe', [
-    '-NoProfile',
-    '-Command',
-    `Compress-Archive -Path '${buildDir.replaceAll("'", "''")}\\*' -DestinationPath '${zipPath.replaceAll("'", "''")}' -Force`,
-  ], { stdio: 'inherit' });
+  execFileSync('tar.exe', ['-a', '-cf', zipPath, '-C', buildDir, '.'], { stdio: 'inherit' });
 } else {
   execFileSync('zip', ['-qr', zipPath, '.'], {
     cwd: buildDir,

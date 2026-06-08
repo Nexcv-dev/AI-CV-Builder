@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowRight, FileText, Home, Info, LayoutTemplate, Mail, Menu, Shield, X, Zap } from 'lucide-react';
+import { ArrowRight, Code2, FileText, Home, Info, LayoutTemplate, Mail, Menu, Shield, X, Zap } from 'lucide-react';
+import { getCurrentUser, type AuthUser } from '../utils/api';
 
 const mainLinks = [
   { label: 'Home', href: '/', icon: Home, delay: '0ms' },
   { label: 'Templates', href: '/templates', icon: LayoutTemplate, delay: '50ms' },
   { label: 'Pricing', href: '/pricing', icon: Zap, delay: '100ms' },
-  { label: 'Blog', href: '/blog', icon: FileText, delay: '150ms' },
-  { label: 'Features', href: '/#features', icon: Zap, delay: '200ms' },
-  { label: 'FAQ', href: '/#faq', icon: Info, delay: '250ms' },
-  { label: 'About', href: '/about', icon: Info, delay: '300ms' },
+  { label: 'CV PDF Export', href: '/html-to-pdf', icon: Code2, delay: '150ms' },
+  { label: 'Blog', href: '/blog', icon: FileText, delay: '200ms' },
+  { label: 'Features', href: '/#features', icon: Zap, delay: '250ms' },
+  { label: 'FAQ', href: '/#faq', icon: Info, delay: '300ms' },
+  { label: 'About', href: '/about', icon: Info, delay: '350ms' },
 ];
 
 const secondaryLinks = [
@@ -21,11 +23,39 @@ const secondaryLinks = [
 export function SiteHeader() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const closeMobileMenu = () => setMobileMenuOpen(false);
+  const headerCta = currentUser
+    ? { label: 'Dashboard', href: '/dashboard' }
+    : { label: 'Start', href: '/builder?import=1' };
+  const mobileCta = currentUser
+    ? { label: 'Dashboard', href: '/dashboard' }
+    : { label: 'Create My CV', href: '/builder?import=1' };
 
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname, location.hash]);
+
+  useEffect(() => {
+    let ignore = false;
+    getCurrentUser()
+      .then((user) => {
+        if (!ignore) setCurrentUser(user);
+      })
+      .catch(() => {
+        if (!ignore) setCurrentUser(null);
+      });
+
+    const handleAuthUserChanged = (event: Event) => {
+      setCurrentUser((event as CustomEvent<AuthUser | undefined>).detail || null);
+    };
+    window.addEventListener('auth-user-changed', handleAuthUserChanged);
+
+    return () => {
+      ignore = true;
+      window.removeEventListener('auth-user-changed', handleAuthUserChanged);
+    };
+  }, []);
 
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -67,9 +97,10 @@ export function SiteHeader() {
             <span className="font-montserrat text-xl font-black text-white sm:text-2xl">NexCV</span>
           </Link>
 
-          <nav className="hidden items-center gap-7 text-sm font-bold text-slate-300 md:flex">
+          <nav className="hidden items-center gap-5 text-sm font-bold text-slate-300 lg:flex">
             <Link to="/templates" className="transition-colors hover:text-white">Templates</Link>
             <Link to="/pricing" className="transition-colors hover:text-white">Pricing</Link>
+            <Link to="/html-to-pdf" className="transition-colors hover:text-white">CV PDF Export</Link>
             <Link to="/blog" className="transition-colors hover:text-white">Blog</Link>
             <Link to="/#features" className="transition-colors hover:text-white">Features</Link>
             <Link to="/#faq" className="transition-colors hover:text-white">FAQ</Link>
@@ -77,10 +108,10 @@ export function SiteHeader() {
           </nav>
 
           <Link
-            to="/builder?import=1"
+            to={headerCta.href}
             className="hidden items-center justify-center rounded-xl bg-violet-600 px-3.5 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/25 transition-all hover:bg-violet-500 active:scale-[0.98] sm:px-4 md:inline-flex"
           >
-            Start
+            {headerCta.label}
             <ArrowRight size={17} className="ml-1.5" />
           </Link>
 
@@ -168,7 +199,7 @@ export function SiteHeader() {
             </div>
 
             <Link
-              to="/builder?import=1"
+              to={mobileCta.href}
               className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-500 active:scale-[0.98]"
               style={{
                 transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
@@ -176,7 +207,7 @@ export function SiteHeader() {
                 transition: 'transform 0.35s cubic-bezier(0.22,1,0.36,1) 150ms, opacity 0.25s ease 150ms, background 0.15s',
               }}
             >
-              Create My CV
+              {mobileCta.label}
               <ArrowRight size={17} />
             </Link>
 

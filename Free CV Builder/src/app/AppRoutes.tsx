@@ -27,6 +27,7 @@ const PricingPage = lazy(() => import('../pages/PricingPage'));
 const CheckoutPage = lazy(() => import('../pages/CheckoutPage'));
 const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard'));
+const HtmlToPdf = lazy(() => import('../pages/HtmlToPdf'));
 
 function PublicAnnouncement({ settings }: { settings: PublicAppSettings }) {
   const text = settings.announcementText || settings.announcement?.text;
@@ -115,6 +116,7 @@ export function AppRoutes() {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/builder" element={<Home />} />
+            <Route path="/html-to-pdf" element={<HtmlToPdf />} />
             <Route path="/tips" element={<ProtectedRoute><TipsAndResources /></ProtectedRoute>} />
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />

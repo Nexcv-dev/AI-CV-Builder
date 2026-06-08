@@ -81,6 +81,19 @@ Guest users must sign in before CV import starts. The frontend opens the auth mo
 | `PDF_OUTPUT_REGION` | Optional | S3 output bucket region. Falls back to `AWS_REGION`. |
 | `PUPPETEER_EXECUTABLE_PATH` | Local PDF | Browser executable override for local rendering. |
 | `PDF_WARM_BROWSER_IDLE_MS` | Optional | Local browser warm-pool idle timeout. |
+| `HTML_PDF_QUEUE_URL` | Production recommended | Dedicated SQS queue for authenticated HTML-to-PDF jobs. |
+| `HTML_PDF_QUEUE_REGION` | Queue | HTML PDF queue region. Falls back to `AWS_REGION`. |
+| `HTML_PDF_OUTPUT_BUCKET_NAME` | Queue worker | Private S3 bucket for generated HTML PDFs. Falls back to the PDF output bucket. |
+| `HTML_PDF_OUTPUT_PREFIX` | Optional | Generated HTML PDF prefix. Defaults to `html-pdf-jobs`. |
+| `HTML_PDF_OUTPUT_REGION` | Optional | HTML PDF output bucket region. Falls back to PDF/AWS region. |
+| `HTML_PDF_GUEST_QUOTAS_COLLECTION` | Optional | MongoDB collection for guest HTML-to-PDF quota counters. Defaults to `htmlpdfguestquotas`. |
+| `HTML_PDF_DAILY_GUEST_LIMIT` | Optional | Guest daily HTML-to-PDF limit. Defaults to `1`. |
+| `HTML_PDF_DAILY_FREE_LIMIT` | Optional | Free signed-in user daily HTML-to-PDF limit. Defaults to `3`. |
+| `HTML_PDF_DAILY_PAYG_LIMIT` | Optional | Single CV Pass daily HTML-to-PDF limit. Defaults to `10`. |
+| `HTML_PDF_DAILY_MONTHLY_LIMIT` | Optional | Monthly Pro daily HTML-to-PDF limit. Defaults to `25`. |
+| `HTML_PDF_DAILY_QUARTERLY_LIMIT` | Optional | Quarterly Pro daily HTML-to-PDF limit. Defaults to `50`. |
+| `HTML_PDF_MAX_INPUT_BYTES` | Optional | Combined HTML and CSS size limit. Defaults to 250 KB. |
+| `PDF_WORKER_MODE` | HTML PDF worker | Set to `html-pdf` when reusing `lambda-pdf-worker` on the dedicated HTML PDF queue. |
 
 ## Templates And S3
 
@@ -170,6 +183,11 @@ Guest users must sign in before CV import starts. The frontend opens the auth mo
 | `DAILY_UNVERIFIED_DOWNLOAD_LIMIT` | Optional | Download limit for unverified users. |
 | `PAYG_DAILY_DOWNLOAD_LIMIT` | Optional | Single CV Pass daily download limit. |
 | `MONTHLY_DAILY_DOWNLOAD_LIMIT` | Optional | Monthly plan daily download limit. |
+| `HTML_PDF_DAILY_GUEST_LIMIT` | Optional | Guest HTML-to-PDF jobs per UTC day. Defaults to `1`. |
+| `HTML_PDF_DAILY_FREE_LIMIT` | Optional | Free signed-in HTML-to-PDF jobs per UTC day. Defaults to `3`. |
+| `HTML_PDF_DAILY_PAYG_LIMIT` | Optional | Single CV Pass HTML-to-PDF jobs per UTC day. Defaults to `10`. |
+| `HTML_PDF_DAILY_MONTHLY_LIMIT` | Optional | Monthly Pro HTML-to-PDF jobs per UTC day. Defaults to `25`. |
+| `HTML_PDF_DAILY_QUARTERLY_LIMIT` | Optional | Quarterly Pro HTML-to-PDF jobs per UTC day. Defaults to `50`. |
 
 ## GitHub Actions Backup Secrets
 
@@ -183,4 +201,3 @@ The MongoDB backup workflow uses dedicated backup secrets first and falls back t
 | `BACKUP_AWS_REGION` | Secret | Backup AWS region. Defaults to `eu-north-1` through workflow fallback. |
 | `MONGODB_BACKUP_S3_BUCKET` | Repository variable | Optional backup bucket override. Defaults to `mongodb-database-backup1`. |
 | `MONGODB_BACKUP_S3_PREFIX` | Repository variable | Optional backup prefix override. Defaults to `mongodb/daily`. |
-

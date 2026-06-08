@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, FileText, LayoutDashboard, LogOut, Plus, Shield, User } from 'lucide-react';
+import { BookOpen, Code2, FileText, LayoutDashboard, LogOut, Plus, Shield, User } from 'lucide-react';
 import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification, notifyAuthUserChanged } from '../utils/api';
 import { isAdminUser } from '../adminPermissions';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/my-cvs', label: 'My CVs', icon: FileText },
+  { to: '/html-to-pdf', label: 'CV PDF Export', icon: Code2 },
   { to: '/tips', label: 'Tips', icon: BookOpen },
   { to: '/profile', label: 'Profile', icon: User },
 ];
