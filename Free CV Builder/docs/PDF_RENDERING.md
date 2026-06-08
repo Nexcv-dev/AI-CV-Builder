@@ -2,6 +2,8 @@
 
 NexCV generates PDFs through `POST /api/generate-pdf`. The main app performs auth, template, plan, and quota checks before calling the renderer.
 
+The separate HTML-to-PDF exporter uses queued jobs under `/api/html-pdf-jobs`. It accepts a self-contained CV HTML document, optional override CSS, and a page size, then renders the result through the HTML PDF queue worker.
+
 ## Renderer Order
 
 `services/pdfService.ts` supports two rendering modes:
@@ -43,6 +45,21 @@ The Lambda:
 - Returns an API Gateway compatible base64 PDF response.
 
 Warmup events can send `{ "warmup": true }`.
+
+## HTML-To-PDF Exporter
+
+The custom CV HTML exporter is intended for already-built CV layouts uploaded as `.html` or `.htm` files. The frontend validates the uploaded document before queueing:
+
+- The document must include a `<body>` and one `.page` wrapper.
+- CSS must be inline; external stylesheets, `@import`, scripts, remote images, and remote CSS assets are rejected.
+- `.page` should use A4 dimensions and internal padding, with no preview gutters or browser shadows.
+
+The preview toolbar can add a font override and header color override. These are sent as the job `css` field and are appended by both renderers:
+
+- Local fallback: `services/htmlPdfJobService.ts` injects `css` in `buildHtmlPdfDocument`.
+- Queue worker Lambda: `lambda-pdf-worker/src/handler.ts` injects `job.css` before Puppeteer renders the PDF.
+
+This means preview and generated PDF use the same override CSS. Fonts that are not available in the renderer environment may fall back to the configured stack, so prefer system-safe fonts for production smoke tests.
 
 ## Environment Variables
 

@@ -57,8 +57,14 @@ fetch(url, { credentials: 'include' })
 | `GET` | `/api/pdf-jobs/:id` | Poll the current user's PDF job status. |
 | `GET` | `/api/pdf-jobs/:id/download` | Download a ready queued PDF. |
 | `POST` | `/api/generate-pdf` | Generate a PDF for the selected CV/template. |
+| `GET` | `/api/html-pdf-quota` | Return the current guest/user quota for custom HTML-to-PDF exports. |
+| `POST` | `/api/html-pdf-jobs` | Queue a custom HTML-to-PDF export from sanitized self-contained HTML, optional override CSS, filename, and page size. |
+| `GET` | `/api/html-pdf-jobs/:id` | Poll a custom HTML-to-PDF job until it is ready, failed, or expired. |
+| `GET` | `/api/html-pdf-jobs/:id/download` | Download a ready custom HTML-to-PDF export. |
 
 PDF generation requires authentication and is subject to quota, plan, and premium-template checks.
+
+Custom HTML-to-PDF exports can run for guests or signed-in users according to HTML PDF quota. The uploaded HTML must pass the inline/offline CV rules before the server queues a job. The `css` field is reserved for safe export overrides, such as the preview toolbar's font and header color overrides; the local renderer and `lambda-pdf-worker` both inject that CSS into the final PDF document.
 
 CV import also requires authentication. The frontend opens the login modal before starting file reading or queueing for guests. Failed imports should return user-safe messages such as "We could not find clear resume details in this file" rather than raw OCR, parser, or AI provider details.
 
