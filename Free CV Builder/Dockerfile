@@ -1,5 +1,5 @@
-# Use Node.js 24-slim as the base image
-FROM node:24-slim
+# Use the Docker Official Node image from AWS Public ECR to avoid Docker Hub auth outages/rate limits in CI.
+FROM public.ecr.aws/docker/library/node:24-slim
 
 # Install system dependencies for Chromium (required by Puppeteer)
 RUN apt-get update && apt-get install -y \
