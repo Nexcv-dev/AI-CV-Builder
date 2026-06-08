@@ -41,6 +41,9 @@
                   {{#personalInfo.address}}
                     <p><span class="label">Location</span>{{personalInfo.address}}</p>
                   {{/personalInfo.address}}
+                  {{#socialLinks}}
+                    <p><span class="label">{{{iconSvg}}}</span>{{value}}</p>
+                  {{/socialLinks}}
                 </div>
               </section>
             {{/hasContact}}

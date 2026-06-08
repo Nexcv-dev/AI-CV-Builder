@@ -21,12 +21,14 @@
         <header class="hero">
           <div class="hero-content">
             <h1>{{personalInfo.fullName}}</h1>
+            {{#headline}}<p class="role">{{headline}}</p>{{/headline}}
 
             {{#hasContact}}
               <div class="contact-cloud">
                 {{#personalInfo.email}}<span>{{personalInfo.email}}</span>{{/personalInfo.email}}
                 {{#personalInfo.phone}}<span>{{personalInfo.phone}}</span>{{/personalInfo.phone}}
                 {{#personalInfo.address}}<span>{{personalInfo.address}}</span>{{/personalInfo.address}}
+                {{#socialLinks}}<span>{{{iconSvg}}}{{value}}</span>{{/socialLinks}}
               </div>
             {{/hasContact}}
           </div>

@@ -3,7 +3,18 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
-const ALLOWED_RICH_TEXT_TAGS = new Set(['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span']);
+const ALLOWED_RICH_TEXT_TAGS = new Set(['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span', 'svg', 'path', 'circle']);
+const keepSafeSvgAttrs = (attrs: string) => {
+  const allowed = new Set(['class', 'style', 'width', 'height', 'xmlns', 'viewbox', 'aria-hidden', 'cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'd']);
+  return Array.from(String(attrs || '').matchAll(/\s+([a-zA-Z:-]+)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/g))
+    .map((match) => {
+      const name = match[1].toLowerCase();
+      if (!allowed.has(name)) return '';
+      const value = match[2].replace(/^['"]|['"]$/g, '').replace(/"/g, '&quot;');
+      return ` ${match[1]}="${value}"`;
+    })
+    .join('');
+};
 const DOMPurify = {
   sanitize(value: unknown, _config?: unknown) {
     return String(value || '')
@@ -15,6 +26,7 @@ const DOMPurify = {
         if (!ALLOWED_RICH_TEXT_TAGS.has(tag)) return '';
         const closing = /^<\s*\//.test(match);
         if (closing) return `</${tag}>`;
+        if (tag === 'svg' || tag === 'path' || tag === 'circle') return `<${tag}${keepSafeSvgAttrs(String(attrs))}>`;
         if (tag !== 'a') return tag === 'br' ? '<br>' : `<${tag}>`;
         const hrefMatch = String(attrs).match(/\s+href\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/i);
         const href = hrefMatch ? hrefMatch[1].replace(/^['"]|['"]$/g, '') : '';
@@ -209,11 +221,14 @@ const escTemplateValue = (str: string) => (
 
 function renderCvTemplateString(templateHtml: string, cvData: any, options: { watermark?: boolean } = {}) {
   const personalInfo = cvData?.personalInfo || {};
-  const headline = cvData?.experience?.[0]?.position || cvData?.education?.[0]?.degree || '';
+  const imageCss = profileImageCss(cvData);
+  const profileImageUrl = sanitizePdfImageSource(cvData?.profileImage);
+  const headline = cvData?.headline || personalInfo.position || cvData?.experience?.[0]?.position || cvData?.education?.[0]?.degree || '';
   const location = personalInfo.address || '';
   const hasSummary = Boolean(personalInfo.summary);
   const hasPersonalDetails = Boolean(cvData?.flags?.hasPersonalDetails);
-  const hasContact = Boolean(personalInfo.email || personalInfo.phone || location);
+  const hasContact = Boolean(personalInfo.email || personalInfo.phone || location || cvData?.socialLinks?.length);
+  const hasSocialLinks = Boolean(cvData?.socialLinks?.length);
   const hasExperience = Boolean(cvData?.experience?.length);
   const hasEducation = Boolean(cvData?.education?.length);
   const hasSkills = Boolean(cvData?.skills?.length);
@@ -226,11 +241,18 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
     ...cvData,
     headline,
     location,
+    profileImageUrl,
+    profileImageTransform: imageCss.transform,
+    profileImageStyle: imageCss.style,
+    imageZoom: imageCss.imageZoom,
+    imageX: imageCss.imageX,
+    imageY: imageCss.imageY,
     hasHeader: Boolean(personalInfo.fullName || headline || hasSummary),
     hasSummary,
     hasContact,
+    hasSocialLinks,
     hasPersonalDetails,
-    hasProfileCard: Boolean(cvData?.profileImage || hasContact || hasPersonalDetails),
+    hasProfileCard: Boolean(profileImageUrl || hasContact || hasPersonalDetails),
     hasExperience,
     hasExperienceContinuation: false,
     experienceLeadItems: cvData?.experience || [],
@@ -244,7 +266,7 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
     hasReferences,
     hasMainColumn: Boolean(hasExperience || hasEducation || hasCourses || hasAwards),
     hasSideColumn: Boolean(hasSkills || hasProjects || hasLanguages || hasReferences || hasPersonalDetails),
-    hasBody: Boolean(hasExperience || hasEducation || hasSkills || hasCourses || hasProjects || hasAwards || hasLanguages || hasReferences || hasPersonalDetails),
+    hasBody: Boolean(personalInfo.fullName || headline || hasSummary || hasContact || hasExperience || hasEducation || hasSkills || hasCourses || hasProjects || hasAwards || hasLanguages || hasReferences || hasPersonalDetails),
     watermark: Boolean(options.watermark),
   };
 
@@ -268,7 +290,7 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
       const value = renderTemplateValue(getTemplateValue(pathValue, context, root));
       return DOMPurify.sanitize(value, {
         ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
-        ALLOWED_ATTR: ['href', 'target', 'rel'],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style', 'width', 'height', 'xmlns', 'viewBox', 'aria-hidden', 'cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'd'],
       });
     });
 
@@ -559,6 +581,12 @@ const formatDateInline = (startDate?: string, endDate?: string) =>
 const formatDateStacked = (startDate?: string, endDate?: string) =>
   (startDate || '') + (startDate && endDate ? '<br>-<br>' : '') + (endDate || '');
 
+const SOCIAL_ICONS = {
+  linkedin: '<svg class="social-icon" width="12" height="12" style="margin-right:5px;vertical-align:-2px;display:inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.61 0 4.27 2.38 4.27 5.47v6.27ZM5.32 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12Zm1.78 13.02H3.53V9H7.1v11.45Z"/></svg>',
+  github: '<svg class="social-icon" width="12" height="12" style="margin-right:5px;vertical-align:-2px;display:inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.02c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.49 11.49 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.49 5.93.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .5Z"/></svg>',
+  website: '<svg class="social-icon" width="12" height="12" style="margin-right:5px;vertical-align:-2px;display:inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>',
+};
+
 const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {}) => {
   const personalInfo = cvData?.personalInfo || {};
   const experience = Array.isArray(cvData?.experience) ? cvData.experience : [];
@@ -596,6 +624,11 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
     personalInfo.nationality ? { label: 'Nationality', value: personalInfo.nationality } : null,
     personalInfo.religion ? { label: 'Religion', value: personalInfo.religion } : null,
   ].filter(Boolean);
+  const socialLinks = [
+    personalInfo.linkedin ? { label: 'LinkedIn', iconLabel: 'in', iconSvg: SOCIAL_ICONS.linkedin, value: personalInfo.linkedin, url: personalInfo.linkedin } : null,
+    personalInfo.github ? { label: 'GitHub', iconLabel: 'GH', iconSvg: SOCIAL_ICONS.github, value: personalInfo.github, url: personalInfo.github } : null,
+    personalInfo.website ? { label: 'Website', iconLabel: 'Web', iconSvg: SOCIAL_ICONS.website, value: personalInfo.website, url: personalInfo.website } : null,
+  ].filter(Boolean);
   const processedExperience = experience.map((item: any) => ({
     ...item,
     position: item.position || '',
@@ -627,6 +660,7 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
   const processedAwards = awards.map((item: any) => ({ ...item, name: item.name || 'Award Name', issuer: item.issuer || 'Issuer' }));
   const processedLanguages = languages.map((item: any) => ({ ...item, label: item.proficiency ? `${item.name || ''} (${item.proficiency})` : (item.name || '') }));
   const processedReferences = references.map((item: any) => ({ ...item, name: item.name || 'Reference Name', sub: [item.position, item.company].filter(Boolean).join(', '), hasContact: Boolean(item.email || item.phone) }));
+  const headline = personalInfo.position || processedExperience[0]?.position || processedEducation[0]?.degree || '';
   const hasPersonalDetails = personalDetails.length > 0;
   const isProfessional = cvData?.template === 'professional';
   const sectionBuilders: Record<string, () => any | null> = {
@@ -654,7 +688,9 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
   return {
     ...cvData,
     personalInfo: { ...personalInfo, fullName: personalInfo.fullName || 'Your Name' },
+    headline,
     contactItems: [personalInfo.email, personalInfo.phone, personalInfo.address].filter(Boolean).map((value: string) => ({ value })),
+    socialLinks,
     experience: processedExperience,
     education: processedEducation,
     skills: processedSkills,
@@ -698,7 +734,7 @@ const prepareS3TemplateData = (cvData: any, options: TemplateRenderOptions = {})
       profileImage,
       hasProfileImage: Boolean(profileImage),
       profileImageTransform: imageCss.transform,
-      startupHeadlineTitle: processedExperience[0]?.position || '',
+      startupHeadlineTitle: headline,
     },
     flags: {
       isProfessional,
@@ -866,6 +902,8 @@ const PDF_ICONS = {
     email: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
     phone: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
     location: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+    linkedin: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.61 0 4.27 2.38 4.27 5.47v6.27ZM5.32 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12Zm1.78 13.02H3.53V9H7.1v11.45Z"/></svg>`,
+    github: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.02c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.49 11.49 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.49 5.93.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .5Z"/></svg>`,
     calendar: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>`,
     idCard: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M16 10h2"/><path d="M16 14h2"/><path d="M6.17 15a3 3 0 0 1 5.66 0"/><circle cx="9" cy="11" r="2"/><rect width="18" height="18" x="3" y="3" rx="2"/></svg>`,
     user: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
@@ -899,6 +937,14 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
     // --- Import shared helpers inline to keep the same export signature ---
     const esc = (str: string) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const profileImageSrc = esc(profileImage);
+    const headline = personalInfo.position || experience[0]?.position || education[0]?.degree || '';
+    const socialItems = [
+        personalInfo.linkedin ? { value: personalInfo.linkedin, icon: PDF_ICONS.linkedin, iconLabel: 'in' } : null,
+        personalInfo.github ? { value: personalInfo.github, icon: PDF_ICONS.github, iconLabel: 'GH' } : null,
+        personalInfo.website ? { value: personalInfo.website, icon: PDF_ICONS.globe, iconLabel: 'Web' } : null,
+    ].filter(Boolean) as Array<{ value: string; icon: string; iconLabel: string }>;
+    const socialRows = (style: string) => socialItems.map((item) => `<div style="${style}">${item.icon}<span>${esc(item.value)}</span></div>`).join('');
+    const socialInline = (item: { value: string; icon: string }) => `${item.icon}<span>${esc(item.value)}</span>`;
 
     const sanitize = (html: string) => DOMPurify.sanitize(html || '', {
         ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
@@ -1251,6 +1297,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
             personalInfo.email ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">${PDF_ICONS.email} <span>${esc(personalInfo.email)}</span></div>` : '',
             personalInfo.phone ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">${PDF_ICONS.phone} <span>${esc(personalInfo.phone)}</span></div>` : '',
             personalInfo.address ? `<div style="display:flex;align-items:center;gap:8px;word-break:break-word">${PDF_ICONS.location} <span>${esc(personalInfo.address)}</span></div>` : '',
+            socialRows('display:flex;align-items:center;gap:8px;word-break:break-word'),
         ].filter(Boolean).join('');
 
         const personalDetails = [
@@ -1330,6 +1377,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
         <td style="width:70%; vertical-align:top; padding:20mm; padding-top:0; background:white; position:relative; z-index:2">
           <header style="margin-bottom:40px; padding-top:27mm">
             <h1 style="font-size:2.5rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;color:${themeColor};word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+            ${headline ? `<div style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#4b5563;margin-bottom:10px">${esc(headline)}</div>` : ''}
             <div style="width:64px;height:4px;background:${themeColor};margin-bottom:8px"></div>
           </header>
 
@@ -1347,6 +1395,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
             personalInfo.email ? `<div style="display:flex;align-items:center;gap:12px">${PDF_ICONS.email}<span>${esc(personalInfo.email)}</span></div>` : '',
             personalInfo.phone ? `<div style="display:flex;align-items:center;gap:12px">${PDF_ICONS.phone}<span>${esc(personalInfo.phone)}</span></div>` : '',
             personalInfo.address ? `<div style="display:flex;align-items:center;gap:12px">${PDF_ICONS.location}<span>${esc(personalInfo.address)}</span></div>` : '',
+            socialRows('display:flex;align-items:center;gap:12px;word-break:break-word'),
         ].filter(Boolean).join('');
 
         bodyContent = `<div style="display:block;background:white;min-height:297mm;position:relative;overflow:hidden">
@@ -1354,7 +1403,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
             <div style="position:absolute;inset:0;opacity:0.1;background-image:radial-gradient(#ffffff 2px,transparent 2px);background-size:24px 24px"></div>
             <div style="position:relative;z-index:2;padding-right:${profileImage ? '170px' : '0'}">
               <h1 style="font-size:3rem;line-height:1.05;font-weight:800;letter-spacing:-0.025em;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
-              ${experience[0]?.position ? `<div style="margin-top:8px;font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${startupHeaderMutedColor}">${esc(experience[0].position)}</div>` : ''}
+              ${headline ? `<div style="margin-top:8px;font-size:1.125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${startupHeaderMutedColor}">${esc(headline)}</div>` : ''}
               <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px;font-size:0.875rem;font-weight:500;color:${startupHeaderMutedColor}">${contactItems}</div>
             </div>
           </header>
@@ -1378,10 +1427,12 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
             <header style="margin-bottom:40px;display:flex;border-bottom:2px solid #f3f4f6;padding-bottom:24px">
               <div style="flex:1">
                 <h1 style="font-size:2.4rem;line-height:1.1;font-weight:800;letter-spacing:-0.025em;margin-bottom:8px;color:#111827;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+                ${headline ? `<div style="font-size:0.95rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${themeColor};margin-top:4px">${esc(headline)}</div>` : ''}
                 <div style="display:flex;flex-direction:column;gap:4px;font-size:0.875rem;font-weight:500;margin-top:16px">
                   ${personalInfo.email ? `<div style="color:#4b5563">${esc(personalInfo.email)}</div>` : ''}
                   ${personalInfo.phone ? `<div style="color:#4b5563">${esc(personalInfo.phone)}</div>` : ''}
                   ${personalInfo.address ? `<div style="color:#6b7280">${esc(personalInfo.address)}</div>` : ''}
+                  ${socialRows('color:#4b5563;word-break:break-word')}
                 </div>
               </div>
               ${profileImage ? `<div style="margin-left:24px;flex-shrink:0"><div style="width:112px;height:112px;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 6px)"><img src="${profileImageSrc}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div></div>` : ''}
@@ -1392,9 +1443,13 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
       </div>
     </div>`;
     } else if (template === 'timeline') {
-        const contactItems = [personalInfo.email, personalInfo.phone, personalInfo.address]
-            .filter(Boolean)
-            .map((item: string) => `<span style="word-break:break-word;text-decoration:none">${esc(item)}</span>`)
+        const contactItems = [
+            personalInfo.email ? esc(personalInfo.email) : '',
+            personalInfo.phone ? esc(personalInfo.phone) : '',
+            personalInfo.address ? esc(personalInfo.address) : '',
+            ...socialItems.map(socialInline),
+        ].filter(Boolean)
+            .map((item: string) => `<span style="word-break:break-word;text-decoration:none">${item}</span>`)
             .join('');
 
         bodyContent = `<div style="display:block;background:white">
@@ -1407,6 +1462,7 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
                 <div style="min-width:0;flex:1">
                   <div style="width:64px;height:6px;border-radius:9999px;background:${themeColor};margin-bottom:12px"></div>
                   <h1 style="font-size:2.45rem;line-height:1;font-weight:900;letter-spacing:-0.025em;color:#030712;word-break:break-word">${esc(personalInfo.fullName || 'Your Name')}</h1>
+                  ${headline ? `<div style="margin-top:10px;font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${themeColor}">${esc(headline)}</div>` : ''}
                   <div style="margin-top:16px;display:flex;flex-direction:column;gap:2px;font-size:0.75rem;font-weight:500;line-height:1.65;color:#6b7280">${contactItems}</div>
                 </div>
                 ${profileImage ? `<div style="flex-shrink:0"><div style="width:112px;height:112px;border-radius:9999px;overflow:hidden;border:3px solid #ffffff;box-shadow:0 0 0 1px #e5e7eb;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImageSrc}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div></div>` : ''}
@@ -1426,11 +1482,13 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
             <header style="margin-bottom:40px;text-align:center;border-bottom:2px solid #f3f4f6;padding-bottom:30px">
               ${profileImage ? `<div style="width:112px;height:112px;border-radius:9999px;overflow:hidden;border:3px solid #ffffff;box-shadow:0 0 0 1px #e5e7eb;margin:0 auto 20px auto;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImageSrc}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
               <h1 style="font-size:2.25rem;font-weight:700;margin-bottom:10px;color:#111827">${esc(personalInfo.fullName || 'Your Name')}</h1>
+              ${headline ? `<div style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${themeColor};margin-bottom:12px">${esc(headline)}</div>` : ''}
               <div style="font-size:0.8125rem;color:#4b5563;display:flex;justify-content:center;gap:15px;font-weight:500">
                 ${[
                 personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : '',
                 personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : '',
-                personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''
+                personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : '',
+                ...socialItems.map((item) => `<span>${socialInline(item)}</span>`)
             ].filter(Boolean).join(' | ')}
               </div>
             </header>
@@ -1462,11 +1520,13 @@ function generateCVHTML(cvData: any, template: string, options: { watermark?: bo
             <header style="margin-bottom:32px;text-align:center;">
               ${profileImage ? `<div style="width:96px;height:96px;border-radius:9999px;overflow:hidden;border:2px solid #e5e7eb;margin:0 auto 16px auto;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0);clip-path:inset(0 round 9999px)"><img src="${profileImageSrc}" style="width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;transform:scale(${imageZoom}) translate(${imageX}px,${imageY}px)" /></div>` : ''}
               <h1 style="font-size:2.25rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;color:${themeColor}">${esc(personalInfo.fullName || 'Your Name')}</h1>
+              ${headline ? `<div style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#374151;margin-bottom:12px">${esc(headline)}</div>` : ''}
               <div style="font-size:0.875rem;color:#4b5563;text-align:center;">
                 ${[
                 personalInfo.email ? `<span>${esc(personalInfo.email)}</span>` : '',
                 personalInfo.phone ? `<span>${esc(personalInfo.phone)}</span>` : '',
-                personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : ''
+                personalInfo.address ? `<span>${esc(personalInfo.address)}</span>` : '',
+                ...socialItems.map((item) => `<span>${socialInline(item)}</span>`)
             ].filter(Boolean).join(' &nbsp;&bull;&nbsp; ')}
               </div>
             </header>

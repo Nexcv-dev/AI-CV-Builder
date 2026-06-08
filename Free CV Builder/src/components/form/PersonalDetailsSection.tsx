@@ -24,6 +24,23 @@ const MARITAL_OPTIONS = [
   { value: 'Married', label: 'Married' },
 ];
 
+function FieldGroupTitle({
+  children,
+  isDarkMode,
+}: {
+  children: React.ReactNode;
+  isDarkMode?: boolean;
+}) {
+  return (
+    <div className="md:col-span-2 flex items-center gap-3 pt-2">
+      <span className={`text-sm font-bold uppercase tracking-wider ${isDarkMode ? 'text-violet-300' : 'text-violet-700'}`}>
+        {children}
+      </span>
+      <span className={`h-px flex-1 ${isDarkMode ? 'bg-violet-500/35' : 'bg-violet-200'}`} />
+    </div>
+  );
+}
+
 function DateOfBirthField({
   personalInfo,
   onChange,
@@ -61,6 +78,7 @@ export const PersonalDetailsSection = React.memo(({
     onToggle={onToggle}
   >
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <FieldGroupTitle isDarkMode={isDarkMode}>Core Info</FieldGroupTitle>
       <div>
         <label htmlFor="fullName" className={LABEL_CLASS_SM}>Full Name</label>
         <input
@@ -72,6 +90,20 @@ export const PersonalDetailsSection = React.memo(({
           value={personalInfo.fullName}
           onChange={onChange}
           maxLength={TEXT_FIELD_LIMITS.personName}
+          className={INPUT_CLASS}
+        />
+      </div>
+      <div>
+        <label htmlFor="position" className={LABEL_CLASS_SM}>Professional Title</label>
+        <input
+          id="position"
+          type="text"
+          name="position"
+          autoComplete="organization-title"
+          placeholder="e.g. Software Engineer"
+          value={personalInfo.position}
+          onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.mediumText}
           className={INPUT_CLASS}
         />
       </div>
@@ -103,7 +135,7 @@ export const PersonalDetailsSection = React.memo(({
           className={INPUT_CLASS}
         />
       </div>
-      <div>
+      <div className="md:col-span-2">
         <label htmlFor="address" className={LABEL_CLASS_SM}>Address</label>
         <input
           id="address"
@@ -117,6 +149,52 @@ export const PersonalDetailsSection = React.memo(({
           className={INPUT_CLASS}
         />
       </div>
+
+      <FieldGroupTitle isDarkMode={isDarkMode}>Social Links</FieldGroupTitle>
+      <div>
+        <label htmlFor="linkedin" className={LABEL_CLASS_SM}>LinkedIn</label>
+        <input
+          id="linkedin"
+          type="url"
+          name="linkedin"
+          autoComplete="url"
+          placeholder="https://linkedin.com/in/..."
+          value={personalInfo.linkedin}
+          onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.url}
+          className={INPUT_CLASS}
+        />
+      </div>
+      <div>
+        <label htmlFor="github" className={LABEL_CLASS_SM}>GitHub</label>
+        <input
+          id="github"
+          type="url"
+          name="github"
+          autoComplete="url"
+          placeholder="https://github.com/..."
+          value={personalInfo.github}
+          onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.url}
+          className={INPUT_CLASS}
+        />
+      </div>
+      <div className="md:col-span-2">
+        <label htmlFor="website" className={LABEL_CLASS_SM}>Portfolio / Website</label>
+        <input
+          id="website"
+          type="url"
+          name="website"
+          autoComplete="url"
+          placeholder="https://example.com"
+          value={personalInfo.website}
+          onChange={onChange}
+          maxLength={TEXT_FIELD_LIMITS.url}
+          className={INPUT_CLASS}
+        />
+      </div>
+
+      <FieldGroupTitle isDarkMode={isDarkMode}>Additional Details</FieldGroupTitle>
       <div>
         <DateOfBirthField
           personalInfo={personalInfo}

@@ -63,9 +63,13 @@ export interface Reference {
 export interface CVData {
   personalInfo: {
     fullName: string;
+    position: string;
     email: string;
     phone: string;
     address: string;
+    linkedin: string;
+    github: string;
+    website: string;
     summary: string;
     dob: string;
     nic: string;

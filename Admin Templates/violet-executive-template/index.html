@@ -42,6 +42,12 @@
                     <span>{{personalInfo.address}}</span>
                   </div>
                 {{/personalInfo.address}}
+                {{#socialLinks}}
+                  <div class="contact-item">
+                    <span class="contact-icon">{{{iconSvg}}}</span>
+                    <span>{{value}}</span>
+                  </div>
+                {{/socialLinks}}
               </div>
             {{/hasContact}}
           </div>

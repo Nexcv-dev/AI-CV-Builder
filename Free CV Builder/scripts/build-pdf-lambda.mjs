@@ -184,7 +184,18 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
-const ALLOWED_RICH_TEXT_TAGS = new Set(['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span']);
+const ALLOWED_RICH_TEXT_TAGS = new Set(['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span', 'svg', 'path', 'circle']);
+const keepSafeSvgAttrs = (attrs: string) => {
+  const allowed = new Set(['class', 'style', 'width', 'height', 'xmlns', 'viewbox', 'aria-hidden', 'cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'd']);
+  return Array.from(String(attrs || '').matchAll(/\\s+([a-zA-Z:-]+)\\s*=\\s*("[^"]*"|'[^']*'|[^\\s>]+)/g))
+    .map((match) => {
+      const name = match[1].toLowerCase();
+      if (!allowed.has(name)) return '';
+      const value = match[2].replace(/^['"]|['"]$/g, '').replace(/"/g, '&quot;');
+      return \` \${match[1]}="\${value}"\`;
+    })
+    .join('');
+};
 const DOMPurify = {
   sanitize(value: unknown, _config?: unknown) {
     return String(value || '')
@@ -196,6 +207,7 @@ const DOMPurify = {
         if (!ALLOWED_RICH_TEXT_TAGS.has(tag)) return '';
         const closing = /^<\\s*\\//.test(match);
         if (closing) return \`</\${tag}>\`;
+        if (tag === 'svg' || tag === 'path' || tag === 'circle') return \`<\${tag}\${keepSafeSvgAttrs(String(attrs))}>\`;
         if (tag !== 'a') return tag === 'br' ? '<br>' : \`<\${tag}>\`;
         const hrefMatch = String(attrs).match(/\\s+href\\s*=\\s*("[^"]*"|'[^']*'|[^\\s>]+)/i);
         const href = hrefMatch ? hrefMatch[1].replace(/^['"]|['"]$/g, '') : '';
@@ -351,11 +363,14 @@ const escTemplateValue = (str: string) => (
 
 function renderCvTemplateString(templateHtml: string, cvData: any, options: { watermark?: boolean } = {}) {
   const personalInfo = cvData?.personalInfo || {};
-  const headline = cvData?.experience?.[0]?.position || cvData?.education?.[0]?.degree || '';
+  const imageCss = profileImageCss(cvData);
+  const profileImageUrl = sanitizePdfImageSource(cvData?.profileImage);
+  const headline = cvData?.headline || personalInfo.position || cvData?.experience?.[0]?.position || cvData?.education?.[0]?.degree || '';
   const location = personalInfo.address || '';
   const hasSummary = Boolean(personalInfo.summary);
   const hasPersonalDetails = Boolean(cvData?.flags?.hasPersonalDetails);
-  const hasContact = Boolean(personalInfo.email || personalInfo.phone || location);
+  const hasContact = Boolean(personalInfo.email || personalInfo.phone || location || cvData?.socialLinks?.length);
+  const hasSocialLinks = Boolean(cvData?.socialLinks?.length);
   const hasExperience = Boolean(cvData?.experience?.length);
   const hasEducation = Boolean(cvData?.education?.length);
   const hasSkills = Boolean(cvData?.skills?.length);
@@ -368,11 +383,18 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
     ...cvData,
     headline,
     location,
+    profileImageUrl,
+    profileImageTransform: imageCss.transform,
+    profileImageStyle: imageCss.style,
+    imageZoom: imageCss.imageZoom,
+    imageX: imageCss.imageX,
+    imageY: imageCss.imageY,
     hasHeader: Boolean(personalInfo.fullName || headline || hasSummary),
     hasSummary,
     hasContact,
+    hasSocialLinks,
     hasPersonalDetails,
-    hasProfileCard: Boolean(cvData?.profileImage || hasContact || hasPersonalDetails),
+    hasProfileCard: Boolean(profileImageUrl || hasContact || hasPersonalDetails),
     hasExperience,
     hasExperienceContinuation: false,
     experienceLeadItems: cvData?.experience || [],
@@ -386,7 +408,7 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
     hasReferences,
     hasMainColumn: Boolean(hasExperience || hasEducation || hasCourses || hasAwards),
     hasSideColumn: Boolean(hasSkills || hasProjects || hasLanguages || hasReferences || hasPersonalDetails),
-    hasBody: Boolean(hasExperience || hasEducation || hasSkills || hasCourses || hasProjects || hasAwards || hasLanguages || hasReferences || hasPersonalDetails),
+    hasBody: Boolean(personalInfo.fullName || headline || hasSummary || hasContact || hasExperience || hasEducation || hasSkills || hasCourses || hasProjects || hasAwards || hasLanguages || hasReferences || hasPersonalDetails),
     watermark: Boolean(options.watermark),
   };
 
@@ -410,7 +432,7 @@ function renderCvTemplateString(templateHtml: string, cvData: any, options: { wa
       const value = renderTemplateValue(getTemplateValue(pathValue, context, root));
       return DOMPurify.sanitize(value, {
         ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'u', 'div', 'span'],
-        ALLOWED_ATTR: ['href', 'target', 'rel'],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style', 'width', 'height', 'xmlns', 'viewBox', 'aria-hidden', 'cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'd'],
       });
     });
 

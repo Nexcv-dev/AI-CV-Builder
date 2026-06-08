@@ -7,9 +7,13 @@ const DEFAULT_SECTION_ORDER = ['summary', 'personalDetails', 'experience', 'educ
 export const initialBuilderCvData: CVData = {
   personalInfo: {
     fullName: '',
+    position: '',
     email: '',
     phone: '',
     address: '',
+    linkedin: '',
+    github: '',
+    website: '',
     summary: '',
     dob: '',
     nic: '',

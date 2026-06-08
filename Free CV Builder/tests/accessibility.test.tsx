@@ -31,7 +31,7 @@ Element.prototype.scrollTo = vi.fn();
 
 describe('Accessibility Audit', () => {
   const initialData = {
-    personalInfo: { fullName: '', email: '', summary: '', phone: '', address: '', dob: '', nic: '', gender: '', nationality: '', religion: '', maritalStatus: '' },
+    personalInfo: { fullName: '', position: '', email: '', summary: '', phone: '', address: '', linkedin: '', github: '', website: '', dob: '', nic: '', gender: '', nationality: '', religion: '', maritalStatus: '' },
     experience: [],
     education: [],
     skills: [{ id: '1', name: 'React', level: 3 }],

@@ -116,8 +116,14 @@ img {
   margin-bottom: 7px;
 }
 
-};
+.side-role {
+  color: {{themeColor}};
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  margin-top: 8px;
 }
 
 .side-section {

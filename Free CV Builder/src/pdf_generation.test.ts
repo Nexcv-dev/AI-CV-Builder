@@ -6,9 +6,13 @@ describe('PDF HTML Generation', () => {
   const mockCVData = {
     personalInfo: {
       fullName: 'Test User',
+      position: 'Software Engineer',
       email: 'test@example.com',
       phone: '1234567890',
       address: 'Test Address',
+      linkedin: '',
+      github: '',
+      website: '',
       summary: 'Test Summary',
     },
     experience: [

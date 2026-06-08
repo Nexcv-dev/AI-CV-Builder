@@ -117,6 +117,28 @@ h1 {
   letter-spacing: 0.12em;
 }
 
+.head-social {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 120mm;
+  margin-top: 10px;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.head-social span {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.head-social .social-icon {
+  color: {{themeColor}};
+}
+
 .photo {
   width: 36mm;
   height: 36mm;

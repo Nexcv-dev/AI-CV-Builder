@@ -110,6 +110,38 @@ h1 {
   color: #ffffff;
 }
 
+.role {
+  margin: 0 0 9px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.88rem;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero-social {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 118mm;
+  margin-top: 9px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.hero-social span {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.hero-social .social-icon {
+  color: {{themeColor}};
+}
+
 .photo {
   width: 38mm;
   height: 38mm;
