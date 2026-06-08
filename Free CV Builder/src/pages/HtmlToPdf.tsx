@@ -1,5 +1,5 @@
 ﻿import React, { ChangeEvent, CSSProperties, DragEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Crown, Download, Eye, FileText, FileUp, Info, Loader2, UploadCloud, X, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Crown, Download, Eye, FileText, FileUp, Info, Loader2, Palette, Type, UploadCloud, X, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
 import { ApiError, apiFetch } from '../utils/api';
 import { AuthModal } from '../components/AuthModal';
 import { SiteHeader } from '../components/SiteHeader';
@@ -7,6 +7,7 @@ import { HtmlPdfRuleCheck, validateHtmlPdfRules } from '../utils/htmlPdfValidati
 
 type HtmlPdfJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'expired';
 type PageSize = 'A4' | 'Letter';
+type FontOverride = '' | 'Inter' | 'Arial' | 'Calibri' | 'Georgia' | 'Times New Roman' | 'Roboto';
 
 interface HtmlPdfQuota {
   limit: number | null;
@@ -30,6 +31,15 @@ const MAX_PREVIEW_ZOOM = 0.85;
 const MIN_HTML_PDF_SCALE = 0.1;
 const SINGLE_PAGE_FIT_MAX_PAGES = 2;
 const HTML_RULE_ERROR_MESSAGE = 'HTML file needs a few fixes before export. Please fix the failed rules below and upload again.';
+const FONT_OVERRIDE_OPTIONS: { value: FontOverride; label: string }[] = [
+  { value: '', label: 'Original font' },
+  { value: 'Inter', label: 'Inter' },
+  { value: 'Arial', label: 'Arial' },
+  { value: 'Calibri', label: 'Calibri' },
+  { value: 'Georgia', label: 'Georgia' },
+  { value: 'Times New Roman', label: 'Times' },
+  { value: 'Roboto', label: 'Roboto' },
+];
 const INITIAL_RULE_CHECKS: HtmlPdfRuleCheck[] = [
   { id: 'body-margin', label: 'body margin is 0', passed: false, error: 'Set body { margin: 0; }.' },
   { id: 'body-background', label: 'body background is white', passed: false, error: 'Set body { background: white; }.' },
@@ -40,9 +50,27 @@ const INITIAL_RULE_CHECKS: HtmlPdfRuleCheck[] = [
   { id: 'offline-assets', label: 'Inline CSS and data URI assets only', passed: false, error: 'Use inline CSS and data URI assets only.' },
 ];
 
-function buildPreviewSrcDoc(html: string, pageSize: PageSize) {
+function buildHtmlPdfOverrideCss(fontOverride: FontOverride, headerColor: string) {
+  const rules: string[] = [];
+  if (fontOverride) {
+    const fontStack = fontOverride === 'Times New Roman'
+      ? '"Times New Roman", Times, serif'
+      : fontOverride === 'Georgia'
+        ? 'Georgia, "Times New Roman", serif'
+        : `"${fontOverride}", Arial, sans-serif`;
+    rules.push(`html,body,.page,.cv,.resume{font-family:${fontStack}!important;}`);
+    rules.push(`.page *,.cv *,.resume *{font-family:inherit!important;}`);
+  }
+  if (/^#[0-9a-f]{6}$/i.test(headerColor)) {
+    rules.push(`h1,h2,h3,h4,.name,.title,.section-title,.cv-header,.resume-header,header{color:${headerColor}!important;}`);
+    rules.push(`.cv-header a,.resume-header a,header a{color:${headerColor}!important;}`);
+  }
+  return rules.length ? `\n/* NexCV HTML to PDF overrides */\n${rules.join('\n')}\n` : '';
+}
+
+function buildPreviewSrcDoc(html: string, pageSize: PageSize, overrideCss = '') {
   const pageRule = pageSize === 'Letter' ? 'Letter' : 'A4';
-  const previewCss = `<style id="nexcv-preview-frame-style">html,body{margin:0!important;padding:0!important;overflow:hidden!important;}body{min-height:100%;}body>.cv:first-child{margin-block:0!important;}*{box-sizing:border-box;}@page{size:${pageRule};margin:0;}</style>`;
+  const previewCss = `<style id="nexcv-preview-frame-style">html,body{margin:0!important;padding:0!important;overflow:hidden!important;}body{min-height:100%;}body>.cv:first-child{margin-block:0!important;}*{box-sizing:border-box;}@page{size:${pageRule};margin:0;}${overrideCss}</style>`;
   if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, `${previewCss}</head>`);
   if (/<head[\s>]/i.test(html)) return html.replace(/<head([^>]*)>/i, `<head$1>${previewCss}`);
   if (/<html[\s>]/i.test(html)) return html.replace(/<html([^>]*)>/i, `<html$1><head><meta charset="utf-8">${previewCss}</head>`);
@@ -64,6 +92,8 @@ export default function HtmlToPdf() {
   const [fileName, setFileName] = useState('');
   const [filename, setFilename] = useState('nexcv-document');
   const [pageSize, setPageSize] = useState<PageSize>('A4');
+  const [fontOverride, setFontOverride] = useState<FontOverride>('');
+  const [headerColor, setHeaderColor] = useState('#2563eb');
   const [quota, setQuota] = useState<HtmlPdfQuota | null>(null);
   const [job, setJob] = useState<HtmlPdfJob | null>(null);
   const [loadingQuota, setLoadingQuota] = useState(true);
@@ -84,7 +114,8 @@ export default function HtmlToPdf() {
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const pollTimerRef = useRef<number | null>(null);
 
-  const previewSrcDoc = useMemo(() => buildPreviewSrcDoc(html, pageSize), [html, pageSize]);
+  const overrideCss = useMemo(() => buildHtmlPdfOverrideCss(fontOverride, headerColor), [fontOverride, headerColor]);
+  const previewSrcDoc = useMemo(() => buildPreviewSrcDoc(html, pageSize, overrideCss), [html, pageSize, overrideCss]);
   const basePaper = pageSize === 'Letter'
     ? { width: 816, height: 1056 }
     : { width: 794, height: 1123 };
@@ -104,7 +135,7 @@ export default function HtmlToPdf() {
     transform: `translateY(-${(previewOffsetTop * previewFitScale) + ((currentPage - 1) * basePaper.height)}px) scale(${previewZoom * previewFitScale})`,
     transformOrigin: 'top left',
   };
-  const inputBytes = useMemo(() => new Blob([html]).size, [html]);
+  const inputBytes = useMemo(() => new Blob([html, html ? overrideCss : '']).size, [html, overrideCss]);
   const inputTooLarge = inputBytes > MAX_UPLOAD_BYTES;
   const canSubmit = html.trim().length > 0 && !inputTooLarge && !submitting && job?.status !== 'queued' && job?.status !== 'processing';
 
@@ -316,7 +347,7 @@ export default function HtmlToPdf() {
     try {
       const data = await apiFetch<{ job: HtmlPdfJob; quota: HtmlPdfQuota }>('/api/html-pdf-jobs', {
         method: 'POST',
-        body: JSON.stringify({ html, css: '', filename, pageSize }),
+        body: JSON.stringify({ html, css: overrideCss, filename, pageSize }),
       });
       setJob(data.job);
       setQuota(data.quota);
@@ -572,9 +603,32 @@ export default function HtmlToPdf() {
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Eye size={17} className="text-slate-300" />
                   <span className="text-sm font-black text-white">Preview</span>
-                  <span className="text-xs font-semibold text-slate-500">Generated from uploaded CV HTML</span>
                 </div>
                 <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
+                  <label className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/8 px-2 text-slate-300">
+                    <Type size={15} className="shrink-0" />
+                    <span className="sr-only">Font override</span>
+                    <select
+                      value={fontOverride}
+                      onChange={(event) => setFontOverride(event.target.value as FontOverride)}
+                      className="h-7 min-w-24 bg-transparent text-xs font-extrabold text-white outline-none"
+                    >
+                      {FONT_OVERRIDE_OPTIONS.map((option) => (
+                        <option key={option.value || 'original'} value={option.value} className="bg-slate-900 text-white">{option.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/8 px-2 text-slate-300">
+                    <Palette size={15} className="shrink-0" />
+                    <span className="sr-only">Header color override</span>
+                    <input
+                      type="color"
+                      value={headerColor}
+                      onChange={(event) => setHeaderColor(event.target.value)}
+                      className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
+                      aria-label="Header color override"
+                    />
+                  </label>
                   <button
                     type="button"
                     onClick={() => setPageSize('A4')}
