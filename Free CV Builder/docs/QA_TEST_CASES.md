@@ -55,6 +55,8 @@ This is the manual QA checklist for NexCV releases. Run it before production rel
 | QA-307 | Fonts | Test each available font in preview and PDF | Selected font is accepted, preview renders, PDF renders without fallback errors. |
 | QA-308 | Watermark | Free-plan download | Watermark appears where required. |
 | QA-309 | Paid PDF | Paid-plan download | Watermark is removed and quota updates correctly. |
+| QA-310 | HTML PDF | Upload valid self-contained CV HTML | Preview renders, job queues, PDF downloads, and quota updates correctly. |
+| QA-311 | HTML PDF Overrides | Change preview font and header color before generating PDF | Preview updates immediately, generated PDF uses the same font/header color override CSS, and missing fonts fall back safely. |
 
 ## Billing
 
