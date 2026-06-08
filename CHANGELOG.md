@@ -3,18 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #239 from Nexcv-dev/test/overview (9cd8440) - Bimantha Perera, 10 seconds ago
-* add new social links to templates (5e6d21b) - Bimantha Perera, 9 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (4c0641c) - bimanthaperera-lab, 5 hours ago
-* Merge pull request #238 from Nexcv-dev/test/overview (80a5254) - Bimantha Perera, 5 hours ago
+* Merge pull request #240 from Nexcv-dev/test/overview (a3e31d0) - Bimantha Perera, 7 seconds ago
+* update docs (cb159e5) - Bimantha Perera, 18 minutes ago
+* add html to pdf color and font change options (8c4028c) - Bimantha Perera, 28 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (ccda230) - bimanthaperera-lab, 36 minutes ago
+* Merge pull request #239 from Nexcv-dev/test/overview (9cd8440) - Bimantha Perera, 36 minutes ago
+* add new social links to templates (5e6d21b) - Bimantha Perera, 44 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (4c0641c) - bimanthaperera-lab, 6 hours ago
+* Merge pull request #238 from Nexcv-dev/test/overview (80a5254) - Bimantha Perera, 6 hours ago
 * fix test failed issue (764c468) - Bimantha Perera, 6 hours ago
 * improve ui in html to pdf option (c701276) - Bimantha Perera, 16 hours ago
 * give html to pdf option to geust users (4bd8aa4) - Bimantha Perera, 16 hours ago
 * add html to pdf option (90ace46) - Bimantha Perera, 22 hours ago
-* Update AdminOverviewSections.tsx (98e0b41) - Bimantha Perera, 27 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (87378a9) - bimanthaperera-lab, 28 hours ago
-* Merge pull request #235 from Nexcv-dev/test/overview (c3cd0d1) - Bimantha Perera, 28 hours ago
-* improve error handling and bug fixing (fc55f1c) - Bimantha Perera, 28 hours ago
+* Update AdminOverviewSections.tsx (98e0b41) - Bimantha Perera, 28 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (87378a9) - bimanthaperera-lab, 29 hours ago
+* Merge pull request #235 from Nexcv-dev/test/overview (c3cd0d1) - Bimantha Perera, 29 hours ago
+* improve error handling and bug fixing (fc55f1c) - Bimantha Perera, 29 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (10b5b7f) - bimanthaperera-lab, 29 hours ago
 * Merge pull request #234 from Nexcv-dev/test/overview (f364f7b) - Bimantha Perera, 29 hours ago
 * fix bug (468d253) - Bimantha Perera, 29 hours ago
