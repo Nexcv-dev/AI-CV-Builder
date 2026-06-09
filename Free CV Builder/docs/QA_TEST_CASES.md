@@ -48,7 +48,7 @@ This is the manual QA checklist for NexCV releases. Run it before production rel
 | --- | --- | --- | --- |
 | QA-301 | Templates | Switch through built-in templates | Preview renders each template. |
 | QA-302 | Admin Templates | Publish S3/admin template | Template appears in builder/templates if active. |
-| QA-303 | Template Assets | Run `npm run templates:verify-s3` | Missing `index.html`, `style.css`, or thumbnail issues are reported before release. |
+| QA-303 | Template Assets | Run `corepack pnpm templates:verify-s3` | Missing `index.html`, `style.css`, or thumbnail issues are reported before release. |
 | QA-304 | PDF | Generate PDF from built-in template | PDF downloads and matches preview closely. |
 | QA-305 | PDF | Generate PDF from admin/S3 template | PDF uses custom template assets, colors, and selected font. |
 | QA-306 | PDF | Missing template key/assets | Generation fails safely with user-friendly error and no quota leak. |
@@ -95,27 +95,27 @@ This is the manual QA checklist for NexCV releases. Run it before production rel
 Run the automated checks that match the change:
 
 ```powershell
-npm run lint
-npm run test:run
-npm run build
-npm run validate:template-map
-npm run validate:templates
-npm run templates:verify-s3
+corepack pnpm lint
+corepack pnpm test:run
+corepack pnpm build
+corepack pnpm validate:template-map
+corepack pnpm validate:templates
+corepack pnpm templates:verify-s3
 ```
 
 For PDF Lambda changes:
 
 ```powershell
-npm run build:pdf-lambda
+corepack pnpm build:pdf-lambda
 ```
 
 For worker changes:
 
 ```powershell
-npm run build:pdf-worker-lambda
-npm run build:cv-import-worker-lambda
-npm run build:email-worker-lambda
-npm run build:ocr-lambda
+corepack pnpm build:pdf-worker-lambda
+corepack pnpm build:cv-import-worker-lambda
+corepack pnpm build:email-worker-lambda
+corepack pnpm build:ocr-lambda
 ```
 
 ## QA Sign-Off Template

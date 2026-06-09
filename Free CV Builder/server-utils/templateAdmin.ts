@@ -1,5 +1,5 @@
 import TemplateSetting from '../server-models/TemplateSetting';
-import { CV_TEMPLATES, DEFAULT_TEMPLATE, isTemplateName, type TemplateName } from '../src/templates';
+import { CV_TEMPLATES, DEFAULT_TEMPLATE, isTemplateName, type TemplateName } from '@nexcv/templates';
 import templateReleaseMap from '../config/template-release-map.json';
 
 export const TEMPLATE_CATEGORIES = ['Modern', 'ATS Friendly', 'Minimal', 'Executive', 'Creative', 'Tech', 'Corporate'] as const;

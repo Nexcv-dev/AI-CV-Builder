@@ -6,7 +6,7 @@ import { payHereAmountToCents } from '../server-utils/payHere';
 import { logError } from '../server-utils/logger';
 import type { Request, Response, NextFunction } from 'express';
 import { isSuperAdmin } from '../server-models/userRole';
-import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from '../src/adminAccess';
+import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from '@nexcv/shared/admin';
 
 export const MAX_TEXT_LENGTH = 10000;
 export const MAX_BASE64_LENGTH = 15 * 1024 * 1024;

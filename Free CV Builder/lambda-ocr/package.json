@@ -1,0 +1,9 @@
+{
+  "name": "@nexcv/ocr-lambda",
+  "private": true,
+  "version": "0.1.11",
+  "type": "module",
+  "scripts": {
+    "build:lambda": "node ../scripts/build-ocr-lambda.mjs"
+  }
+}

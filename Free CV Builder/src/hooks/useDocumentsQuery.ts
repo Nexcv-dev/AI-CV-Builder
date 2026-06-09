@@ -1,27 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../utils/api';
-
-export interface SavedDocument {
-  id: string;
-  title: string;
-  template: string;
-  status?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CvCreationQuota {
-  limit: number | null;
-  used: number;
-  remaining: number | null;
-  reached: boolean;
-}
-
-export interface DocumentsResponse {
-  documents: SavedDocument[];
-  quota: CvCreationQuota;
-  downloadQuota?: unknown;
-}
+export type { CvCreationQuota, DocumentsResponse, SavedDocument } from '@nexcv/api-contracts/documents';
+import type { DocumentsResponse } from '@nexcv/api-contracts/documents';
 
 export const documentsQueryKey = ['documents'] as const;
 export const documentsStaleTime = 5 * 60 * 1000;

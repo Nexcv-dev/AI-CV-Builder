@@ -15,6 +15,7 @@ import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
 import { applyTemplateColorDefaults } from '../utils/templateData';
 import { apiFetch, csrfFetch } from '../utils/api';
+import type { CvImportJobResponse } from '@nexcv/api-contracts/documents';
 
 import {
   ALL_STEPS,
@@ -329,7 +330,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         throw new Error(errorMessage);
       }
 
-      const data = await statusResponse.json();
+      const data = await statusResponse.json() as CvImportJobResponse;
       if (data.job?.status === 'ready' && data.job.result) return data.job.result;
       if (data.job?.status === 'failed' || data.job?.status === 'expired') {
         throw new Error(data.job.error || 'CV import failed. Please try again.');
@@ -424,7 +425,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
             throw new Error(errorMessage);
           }
 
-          const queuedImport = await queueResponse.json();
+          const queuedImport = await queueResponse.json() as CvImportJobResponse;
           const result = queuedImport.job?.id
             ? await waitForImportJob(queuedImport.job.id)
             : queuedImport;

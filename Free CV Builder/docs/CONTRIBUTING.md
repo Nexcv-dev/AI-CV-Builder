@@ -9,7 +9,7 @@ Use this guide for local development, pull requests, reviews, and release-safe c
 Required:
 
 - Node.js 20 or newer. Node 24 is used in CI.
-- npm.
+- pnpm through Corepack.
 - Git.
 - MongoDB local instance or MongoDB Atlas URI.
 
@@ -25,11 +25,11 @@ Optional, depending on the feature:
 
 ## Local Setup
 
-Install dependencies from the app folder:
+Install dependencies from the repository root:
 
 ```bash
-cd "Free CV Builder"
-npm install
+corepack enable
+corepack pnpm install
 ```
 
 Create `.env` in `Free CV Builder/`. Do not commit real secrets.
@@ -37,7 +37,7 @@ Create `.env` in `Free CV Builder/`. Do not commit real secrets.
 Start both frontend and backend:
 
 ```bash
-npm run dev:all
+corepack pnpm dev:all
 ```
 
 Default local URLs:
@@ -49,40 +49,44 @@ For environment variables, start with the root [README](../../README.md), then u
 
 ## Common Commands
 
-Run these from `Free CV Builder/`.
+Run these from the repository root.
 
 ```bash
-npm run dev:all
-npm run lint
-npm run test:run
-npm run build
-npm run launch:check
+corepack pnpm dev:all
+corepack pnpm lint
+corepack pnpm test:run
+corepack pnpm build
+corepack pnpm launch:check
 ```
 
 Template work:
 
 ```bash
-npm run validate:template-map
-npm run validate:templates
-npm run templates:release:dry-run
+corepack pnpm validate:template-map
+corepack pnpm validate:templates
+corepack pnpm --filter @nexcv/main templates:release:dry-run
 ```
 
 Worker/Lambda builds:
 
 ```bash
-npm run build:pdf-lambda
-npm run build:pdf-worker-lambda
-npm run build:cv-import-worker-lambda
-npm run build:ocr-lambda
-npm run build:email-worker-lambda
+corepack pnpm build:pdf-lambda
+corepack pnpm build:pdf-worker-lambda
+corepack pnpm build:cv-import-worker-lambda
+corepack pnpm build:ocr-lambda
+corepack pnpm build:email-worker-lambda
 ```
 
-Use `npm run launch:check` before release-oriented changes. It runs lint, tests, build, and template validation.
+Use `corepack pnpm launch:check` before release-oriented changes. It runs lint, tests, build, and template validation.
 
 ## Repository Map
 
 Important paths:
 
+- `packages/shared/` - shared domain constants, queue payload helpers, and admin role contracts.
+- `packages/templates/` - built-in template metadata and access helpers.
+- `packages/api-contracts/` - shared API response contracts used by frontend and backend.
+- `Free CV Builder/` - main app package.
 - `src/` - React app, pages, components, hooks, stores, frontend utilities.
 - `routes/` - Express route modules.
 - `services/` - integration and business logic services.
@@ -116,9 +120,9 @@ Important paths:
 Frontend changes should usually run:
 
 ```bash
-npm run lint
-npm run test:run
-npm run build
+corepack pnpm lint
+corepack pnpm test:run
+corepack pnpm build
 ```
 
 ## Backend Guidelines
@@ -134,8 +138,8 @@ npm run build
 Backend changes should usually run:
 
 ```bash
-npm run lint
-npm run test:run
+corepack pnpm lint
+corepack pnpm test:run
 ```
 
 ## CV Import, OCR, And PDF Jobs
@@ -179,9 +183,9 @@ For template work, read:
 Before releasing template changes:
 
 ```bash
-npm run validate:template-map
-npm run validate:templates
-npm run templates:release:dry-run
+corepack pnpm validate:template-map
+corepack pnpm validate:templates
+corepack pnpm --filter @nexcv/main templates:release:dry-run
 ```
 
 For PDF-affecting template changes, also test preview and PDF output on desktop and mobile widths.
@@ -260,9 +264,9 @@ Pull request descriptions should include:
 Before requesting review:
 
 - The change is scoped and understandable.
-- `npm run lint` passes, or the reason it cannot run is documented.
+- `corepack pnpm lint` passes, or the reason it cannot run is documented.
 - Relevant tests pass.
-- `npm run build` passes for frontend or cross-cutting changes.
+- `corepack pnpm build` passes for frontend or cross-cutting changes.
 - Template validation passes for template changes.
 - Worker ZIP builds pass for Lambda changes.
 - Docs are updated for changed behavior, env vars, routes, or operations.
@@ -284,4 +288,3 @@ Include:
 ## Security Reports
 
 Do not open public issues with exploitable details, secrets, private keys, customer data, or payment data. Share the details privately with the project owner/admin team, rotate exposed credentials immediately, and document only the safe remediation summary in public changelogs or PRs.
-

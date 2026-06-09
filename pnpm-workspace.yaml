@@ -1,0 +1,4 @@
+packages:
+  - "Free CV Builder"
+  - "Free CV Builder/lambda-*"
+  - "packages/*"

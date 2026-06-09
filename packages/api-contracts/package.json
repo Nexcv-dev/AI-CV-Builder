@@ -1,0 +1,26 @@
+{
+  "name": "@nexcv/api-contracts",
+  "private": true,
+  "version": "0.1.11",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin": "./src/admin.ts",
+    "./billing": "./src/billing.ts",
+    "./documents": "./src/documents.ts",
+    "./public": "./src/public.ts",
+    "./templates": "./src/templates.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@nexcv/shared": "workspace:*",
+    "@nexcv/templates": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.7"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@nexcv/templates",
+  "private": true,
+  "version": "0.1.11",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test:run": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.7"
+  }
+}

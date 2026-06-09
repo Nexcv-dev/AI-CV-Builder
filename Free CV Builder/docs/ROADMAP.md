@@ -30,7 +30,7 @@ These must be closed before live public traffic.
 
 | Area | Work | Done Signal |
 | --- | --- | --- |
-| Build confidence | `npm run launch:check` passes on the release branch. | CI and local release check are green. |
+| Build confidence | `corepack pnpm launch:check` passes on the release branch. | CI and local release check are green. |
 | Environment | Production env values match [Environment Variables](ENVIRONMENT.md). | `/api/health` shows required services configured. |
 | Database backup | MongoDB backup workflow uses `BACKUP_AWS_*` credentials and writes to S3. | Manual GitHub Actions backup succeeds and restore drill is documented. |
 | Auth | Signup, login, logout, email verification, forgot/reset password, and account deletion work. | Launch smoke test passes on production/staging domain. |
@@ -75,10 +75,10 @@ Done signal:
 - Run worker builds:
 
 ```bash
-npm run build:cv-import-worker-lambda
-npm run build:ocr-lambda
-npm run build:pdf-worker-lambda
-npm run build:pdf-lambda
+corepack pnpm build:cv-import-worker-lambda
+corepack pnpm build:ocr-lambda
+corepack pnpm build:pdf-worker-lambda
+corepack pnpm build:pdf-lambda
 ```
 
 - Verify failed jobs clear large payload fields and roll back quotas when needed.

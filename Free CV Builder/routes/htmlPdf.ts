@@ -13,6 +13,7 @@ import {
     sanitizeHtmlPdfInput,
     sendHtmlPdfJobDownload,
 } from '../services/htmlPdfJobService';
+import type { HtmlPdfJobResponse, HtmlPdfQuotaResponse } from '@nexcv/api-contracts/documents';
 
 type RouteDeps = Record<string, any>;
 
@@ -76,7 +77,8 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
 
     router.get('/api/html-pdf-quota', async (req: Request, res: Response) => {
         try {
-            res.json({ quota: await getHtmlPdfQuota(getHtmlPdfOwner(req)) });
+            const response = { quota: await getHtmlPdfQuota(getHtmlPdfOwner(req)) } satisfies HtmlPdfQuotaResponse;
+            res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load HTML PDF quota.', error);
         }
@@ -117,7 +119,7 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
                 }, 0);
             }
 
-            return res.status(202).json({
+            const response = {
                 job: {
                     id: String(job._id),
                     status: job.status,
@@ -126,7 +128,8 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
                 },
                 quota: { ...quota, reserved: undefined },
                 maxInputBytes: MAX_HTML_PDF_INPUT_BYTES,
-            });
+            } satisfies HtmlPdfJobResponse;
+            return res.status(202).json(response);
         } catch (error: any) {
             if (quotaReserved) {
                 await rollbackHtmlPdfQuota(getHtmlPdfOwner(req)).catch((rollbackError: any) => {
@@ -154,7 +157,7 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
             }
 
             const downloadUrl = job.status === 'ready' ? `/api/html-pdf-jobs/${String(job._id)}/download` : undefined;
-            return res.json({
+            const response = {
                 job: {
                     id: String(job._id),
                     status: job.status,
@@ -162,7 +165,8 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
                     downloadUrl,
                     expiresAt: job.expiresAt,
                 },
-            });
+            } satisfies HtmlPdfJobResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not check HTML PDF job status.', error);
         }

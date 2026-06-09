@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { DEFAULT_USER_ROLE, UserRole } from './userRole';
-import { ALL_USER_ROLES } from '../src/adminAccess';
+import { ALL_USER_ROLES } from '@nexcv/shared/admin';
 import type { BillingPlan } from './userPlan';
 
 export interface IUser extends Document {

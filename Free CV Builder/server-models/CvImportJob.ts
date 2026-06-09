@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { JOB_STATUSES, type CvImportJobStatus } from '@nexcv/shared/domain';
 
-export type CvImportJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'expired';
+export type { CvImportJobStatus };
 
 export interface ICvImportJob extends Document {
   userId: mongoose.Types.ObjectId;
@@ -23,7 +24,7 @@ const CvImportJobSchema = new Schema(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     status: {
       type: String,
-      enum: ['queued', 'processing', 'ready', 'failed', 'expired'],
+      enum: JOB_STATUSES,
       default: 'queued',
       index: true,
     },

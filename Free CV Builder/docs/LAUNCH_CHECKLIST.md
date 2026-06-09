@@ -4,8 +4,8 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 
 ## Code And Build
 
-- `npm run launch:check` passes.
-- `npm run templates:release:dry-run` passes before any template release.
+- `corepack pnpm launch:check` passes.
+- `corepack pnpm templates:release:dry-run` passes before any template release.
 
 ## Environment
 

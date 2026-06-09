@@ -1,21 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CV_TEMPLATES, TemplateName } from '../templates';
 import { apiFetch } from '../utils/api';
+import type { TemplateConfigItem, TemplateConfigResponse } from '@nexcv/api-contracts/templates';
 
-export interface TemplateConfigItem {
-  key: TemplateName;
-  label: string;
-  category: string;
-  access: 'free' | 'paid';
-  thumbnail: string;
-  builtInThumbnail: string;
-  surfaceColorRole: string;
-  surfaceColorLabel?: string | null;
-  defaultThemeColor?: string;
-  source?: 'built_in' | 'custom';
-  status?: 'draft' | 'active' | 'archived';
-  usageCount?: number;
-}
+export type { TemplateConfigItem } from '@nexcv/api-contracts/templates';
 
 const fallbackTemplates: TemplateConfigItem[] = CV_TEMPLATES.map((template) => ({
   key: template.key,
@@ -33,7 +21,7 @@ export function useTemplateConfig() {
 
   useEffect(() => {
     let ignore = false;
-    apiFetch<{ templates: TemplateConfigItem[] }>('/api/templates/config')
+    apiFetch<TemplateConfigResponse>('/api/templates/config')
       .then((data) => {
         if (!ignore && Array.isArray(data.templates) && data.templates.length) {
           setTemplates(data.templates);

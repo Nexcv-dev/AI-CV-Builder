@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { bindDeps, type RouteDeps } from '../_shared';
-import { ADMIN_ROLE_ACCESS, ADMIN_ROLE_LABELS, ALL_USER_ROLES, isUserRole, type UserRole } from '../../src/adminAccess';
+import { ADMIN_ROLE_ACCESS, ADMIN_ROLE_LABELS, ALL_USER_ROLES, isUserRole, type UserRole } from '@nexcv/shared/admin';
 import { DEFAULT_APP_SETTINGS, getAppSettings } from '../../server-models/AppSetting';
 import { DEFAULT_CMS_CONTENT, mergeCmsContent, type CmsContent, type CmsFaqItem, type CmsLegalPage, type CmsPlanCopy } from '../../src/contentDefaults';
 import { DEFAULT_EMAIL_TEMPLATES, mergeEmailTemplates, type EmailTemplateMap, type EmailTemplateKey } from '../../src/emailTemplateDefaults';
+import type { AdminRoleConfig, AdminSettingsSummary, AdminUserListItem } from '@nexcv/api-contracts/admin';
 
-const roleSummary = (role: UserRole) => ({
+const roleSummary = (role: UserRole): AdminRoleConfig => ({
     role,
     label: role === 'user' ? 'User' : ADMIN_ROLE_LABELS[role],
     access: role === 'user' ? [] : ADMIN_ROLE_ACCESS[role],
@@ -37,10 +38,11 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
                 .sort({ createdAt: -1 })
                 .select('email displayName role plan planExpiresAt emailVerified authProvider createdAt updatedAt');
 
-            return res.json({
+            const response = {
                 roles: ALL_USER_ROLES.map(roleSummary),
                 admins: admins.map((user: any) => adminUserSummary(user, 0)),
-            });
+            } satisfies { roles: AdminRoleConfig[]; admins: AdminUserListItem[] };
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load admin roles.', error);
         }
@@ -105,7 +107,7 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
             const payhereNotifyConfigured = Boolean(process.env.PAYHERE_NOTIFY_URL?.trim());
             const pdfLambdaConfigured = Boolean(process.env.PDF_LAMBDA_URL?.trim());
             const sessionSecretConfigured = Boolean(process.env.SESSION_SECRET?.trim());
-            return res.json({
+            const response = {
                 app: appSettingsSummary(appSettings),
                 environment: process.env.NODE_ENV || 'development',
                 port: String(process.env.PORT || 3002),
@@ -171,7 +173,8 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
                     pdfLambdaConfigured,
                 },
                 email: emailSettingsSummary(appSettings, { isEmailServiceConfigured, getAppEmailFrom }),
-            });
+            } satisfies AdminSettingsSummary;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load admin settings.', error);
         }
@@ -254,7 +257,7 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
     });
 }
 
-function appSettingsSummary(settings: any) {
+function appSettingsSummary(settings: any): AdminSettingsSummary['app'] {
     return {
         maintenanceMode: Boolean(settings?.maintenanceMode),
         announcementEnabled: Boolean(settings?.announcementEnabled),
@@ -276,7 +279,7 @@ function maskedValue(value: unknown) {
     return typeof value === 'string' && value.trim() ? 'Configured' : 'Missing';
 }
 
-function emailSettingsSummary(settings: any, deps: { isEmailServiceConfigured: () => boolean; getAppEmailFrom: () => string }) {
+function emailSettingsSummary(settings: any, deps: { isEmailServiceConfigured: () => boolean; getAppEmailFrom: () => string }): AdminSettingsSummary['email'] {
     const hasResend = Boolean(process.env.RESEND_API_KEY?.trim());
     const hasSmtp = Boolean(process.env.EMAIL_USER?.trim() && process.env.EMAIL_PASS?.trim());
     const provider = hasResend ? 'Resend' : hasSmtp ? 'SMTP' : 'Not configured';

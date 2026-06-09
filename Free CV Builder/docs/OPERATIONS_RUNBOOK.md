@@ -34,7 +34,7 @@ Resolution:
 - Increase Lambda memory to 2048 MB for heavy templates.
 - Increase timeout to 60 seconds if needed.
 - Verify Lambda Node runtime and Chromium package compatibility.
-- Validate the affected template with `npm run validate:templates`.
+- Validate the affected template with `corepack pnpm validate:templates`.
 - Use admin/support messaging if users are affected during recovery.
 
 ## CV Import Failing

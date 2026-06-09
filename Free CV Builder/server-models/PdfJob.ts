@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { JOB_STATUSES, type PdfJobStatus } from '@nexcv/shared/domain';
 
-export type PdfJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'expired';
+export type { PdfJobStatus };
 
 export interface IPdfJob extends Document {
   userId: mongoose.Types.ObjectId;
@@ -28,7 +29,7 @@ const PdfJobSchema = new Schema(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     status: {
       type: String,
-      enum: ['queued', 'processing', 'ready', 'failed', 'expired'],
+      enum: JOB_STATUSES,
       default: 'queued',
       index: true,
     },

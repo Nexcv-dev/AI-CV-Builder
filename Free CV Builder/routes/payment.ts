@@ -8,6 +8,15 @@ import {
     PAYHERE_CHECKOUT_EXPIRY_MS,
     stalePaymentProcessingDate,
 } from '../services/checkoutSessionService';
+import type {
+    BillingPlansResponse,
+    CheckoutCancelResponse,
+    CheckoutQuoteResponse,
+    CheckoutStatusResponse,
+    FeaturedCouponResponse,
+    LemonSqueezyCheckoutResponse,
+    PayHereCheckoutResponse,
+} from '@nexcv/api-contracts/billing';
 
 type RouteDeps = Record<string, any>;
 
@@ -115,7 +124,8 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Vary', 'CF-IPCountry, X-Vercel-IP-Country, X-Country-Code, X-AppEngine-Country');
-            return res.json({ ...billingContext, plans });
+            const response = { ...billingContext, plans } satisfies BillingPlansResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load billing plans.', error);
         }
@@ -139,9 +149,12 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 ],
             }).sort({ updatedAt: -1 });
 
-            if (!coupon) return res.json({ coupon: null });
+            if (!coupon) {
+                const response = { coupon: null } satisfies FeaturedCouponResponse;
+                return res.json(response);
+            }
 
-            return res.json({
+            const response = {
                 coupon: {
                     code: coupon.code,
                     label: coupon.label,
@@ -151,7 +164,8 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     redeemedCount: coupon.redeemedCount || 0,
                     maxRedemptions: coupon.maxRedemptions || null,
                 },
-            });
+            } satisfies FeaturedCouponResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load featured coupon.', error);
         }
@@ -166,7 +180,8 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const billingContext = resolveBillingMarket(req.body.country, req);
             const quote = await quoteCheckout(plan, req.body.couponCode, billingContext.market);
             if ('error' in quote) return res.status(400).json({ error: quote.error });
-            return res.json({ quote: { ...quote, country: billingContext.country, countrySource: billingContext.source } });
+            const response = { quote: { ...quote, country: billingContext.country, countrySource: billingContext.source } } satisfies CheckoutQuoteResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not calculate checkout total.', error);
         }
@@ -582,7 +597,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 currency: quote.currency,
             };
 
-            return res.json({
+            const response = {
                 actionUrl: getPayHereCheckoutUrl(),
                 orderId,
                 fields: {
@@ -606,7 +621,8 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                     hash: buildPayHereCheckoutHash(checkoutPayload, merchantSecret),
                 },
                 quote,
-            });
+            } satisfies PayHereCheckoutResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not start PayHere checkout.', error);
         }
@@ -700,12 +716,13 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 return res.status(502).json({ error: 'Lemon Squeezy did not return a checkout URL.' });
             }
 
-            return res.json({
+            const response = {
                 checkoutId: checkout.data?.id || '',
                 checkoutUrl,
                 orderId,
                 quote,
-            });
+            } satisfies LemonSqueezyCheckoutResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not start Lemon Squeezy checkout.', error);
         }
@@ -899,12 +916,13 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
 
             res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             res.setHeader('Pragma', 'no-cache');
-            return res.json({
+            const response = {
                 status: checkoutSession.status,
                 plan: checkoutSession.plan,
                 planActive,
                 user: user ? publicUser(user) : undefined,
-            });
+            } satisfies CheckoutStatusResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load checkout status.', error);
         }
@@ -921,7 +939,8 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 status: 'pending',
             });
             if (!checkoutSession) {
-                return res.json({ status: 'ignored' });
+                const response = { status: 'ignored' } satisfies CheckoutCancelResponse;
+                return res.json(response);
             }
 
             await releaseCouponRedemption(checkoutSession);
@@ -934,7 +953,8 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
                 userId: currentUserId(req),
                 plan: checkoutSession.plan,
             });
-            return res.json({ status: checkoutSession.status });
+            const response = { status: checkoutSession.status } satisfies CheckoutCancelResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not cancel checkout.', error);
         }

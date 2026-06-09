@@ -1,3 +1,4 @@
+import { parseJobIdsFromSqsEvent } from '@nexcv/shared/queuePayloads';
 import mongoose from 'mongoose';
 import User from '../../server-models/User';
 import CvImportQuota from '../../server-models/CvImportQuotaModel';
@@ -22,17 +23,6 @@ const connectMongo = async () => {
     });
   }
   return mongoConnection;
-};
-
-const parseSqsJobIds = (event: any) => {
-  const records = Array.isArray(event?.Records) ? event.Records : [];
-  return records.map((record: any) => {
-    const payload = JSON.parse(record.body || '{}');
-    if (!payload.jobId || typeof payload.jobId !== 'string') {
-      throw new Error('SQS message is missing jobId.');
-    }
-    return payload.jobId;
-  });
 };
 
 const rollbackCvImportQuota = async (user: any) => {
@@ -64,7 +54,7 @@ const deps = {
 
 export async function handler(event: any) {
   await connectMongo();
-  const jobIds = parseSqsJobIds(event);
+  const jobIds = parseJobIdsFromSqsEvent(event);
   for (const jobId of jobIds) {
     await processCvImportJob(jobId, deps);
   }

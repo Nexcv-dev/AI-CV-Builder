@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } 
 import toast from 'react-hot-toast';
 import { apiFetch } from '../../utils/api';
 import { countryNameFromCode } from '../../utils/countries';
+import type { BillingPlansResponse, CheckoutQuoteResponse } from '@nexcv/api-contracts/billing';
 import type { BillingPlanPrice, CheckoutCustomerFormData, CheckoutPlanKey, CheckoutQuote } from './checkoutTypes';
 
 interface UseCheckoutPricingParams {
@@ -32,7 +33,7 @@ export function useCheckoutPricing({
   useEffect(() => {
     let ignore = false;
     const suffix = countryCode ? `?country=${encodeURIComponent(countryCode)}` : '';
-    apiFetch<{ country: string; market: 'local' | 'global'; provider: 'payhere' | 'lemonsqueezy'; plans: BillingPlanPrice[] }>(`/api/billing/plans${suffix}`, { cache: 'no-store' })
+    apiFetch<BillingPlansResponse>(`/api/billing/plans${suffix}`, { cache: 'no-store' })
       .then((data) => {
         if (ignore) return;
         setResolvedCountry(data.country);
@@ -57,7 +58,7 @@ export function useCheckoutPricing({
     let ignore = false;
     const timer = window.setTimeout(() => {
       setQuoteLoading(true);
-      apiFetch<{ quote: CheckoutQuote }>('/api/billing/quote', {
+      apiFetch<CheckoutQuoteResponse>('/api/billing/quote', {
         method: 'POST',
         body: JSON.stringify({ plan: selectedPlanKey, couponCode: couponCode.trim(), country: countryCode }),
       })

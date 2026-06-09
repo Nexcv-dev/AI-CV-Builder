@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { bindDeps, type RouteDeps } from '../_shared';
 import { mergeTemplateValidationResults, validateAdminTemplateMetadata, validateAdminTemplateSource } from '../../server-utils/templateValidation';
+import type { AdminTemplateItem, AdminTemplateValidationResult } from '@nexcv/api-contracts/admin';
 
 export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
     const { CVDocument, TemplateSetting, CV_TEMPLATES, requireAdminPermission, sendError, adminTemplateJsonParser, clearS3TemplateCache, fetchS3Text, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, currentUserId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, sanitizeProfileField, recordAdminAuditLog } = bindDeps(deps);
@@ -20,7 +21,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 .filter((setting) => setting.source === 'custom' && !builtInKeys.has(setting.key))
                 .map((setting) => customTemplateSummary(setting, usageMap.get(setting.key) || 0));
 
-            return res.json({
+            const response = {
                 categories: TEMPLATE_CATEGORIES,
                 statuses: TEMPLATE_STATUSES,
                 surfaceColorRoles: TEMPLATE_SURFACE_COLOR_ROLES,
@@ -32,7 +33,13 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                     )),
                     ...customTemplates,
                 ],
-            });
+            } satisfies {
+                categories: string[];
+                statuses: AdminTemplateItem['status'][];
+                surfaceColorRoles: AdminTemplateItem['surfaceColorRole'][];
+                templates: AdminTemplateItem[];
+            };
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load admin templates.', error);
         }
@@ -119,7 +126,11 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 ip: req.ip,
                 userAgent: req.get('user-agent'),
             });
-            return res.status(201).json({ template: customTemplateSummary(setting, 0), validation });
+            const response = { template: customTemplateSummary(setting, 0), validation } satisfies {
+                template: AdminTemplateItem;
+                validation: AdminTemplateValidationResult;
+            };
+            return res.status(201).json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not create template.', error);
         }

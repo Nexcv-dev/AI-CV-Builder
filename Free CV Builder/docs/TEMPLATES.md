@@ -48,7 +48,7 @@ Template thumbnails are generated locally by rendering real CV HTML in Chrome an
 
 ```bash
 cd "Free CV Builder"
-npm run templates:thumbnails
+corepack pnpm templates:thumbnails
 ```
 
 Run this command from the `Free CV Builder/` project folder, not from inside an individual template folder.
@@ -63,7 +63,7 @@ The command currently regenerates every thumbnail: all built-in templates plus e
 To regenerate only one template, pass its built-in key or admin folder name:
 
 ```bash
-npm run templates:thumbnails -- --template my-new-template
+corepack pnpm templates:thumbnails -- --template my-new-template
 ```
 
 The generator uses sample CV data and the template renderer. For admin/S3 templates, keep `themeColor` at the default `#000000` sentinel so the thumbnail uses the template's `defaultThemeColor` from `config/template-release-map.json`. This keeps thumbnails aligned with each template's default color palette.
@@ -87,13 +87,13 @@ Commands:
 
 ```bash
 cd "Free CV Builder"
-npm run templates:thumbnails
-npm run validate:template-map
-npm run validate:templates
-npm run templates:release:dry-run
-npm run templates:release
-npm run templates:verify-s3
-npm run templates:sync-thumbnails
+corepack pnpm templates:thumbnails
+corepack pnpm validate:template-map
+corepack pnpm validate:templates
+corepack pnpm templates:release:dry-run
+corepack pnpm templates:release
+corepack pnpm templates:verify-s3
+corepack pnpm templates:sync-thumbnails
 ```
 
 `templates:release` uploads `index.html`, `style.css`, and `thumbnail.webp` for templates listed in `config/template-release-map.json`.
@@ -101,7 +101,7 @@ npm run templates:sync-thumbnails
 `templates:verify-s3` checks that each released template has `index.html`, `style.css`, and a thumbnail object in S3. Run it after command-line release and before syncing/publishing metadata. To check one key:
 
 ```bash
-npm run templates:verify-s3 -- --key=modular-card
+corepack pnpm templates:verify-s3 -- --key=modular-card
 ```
 
 `templates:sync-thumbnails` updates MongoDB `TemplateSetting` records so public template cards point at the current WebP thumbnails. Run it after S3 upload, especially when replacing old PNG/SVG thumbnails or changing cache-bust URLs.
