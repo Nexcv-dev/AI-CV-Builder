@@ -46,9 +46,9 @@ function DateOfBirthField({
   onChange,
 }: Pick<PersonalDetailsSectionProps, 'personalInfo' | 'onChange'>) {
   return (
-    <div>
+    <div className="min-w-0">
       <label htmlFor="dob" className={LABEL_CLASS_SM}>Date of Birth</label>
-      <div>
+      <div className="min-w-0">
         <input
           id="dob"
           type="date"

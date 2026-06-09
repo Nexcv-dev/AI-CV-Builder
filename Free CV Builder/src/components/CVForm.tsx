@@ -230,6 +230,10 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         let errorMessage = res.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Failed to generate summary";
         try {
           const errorJson = JSON.parse(errorText);
+          if (errorJson.upgradeRequired) {
+            onUpgradeRequired?.('ai');
+            return;
+          }
           errorMessage = errorJson.error || errorJson.message || errorText;
         } catch (e) {
           errorMessage = errorText;
@@ -279,6 +283,10 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         let errorMessage = res.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Failed to refine text";
         try {
           const errorJson = JSON.parse(errorText);
+          if (errorJson.upgradeRequired) {
+            onUpgradeRequired?.('ai');
+            return;
+          }
           errorMessage = errorJson.error || errorJson.message || errorText;
         } catch (e) {
           errorMessage = errorText;

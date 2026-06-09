@@ -447,6 +447,19 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  input,
+  textarea,
+  select {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  input[type="date"] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
   /* Hide native browser reveal/clear icons in password fields (e.g. Edge) */
   input::-ms-reveal,
   input::-ms-clear,
