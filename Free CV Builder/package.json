@@ -1,7 +1,7 @@
 {
   "name": "@nexcv/main",
   "private": true,
-  "version": "0.1.11",
+  "version": "0.1.13",
   "type": "module",
   "scripts": {
     "server": "tsx server.ts",
