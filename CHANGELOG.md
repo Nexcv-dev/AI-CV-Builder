@@ -3,29 +3,32 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #246 from Nexcv-dev/test/overview (4904a0d) - Bimantha Perera, 7 seconds ago
-* chore: bump version to 0.1.13 (80db3ab) - bimanthaperera-lab, 17 minutes ago
-* improve html to pdf UI / UX with scan animation (f44b0d0) - Bimantha Perera, 54 minutes ago
-* improve upgrade popup logic and UI (9b85f5f) - Bimantha Perera, 77 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (71ea8a1) - bimanthaperera-lab, 13 hours ago
-* Merge pull request #243 from Nexcv-dev/test/overview (e69b7d8) - Bimantha Perera, 13 hours ago
-* improve UI of html to pdf page (4d8801e) - Bimantha Perera, 13 hours ago
-* fix pipeline docker issue (436dbf3) - Bimantha Perera, 13 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (8ccdfdd) - bimanthaperera-lab, 14 hours ago
-* Merge pull request #241 from Nexcv-dev/test/overview (885522c) - Bimantha Perera, 14 hours ago
-* fix mobile layout issue (044c439) - Bimantha Perera, 14 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (68934ce) - bimanthaperera-lab, 18 hours ago
-* Merge pull request #240 from Nexcv-dev/test/overview (a3e31d0) - Bimantha Perera, 18 hours ago
-* update docs (cb159e5) - Bimantha Perera, 18 hours ago
-* add html to pdf color and font change options (8c4028c) - Bimantha Perera, 18 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (ccda230) - bimanthaperera-lab, 19 hours ago
-* Merge pull request #239 from Nexcv-dev/test/overview (9cd8440) - Bimantha Perera, 19 hours ago
-* add new social links to templates (5e6d21b) - Bimantha Perera, 19 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (4c0641c) - bimanthaperera-lab, 24 hours ago
-* Merge pull request #238 from Nexcv-dev/test/overview (80a5254) - Bimantha Perera, 24 hours ago
-* fix test failed issue (764c468) - Bimantha Perera, 24 hours ago
-* improve ui in html to pdf option (c701276) - Bimantha Perera, 34 hours ago
-* give html to pdf option to geust users (4bd8aa4) - Bimantha Perera, 34 hours ago
+* Merge pull request #247 from Nexcv-dev/test/overview (28aebad) - Bimantha Perera, 8 seconds ago
+* fix image upload error (d657c2e) - Bimantha Perera, 7 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (8ea3d81) - bimanthaperera-lab, 5 hours ago
+* Merge pull request #246 from Nexcv-dev/test/overview (4904a0d) - Bimantha Perera, 5 hours ago
+* chore: bump version to 0.1.13 (80db3ab) - bimanthaperera-lab, 5 hours ago
+* improve html to pdf UI / UX with scan animation (f44b0d0) - Bimantha Perera, 6 hours ago
+* improve upgrade popup logic and UI (9b85f5f) - Bimantha Perera, 6 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (71ea8a1) - bimanthaperera-lab, 18 hours ago
+* Merge pull request #243 from Nexcv-dev/test/overview (e69b7d8) - Bimantha Perera, 18 hours ago
+* improve UI of html to pdf page (4d8801e) - Bimantha Perera, 18 hours ago
+* fix pipeline docker issue (436dbf3) - Bimantha Perera, 18 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (8ccdfdd) - bimanthaperera-lab, 19 hours ago
+* Merge pull request #241 from Nexcv-dev/test/overview (885522c) - Bimantha Perera, 19 hours ago
+* fix mobile layout issue (044c439) - Bimantha Perera, 19 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (68934ce) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #240 from Nexcv-dev/test/overview (a3e31d0) - Bimantha Perera, 23 hours ago
+* update docs (cb159e5) - Bimantha Perera, 23 hours ago
+* add html to pdf color and font change options (8c4028c) - Bimantha Perera, 23 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (ccda230) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #239 from Nexcv-dev/test/overview (9cd8440) - Bimantha Perera, 24 hours ago
+* add new social links to templates (5e6d21b) - Bimantha Perera, 24 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (4c0641c) - bimanthaperera-lab, 29 hours ago
+* Merge pull request #238 from Nexcv-dev/test/overview (80a5254) - Bimantha Perera, 29 hours ago
+* fix test failed issue (764c468) - Bimantha Perera, 29 hours ago
+* improve ui in html to pdf option (c701276) - Bimantha Perera, 2 days ago
+* give html to pdf option to geust users (4bd8aa4) - Bimantha Perera, 2 days ago
 * add html to pdf option (90ace46) - Bimantha Perera, 2 days ago
 * Update AdminOverviewSections.tsx (98e0b41) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (87378a9) - bimanthaperera-lab, 2 days ago
@@ -77,9 +80,9 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 4 days ago
 * Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 4 days ago
 * add cv import queue (b178a94) - Bimantha Perera, 4 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 4 days ago
-* Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 4 days ago
-* add email to AWS que system (7f08638) - Bimantha Perera, 4 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 5 days ago
+* Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 5 days ago
+* add email to AWS que system (7f08638) - Bimantha Perera, 5 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (d5598a2) - bimanthaperera-lab, 5 days ago
 * Merge pull request #220 from bimanthaperera-lab/test/overview (f626f2c) - Bimantha Perera, 5 days ago
 * Code optimization and add pdf generation que system (6091eec) - Bimantha Perera, 5 days ago
@@ -112,7 +115,7 @@ All notable changes to this project will be documented in this file.
 * make gest users can import cv data (1f35b0b) - Bimantha Perera, 6 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (fb7e0f9) - bimanthaperera-lab, 6 days ago
 * Merge pull request #211 from bimanthaperera-lab/test/overview (e6f2b38) - Bimantha Perera, 6 days ago
-* Add AWS Textract OCR Pdf data extarcting & Add new Social Logins (16478c8) - Bimantha Perera, 6 days ago
+* Add AWS Textract OCR Pdf data extarcting & Add new Social Logins (16478c8) - Bimantha Perera, 7 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (01488c5) - bimanthaperera-lab, 7 days ago
 * Merge pull request #210 from bimanthaperera-lab/test/overview (b62522b) - Bimantha Perera, 7 days ago
 * add test case for plan expire (e98c78b) - Bimantha Perera, 7 days ago
