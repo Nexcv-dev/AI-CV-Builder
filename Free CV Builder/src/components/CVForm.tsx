@@ -14,7 +14,7 @@ import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
 import { applyTemplateColorDefaults } from '../utils/templateData';
-import { csrfFetch } from '../utils/api';
+import { apiFetch, csrfFetch } from '../utils/api';
 
 import {
   ALL_STEPS,
@@ -567,10 +567,14 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
     }
     try {
       const compressedImage = await compressAndResizeImage(file);
-      setCvData((prev) => ({ ...prev, profileImage: compressedImage, imageZoom: 1, imageX: 0, imageY: 0 }));
+      const { imageUrl } = await apiFetch<{ imageUrl: string }>('/api/profile-images', {
+        method: 'POST',
+        body: JSON.stringify({ imageData: compressedImage }),
+      });
+      setCvData((prev) => ({ ...prev, profileImage: imageUrl, imageZoom: 1, imageX: 0, imageY: 0 }));
     } catch (error) {
       console.error('Error processing image:', error);
-      toast.error('Failed to process image.');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload image.');
     } finally {
       target.value = '';
     }

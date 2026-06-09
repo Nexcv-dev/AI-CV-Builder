@@ -69,8 +69,10 @@ const SAFE_IMAGE_DATA_URI = /^data:image\/(?:png|jpe?g|webp);base64,[a-z0-9+/=\s
 const sanitizePdfImageSource = (value: unknown) => {
   if (typeof value !== 'string') return '';
   const source = value.trim();
-  if (!source || source.length > MAX_IMAGE_DATA_URI_LENGTH) return '';
-  if (!SAFE_IMAGE_DATA_URI.test(source)) return '';
+  if (!source) return '';
+  if (/^[^\s"'<>]+$/.test(source) && /^https:\/\//i.test(source)) return source;
+  if (/^[^\s"'<>]+$/.test(source) && /^http:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?\/api\/cv-assets\//i.test(source)) return source;
+  if (source.length > MAX_IMAGE_DATA_URI_LENGTH || !SAFE_IMAGE_DATA_URI.test(source)) return '';
   return source.replace(/\s/g, '');
 };
 

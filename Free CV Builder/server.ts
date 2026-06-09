@@ -59,9 +59,15 @@ import {
     clearS3TemplateCache,
     fetchS3Text,
     generateS3CVHTML,
+    getCvAssetObjectStream,
     getS3ObjectStream,
+    isCvAssetStorageConfigured,
+    cvAssetS3Key,
+    putCvAssetObject,
     putS3Object,
     renderCvTemplateString,
+    S3_CV_ASSET_BUCKET,
+    S3_CV_ASSET_PREFIX,
     S3_TEMPLATE_BUCKET,
     S3_TEMPLATE_PREFIX,
 } from './services/s3Service';
@@ -223,12 +229,13 @@ configureRequestTimeout(app);
 const defaultJsonParser = express.json({ limit: '1mb' });
 const cvImportJsonParser = express.json({ limit: '14mb' });
 const pdfJsonParser = express.json({ limit: '5mb' });
+const imageUploadJsonParser = express.json({ limit: '2mb' });
 const htmlPdfJsonParser = express.json({ limit: '300kb' });
 const adminTemplateJsonParser = express.json({ limit: '6mb' });
 
 // Default JSON limit for most endpoints. Larger payloads are allowed only on specific routes.
 app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf' || req.path === '/api/html-pdf-jobs' || req.path === '/api/lemonsqueezy/webhook' || req.path.startsWith('/api/admin/templates')) {
+    if (req.path === '/api/parse-cv' || req.path === '/api/generate-pdf' || req.path === '/api/pdf-jobs' || req.path === '/api/profile-images' || req.path === '/api/html-pdf-jobs' || req.path === '/api/lemonsqueezy/webhook' || req.path.startsWith('/api/admin/templates')) {
         return next();
     }
     return defaultJsonParser(req, res, next);
@@ -912,10 +919,10 @@ const routeDeps = {
     User, CVDocument, CvCreationQuota, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, AppSetting, AdminAuditLog,
     CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan,
     requireAuth, requireSuperAdmin, requireAdminPermission, sendError, passport,
-    adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, htmlPdfJsonParser,
+    adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, imageUploadJsonParser, htmlPdfJsonParser,
     authLimiter, aiLimiter, billingQuoteLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, passwordResetDailyLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter,
     getRequestOrigin, isAllowedOrigin,
-    clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
+    clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getCvAssetObjectStream, getS3ObjectStream, isCvAssetStorageConfigured, cvAssetS3Key, putCvAssetObject, putS3Object, renderCvTemplateString, S3_CV_ASSET_BUCKET, S3_CV_ASSET_PREFIX, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX,
     generateCVHTML, generatePdfDocument, sanitizeCvData,
     getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey,
     sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail,

@@ -12,13 +12,15 @@ const DOMPurify = createDOMPurify(window);
 
 export const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
 export const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\/+|\/+$/g, '');
+export const S3_CV_ASSET_BUCKET = (process.env.S3_CV_ASSET_BUCKET_NAME || process.env.CV_ASSET_BUCKET_NAME || S3_TEMPLATE_BUCKET).trim();
+export const S3_CV_ASSET_PREFIX = (process.env.S3_CV_ASSET_PREFIX || 'cv-assets').replace(/^\/+|\/+$/g, '');
 const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 0);
 
 let s3Client: S3Client | null = null;
 const s3TemplateCache = new Map<string, { html: string; expiresAt: number }>();
 
 export const getS3Client = () => {
-    if (!S3_TEMPLATE_BUCKET) return null;
+    if (!S3_TEMPLATE_BUCKET && !S3_CV_ASSET_BUCKET) return null;
     if (!s3Client) {
         s3Client = new S3Client({
             region: process.env.AWS_REGION || 'eu-north-1',
@@ -26,6 +28,8 @@ export const getS3Client = () => {
     }
     return s3Client;
 };
+
+export const isCvAssetStorageConfigured = () => Boolean(S3_CV_ASSET_BUCKET);
 
 export const streamToString = async (stream: any): Promise<string> => {
     if (!stream) return '';
@@ -80,6 +84,33 @@ export async function getS3ObjectStream(key: string) {
 
     return client.send(new GetObjectCommand({
         Bucket: S3_TEMPLATE_BUCKET,
+        Key: key,
+    }));
+}
+
+export const cvAssetS3Key = (userId: string, fileName: string) => (
+    S3_CV_ASSET_PREFIX ? `${S3_CV_ASSET_PREFIX}/${userId}/${fileName}` : `${userId}/${fileName}`
+);
+
+export async function putCvAssetObject(key: string, body: Buffer, contentType: string) {
+    const client = getS3Client();
+    if (!client || !S3_CV_ASSET_BUCKET) {
+        throw new Error('S3 CV asset bucket is not configured.');
+    }
+    await client.send(new PutObjectCommand({
+        Bucket: S3_CV_ASSET_BUCKET,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+    }));
+}
+
+export async function getCvAssetObjectStream(key: string) {
+    const client = getS3Client();
+    if (!client || !S3_CV_ASSET_BUCKET) return null;
+
+    return client.send(new GetObjectCommand({
+        Bucket: S3_CV_ASSET_BUCKET,
         Key: key,
     }));
 }
