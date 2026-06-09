@@ -1,5 +1,5 @@
 ﻿import React, { ChangeEvent, CSSProperties, DragEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Crown, Download, Eye, FileText, FileUp, Info, Loader2, Palette, Type, UploadCloud, X, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Copy, Crown, Download, Eye, FileText, FileUp, Info, Loader2, Palette, ShieldCheck, Type, UploadCloud, X, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
 import { ApiError, apiFetch } from '../utils/api';
 import { AuthModal } from '../components/AuthModal';
 import { SiteHeader } from '../components/SiteHeader';
@@ -14,6 +14,9 @@ const MAX_PREVIEW_ZOOM = 0.85;
 const MIN_HTML_PDF_SCALE = 0.1;
 const SINGLE_PAGE_FIT_MAX_PAGES = 2;
 const HTML_RULE_ERROR_MESSAGE = 'HTML file needs a few fixes before export. Please fix the failed rules below and upload again.';
+const HTML_RULE_SCAN_FIRST_DELAYS_MS = import.meta.env.MODE === 'test' ? [5, 5] : [1000, 1000];
+const HTML_RULE_SCAN_REMAINING_MS = import.meta.env.MODE === 'test' ? 20 : 3000;
+const HTML_RULE_SCAN_MIN_STEP_MS = import.meta.env.MODE === 'test' ? 1 : 120;
 const FONT_OVERRIDE_OPTIONS: { value: FontOverride; label: string }[] = [
   { value: '', label: 'Original font' },
   { value: 'Inter', label: 'Inter' },
@@ -93,10 +96,16 @@ export default function HtmlToPdf() {
   const [ruleChecks, setRuleChecks] = useState<HtmlPdfRuleCheck[]>(INITIAL_RULE_CHECKS);
   const [validatingRules, setValidatingRules] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const [scanCompletedCount, setScanCompletedCount] = useState(0);
+  const [scanFileName, setScanFileName] = useState('');
+  const [rulesCopied, setRulesCopied] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const pollTimerRef = useRef<number | null>(null);
+  const scanTimersRef = useRef<number[]>([]);
+  const scanRunIdRef = useRef(0);
+  const scanRuleListRef = useRef<HTMLUListElement | null>(null);
 
   const overrideCss = useMemo(() => buildHtmlPdfOverrideCss(fontOverride, headerColor), [fontOverride, headerColor]);
   const previewSrcDoc = useMemo(() => buildPreviewSrcDoc(html, pageSize, overrideCss), [html, pageSize, overrideCss]);
@@ -134,6 +143,77 @@ export default function HtmlToPdf() {
     }
   };
 
+  const clearScanTimers = () => {
+    scanTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    scanTimersRef.current = [];
+  };
+
+  const resetScanState = () => {
+    scanRunIdRef.current += 1;
+    clearScanTimers();
+    setValidatingRules(false);
+    setScanCompletedCount(0);
+    setScanFileName('');
+  };
+
+  const copyRuleChecks = async () => {
+    const text = [
+      'CV HTML rules for best PDF output',
+      ...ruleChecks.map((check) => {
+        const status = validationAttempted ? (check.passed ? 'PASS' : 'FIX') : 'RULE';
+        return check.passed || !validationAttempted
+          ? `- [${status}] ${check.label}`
+          : `- [${status}] ${check.label}: ${check.error}`;
+      }),
+    ].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setRulesCopied(true);
+      window.setTimeout(() => setRulesCopied(false), 1800);
+    } catch {
+      setError('Could not copy rules. Please allow clipboard access and try again.');
+    }
+  };
+
+  const runRuleScan = (checks: HtmlPdfRuleCheck[], name: string) => new Promise<boolean>((resolve) => {
+    const runId = scanRunIdRef.current + 1;
+    scanRunIdRef.current = runId;
+    clearScanTimers();
+    setScanFileName(name);
+    setRuleChecks(checks);
+    setScanCompletedCount(0);
+    setValidationAttempted(true);
+    setValidatingRules(true);
+
+    const firstTwoDelays = HTML_RULE_SCAN_FIRST_DELAYS_MS;
+    const remainingCount = Math.max(checks.length - firstTwoDelays.length, 0);
+    const remainingTotal = HTML_RULE_SCAN_REMAINING_MS;
+    const rawWeights = Array.from({ length: remainingCount }, (_, index) => Math.max(1, remainingCount - index));
+    const weightTotal = rawWeights.reduce((total, weight) => total + weight, 0) || 1;
+    const remainingDelays = rawWeights.map((weight) => Math.max(HTML_RULE_SCAN_MIN_STEP_MS, Math.round((remainingTotal * weight) / weightTotal)));
+    const delays = [...firstTwoDelays, ...remainingDelays].slice(0, checks.length);
+    const totalDelay = delays.reduce((total, delay) => total + delay, 0);
+    let elapsed = 0;
+
+    delays.forEach((delay, index) => {
+      elapsed += delay;
+      const timer = window.setTimeout(() => {
+        if (scanRunIdRef.current !== runId) return;
+        setScanCompletedCount(index + 1);
+      }, elapsed);
+      scanTimersRef.current.push(timer);
+    });
+
+    const doneTimer = window.setTimeout(() => {
+      if (scanRunIdRef.current !== runId) return;
+      setValidatingRules(false);
+      setScanFileName('');
+      resolve(true);
+    }, totalDelay + 180);
+    scanTimersRef.current.push(doneTimer);
+  });
+
   const loadQuota = async () => {
     setLoadingQuota(true);
     try {
@@ -164,8 +244,20 @@ export default function HtmlToPdf() {
 
   useEffect(() => {
     void loadQuota();
-    return clearPollTimer;
+    return () => {
+      clearPollTimer();
+      clearScanTimers();
+    };
   }, []);
+
+  useEffect(() => {
+    if (!validatingRules || ruleChecks.length === 0) return;
+    const targetIndex = Math.min(scanCompletedCount, ruleChecks.length - 1);
+    const target = scanRuleListRef.current?.querySelector(`[data-scan-index="${targetIndex}"]`);
+    if (target instanceof HTMLElement && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [ruleChecks.length, scanCompletedCount, validatingRules]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -198,7 +290,7 @@ export default function HtmlToPdf() {
   const loadHtmlFile = async (file: File | undefined) => {
     setError('');
     setJob(null);
-    setValidatingRules(false);
+    resetScanState();
     setValidationAttempted(false);
     if (!file) return;
     const looksLikeHtml = file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm') || file.type === 'text/html';
@@ -211,12 +303,9 @@ export default function HtmlToPdf() {
       return;
     }
     const text = await file.text();
-    setValidatingRules(true);
-    await new Promise(resolve => setTimeout(resolve, 250));
     const ruleValidation = validateHtmlPdfRules(text);
-    setRuleChecks(ruleValidation.checks);
-    setValidatingRules(false);
-    setValidationAttempted(true);
+    const scanCompleted = await runRuleScan(ruleValidation.checks, file.name);
+    if (!scanCompleted) return;
     if (!ruleValidation.valid) {
       setError(HTML_RULE_ERROR_MESSAGE);
       return;
@@ -245,7 +334,7 @@ export default function HtmlToPdf() {
     setJob(null);
     setError('');
     setPageCount(1);
-    setValidatingRules(false);
+    resetScanState();
     setValidationAttempted(false);
     setRuleChecks(INITIAL_RULE_CHECKS);
   };
@@ -385,10 +474,73 @@ export default function HtmlToPdf() {
             : 'Free';
   const showPaidQuotaBadge = quota?.plan === 'payg' || quota?.plan === 'monthly' || quota?.plan === 'quarterly';
   const uploadProgress = Math.min(Math.round((inputBytes / MAX_UPLOAD_BYTES) * 100), 100);
+  const scanProgress = ruleChecks.length > 0 ? Math.round((scanCompletedCount / ruleChecks.length) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <SiteHeader />
+      {validatingRules && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-md">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-emerald-300/20 bg-[#081225] p-5 shadow-2xl shadow-black/45">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_0%,rgba(16,185,129,0.22),transparent_34%),radial-gradient(circle_at_92%_12%,rgba(99,102,241,0.2),transparent_34%)]" />
+            <div className="relative">
+              <div className="mb-4 flex items-start gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/25 bg-emerald-300/10 text-emerald-200">
+                  <ShieldCheck size={25} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase tracking-wide text-emerald-300">Scanning CV HTML</p>
+                  <h3 className="mt-1 truncate text-lg font-black text-white">{scanFileName || 'Checking upload'}</h3>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-400">
+                    Verifying PDF-safe structure rule by rule.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-4 h-2 overflow-hidden rounded-full bg-slate-800">
+                <div className="h-full rounded-full bg-linear-to-r from-emerald-300 to-indigo-400 transition-[width] duration-300" style={{ width: `${scanProgress}%` }} />
+              </div>
+
+              <ul ref={scanRuleListRef} className="max-h-72 space-y-2 overflow-y-auto pr-1 scrollbar-hide">
+                {ruleChecks.map((check, index) => {
+                  const done = index < scanCompletedCount;
+                  const active = index === scanCompletedCount;
+                  return (
+                    <li
+                      key={check.id}
+                      data-scan-index={index}
+                      className={`flex items-start gap-3 rounded-2xl border px-3 py-2.5 transition ${
+                        done
+                          ? check.passed
+                            ? 'border-emerald-300/20 bg-emerald-300/8 text-emerald-100'
+                            : 'border-red-300/25 bg-red-400/10 text-red-100'
+                          : active
+                            ? 'border-indigo-300/25 bg-indigo-400/10 text-indigo-100'
+                            : 'border-white/8 bg-white/[0.03] text-slate-500'
+                      }`}
+                    >
+                      <span className="mt-0.5 shrink-0">
+                        {done ? (
+                          check.passed ? <CheckCircle2 size={16} className="text-emerald-300" /> : <XCircle size={16} className="text-red-300" />
+                        ) : active ? (
+                          <Loader2 size={16} className="animate-spin text-indigo-300" />
+                        ) : (
+                          <span className="block h-4 w-4 rounded-full border border-slate-600" />
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1 text-xs font-bold leading-5">{check.label}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <p className="mt-4 text-center text-[11px] font-bold text-slate-500">
+                {scanProgress}% complete
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-8 pt-24 sm:px-6 lg:px-8">
         <main className="flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#070d1c]">
           <div className="flex flex-col gap-4 border-b border-white/8 pb-6 lg:flex-row lg:items-center lg:justify-between">
@@ -568,16 +720,30 @@ export default function HtmlToPdf() {
               <div className="rounded-lg border border-white/10 bg-[#0b1223] p-4 text-xs font-semibold leading-5 text-slate-300">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <span className="block font-black text-emerald-300">CV HTML rules for best PDF output</span>
-                  {validatingRules && <Loader2 size={14} className="animate-spin text-emerald-300" />}
+                  <div className="flex shrink-0 items-center gap-2">
+                    {validatingRules && <Loader2 size={14} className="animate-spin text-emerald-300" />}
+                    <button
+                      type="button"
+                      onClick={copyRuleChecks}
+                      className="inline-flex h-7 items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2 text-[11px] font-black text-slate-300 transition hover:border-emerald-300/40 hover:bg-emerald-300/10 hover:text-emerald-200"
+                      aria-label="Copy CV HTML rules"
+                    >
+                      <Copy size={13} />
+                      {rulesCopied ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
                 </div>
                 <ul className="space-y-2">
                   {ruleChecks.map((check) => {
-                    const passed = validationAttempted && check.passed;
-                    const failed = validationAttempted && !validatingRules && !check.passed;
+                    const index = ruleChecks.findIndex((item) => item.id === check.id);
+                    const scanDone = !validatingRules || index < scanCompletedCount;
+                    const scanActive = validatingRules && index === scanCompletedCount;
+                    const passed = validationAttempted && scanDone && check.passed;
+                    const failed = validationAttempted && scanDone && !check.passed;
                     return (
                       <li key={check.id} className="flex items-start gap-2">
                         <span className="mt-0.5 shrink-0">
-                          {validatingRules ? (
+                          {scanActive ? (
                             <Loader2 size={14} className="animate-spin text-slate-500" />
                           ) : passed ? (
                             <CheckCircle2 size={14} className="text-emerald-300" />

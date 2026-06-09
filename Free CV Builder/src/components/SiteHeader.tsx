@@ -148,21 +148,22 @@ export function SiteHeader() {
         />
 
         <nav
-          className="absolute inset-x-0 top-16 mx-3 overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/40"
+          className="absolute inset-x-0 top-16 mx-3 max-h-[calc(100svh-4.75rem)] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/40 scrollbar-hide"
           style={{
             transform: mobileMenuOpen ? 'translateY(0) scale(1)' : 'translateY(-16px) scale(0.97)',
             opacity: mobileMenuOpen ? 1 : 0,
             transition: 'transform 0.32s cubic-bezier(0.22,1,0.36,1), opacity 0.22s ease',
+            WebkitOverflowScrolling: 'touch',
           }}
         >
           <div className="h-1 w-full bg-linear-to-r from-violet-600 to-emerald-500" />
 
-          <div className="flex flex-col gap-1 p-4">
+          <div className="flex flex-col gap-1 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-[420px]:p-3 max-[420px]:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {mainLinks.map(({ label, href, icon: Icon, delay }) => (
               <Link
                 key={label}
                 to={href}
-                className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-200 transition-all hover:bg-white/[0.07] hover:text-white active:scale-[0.98]"
+                className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-200 transition-all hover:bg-white/[0.07] hover:text-white active:scale-[0.98] max-[420px]:py-2.5"
                 style={{
                   transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
                   opacity: mobileMenuOpen ? 1 : 0,
@@ -190,7 +191,7 @@ export function SiteHeader() {
                 <Link
                   key={label}
                   to={href}
-                  className="flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.03] px-2 py-3 text-center text-[11px] font-bold text-slate-400 transition-all hover:bg-white/7 hover:text-slate-200 active:scale-[0.98]"
+                  className="flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.03] px-2 py-3 text-center text-[11px] font-bold text-slate-400 transition-all hover:bg-white/7 hover:text-slate-200 active:scale-[0.98] max-[420px]:py-2.5"
                 >
                   <Icon size={15} className="text-slate-500" />
                   <span className="max-w-full truncate">{label}</span>
@@ -200,7 +201,7 @@ export function SiteHeader() {
 
             <Link
               to={mobileCta.href}
-              className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-500 active:scale-[0.98]"
+              className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-500 active:scale-[0.98] max-[420px]:py-3"
               style={{
                 transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-12px)',
                 opacity: mobileMenuOpen ? 1 : 0,

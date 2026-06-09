@@ -27,7 +27,7 @@ import {
 type RouteDeps = Record<string, any>;
 
 export function registerCvRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, aiLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
+    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, imageUploadJsonParser, authLimiter, aiLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, isCvAssetStorageConfigured, cvAssetS3Key, putCvAssetObject, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
 
     const expireJobAndRollbackQuota = async (
         job: any,
@@ -65,6 +65,52 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             }
         }
     };
+    const profileImageJsonParser = imageUploadJsonParser || express.json({ limit: '2mb' });
+    const hasCvAssetStorage = typeof isCvAssetStorageConfigured === 'function'
+        ? isCvAssetStorageConfigured
+        : () => false;
+    const buildCvAssetKey = typeof cvAssetS3Key === 'function'
+        ? cvAssetS3Key
+        : (userId: string, fileName: string) => `cv-assets/${userId}/${fileName}`;
+    const uploadCvAsset = typeof putCvAssetObject === 'function'
+        ? putCvAssetObject
+        : async () => {
+            throw new Error('S3 CV asset bucket is not configured.');
+        };
+
+    const parseProfileImageDataUrl = (value: unknown) => {
+        if (typeof value !== 'string') return null;
+        const match = value.trim().match(/^data:image\/(webp|png|jpe?g);base64,([a-z0-9+/=\s]+)$/i);
+        if (!match) return null;
+        const contentType = `image/${match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase()}`;
+        const buffer = Buffer.from(match[2].replace(/\s+/g, ''), 'base64');
+        if (!buffer.length || buffer.length > 1024 * 1024) return null;
+        return { buffer, contentType, extension: contentType.split('/')[1] === 'jpeg' ? 'jpg' : contentType.split('/')[1] };
+    };
+
+    router.post('/api/profile-images', requireAuth, profileImageJsonParser, async (req: Request, res: Response) => {
+        try {
+            if (!hasCvAssetStorage()) {
+                return res.status(503).json({ error: 'CV image storage is not configured.' });
+            }
+
+            const image = parseProfileImageDataUrl(req.body?.imageData);
+            if (!image) {
+                return res.status(400).json({ error: 'Upload a PNG, JPEG, or WebP image under 1 MB after compression.' });
+            }
+
+            const userId = currentUserId(req);
+            const fileName = `${randomBytes(16).toString('hex')}.${image.extension}`;
+            const key = buildCvAssetKey(String(userId), fileName);
+            await uploadCvAsset(key, image.buffer, image.contentType);
+
+            return res.status(201).json({
+                imageUrl: `${getApiOrigin(req)}/api/cv-assets/${String(userId)}/${fileName}`,
+            });
+        } catch (error) {
+            return sendError(res, 500, 'Could not upload profile image.', error);
+        }
+    });
 
     router.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
         try {

@@ -3,13 +3,13 @@ import { CV_FONT_OPTIONS } from '../../utils/cvFonts';
 
 // Shared CSS class constants to eliminate duplication across form components
 export const INPUT_CLASS =
-  'w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white';
+  'block w-full max-w-full min-w-0 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white';
 
 export const INPUT_CLASS_MIN_H =
-  'w-full min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white';
+  'block w-full max-w-full min-w-0 min-h-[48px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white';
 
 export const INPUT_CLASS_SM =
-  'w-full min-h-[44px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white text-sm';
+  'block w-full max-w-full min-w-0 min-h-[44px] p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 hover:border-gray-400 transition-all bg-white text-sm';
 
 export const AI_BUTTON_CLASS =
   'flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-gradient-to-r from-fuchsia-50 to-violet-100 text-violet-700 border border-violet-300 hover:from-fuchsia-100 hover:to-violet-200 hover:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed';

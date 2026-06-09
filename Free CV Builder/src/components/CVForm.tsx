@@ -14,7 +14,7 @@ import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
 import { applyTemplateColorDefaults } from '../utils/templateData';
-import { csrfFetch } from '../utils/api';
+import { apiFetch, csrfFetch } from '../utils/api';
 import type { CvImportJobResponse } from '@nexcv/api-contracts/documents';
 
 import {
@@ -231,6 +231,10 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         let errorMessage = res.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Failed to generate summary";
         try {
           const errorJson = JSON.parse(errorText);
+          if (errorJson.upgradeRequired) {
+            onUpgradeRequired?.('ai');
+            return;
+          }
           errorMessage = errorJson.error || errorJson.message || errorText;
         } catch (e) {
           errorMessage = errorText;
@@ -280,6 +284,10 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         let errorMessage = res.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Failed to refine text";
         try {
           const errorJson = JSON.parse(errorText);
+          if (errorJson.upgradeRequired) {
+            onUpgradeRequired?.('ai');
+            return;
+          }
           errorMessage = errorJson.error || errorJson.message || errorText;
         } catch (e) {
           errorMessage = errorText;
@@ -560,10 +568,14 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
     }
     try {
       const compressedImage = await compressAndResizeImage(file);
-      setCvData((prev) => ({ ...prev, profileImage: compressedImage, imageZoom: 1, imageX: 0, imageY: 0 }));
+      const { imageUrl } = await apiFetch<{ imageUrl: string }>('/api/profile-images', {
+        method: 'POST',
+        body: JSON.stringify({ imageData: compressedImage }),
+      });
+      setCvData((prev) => ({ ...prev, profileImage: imageUrl, imageZoom: 1, imageX: 0, imageY: 0 }));
     } catch (error) {
       console.error('Error processing image:', error);
-      toast.error('Failed to process image.');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload image.');
     } finally {
       target.value = '';
     }
