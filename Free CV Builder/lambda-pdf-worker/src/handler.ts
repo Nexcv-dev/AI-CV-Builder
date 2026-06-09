@@ -1,4 +1,5 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { parsePdfJobsFromSqsEvent, type PdfQueueJobType } from '@nexcv/shared/queuePayloads';
 import { MongoClient, ObjectId } from 'mongodb';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
@@ -53,19 +54,7 @@ const getDatabase = async () => {
   return client.db(process.env.MONGODB_DB_NAME || undefined);
 };
 
-const parseSqsJobIds = (event: any) => {
-  const records = Array.isArray(event?.Records) ? event.Records : [];
-  return records.map((record: any) => {
-    const payload = JSON.parse(record.body || '{}');
-    if (!payload.jobId || typeof payload.jobId !== 'string') {
-      throw new Error('SQS message is missing jobId.');
-    }
-    return {
-      jobId: payload.jobId,
-      type: payload.type || process.env.PDF_WORKER_MODE || 'cv-pdf',
-    };
-  });
-};
+const pdfWorkerMode = (): PdfQueueJobType => process.env.PDF_WORKER_MODE === 'html-pdf' ? 'html-pdf' : 'cv-pdf';
 
 const pdfOutputKey = (job: any) => {
   const createdAt = job.createdAt instanceof Date ? job.createdAt : new Date();
@@ -430,7 +419,7 @@ const processHtmlPdfJob = async (jobId: string) => {
 };
 
 export async function handler(event: any) {
-  const jobs = parseSqsJobIds(event);
+  const jobs = parsePdfJobsFromSqsEvent(event, pdfWorkerMode());
   for (const job of jobs) {
     if (job.type === 'html-pdf') {
       await processHtmlPdfJob(job.jobId);

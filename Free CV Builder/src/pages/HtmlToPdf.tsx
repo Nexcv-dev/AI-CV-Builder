@@ -4,27 +4,10 @@ import { ApiError, apiFetch } from '../utils/api';
 import { AuthModal } from '../components/AuthModal';
 import { SiteHeader } from '../components/SiteHeader';
 import { HtmlPdfRuleCheck, validateHtmlPdfRules } from '../utils/htmlPdfValidation';
+import type { HtmlPdfJobResponse, HtmlPdfQuota, HtmlPdfQuotaResponse, DownloadableJob } from '@nexcv/api-contracts/documents';
 
-type HtmlPdfJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'expired';
 type PageSize = 'A4' | 'Letter';
 type FontOverride = '' | 'Inter' | 'Arial' | 'Calibri' | 'Georgia' | 'Times New Roman' | 'Roboto';
-
-interface HtmlPdfQuota {
-  limit: number | null;
-  used: number;
-  remaining: number | null;
-  reached: boolean;
-  plan?: 'guest' | 'free' | 'payg' | 'monthly' | 'quarterly' | 'unlimited';
-  resetAt?: string | null;
-}
-
-interface HtmlPdfJob {
-  id: string;
-  status: HtmlPdfJobStatus;
-  downloadUrl?: string;
-  error?: string;
-  expiresAt?: string;
-}
 
 const MAX_UPLOAD_BYTES = 250 * 1024;
 const MAX_PREVIEW_ZOOM = 0.85;
@@ -95,7 +78,7 @@ export default function HtmlToPdf() {
   const [fontOverride, setFontOverride] = useState<FontOverride>('');
   const [headerColor, setHeaderColor] = useState('#2563eb');
   const [quota, setQuota] = useState<HtmlPdfQuota | null>(null);
-  const [job, setJob] = useState<HtmlPdfJob | null>(null);
+  const [job, setJob] = useState<DownloadableJob | null>(null);
   const [loadingQuota, setLoadingQuota] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -154,7 +137,7 @@ export default function HtmlToPdf() {
   const loadQuota = async () => {
     setLoadingQuota(true);
     try {
-      const data = await apiFetch<{ quota: HtmlPdfQuota }>('/api/html-pdf-quota', { cache: 'no-store' });
+      const data = await apiFetch<HtmlPdfQuotaResponse>('/api/html-pdf-quota', { cache: 'no-store' });
       setQuota(data.quota);
     } catch {
       setQuota(null);
@@ -166,7 +149,7 @@ export default function HtmlToPdf() {
   const pollJob = async (jobId: string) => {
     clearPollTimer();
     try {
-      const data = await apiFetch<{ job: HtmlPdfJob }>(`/api/html-pdf-jobs/${jobId}`, { cache: 'no-store' });
+      const data = await apiFetch<HtmlPdfJobResponse>(`/api/html-pdf-jobs/${jobId}`, { cache: 'no-store' });
       setJob(data.job);
       if (data.job.status === 'queued' || data.job.status === 'processing') {
         pollTimerRef.current = window.setTimeout(() => pollJob(jobId), 1800);
@@ -367,7 +350,7 @@ export default function HtmlToPdf() {
     setError('');
     setJob(null);
     try {
-      const data = await apiFetch<{ job: HtmlPdfJob; quota: HtmlPdfQuota }>('/api/html-pdf-jobs', {
+      const data = await apiFetch<HtmlPdfJobResponse>('/api/html-pdf-jobs', {
         method: 'POST',
         body: JSON.stringify({ html, css: overrideCss, filename, pageSize }),
       });

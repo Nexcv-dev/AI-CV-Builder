@@ -13,6 +13,7 @@ import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { documentsQueryKey, documentsStaleTime, fetchDocuments } from '../hooks/useDocumentsQuery';
 import { initialBuilderCvData, useBuilderStore } from '../stores/useBuilderStore';
 import { ApiError, AuthUser, apiFetch, csrfFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
+import type { DocumentResponse, PdfJobResponse } from '@nexcv/api-contracts/documents';
 import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import toast from 'react-hot-toast';
 import { Download, Loader2, Save, CheckCircle2, X } from 'lucide-react';
@@ -229,7 +230,7 @@ export default function Home() {
 
     async function loadDocument() {
       try {
-        const data = await apiFetch<{ document: { id: string; title: string; template: TemplateName; cvData: CVData } }>(`/api/documents/${id}`);
+        const data = await apiFetch<DocumentResponse>(`/api/documents/${id}`);
         if (ignore) return;
 
         setDocumentId(data.document.id);
@@ -428,7 +429,7 @@ export default function Home() {
 
     try {
       const title = cvData.personalInfo.fullName?.trim() ? `${cvData.personalInfo.fullName.trim()} CV` : documentTitle;
-      const data = await apiFetch<{ document: { id: string; title: string }; quota?: CvCreationQuota }>(
+      const data = await apiFetch<DocumentResponse>(
         documentId ? `/api/documents/${documentId}` : '/api/documents',
         {
           method: documentId ? 'PUT' : 'POST',
@@ -692,7 +693,7 @@ export default function Home() {
         throw err;
       }
 
-      const queuedPayload = await queuedResponse.json();
+      const queuedPayload = await queuedResponse.json() as PdfJobResponse;
       const jobId = queuedPayload?.job?.id;
       if (!jobId) throw new Error('PDF job was not created.');
       if (queuedPayload.quota) setDownloadQuota(queuedPayload.quota);
@@ -708,7 +709,7 @@ export default function Home() {
           throw err;
         }
 
-        const statusPayload = await statusResponse.json();
+        const statusPayload = await statusResponse.json() as PdfJobResponse;
         const status = statusPayload?.job?.status;
         if (status === 'ready' && statusPayload.job.downloadUrl) {
           const downloadUrl = `${statusPayload.job.downloadUrl}?filename=${encodeURIComponent(safeName)}`;

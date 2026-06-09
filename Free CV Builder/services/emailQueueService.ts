@@ -1,4 +1,5 @@
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
+import { createEmailQueuePayload } from '@nexcv/shared/queuePayloads';
 import { logEvent } from '../server-utils/logger';
 import type { AppEmailOptions } from './emailService';
 
@@ -22,7 +23,7 @@ export const enqueueEmail = async (email: AppEmailOptions) => {
 
     await client.send(new SendMessageCommand({
         QueueUrl: EMAIL_QUEUE_URL,
-        MessageBody: JSON.stringify({ email }),
+        MessageBody: JSON.stringify(createEmailQueuePayload(email)),
     }));
     logEvent('info', 'email.queued', { to: email.to, subject: email.subject });
     return true;

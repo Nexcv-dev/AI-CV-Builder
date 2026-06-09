@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { bindDeps, type RouteDeps } from '../_shared';
 import type { BillingPlan } from '../../server-models/userPlan';
+import type { AdminUserDetail, AdminUserDocument, AdminUserListItem } from '@nexcv/api-contracts/admin';
 
 
 export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
@@ -42,7 +43,7 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
             ]);
             const cvCountMap = new Map(cvCounts.map((item: any) => [item._id.toString(), item.count]));
     
-            return res.json({
+            const response = {
                 users: users.map((user) => adminUserSummary(user, cvCountMap.get(user._id.toString()) || 0)),
                 pagination: {
                     page,
@@ -50,7 +51,11 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
                     total,
                     totalPages: Math.max(1, Math.ceil(total / limit)),
                 },
-            });
+            } satisfies {
+                users: AdminUserListItem[];
+                pagination: { page: number; limit: number; total: number; totalPages: number };
+            };
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load admin users.', error);
         }
@@ -76,7 +81,7 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
                 CVDocument.countDocuments({ userId: user._id }),
             ]);
     
-            return res.json({
+            const response = {
                 user: {
                     ...adminUserSummary(user, cvCount),
                     phone: user.phone,
@@ -85,7 +90,8 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
                     paygCvSaveCredits: user.paygCvSaveCredits || 0,
                 },
                 documents: documents.map(documentSummary),
-            });
+            } satisfies { user: AdminUserDetail; documents: AdminUserDocument[] };
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load admin user.', error);
         }

@@ -1,6 +1,6 @@
 # NexCV Architecture
 
-NexCV is a monolithic full-stack web application with AWS-backed workers for expensive asynchronous tasks. The main app serves the React frontend, exposes the Express API, manages sessions and MongoDB persistence, and delegates expensive CV import parsing, PDF rendering, and optional email delivery to SQS/Lambda workers.
+NexCV is a pnpm/Turborepo monorepo with a main full-stack app plus shared workspace packages and AWS-backed workers for expensive asynchronous tasks. The main app serves the React frontend, exposes the Express API, manages sessions and MongoDB persistence, and delegates expensive CV import parsing, PDF rendering, and optional email delivery to SQS/Lambda workers.
 
 ## Runtime Shape
 
@@ -30,6 +30,16 @@ The frontend lives in `src/`.
 - `src/utils/templateData.ts` and `src/utils/templateRenderer.ts` prepare data for built-in and custom templates.
 
 The app uses local React state and focused hooks rather than a global state library. Admin and dashboard modules are split into smaller sections and hooks to keep the initial bundle lighter.
+
+## Workspace Packages
+
+Shared code that must stay consistent across frontend, backend, and workers lives under the root `packages/` folder:
+
+- `@nexcv/shared` - domain constants, queue payload parsing, admin roles, and permissions.
+- `@nexcv/templates` - built-in template metadata and template access helpers.
+- `@nexcv/api-contracts` - shared API response contracts for public settings, templates, admin, billing, documents, and async jobs.
+
+The main app keeps thin compatibility wrappers for some older local import paths while new code should prefer package imports where practical.
 
 ## Backend
 
@@ -109,8 +119,9 @@ The PDF renderer Lambda implementation lives in `lambda-pdf/` and can fetch temp
 
 The main app can run on Render or another Node host:
 
-- `npm run build` builds the Vite frontend.
-- `npm start` runs the Express server through `tsx server.ts`.
-- `render.yaml` points Render at the `Free CV Builder` root.
+- `corepack pnpm install --frozen-lockfile` installs all workspace dependencies from the repository root.
+- `corepack pnpm --filter @nexcv/main build` builds the Vite frontend.
+- `corepack pnpm --filter @nexcv/main start` runs the Express server through `tsx server.ts`.
+- `render.yaml` points Render at the repository root so workspace packages are linked.
 
-The PDF Lambda and queue workers are built separately with scripts such as `npm run build:pdf-lambda`, `npm run build:pdf-worker-lambda`, and `npm run build:cv-import-worker-lambda`. See [AWS Services Configuration](AWS_SERVICES.md) for the complete queue, Lambda, S3, and IAM setup.
+The PDF Lambda and queue workers are built separately with root scripts such as `corepack pnpm build:pdf-lambda`, `corepack pnpm build:pdf-worker-lambda`, and `corepack pnpm build:cv-import-worker-lambda`. See [AWS Services Configuration](AWS_SERVICES.md) for the complete queue, Lambda, S3, and IAM setup.

@@ -5,8 +5,8 @@ This folder contains the main NexCV application: a React/Vite frontend, an Expre
 ## Quick Start
 
 ```bash
-npm install
-npm run dev:all
+corepack pnpm install
+corepack pnpm dev
 ```
 
 Default local URLs:
@@ -18,17 +18,17 @@ Create `.env` in this folder before running backend features that need MongoDB, 
 ## Common Commands
 
 ```bash
-npm run dev:all
-npm run lint
-npm run test:run
-npm run build
-npm run launch:check
-npm run validate:templates
-npm run build:pdf-lambda
-npm run build:pdf-worker-lambda
-npm run build:cv-import-worker-lambda
-npm run build:ocr-lambda
-npm run build:email-worker-lambda
+corepack pnpm dev
+corepack pnpm lint
+corepack pnpm test:run
+corepack pnpm build
+corepack pnpm --filter @nexcv/main launch:check
+corepack pnpm --filter @nexcv/main validate:templates
+corepack pnpm --filter @nexcv/main build:pdf-lambda
+corepack pnpm build:pdf-worker-lambda
+corepack pnpm build:cv-import-worker-lambda
+corepack pnpm build:ocr-lambda
+corepack pnpm build:email-worker-lambda
 ```
 
 ## Documentation

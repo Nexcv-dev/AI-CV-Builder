@@ -3,7 +3,8 @@ import path from 'path';
 import { readFile } from 'fs/promises';
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
-import type { TemplateName } from '../src/templates';
+import type { TemplateName } from '@nexcv/templates';
+import type { PublicAppSettingsResponse, TemplateConfigResponse } from '@nexcv/api-contracts';
 import { mergeCmsContent } from '../src/contentDefaults';
 import { getOrSetCachedValue, parseCacheTtlMs } from '../server-utils/ttlCache';
 
@@ -104,7 +105,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     router.get('/api/public/app-settings', (req: Request, res: Response) => {
         const settings = (req as any).appSettings;
         const cmsContent = mergeCmsContent(settings?.cmsContent);
-        return res.json({
+        const response = {
             maintenanceMode: Boolean(settings?.maintenanceMode),
             announcementEnabled: Boolean(settings?.announcementEnabled || cmsContent.announcement.enabled),
             announcementText: settings?.announcementText || cmsContent.announcement.text || '',
@@ -112,7 +113,8 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             cmsContent,
             supportEmail: settings?.supportEmail || 'support@nexcv.com',
             adminAccessAllowed: typeof deps.isAdminIpAllowed === 'function' ? deps.isAdminIpAllowed(req) : true,
-        });
+        } satisfies PublicAppSettingsResponse;
+        return res.json(response);
     });
 
 
@@ -134,7 +136,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
                         .filter((setting) => setting.source === 'custom' && setting.status === 'active' && !builtInKeys.has(setting.key))
                         .map((setting) => customTemplateSummary(setting, 0));
                     const releasedKeys = new Set(releasedTemplates.map((template: any) => template.key));
-                    return { templates: [...builtIns, ...releasedTemplates, ...customTemplates.filter((template: any) => !releasedKeys.has(template.key))] };
+                    return { templates: [...builtIns, ...releasedTemplates, ...customTemplates.filter((template: any) => !releasedKeys.has(template.key))] } satisfies TemplateConfigResponse;
                 }
             );
             res.setHeader('Cache-Control', publicCacheControl(60, 300));

@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DEFAULT_CMS_CONTENT, mergeCmsContent, type CmsContent } from '../contentDefaults';
-
-interface PublicContentResponse {
-  cmsContent?: unknown;
-}
+import type { PublicAppSettingsResponse } from '@nexcv/api-contracts/public';
 
 export function usePublicContent() {
   const [content, setContent] = useState<CmsContent>(DEFAULT_CMS_CONTENT);
@@ -12,7 +9,7 @@ export function usePublicContent() {
     let ignore = false;
     fetch('/api/public/app-settings', { credentials: 'include' })
       .then((response) => response.ok ? response.json() : null)
-      .then((data: PublicContentResponse | null) => {
+      .then((data: PublicAppSettingsResponse | null) => {
         if (!ignore && data?.cmsContent) {
           setContent(mergeCmsContent(data.cmsContent));
         }

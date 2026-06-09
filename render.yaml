@@ -2,9 +2,9 @@ services:
   - type: web
     name: free-ai-cv-builder
     env: node
-    rootDir: "Free CV Builder"
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    rootDir: "."
+    buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm --filter @nexcv/main build
+    startCommand: corepack pnpm --filter @nexcv/main start
     healthCheckPath: /api/ready
     maxShutdownDelaySeconds: 60
     envVars:

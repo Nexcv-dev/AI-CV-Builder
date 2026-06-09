@@ -11,10 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
 
-    defaults:
-      run:
-        working-directory: './Free CV Builder'
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -23,20 +19,33 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: './Free CV Builder/package-lock.json'
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: npm ci
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: corepack pnpm lint
 
       - name: Run tests
-        run: npm run test:run
+        run: corepack pnpm test:run
 
       - name: Build
-        run: npm run build
+        run: corepack pnpm build
 
       - name: Configure AWS credentials
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
@@ -58,7 +67,11 @@ jobs:
 
       - name: Build PDF Lambda zip
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
-        run: npm run build:pdf-lambda
+        run: corepack pnpm build:pdf-lambda
+
+      - name: Build worker Lambda zips
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+        run: corepack pnpm build:workers
 
       - name: Upload PDF Lambda zip to S3
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
@@ -78,7 +91,7 @@ jobs:
       - name: Build Docker image
         run: |
           for attempt in 1 2 3; do
-            if docker build -t ai-cv-builder:latest .; then
+            if docker build -f "Free CV Builder/Dockerfile" -t ai-cv-builder:latest .; then
               exit 0
             fi
             if [ "$attempt" -eq 3 ]; then

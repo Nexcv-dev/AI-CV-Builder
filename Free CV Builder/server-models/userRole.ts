@@ -1,6 +1,6 @@
 import type { IUser } from './User';
-import { isAdminRole, type UserRole } from '../src/adminAccess';
-export type { UserRole } from '../src/adminAccess';
+import { isAdminRole, type UserRole } from '@nexcv/shared/admin';
+export type { UserRole } from '@nexcv/shared/admin';
 
 export const DEFAULT_USER_ROLE: UserRole = 'user';
 export const SUPER_ADMIN_ROLE: UserRole = 'super_admin';

@@ -202,7 +202,7 @@ CV_IMPORT_LOCAL_WORKER_DISABLED=true
 Build worker ZIP:
 
 ```bash
-npm run build:cv-import-worker-lambda
+corepack pnpm build:cv-import-worker-lambda
 ```
 
 Deploy:
@@ -279,7 +279,7 @@ Purpose: extract text from imported PDFs/images. This Lambda can use Textract an
 Build:
 
 ```bash
-npm run build:ocr-lambda
+corepack pnpm build:ocr-lambda
 ```
 
 Deploy:
@@ -362,7 +362,7 @@ PDF_OUTPUT_PREFIX=pdf-jobs
 Build worker ZIP:
 
 ```bash
-npm run build:pdf-worker-lambda
+corepack pnpm build:pdf-worker-lambda
 ```
 
 Deploy:
@@ -437,7 +437,7 @@ Purpose: render HTML/CV data to PDF using Chromium.
 Build:
 
 ```bash
-npm run build:pdf-lambda
+corepack pnpm build:pdf-lambda
 ```
 
 Deploy:
@@ -503,7 +503,7 @@ EMAIL_QUEUE_REGION=eu-north-1
 Build:
 
 ```bash
-npm run build:email-worker-lambda
+corepack pnpm build:email-worker-lambda
 ```
 
 Deploy:

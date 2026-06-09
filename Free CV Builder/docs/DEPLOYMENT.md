@@ -22,21 +22,23 @@ Required services:
 The repository includes `render.yaml` for Render:
 
 ```yaml
-rootDir: "Free CV Builder"
-buildCommand: npm install && npm run build
-startCommand: npm start
+rootDir: "."
+buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm --filter @nexcv/main build
+startCommand: corepack pnpm --filter @nexcv/main start
 ```
 
 Manual deployment flow:
 
 ```bash
-cd "Free CV Builder"
-npm ci
-npm run build
-npm start
+corepack enable
+corepack pnpm install --frozen-lockfile
+corepack pnpm --filter @nexcv/main build
+corepack pnpm --filter @nexcv/main start
 ```
 
-`npm start` runs `tsx server.ts`. Make sure the host installs production dependencies that include `tsx`, or change the start command to a compiled JavaScript entrypoint if you introduce a separate backend build step.
+`@nexcv/main` runs `tsx server.ts` for `start`. Make sure the host installs workspace dependencies from the repository root so local packages under `packages/` are linked.
+
+If your Render service uses dashboard-level commands instead of the checked-in `render.yaml`, update the dashboard to match the commands above. The old app-directory, npm-based setup will not install/link workspace packages such as `@nexcv/shared`, `@nexcv/templates`, and `@nexcv/api-contracts`.
 
 ## Database Backup Automation
 
@@ -187,8 +189,7 @@ Queue and Lambda workers use `handler.handler` as the Lambda handler. Do not use
 Build the email worker artifact from the app folder:
 
 ```bash
-cd "Free CV Builder"
-npm run build:email-worker-lambda
+corepack pnpm build:email-worker-lambda
 ```
 
 Deploy the generated ZIP from `lambda-email-worker/dist/` to AWS Lambda with an SQS trigger on the email queue.
@@ -229,7 +230,7 @@ Build the CV import worker artifact from the app folder:
 
 ```bash
 cd "Free CV Builder"
-npm run build:cv-import-worker-lambda
+corepack pnpm build:cv-import-worker-lambda
 ```
 
 Deploy the generated ZIP from `lambda-cv-import-worker/dist/` to AWS Lambda with an SQS trigger on the CV import queue.
@@ -264,7 +265,7 @@ Build the PDF worker artifact from the app folder:
 
 ```bash
 cd "Free CV Builder"
-npm run build:pdf-worker-lambda
+corepack pnpm build:pdf-worker-lambda
 ```
 
 Deploy the generated ZIP from `lambda-pdf-worker/dist/` to AWS Lambda with an SQS trigger on the PDF jobs queue.
@@ -296,7 +297,7 @@ Build the Lambda artifact from the app folder:
 
 ```bash
 cd "Free CV Builder"
-npm run build:pdf-lambda
+corepack pnpm build:pdf-lambda
 ```
 
 Deploy the generated ZIP from `lambda-pdf/dist/` to AWS Lambda.
@@ -325,7 +326,7 @@ Expose the Lambda through a Function URL or API Gateway, then set the main app's
 Build the OCR Lambda artifact from the app folder:
 
 ```bash
-npm run build:ocr-lambda
+corepack pnpm build:ocr-lambda
 ```
 
 Deploy the generated ZIP from `lambda-ocr/dist/` to AWS Lambda as `OCR_data_Extract`.
@@ -355,15 +356,15 @@ Before releasing admin templates:
 
 ```bash
 cd "Free CV Builder"
-npm run validate:template-map
-npm run validate:templates
-npm run templates:release:dry-run
+corepack pnpm validate:template-map
+corepack pnpm validate:templates
+corepack pnpm --filter @nexcv/main templates:release:dry-run
 ```
 
 Release only after validation and preview checks pass:
 
 ```bash
-npm run templates:release
+corepack pnpm --filter @nexcv/main templates:release
 ```
 
 ## Production Smoke Test

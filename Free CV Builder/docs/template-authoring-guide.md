@@ -27,7 +27,7 @@ Rules:
 
 `style.css` contains the visual layout and print rules.
 
-`thumbnail.webp` is shown in template cards/admin lists. Generate it with `npm.cmd run templates:thumbnails`; the file is saved beside the template source as `Admin Templates/<template-folder>/thumbnail.webp`.
+`thumbnail.webp` is shown in template cards/admin lists. Generate it with `corepack pnpm templates:thumbnails`; the file is saved beside the template source as `Admin Templates/<template-folder>/thumbnail.webp`.
 
 ## Mustache Syntax
 
@@ -239,15 +239,15 @@ Rich text is sanitized, but the template itself should still stay simple.
 Run:
 
 ```bash
-npm run templates:thumbnails
-npm run validate:templates
+corepack pnpm templates:thumbnails
+corepack pnpm validate:templates
 ```
 
 Or on Windows:
 
 ```powershell
-npm.cmd run templates:thumbnails
-npm.cmd run validate:templates
+corepack pnpm templates:thumbnails
+corepack pnpm validate:templates
 ```
 
 Meaning:
@@ -258,8 +258,8 @@ Meaning:
 Also run:
 
 ```powershell
-npm.cmd run lint
-npm.cmd run test:run
+corepack pnpm lint
+corepack pnpm test:run
 ```
 
 ## Thumbnail Workflow
@@ -282,7 +282,7 @@ Then run:
 
 ```powershell
 cd "Free CV Builder"
-npm.cmd run templates:thumbnails
+corepack pnpm templates:thumbnails
 ```
 
 Run the command from `Free CV Builder/`, not from inside `Admin Templates/my-template-key/`.
@@ -296,14 +296,14 @@ Admin Templates/my-template-key/thumbnail.webp
 To regenerate only one template, pass its built-in key or admin folder name:
 
 ```powershell
-npm.cmd run templates:thumbnails -- --template my-template-key
+corepack pnpm templates:thumbnails -- --template my-template-key
 ```
 
 You can upload the generated `thumbnail.webp` manually in the admin panel. To upload through the command line, add the template to `config/template-release-map.json`, then run:
 
 ```powershell
-npm.cmd run templates:release
-npm.cmd run templates:sync-thumbnails
+corepack pnpm templates:release
+corepack pnpm templates:sync-thumbnails
 ```
 
 `templates:release` uploads `index.html`, `style.css`, and `thumbnail.webp` to S3.
@@ -317,12 +317,12 @@ Admin thumbnails should use each template's default color. The generator keeps `
 Recommended flow:
 
 1. Create or update the local template folder.
-2. Run `npm.cmd run templates:thumbnails` and `npm.cmd run validate:templates`.
+2. Run `corepack pnpm templates:thumbnails` and `corepack pnpm validate:templates`.
 3. Preview locally in desktop and mobile.
 4. Test Design panel color changes.
 5. Add/update `config/template-release-map.json` if using command-line S3 release.
-6. Run `npm.cmd run templates:release`.
-7. Run `npm.cmd run templates:sync-thumbnails`.
+6. Run `corepack pnpm templates:release`.
+7. Run `corepack pnpm templates:sync-thumbnails`.
 8. Verify preview and PDF.
 
 For manual upload, use the admin panel file picker with the generated `thumbnail.webp`. For batch S3 sync, use the release script only after validation passes.

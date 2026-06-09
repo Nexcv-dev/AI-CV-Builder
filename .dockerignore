@@ -1,0 +1,12 @@
+.git
+.github
+.pnpm-store
+.turbo
+node_modules
+**/node_modules
+**/.env
+**/.env.*
+**/dist
+**/coverage
+**/*.log
+*.zip

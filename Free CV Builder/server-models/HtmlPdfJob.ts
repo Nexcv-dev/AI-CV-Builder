@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { HTML_PDF_PAGE_SIZES, JOB_STATUSES, type HtmlPdfJobStatus, type HtmlPdfPageSize } from '@nexcv/shared/domain';
 
-export type HtmlPdfJobStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'expired';
-export type HtmlPdfPageSize = 'A4' | 'Letter';
+export type { HtmlPdfJobStatus, HtmlPdfPageSize };
 
 export interface IHtmlPdfJob extends Document {
   userId?: mongoose.Types.ObjectId;
@@ -31,14 +31,14 @@ const HtmlPdfJobSchema = new Schema(
     guestKey: { type: String, trim: true, index: true },
     status: {
       type: String,
-      enum: ['queued', 'processing', 'ready', 'failed', 'expired'],
+      enum: JOB_STATUSES,
       default: 'queued',
       index: true,
     },
     html: { type: String, required: true, maxlength: 260000 },
     css: { type: String, default: '', maxlength: 260000 },
     filename: { type: String, required: true, trim: true, maxlength: 120 },
-    pageSize: { type: String, enum: ['A4', 'Letter'], default: 'A4' },
+    pageSize: { type: String, enum: HTML_PDF_PAGE_SIZES, default: 'A4' },
     renderer: { type: String, trim: true },
     outputBucket: { type: String, trim: true },
     outputKey: { type: String, trim: true },

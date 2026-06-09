@@ -67,9 +67,9 @@ import {
 } from './services/s3Service';
 import { generateCVHTML, generatePdfDocument, sanitizeCvData } from './services/pdfService';
 import { extractCvText, parseCvTextToStructuredData, withImportMeta } from './services/cvImportService';
-import { CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan } from './src/templates';
+import { CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan } from '@nexcv/templates';
 import { isSuperAdmin, roleForEmail, syncUserRoleFromAllowlist } from './server-models/userRole';
-import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from './src/adminAccess';
+import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from '@nexcv/shared/admin';
 import { mergeEmailTemplates, renderEmailTemplate } from './src/emailTemplateDefaults';
 import { buildCvCreationQuota } from './server-models/cvQuota';
 import { buildCvImportQuota, getCvImportQuotaPeriod } from './server-models/cvImportQuota';
@@ -1025,7 +1025,13 @@ function buildRobotsTxt() {
 }
 
 let indexHtmlPromise: Promise<string> | null = null;
-let currentAssetManifestPromise: Promise<{ css?: string; js?: string }> | null = null;
+type CurrentAssetManifest = {
+    css?: string;
+    js?: string;
+    byStableName: Map<string, string>;
+};
+
+let currentAssetManifestPromise: Promise<CurrentAssetManifest> | null = null;
 
 const getIndexHtml = () => {
     if (!indexHtmlPromise) {
@@ -1037,13 +1043,30 @@ const getIndexHtml = () => {
 const getCurrentAssetManifest = async () => {
     if (!currentAssetManifestPromise) {
         currentAssetManifestPromise = readdir(distAssetsPath)
-            .then((files) => ({
-                css: files.find((file) => /^index-.*\.css$/i.test(file)),
-                js: files.find((file) => /^index-.*\.js$/i.test(file)),
-            }))
-            .catch(() => ({}));
+            .then((files) => {
+                const byStableName = new Map<string, string>();
+
+                for (const file of files) {
+                    const match = file.match(/^(.+)-[A-Za-z0-9_-]{8,}\.(css|js)$/i);
+                    if (match) {
+                        byStableName.set(`${match[1]}.${match[2].toLowerCase()}`, file);
+                    }
+                }
+
+                return {
+                    css: files.find((file) => /^index-.*\.css$/i.test(file)),
+                    js: files.find((file) => /^index-.*\.js$/i.test(file)),
+                    byStableName,
+                };
+            })
+            .catch(() => ({ byStableName: new Map() }));
     }
     return currentAssetManifestPromise;
+};
+
+const getStableAssetName = (file: string) => {
+    const match = file.match(/^(.+)-[A-Za-z0-9_-]{8,}\.(css|js)$/i);
+    return match ? `${match[1]}.${match[2].toLowerCase()}` : '';
 };
 
 async function renderSeoIndexHtml(req: Request) {
@@ -1122,6 +1145,12 @@ app.use('/admin', requireAdminPageAllowedIp);
 app.get('/assets/*', async (req: Request, res: Response) => {
     const requested = path.basename(req.path);
     const manifest = await getCurrentAssetManifest();
+    const currentAsset = manifest.byStableName.get(getStableAssetName(requested));
+
+    if (currentAsset && currentAsset !== requested) {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.redirect(302, `/assets/${currentAsset}`);
+    }
 
     if (/^index-.*\.css$/i.test(requested) && manifest.css) {
         res.setHeader('Cache-Control', 'no-store');

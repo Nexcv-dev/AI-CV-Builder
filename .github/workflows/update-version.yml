@@ -30,11 +30,13 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Enable pnpm
+        run: corepack enable
+
       - name: Update package.json version
         run: |
-          cd "Free CV Builder"
-          # Update the package.json version without creating a git tag (we already have a release tag)
-          npm version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version
+          # Update the workspace package version without creating a git tag (we already have a release tag)
+          corepack pnpm --filter @nexcv/main version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5

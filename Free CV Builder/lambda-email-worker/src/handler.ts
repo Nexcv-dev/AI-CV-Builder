@@ -1,13 +1,8 @@
+import { parseEmailPayloadsFromSqsEvent } from '@nexcv/shared/queuePayloads';
 import { sendAppEmail, type AppEmailOptions } from '../../services/emailService';
 
 const parseEmailMessages = (event: any): AppEmailOptions[] => {
-  const records = Array.isArray(event?.Records) ? event.Records : [];
-  return records.map((record: any) => {
-    const payload = JSON.parse(record.body || '{}');
-    const email = payload?.email;
-    if (!email || typeof email !== 'object') {
-      throw new Error('SQS message is missing email payload.');
-    }
+  return parseEmailPayloadsFromSqsEvent(event).map((email: any) => {
     if (!email.to || !email.from || !email.subject || !email.text) {
       throw new Error('Email payload is missing required fields.');
     }

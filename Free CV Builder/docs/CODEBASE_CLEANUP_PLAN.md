@@ -12,7 +12,7 @@ Do:
 - Extract obvious duplicated logic into helpers.
 - Centralize important constants and status rules.
 - Add focused tests around payment/auth edge cases.
-- Keep `npm run lint`, `npm run test:run`, and `npm run launch:check` green.
+- Keep `corepack pnpm lint`, `corepack pnpm test:run`, and `corepack pnpm launch:check` green.
 
 Avoid before launch:
 

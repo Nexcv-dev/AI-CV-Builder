@@ -1,0 +1,20 @@
+{
+  "name": "@nexcv/shared",
+  "private": true,
+  "version": "0.1.11",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin": "./src/admin.ts",
+    "./domain": "./src/domain.ts",
+    "./queuePayloads": "./src/queuePayloads.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test:run": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.7"
+  }
+}

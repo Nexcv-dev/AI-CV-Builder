@@ -61,10 +61,18 @@ Main documentation lives in [Free CV Builder/docs](Free%20CV%20Builder/docs/READ
 ```text
 AI-CV-Builder/
   README.md
+  package.json                 # pnpm workspace entrypoint
+  pnpm-workspace.yaml
+  turbo.json
+  pnpm-lock.yaml
   render.yaml
   docker-compose.yml
   Admin Templates/             # Local source folders for admin templates
   sample templates/            # Static preview samples
+  packages/
+    shared/                    # Shared domain, queue payload, and admin contracts
+    templates/                 # Built-in template metadata/contracts
+    api-contracts/             # Shared frontend/backend API response contracts
   Free CV Builder/             # Main React + Express application
     src/                       # React frontend
     routes/                    # Express route modules
@@ -85,9 +93,9 @@ AI-CV-Builder/
 ## Local Development
 
 ```bash
-cd "Free CV Builder"
-npm install
-npm run dev:all
+corepack enable
+corepack pnpm install
+corepack pnpm dev:all
 ```
 
 Default local URLs:
@@ -191,24 +199,25 @@ Optional quota variables:
 
 ## Useful Commands
 
-Run commands from `Free CV Builder/`.
+Run commands from the repository root.
 
 ```bash
-npm run dev:all                     # Run frontend and backend together
-npm run dev                         # Run Vite frontend only
-npm run server                      # Run Express backend only
-npm run lint                        # TypeScript compile check
-npm run test:run                    # Run Vitest once
-npm run build                       # Production frontend build
-npm run launch:check                # Run launch readiness checks
-npm run build:pdf-lambda            # Build PDF renderer Lambda ZIP
-npm run build:pdf-worker-lambda     # Build PDF SQS worker Lambda ZIP
-npm run build:cv-import-worker-lambda # Build CV import SQS worker Lambda ZIP
-npm run build:ocr-lambda            # Build OCR/Textract Lambda ZIP
-npm run build:email-worker-lambda   # Build email SQS worker Lambda ZIP
-npm run validate:templates          # Validate Admin Templates folders
-npm run templates:release:dry-run   # Validate and dry-run template release
-npm run templates:release           # Validate and release admin templates
+corepack pnpm dev:all                                # Run frontend and backend together
+corepack pnpm --filter @nexcv/main dev               # Run Vite frontend only
+corepack pnpm --filter @nexcv/main server            # Run Express backend only
+corepack pnpm lint                                   # TypeScript compile check
+corepack pnpm test:run                               # Run Vitest once
+corepack pnpm build                                  # Production frontend build
+corepack pnpm launch:check                           # Run launch readiness checks
+corepack pnpm build:pdf-lambda                       # Build PDF renderer Lambda ZIP
+corepack pnpm build:pdf-worker-lambda                 # Build PDF SQS worker Lambda ZIP
+corepack pnpm build:cv-import-worker-lambda           # Build CV import SQS worker Lambda ZIP
+corepack pnpm build:ocr-lambda                        # Build OCR/Textract Lambda ZIP
+corepack pnpm build:email-worker-lambda               # Build email SQS worker Lambda ZIP
+corepack pnpm build:workers                           # Build all worker Lambda ZIPs
+corepack pnpm validate:templates                     # Validate Admin Templates folders
+corepack pnpm --filter @nexcv/main templates:release:dry-run # Validate and dry-run template release
+corepack pnpm --filter @nexcv/main templates:release # Validate and release admin templates
 ```
 
 ## Production Notes

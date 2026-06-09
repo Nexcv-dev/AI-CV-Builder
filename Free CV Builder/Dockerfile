@@ -28,12 +28,16 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install
+# Copy workspace manifests and install dependencies
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+RUN mkdir -p "Free CV Builder"
+COPY ["Free CV Builder/package.json", "./Free CV Builder/package.json"]
+RUN corepack enable && corepack pnpm install --frozen-lockfile
 
 # Copy the rest of the application code
 COPY . .
+
+WORKDIR "/app/Free CV Builder"
 
 # Expose ports for Vite (3000) and Express Server (3002)
 EXPOSE 3000 3002
@@ -43,4 +47,4 @@ ENV NODE_ENV=development
 ENV PORT=3002
 
 # Run both Vite and Express using concurrently
-CMD ["npm", "run", "dev:all"]
+CMD ["corepack", "pnpm", "dev:all"]

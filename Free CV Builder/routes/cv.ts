@@ -1,7 +1,14 @@
 ﻿import express, { Router, Request, Response, NextFunction } from 'express';
 import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
-import type { TemplateName } from '../src/templates';
+import type { TemplateName } from '@nexcv/templates';
+import type {
+    CvImportJobResponse,
+    DeleteDocumentResponse,
+    DocumentResponse,
+    DocumentsResponse,
+    PdfJobResponse,
+} from '@nexcv/api-contracts/documents';
 import {
     createCvImportJob,
     findUserCvImportJob,
@@ -66,7 +73,8 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 .select('title template status createdAt updatedAt');
             const quota = await getCvCreationQuota(req.user);
             const downloadQuota = await getDownloadQuota(req.user);
-            res.json({ documents: documents.map(documentSummary), quota, downloadQuota });
+            const response = { documents: documents.map(documentSummary), quota, downloadQuota } satisfies DocumentsResponse;
+            res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load your documents.', error);
         }
@@ -83,7 +91,8 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             if (!document) {
                 return res.status(404).json({ error: 'Document not found.' });
             }
-            res.json({ document: documentDetails(document) });
+            const response = { document: documentDetails(document) } satisfies DocumentResponse;
+            res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not load this document.', error);
         }
@@ -123,7 +132,8 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     status: status === 'completed' ? 'completed' : 'draft',
                 });
         
-                res.status(201).json({ document: documentDetails(document), quota: { ...quota, reserved: undefined } });
+                const response = { document: documentDetails(document), quota: { ...quota, reserved: undefined } } satisfies DocumentResponse;
+                res.status(201).json(response);
             } catch (error) {
                 if (quota.limit !== null) await rollbackCvCreationQuota(req.user).catch(() => undefined);
                 throw error;
@@ -165,7 +175,8 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 return res.status(404).json({ error: 'Document not found.' });
             }
     
-            res.json({ document: documentDetails(document) });
+            const response = { document: documentDetails(document) } satisfies DocumentResponse;
+            res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not update your document.', error);
         }
@@ -182,7 +193,8 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             if (!document) {
                 return res.status(404).json({ error: 'Document not found.' });
             }
-            res.json({ message: 'Document deleted successfully.' });
+            const response = { message: 'Document deleted successfully.' } satisfies DeleteDocumentResponse;
+            res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not delete this document.', error);
         }
@@ -523,7 +535,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 }, 0);
             }
 
-            return res.status(202).json({
+            const response = {
                 job: {
                     id: String(job._id),
                     status: job.status,
@@ -531,7 +543,8 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     pollUrl: `/api/cv-import-jobs/${String(job._id)}`,
                 },
                 importQuota: { ...importQuota, reserved: undefined },
-            });
+            } satisfies CvImportJobResponse;
+            return res.status(202).json(response);
         } catch (error: any) {
             if (importQuotaReserved && req.user) {
                 await rollbackCvImportQuota(req.user).catch((rollbackError: any) => {
@@ -557,7 +570,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 await expireJobAndRollbackQuota(job, rollbackCvImportQuota, 'cv_import.job_expired_quota_rollback_failed');
             }
 
-            return res.json({
+            const response = {
                 job: {
                     id: String(job._id),
                     status: job.status,
@@ -565,7 +578,8 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     result: job.status === 'ready' ? job.result : undefined,
                     expiresAt: job.expiresAt,
                 },
-            });
+            } satisfies CvImportJobResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not check CV import job status.', error);
         }
@@ -815,7 +829,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 }, 0);
             }
 
-            return res.status(202).json({
+            const response = {
                 job: {
                     id: String(job._id),
                     status: job.status,
@@ -823,7 +837,8 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     pollUrl: `/api/pdf-jobs/${String(job._id)}`,
                 },
                 quota: { ...reservedDownloadQuota, reserved: undefined },
-            });
+            } satisfies PdfJobResponse;
+            return res.status(202).json(response);
         } catch (error: any) {
             if (quotaReserved) {
                 await rollbackDownloadQuota(req.user).catch((rollbackError: any) => {
@@ -850,7 +865,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             }
 
             const downloadUrl = job.status === 'ready' ? `/api/pdf-jobs/${String(job._id)}/download` : undefined;
-            return res.json({
+            const response = {
                 job: {
                     id: String(job._id),
                     status: job.status,
@@ -858,7 +873,8 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     downloadUrl,
                     expiresAt: job.expiresAt,
                 },
-            });
+            } satisfies PdfJobResponse;
+            return res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not check PDF job status.', error);
         }

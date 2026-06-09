@@ -4,7 +4,7 @@ import chromium from '@sparticuz/chromium';
 import * as dotenv from 'dotenv';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
-import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName } from '../src/templates';
+import { DEFAULT_TEMPLATE, getTemplateSurfaceColorFallback, isTemplateName } from '@nexcv/templates';
 import { CV_TEMPLATE_PAGINATION_RULES } from '../src/utils/cvTemplateRules';
 import { CV_FONT_CSS_MAP, googleFontFamilyParam, sanitizeCvFontFamily } from '../src/utils/cvFonts';
 import { logError, logEvent } from '../server-utils/logger';

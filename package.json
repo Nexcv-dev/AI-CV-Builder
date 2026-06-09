@@ -1,0 +1,27 @@
+{
+  "name": "nexcv-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:all": "turbo run dev:all --filter=@nexcv/main",
+    "server": "turbo run server --filter=@nexcv/main",
+    "build": "turbo run build",
+    "build:pdf-lambda": "turbo run build:pdf-lambda --filter=@nexcv/main",
+    "build:pdf-worker-lambda": "turbo run build:lambda --filter=@nexcv/pdf-worker",
+    "build:cv-import-worker-lambda": "turbo run build:lambda --filter=@nexcv/cv-import-worker",
+    "build:email-worker-lambda": "turbo run build:lambda --filter=@nexcv/email-worker",
+    "build:ocr-lambda": "turbo run build:lambda --filter=@nexcv/ocr-lambda",
+    "build:workers": "turbo run build:lambda --filter=@nexcv/pdf-worker --filter=@nexcv/cv-import-worker --filter=@nexcv/email-worker --filter=@nexcv/ocr-lambda",
+    "lint": "turbo run lint",
+    "test": "turbo run test:run",
+    "test:run": "turbo run test:run",
+    "launch:check": "turbo run launch:check --filter=@nexcv/main",
+    "validate:templates": "turbo run validate:templates --filter=@nexcv/main",
+    "validate:template-map": "turbo run validate:template-map --filter=@nexcv/main"
+  },
+  "devDependencies": {
+    "pnpm": "9.15.0",
+    "turbo": "^2.5.0"
+  }
+}
