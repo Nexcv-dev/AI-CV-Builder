@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.release.target_commitish }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -26,20 +26,35 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Enable pnpm
         run: corepack enable
 
       - name: Update package.json version
         run: |
-          # Update the workspace package version without creating a git tag (we already have a release tag)
-          corepack pnpm --filter @nexcv/main version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version
+          # Update workspace package versions without creating a git tag (we already have a release tag).
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          PACKAGES=(
+            @nexcv/web
+            @nexcv/api
+            @nexcv/shared
+            @nexcv/templates
+            @nexcv/api-contracts
+            @nexcv/pdf-worker
+            @nexcv/cv-import-worker
+            @nexcv/email-worker
+            @nexcv/ocr-lambda
+          )
+
+          for PACKAGE in "${PACKAGES[@]}"; do
+            corepack pnpm --filter "$PACKAGE" version "$VERSION" --no-git-tag-version
+          done
 
       - name: Commit and Push Changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: bump version to ${{ steps.get_version.outputs.VERSION }}"
           branch: ${{ github.event.release.target_commitish }}

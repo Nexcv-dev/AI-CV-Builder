@@ -2,3 +2,13 @@ node_modules/
 package-lock.json
 .pnpm-store/
 .turbo/
+build/
+dist/
+coverage/
+*.log
+.env*
+!.env.example
+*.tsbuildinfo
+
+# Local leftovers from the pre-monorepo app folder. Source now lives in apps/.
+/Free CV Builder/

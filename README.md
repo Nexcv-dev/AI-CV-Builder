@@ -40,21 +40,21 @@ Current release focus: production hardening, admin operations, template reliabil
 
 ## Documentation
 
-Main documentation lives in [Free CV Builder/docs](Free%20CV%20Builder/docs/README.md).
+Main documentation lives in [apps/web/docs](apps/web/docs/README.md).
 
-- [Architecture](Free%20CV%20Builder/docs/ARCHITECTURE.md)
-- [API Docs](Free%20CV%20Builder/docs/API_DOCS.md)
-- [Admin Panel](Free%20CV%20Builder/docs/ADMIN_PANEL.md)
-- [Deployment](Free%20CV%20Builder/docs/DEPLOYMENT.md)
-- [Environment Variables](Free%20CV%20Builder/docs/ENVIRONMENT.md)
-- [AWS Services](Free%20CV%20Builder/docs/AWS_SERVICES.md)
-- [Backup And Restore](Free%20CV%20Builder/docs/BACKUP_RESTORE.md)
-- [Operations Runbook](Free%20CV%20Builder/docs/OPERATIONS_RUNBOOK.md)
-- [PDF Rendering](Free%20CV%20Builder/docs/PDF_RENDERING.md)
-- [Template System](Free%20CV%20Builder/docs/TEMPLATES.md)
-- [Template Authoring Guide](Free%20CV%20Builder/docs/template-authoring-guide.md)
-- [Contributing](Free%20CV%20Builder/docs/CONTRIBUTING.md)
-- [Roadmap](Free%20CV%20Builder/docs/ROADMAP.md)
+- [Architecture](apps/web/docs/ARCHITECTURE.md)
+- [API Docs](apps/web/docs/API_DOCS.md)
+- [Admin Panel](apps/web/docs/ADMIN_PANEL.md)
+- [Deployment](apps/web/docs/DEPLOYMENT.md)
+- [Environment Variables](apps/web/docs/ENVIRONMENT.md)
+- [AWS Services](apps/web/docs/AWS_SERVICES.md)
+- [Backup And Restore](apps/web/docs/BACKUP_RESTORE.md)
+- [Operations Runbook](apps/web/docs/OPERATIONS_RUNBOOK.md)
+- [PDF Rendering](apps/web/docs/PDF_RENDERING.md)
+- [Template System](apps/web/docs/TEMPLATES.md)
+- [Template Authoring Guide](apps/web/docs/template-authoring-guide.md)
+- [Contributing](apps/web/docs/CONTRIBUTING.md)
+- [Roadmap](apps/web/docs/ROADMAP.md)
 
 ## Repository Layout
 
@@ -73,21 +73,15 @@ AI-CV-Builder/
     shared/                    # Shared domain, queue payload, and admin contracts
     templates/                 # Built-in template metadata/contracts
     api-contracts/             # Shared frontend/backend API response contracts
-  Free CV Builder/             # Main React + Express application
-    src/                       # React frontend
-    routes/                    # Express route modules
-    middlewares/               # Session, auth, security, and rate limits
-    server-models/             # Mongoose models
-    server-utils/              # Shared backend helpers
-    services/                  # Email, PDF, CV import, queue, and S3 services
-    scripts/                   # Build, validation, and template release scripts
-    docs/                      # Project documentation
-    tests/                     # Vitest server and frontend tests
-    lambda-cv-import-worker/   # SQS worker for background CV import jobs
-    lambda-email-worker/       # SQS worker for async transactional email
-    lambda-ocr/                # OCR/Textract Lambda for CV import text extraction
-    lambda-pdf/                # AWS Lambda PDF renderer
-    lambda-pdf-worker/         # SQS worker for background PDF export jobs
+  apps/
+    web/                       # React/Vite frontend, public assets, docs, and template scripts
+    api/                       # Express API, routes, middleware, models, services, and API tests
+    workers/
+      cv-import-worker/        # SQS worker for background CV import jobs
+      email-worker/            # SQS worker for async transactional email
+      ocr-lambda/              # OCR/Textract Lambda for CV import text extraction
+      pdf-lambda/              # AWS Lambda PDF renderer
+      pdf-worker/              # SQS worker for background PDF export jobs
 ```
 
 ## Local Development
@@ -104,8 +98,8 @@ Default local URLs:
 
 ## Environment Variables
 
-Create `.env` inside `Free CV Builder/`. Do not commit real secrets.
-For the complete app, worker, script, and GitHub Actions secret reference, see [`Free CV Builder/docs/ENVIRONMENT.md`](Free%20CV%20Builder/docs/ENVIRONMENT.md).
+Create `.env` in the repository root or in the app package that needs it. Do not commit real secrets.
+For the complete app, worker, script, and GitHub Actions secret reference, see [apps/web/docs/ENVIRONMENT.md](apps/web/docs/ENVIRONMENT.md).
 
 ```env
 NODE_ENV=development
@@ -203,8 +197,8 @@ Run commands from the repository root.
 
 ```bash
 corepack pnpm dev:all                                # Run frontend and backend together
-corepack pnpm --filter @nexcv/main dev               # Run Vite frontend only
-corepack pnpm --filter @nexcv/main server            # Run Express backend only
+corepack pnpm --filter @nexcv/web dev                # Run Vite frontend only
+corepack pnpm --filter @nexcv/api server             # Run Express backend only
 corepack pnpm lint                                   # TypeScript compile check
 corepack pnpm test:run                               # Run Vitest once
 corepack pnpm build                                  # Production frontend build
@@ -216,8 +210,8 @@ corepack pnpm build:ocr-lambda                        # Build OCR/Textract Lambd
 corepack pnpm build:email-worker-lambda               # Build email SQS worker Lambda ZIP
 corepack pnpm build:workers                           # Build all worker Lambda ZIPs
 corepack pnpm validate:templates                     # Validate Admin Templates folders
-corepack pnpm --filter @nexcv/main templates:release:dry-run # Validate and dry-run template release
-corepack pnpm --filter @nexcv/main templates:release # Validate and release admin templates
+corepack pnpm templates:release:dry-run              # Validate and dry-run template release
+corepack pnpm templates:release                      # Validate and release admin templates
 ```
 
 ## Production Notes
@@ -231,4 +225,4 @@ corepack pnpm --filter @nexcv/main templates:release # Validate and release admi
 - Use `PDF_QUEUE_URL` and `CV_IMPORT_QUEUE_URL` in production so heavy jobs run in Lambda workers instead of the main app process.
 - Set `CV_IMPORT_LOCAL_WORKER_DISABLED=true` when the CV import queue is configured.
 - All Lambda ZIPs generated by this repo use `handler.handler` as the AWS Lambda handler.
-- See [AWS Services](Free%20CV%20Builder/docs/AWS_SERVICES.md) for SQS trigger settings, DLQs, worker environment variables, and IAM policies.
+- See [AWS Services](apps/web/docs/AWS_SERVICES.md) for SQS trigger settings, DLQs, worker environment variables, and IAM policies.

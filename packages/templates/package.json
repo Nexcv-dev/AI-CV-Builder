@@ -4,7 +4,13 @@
   "version": "0.1.11",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./cvFonts": "./src/cvFonts.ts",
+    "./cvTemplateRules": "./src/cvTemplateRules.ts",
+    "./htmlPdfValidation": "./src/htmlPdfValidation.ts",
+    "./template-release-map": "./src/template-release-map.json",
+    "./templateData": "./src/templateData.ts",
+    "./templateValidation": "./src/templateValidation.ts"
   },
   "scripts": {
     "lint": "tsc --noEmit",

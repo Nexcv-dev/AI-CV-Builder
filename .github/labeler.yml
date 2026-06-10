@@ -2,29 +2,32 @@
 
 frontend:
   - changed-files:
-    - any-glob-to-any-file: 'Free CV Builder/src/**/*'
-    - all-globs-to-all-files: '!Free CV Builder/src/**/*.test.*'
-    - all-globs-to-all-files: '!Free CV Builder/src/**/*.spec.*'
+    - any-glob-to-any-file: 'apps/web/src/**/*'
+    - all-globs-to-all-files: '!apps/web/src/**/*.test.*'
+    - all-globs-to-all-files: '!apps/web/src/**/*.spec.*'
 
 backend:
   - changed-files:
-    - any-glob-to-any-file: 'Free CV Builder/server.ts'
+    - any-glob-to-any-file: 'apps/api/**/*.ts'
 
 tests:
   - changed-files:
     - any-glob-to-any-file: 
-      - 'Free CV Builder/tests/**/*'
-      - 'Free CV Builder/src/**/*.test.*'
-      - 'Free CV Builder/src/**/*.spec.*'
+      - 'apps/api/tests/**/*'
+      - 'apps/web/tests/**/*'
+      - 'apps/web/src/**/*.test.*'
+      - 'apps/web/src/**/*.spec.*'
 
 config:
   - changed-files:
     - any-glob-to-any-file:
-      - 'Free CV Builder/package.json'
-      - 'Free CV Builder/vite.config.ts'
-      - 'Free CV Builder/tsconfig.json'
-      - 'Free CV Builder/.env*'
-      - 'Free CV Builder/.gitignore'
+      - 'apps/web/package.json'
+      - 'apps/api/package.json'
+      - 'apps/web/vite.config.ts'
+      - 'apps/web/tsconfig.json'
+      - 'apps/api/tsconfig.json'
+      - '.env*'
+      - '.gitignore'
 
 documentation:
   - changed-files:
@@ -34,4 +37,4 @@ documentation:
 
 assets:
   - changed-files:
-    - any-glob-to-any-file: 'Free CV Builder/public/**/*'
+    - any-glob-to-any-file: 'apps/web/public/**/*'

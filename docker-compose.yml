@@ -1,16 +1,14 @@
 services:
   app:
     build:
-      context: "./Free CV Builder"
-      dockerfile: Dockerfile
+      context: "."
+      dockerfile: apps/web/Dockerfile
     ports:
       - "3000:3000"
       - "3002:3002"
     volumes:
-      - "./Free CV Builder:/app"
+      - ".:/app"
       - "/app/node_modules"
-    env_file:
-      - "./Free CV Builder/.env"
     environment:
       - NODE_ENV=development
       - PORT=3002

@@ -15,7 +15,149 @@ importers:
         specifier: ^2.5.0
         version: 2.9.16
 
-  Free CV Builder:
+  apps/api:
+    dependencies:
+      '@aws-sdk/client-lambda':
+        specifier: ^3.1058.0
+        version: 3.1064.0
+      '@aws-sdk/client-s3':
+        specifier: ^3.1055.0
+        version: 3.1064.0
+      '@aws-sdk/client-sqs':
+        specifier: ^3.1061.0
+        version: 3.1064.0
+      '@aws-sdk/client-textract':
+        specifier: ^3.1058.0
+        version: 3.1064.0
+      '@nexcv/api-contracts':
+        specifier: workspace:*
+        version: link:../../packages/api-contracts
+      '@nexcv/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@nexcv/templates':
+        specifier: workspace:*
+        version: link:../../packages/templates
+      '@react-email/components':
+        specifier: ^1.0.12
+        version: 1.0.12(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@react-email/render':
+        specifier: ^2.0.8
+        version: 2.0.8(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@sentry/node':
+        specifier: ^10.54.0
+        version: 10.57.0
+      '@sparticuz/chromium':
+        specifier: ^147.0.0
+        version: 147.0.2
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
+      connect-mongo:
+        specifier: ^6.0.0
+        version: 6.0.0(express-session@1.19.0)(mongodb@7.2.0(socks@2.8.9))
+      cors:
+        specifier: ^2.8.6
+        version: 2.8.6
+      dompurify:
+        specifier: ^3.4.7
+        version: 3.4.8
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
+      express:
+        specifier: ^4.22.2
+        version: 4.22.2
+      express-rate-limit:
+        specifier: ^8.5.2
+        version: 8.5.2(express@4.22.2)
+      express-session:
+        specifier: ^1.19.0
+        version: 1.19.0
+      helmet:
+        specifier: ^8.2.0
+        version: 8.2.0
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1
+      jsonwebtoken:
+        specifier: ^9.0.3
+        version: 9.0.3
+      mongodb:
+        specifier: ^7.2.0
+        version: 7.2.0(socks@2.8.9)
+      mongoose:
+        specifier: ^9.6.3
+        version: 9.6.3(socks@2.8.9)
+      nodemailer:
+        specifier: ^8.0.9
+        version: 8.0.10
+      passport:
+        specifier: ^0.7.0
+        version: 0.7.0
+      passport-google-oauth20:
+        specifier: ^2.0.0
+        version: 2.0.0
+      pdf-parse:
+        specifier: ^2.4.5
+        version: 2.4.5
+      puppeteer-core:
+        specifier: ^24.43.1
+        version: 24.43.1
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      tesseract.js:
+        specifier: ^7.0.0
+        version: 7.0.0
+    devDependencies:
+      '@types/bcryptjs':
+        specifier: ^2.4.6
+        version: 2.4.6
+      '@types/cors':
+        specifier: ^2.8.19
+        version: 2.8.19
+      '@types/dompurify':
+        specifier: ^3.0.5
+        version: 3.2.0
+      '@types/express':
+        specifier: ^4.17.25
+        version: 4.17.25
+      '@types/express-session':
+        specifier: ^1.19.0
+        version: 1.19.0
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
+      '@types/node':
+        specifier: ^22.19.17
+        version: 22.19.20
+      '@types/nodemailer':
+        specifier: ^8.0.0
+        version: 8.0.0
+      '@types/passport':
+        specifier: ^1.0.17
+        version: 1.0.17
+      '@types/passport-google-oauth20':
+        specifier: ^2.0.17
+        version: 2.0.17
+      '@types/react':
+        specifier: ^18.3.28
+        version: 18.3.31
+      '@vitest/coverage-v8':
+        specifier: ^4.1.7
+        version: 4.1.8(vitest@4.1.8)
+      tsx:
+        specifier: ^4.22.3
+        version: 4.22.4
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+      vitest:
+        specifier: ^4.1.7
+        version: 4.1.8(@opentelemetry/api@1.9.1)(@types/node@22.19.20)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(jsdom@29.1.1)(vite@6.4.3(@types/node@22.19.20)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))
+
+  apps/web:
     dependencies:
       '@aws-sdk/client-lambda':
         specifier: ^3.1058.0
@@ -40,13 +182,13 @@ importers:
         version: 3.2.2(react@18.3.1)
       '@nexcv/api-contracts':
         specifier: workspace:*
-        version: link:../packages/api-contracts
+        version: link:../../packages/api-contracts
       '@nexcv/shared':
         specifier: workspace:*
-        version: link:../packages/shared
+        version: link:../../packages/shared
       '@nexcv/templates':
         specifier: workspace:*
-        version: link:../packages/templates
+        version: link:../../packages/templates
       '@react-email/components':
         specifier: ^1.0.12
         version: 1.0.12(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -241,25 +383,25 @@ importers:
         specifier: ^4.1.7
         version: 4.1.8(@opentelemetry/api@1.9.1)(@types/node@22.19.20)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(jsdom@29.1.1)(vite@6.4.3(@types/node@22.19.20)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))
 
-  Free CV Builder/lambda-cv-import-worker:
+  apps/workers/cv-import-worker:
     dependencies:
       '@nexcv/shared':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../../packages/shared
 
-  Free CV Builder/lambda-email-worker:
+  apps/workers/email-worker:
     dependencies:
       '@nexcv/shared':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../../packages/shared
 
-  Free CV Builder/lambda-ocr: {}
+  apps/workers/ocr-lambda: {}
 
-  Free CV Builder/lambda-pdf-worker:
+  apps/workers/pdf-worker:
     dependencies:
       '@nexcv/shared':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../../packages/shared
 
   packages/api-contracts:
     dependencies:
