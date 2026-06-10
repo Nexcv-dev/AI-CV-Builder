@@ -25,9 +25,11 @@ const HTML_PDF_PAGE_PIXELS = {
 } as const;
 const MIN_HTML_PDF_SCALE = 0.1;
 const HTML_PDF_SINGLE_PAGE_FIT_MAX_PAGES = 2;
+const BROWSER_LAUNCH_MAX_ATTEMPTS = Math.max(1, Number(process.env.PDF_BROWSER_LAUNCH_ATTEMPTS || 3));
 
 let mongoClient: MongoClient | null = null;
 let s3Client: S3Client | null = null;
+let chromiumExecutablePathPromise: Promise<string> | null = null;
 
 const getMongoClient = async () => {
   if (!MONGODB_URI) throw new Error('MONGODB_URI is not configured.');
@@ -52,6 +54,44 @@ const getS3Client = () => {
 const getDatabase = async () => {
   const client = await getMongoClient();
   return client.db(process.env.MONGODB_DB_NAME || undefined);
+};
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getChromiumExecutablePath = () => {
+  if (!chromiumExecutablePathPromise) {
+    chromiumExecutablePathPromise = chromium.executablePath();
+  }
+  return chromiumExecutablePathPromise;
+};
+
+const isRetryableBrowserLaunchError = (error: any) => {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '');
+  return code === 'ETXTBSY' || message.includes('ETXTBSY') || message.includes('Text file busy');
+};
+
+const launchBrowser = async () => {
+  const launchOptions: any = {
+    args: chromium.args,
+    defaultViewport: (chromium as any).defaultViewport,
+    executablePath: await getChromiumExecutablePath(),
+    headless: (chromium as any).headless,
+    ignoreHTTPSErrors: true,
+  };
+  let lastError: any;
+  for (let attempt = 1; attempt <= BROWSER_LAUNCH_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await puppeteer.launch(launchOptions);
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableBrowserLaunchError(error) || attempt === BROWSER_LAUNCH_MAX_ATTEMPTS) throw error;
+      const delayMs = 250 * attempt;
+      console.warn(`Chromium launch failed with a transient file-busy error; retrying in ${delayMs}ms.`, error);
+      await wait(delayMs);
+    }
+  }
+  throw lastError;
 };
 
 const pdfWorkerMode = (): PdfQueueJobType => process.env.PDF_WORKER_MODE === 'html-pdf' ? 'html-pdf' : 'cv-pdf';
@@ -189,14 +229,7 @@ const calculateHtmlPdfAutoScale = ({
 };
 
 const renderHtmlToPdf = async (job: any) => {
-  const launchOptions: any = {
-    args: chromium.args,
-    defaultViewport: (chromium as any).defaultViewport,
-    executablePath: await chromium.executablePath(),
-    headless: (chromium as any).headless,
-    ignoreHTTPSErrors: true,
-  };
-  const browser = await puppeteer.launch(launchOptions);
+  const browser = await launchBrowser();
   let page: any = null;
   try {
     const pageSize = job.pageSize === 'Letter' ? 'Letter' : 'A4';

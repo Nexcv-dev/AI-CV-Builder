@@ -6,12 +6,13 @@ const require = createRequire(import.meta.url);
 const BARE_IMPORT = /^(?:@[^/]+\/[^/]+|[^./:@][^:]*)/;
 const BUILTIN_MODULES = new Set(builtinModules);
 
-export function createMonorepoResolvePlugin({ repoRoot, projectRoot }) {
+export function createMonorepoResolvePlugin({ repoRoot, projectRoot, externalPackages = [] }) {
   const roots = [
     projectRoot,
     path.join(repoRoot, 'apps', 'api'),
     repoRoot,
   ];
+  const externalPackageSet = new Set(externalPackages);
   const workspacePaths = new Map([
     ['@nexcv/shared', path.join(repoRoot, 'packages', 'shared', 'src', 'index.ts')],
     ['@nexcv/shared/queuePayloads', path.join(repoRoot, 'packages', 'shared', 'src', 'queuePayloads.ts')],
@@ -23,6 +24,7 @@ export function createMonorepoResolvePlugin({ repoRoot, projectRoot }) {
     setup(build) {
       build.onResolve({ filter: BARE_IMPORT }, (args) => {
         if (args.path.startsWith('node:') || BUILTIN_MODULES.has(args.path)) return null;
+        if (externalPackageSet.has(args.path)) return { path: args.path, external: true };
 
         const workspacePath = workspacePaths.get(args.path);
         if (workspacePath) return { path: workspacePath };

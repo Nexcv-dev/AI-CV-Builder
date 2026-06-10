@@ -107,7 +107,7 @@ const cleanExtractedText = (value: string, limit = 20_000) => value
   .slice(0, limit);
 
 const TESSERACT_LANG_PATH = path.resolve(process.cwd(), 'node_modules', '@tesseract.js-data', 'eng', '4.0.0');
-const OCR_LAMBDA_TIMEOUT_MS = Number(process.env.OCR_LAMBDA_TIMEOUT_MS || 45_000);
+const OCR_LAMBDA_TIMEOUT_MS = Number(process.env.OCR_LAMBDA_TIMEOUT_MS || 90_000);
 const OCR_LAMBDA_FUNCTION_NAME = process.env.OCR_LAMBDA_FUNCTION_NAME?.trim();
 const OCR_LAMBDA_REGION = process.env.OCR_LAMBDA_REGION?.trim();
 const OCR_LAMBDA_URL = process.env.OCR_LAMBDA_URL?.trim();

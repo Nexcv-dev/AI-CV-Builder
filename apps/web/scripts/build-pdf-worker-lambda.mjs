@@ -2,10 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import esbuild from 'esbuild';
 import { createMonorepoResolvePlugin } from './esbuild-monorepo-resolver.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
+const require = createRequire(import.meta.url);
 const projectRoot = path.resolve(path.dirname(__filename), '..');
 const repoRoot = path.resolve(projectRoot, '../..');
 const workerRoot = path.join(repoRoot, 'apps', 'workers', 'pdf-worker');
@@ -14,9 +16,6 @@ const moduleResolutionPaths = [
   path.join(repoRoot, 'apps', 'api', 'node_modules'),
   path.join(repoRoot, 'node_modules'),
 ];
-const dependencyRoot = fs.existsSync(path.join(projectRoot, 'node_modules', '@sparticuz'))
-  ? path.join(projectRoot, 'node_modules')
-  : path.join(repoRoot, 'node_modules');
 const buildDir = path.join(workerRoot, 'build');
 const distDir = path.join(workerRoot, 'dist');
 const zipPath = path.join(distDir, 'nexcv-pdf-worker.zip');
@@ -44,7 +43,7 @@ await esbuild.build({
   external: ['@sparticuz/chromium'],
   absWorkingDir: repoRoot,
   nodePaths: moduleResolutionPaths,
-  plugins: [createMonorepoResolvePlugin({ repoRoot, projectRoot })],
+  plugins: [createMonorepoResolvePlugin({ repoRoot, projectRoot, externalPackages: ['@sparticuz/chromium'] })],
   minify: true,
 });
 
@@ -60,35 +59,55 @@ fs.writeFileSync(path.join(buildDir, 'package.json'), JSON.stringify({
 
 function copyDir(src, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.cpSync(src, dest, { recursive: true, force: true });
+  fs.cpSync(src, dest, { recursive: true, force: true, dereference: true });
 }
 
-function copyDirIfExists(src, dest) {
-  if (fs.existsSync(src)) copyDir(src, dest);
+function resolvePackageDir(packageName) {
+  try {
+    return path.dirname(require.resolve(`${packageName}/package.json`, {
+      paths: moduleResolutionPaths,
+    }));
+  } catch {
+    try {
+      let current = path.dirname(require.resolve(packageName, {
+        paths: moduleResolutionPaths,
+      }));
+      while (current && current !== path.dirname(current)) {
+        const packageJsonPath = path.join(current, 'package.json');
+        if (fs.existsSync(packageJsonPath)) {
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          if (packageJson.name === packageName) return fs.realpathSync(current);
+        }
+        current = path.dirname(current);
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
 }
 
-copyDir(path.join(dependencyRoot, '@sparticuz'), path.join(buildDir, 'node_modules', '@sparticuz'));
-[
-  'follow-redirects',
-  'tar-fs',
-  'tar-stream',
-  'pump',
-  'end-of-stream',
-  'once',
-  'wrappy',
-  'streamx',
-  'events-universal',
-  'fast-fifo',
-  'text-decoder',
-  'bare-events',
-  'bare-fs',
-  'bare-os',
-  'bare-path',
-  'bare-stream',
-  'bare-url',
-].forEach((name) => {
-  copyDirIfExists(path.join(dependencyRoot, name), path.join(buildDir, 'node_modules', name));
-});
+function copyPackageAndDependencies(packageName, seen = new Set()) {
+  if (seen.has(packageName)) return;
+  seen.add(packageName);
+
+  const packageDir = resolvePackageDir(packageName);
+  if (!packageDir) return;
+
+  const packageJsonPath = path.join(packageDir, 'package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const dest = path.join(buildDir, 'node_modules', ...packageName.split('/'));
+  copyDir(packageDir, dest);
+
+  for (const dependencyName of Object.keys({
+    ...(packageJson.dependencies || {}),
+    ...(packageJson.optionalDependencies || {}),
+  })) {
+    copyPackageAndDependencies(dependencyName, seen);
+  }
+}
+
+copyPackageAndDependencies('@sparticuz/chromium');
 
 if (fs.existsSync(zipPath)) fs.rmSync(zipPath, { force: true });
 if (process.platform === 'win32') {

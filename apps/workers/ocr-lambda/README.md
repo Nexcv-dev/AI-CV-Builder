@@ -6,7 +6,7 @@ Deploy `dist/nexcv-ocr-lambda.zip` to AWS Lambda with:
 - Handler: `handler.handler`
 - Architecture: x86_64
 - Memory: 512 MB or higher
-- Timeout: 60 seconds or higher
+- Timeout: 90 seconds or higher
 
 Environment variables:
 

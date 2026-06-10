@@ -18,6 +18,8 @@ const OCR_AI_PARSE_ENABLED = process.env.OCR_AI_PARSE_ENABLED !== 'false';
 const OCR_AI_TIMEOUT_MS = Number(process.env.OCR_AI_TIMEOUT_MS || 30_000);
 const OCR_AI_MODEL = process.env.OCR_AI_MODEL || 'gemini-flash-latest';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
+const LAMBDA_SHUTDOWN_BUFFER_MS = 2_500;
+const OCR_AI_MIN_REMAINING_MS = 5_000;
 
 const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
@@ -184,6 +186,18 @@ const tempKeyFor = (mimeType: string) => {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const remainingTimeMs = (context: any) => (
+  typeof context?.getRemainingTimeInMillis === 'function'
+    ? context.getRemainingTimeInMillis()
+    : Number.POSITIVE_INFINITY
+);
+
+const boundedTimeout = (configuredMs: number, context: any, reserveMs = LAMBDA_SHUTDOWN_BUFFER_MS) => {
+  const remaining = remainingTimeMs(context);
+  if (!Number.isFinite(remaining)) return configuredMs;
+  return Math.max(1_000, Math.min(configuredMs, remaining - reserveMs));
+};
+
 const lineTextFromBlocks = (blocks: Block[] = []) => blocks
   .filter((block) => block.BlockType === 'LINE' && typeof block.Text === 'string')
   .sort((a, b) => {
@@ -197,13 +211,13 @@ const lineTextFromBlocks = (blocks: Block[] = []) => blocks
   .filter(Boolean)
   .join('\n');
 
-const collectTextractText = async (jobId: string) => {
+const collectTextractText = async (jobId: string, timeoutMs = OCR_TEXTRACT_TIMEOUT_MS) => {
   const startedAt = Date.now();
   let nextToken: string | undefined;
   const blocks: Block[] = [];
   let status = 'IN_PROGRESS';
 
-  while (Date.now() - startedAt < OCR_TEXTRACT_TIMEOUT_MS) {
+  while (Date.now() - startedAt < timeoutMs) {
     const response = await textractClient.send(new GetDocumentTextDetectionCommand({
       JobId: jobId,
       NextToken: nextToken,
@@ -236,7 +250,7 @@ const collectTextractText = async (jobId: string) => {
   throw new Error(`Textract job timed out while status was ${status}`);
 };
 
-const extractWithTextract = async (bucket: string, key: string) => {
+const extractWithTextract = async (bucket: string, key: string, timeoutMs = OCR_TEXTRACT_TIMEOUT_MS) => {
   const start = await textractClient.send(new StartDocumentTextDetectionCommand({
     DocumentLocation: {
       S3Object: { Bucket: bucket, Name: key },
@@ -244,14 +258,14 @@ const extractWithTextract = async (bucket: string, key: string) => {
   }));
 
   if (!start.JobId) throw new Error('Textract did not return a JobId');
-  return collectTextractText(start.JobId);
+  return collectTextractText(start.JobId, timeoutMs);
 };
 
-const parseCvWithAi = async (text: string) => {
+const parseCvWithAi = async (text: string, timeoutMs = OCR_AI_TIMEOUT_MS) => {
   if (!OCR_AI_PARSE_ENABLED || !GEMINI_API_KEY || text.trim().length < 20) return null;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), OCR_AI_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const prompt = `Extract structured data from this CV/resume OCR text.
@@ -310,7 +324,7 @@ ${text.slice(0, 24_000)}`;
   }
 };
 
-export async function handler(event: any) {
+export async function handler(event: any, context?: any) {
   let objectKey = '';
 
   try {
@@ -343,15 +357,25 @@ export async function handler(event: any) {
       ServerSideEncryption: 'AES256',
     }));
 
-    const text = await extractWithTextract(OCR_DOCUMENT_BUCKET, objectKey);
+    const textractTimeoutMs = boundedTimeout(
+      OCR_TEXTRACT_TIMEOUT_MS,
+      context,
+      LAMBDA_SHUTDOWN_BUFFER_MS + OCR_AI_MIN_REMAINING_MS
+    );
+    const text = await extractWithTextract(OCR_DOCUMENT_BUCKET, objectKey, textractTimeoutMs);
     let parsedCv = null;
     let structuredError = '';
 
-    try {
-      parsedCv = await parseCvWithAi(text);
-    } catch (error: any) {
-      structuredError = error?.message || 'AI structured parsing failed';
-      console.warn('OCR Lambda structured parse warning:', error);
+    const aiTimeoutMs = boundedTimeout(OCR_AI_TIMEOUT_MS, context);
+    if (remainingTimeMs(context) > OCR_AI_MIN_REMAINING_MS && aiTimeoutMs >= 1_000) {
+      try {
+        parsedCv = await parseCvWithAi(text, aiTimeoutMs);
+      } catch (error: any) {
+        structuredError = error?.message || 'AI structured parsing failed';
+        console.warn('OCR Lambda structured parse warning:', error);
+      }
+    } else if (OCR_AI_PARSE_ENABLED && GEMINI_API_KEY) {
+      structuredError = 'Skipped AI structured parsing because the OCR Lambda was near its timeout';
     }
 
     return jsonResponse(200, {

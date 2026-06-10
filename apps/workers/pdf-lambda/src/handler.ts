@@ -118,9 +118,11 @@ const CV_GOOGLE_FONTS_URL =
 const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
 const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\/+|\/+$/g, '');
 const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 0);
+const BROWSER_LAUNCH_MAX_ATTEMPTS = Math.max(1, Number(process.env.PDF_BROWSER_LAUNCH_ATTEMPTS || 3));
 let s3Client: S3Client | null = null;
 const s3TemplateCache = new Map<string, { html: string; expiresAt: number }>();
 let lastS3TemplateDebug = 'not-attempted';
+let chromiumExecutablePathPromise: Promise<string> | null = null;
 
 const getS3Client = () => {
   if (!S3_TEMPLATE_BUCKET) return null;
@@ -130,6 +132,21 @@ const getS3Client = () => {
     });
   }
   return s3Client;
+};
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getChromiumExecutablePath = () => {
+  if (!chromiumExecutablePathPromise) {
+    chromiumExecutablePathPromise = chromium.executablePath();
+  }
+  return chromiumExecutablePathPromise;
+};
+
+const isRetryableBrowserLaunchError = (error: any) => {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '');
+  return code === 'ETXTBSY' || message.includes('ETXTBSY') || message.includes('Text file busy');
 };
 
 const streamToString = async (stream: any): Promise<string> => {
@@ -1668,11 +1685,23 @@ async function launchBrowser() {
   const launchOptions: any = {
     args: chromium.args,
     defaultViewport: (chromium as any).defaultViewport,
-    executablePath: await chromium.executablePath(),
+    executablePath: await getChromiumExecutablePath(),
     headless: (chromium as any).headless,
     ignoreHTTPSErrors: true,
   };
-  return puppeteer.launch(launchOptions);
+  let lastError: any;
+  for (let attempt = 1; attempt <= BROWSER_LAUNCH_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await puppeteer.launch(launchOptions);
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableBrowserLaunchError(error) || attempt === BROWSER_LAUNCH_MAX_ATTEMPTS) throw error;
+      const delayMs = 250 * attempt;
+      console.warn(`Chromium launch failed with a transient file-busy error; retrying in ${delayMs}ms.`, error);
+      await wait(delayMs);
+    }
+  }
+  throw lastError;
 }
 
 async function renderPdf(cvData: any, template: unknown, watermark: boolean) {

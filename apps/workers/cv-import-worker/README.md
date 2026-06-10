@@ -17,7 +17,7 @@ MONGODB_URI=your_mongodb_connection_string
 GEMINI_API_KEY=your_gemini_api_key
 OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
 OCR_LAMBDA_REGION=eu-central-1
-OCR_LAMBDA_TIMEOUT_MS=45000
+OCR_LAMBDA_TIMEOUT_MS=90000
 ```
 
 Optional:
