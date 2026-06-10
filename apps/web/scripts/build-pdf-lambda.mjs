@@ -2,11 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import ts from 'typescript';
 import esbuild from 'esbuild';
 import { createMonorepoResolvePlugin } from './esbuild-monorepo-resolver.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
+const require = createRequire(import.meta.url);
 const projectRoot = path.resolve(path.dirname(__filename), '..');
 const repoRoot = path.resolve(projectRoot, '../..');
 const pdfServicePath = path.join(repoRoot, 'apps', 'api', 'services', 'pdfService.ts');
@@ -19,9 +21,6 @@ const moduleResolutionPaths = [
   path.join(repoRoot, 'apps', 'api', 'node_modules'),
   path.join(repoRoot, 'node_modules'),
 ];
-const dependencyRoot = fs.existsSync(path.join(projectRoot, 'node_modules', '@sparticuz'))
-  ? path.join(projectRoot, 'node_modules')
-  : path.join(repoRoot, 'node_modules');
 const buildDir = path.join(outRoot, 'build');
 const distDir = path.join(outRoot, 'dist');
 const srcDir = path.join(outRoot, 'src');
@@ -152,11 +151,52 @@ function extractConstObject(source, constName) {
 
 function copyDir(src, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.cpSync(src, dest, { recursive: true, force: true });
+  fs.cpSync(src, dest, { recursive: true, force: true, dereference: true });
 }
 
-function copyDirIfExists(src, dest) {
-  if (fs.existsSync(src)) copyDir(src, dest);
+function resolvePackageDir(packageName) {
+  try {
+    return path.dirname(require.resolve(`${packageName}/package.json`, {
+      paths: moduleResolutionPaths,
+    }));
+  } catch {
+    try {
+      let current = path.dirname(require.resolve(packageName, {
+        paths: moduleResolutionPaths,
+      }));
+      while (current && current !== path.dirname(current)) {
+        const packageJsonPath = path.join(current, 'package.json');
+        if (fs.existsSync(packageJsonPath)) {
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          if (packageJson.name === packageName) return fs.realpathSync(current);
+        }
+        current = path.dirname(current);
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+}
+
+function copyPackageAndDependencies(packageName, seen = new Set()) {
+  if (seen.has(packageName)) return;
+  seen.add(packageName);
+
+  const packageDir = resolvePackageDir(packageName);
+  if (!packageDir) return;
+
+  const packageJsonPath = path.join(packageDir, 'package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const dest = path.join(buildDir, 'node_modules', ...packageName.split('/'));
+  copyDir(packageDir, dest);
+
+  for (const dependencyName of Object.keys({
+    ...(packageJson.dependencies || {}),
+    ...(packageJson.optionalDependencies || {}),
+  })) {
+    copyPackageAndDependencies(dependencyName, seen);
+  }
 }
 
 const pdfServiceSource = fs.readFileSync(pdfServicePath, 'utf8');
@@ -269,9 +309,11 @@ ${cvFontsTs}
 const S3_TEMPLATE_BUCKET = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
 const S3_TEMPLATE_PREFIX = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\\/+|\\/+$/g, '');
 const S3_TEMPLATE_CACHE_TTL_MS = Number(process.env.S3_TEMPLATE_CACHE_TTL_MS || 0);
+const BROWSER_LAUNCH_MAX_ATTEMPTS = Math.max(1, Number(process.env.PDF_BROWSER_LAUNCH_ATTEMPTS || 3));
 let s3Client: S3Client | null = null;
 const s3TemplateCache = new Map<string, { html: string; expiresAt: number }>();
 let lastS3TemplateDebug = 'not-attempted';
+let chromiumExecutablePathPromise: Promise<string> | null = null;
 
 const getS3Client = () => {
   if (!S3_TEMPLATE_BUCKET) return null;
@@ -281,6 +323,21 @@ const getS3Client = () => {
     });
   }
   return s3Client;
+};
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getChromiumExecutablePath = () => {
+  if (!chromiumExecutablePathPromise) {
+    chromiumExecutablePathPromise = chromium.executablePath();
+  }
+  return chromiumExecutablePathPromise;
+};
+
+const isRetryableBrowserLaunchError = (error: any) => {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '');
+  return code === 'ETXTBSY' || message.includes('ETXTBSY') || message.includes('Text file busy');
 };
 
 const streamToString = async (stream: any): Promise<string> => {
@@ -478,11 +535,23 @@ async function launchBrowser() {
   const launchOptions: any = {
     args: chromium.args,
     defaultViewport: (chromium as any).defaultViewport,
-    executablePath: await chromium.executablePath(),
+    executablePath: await getChromiumExecutablePath(),
     headless: (chromium as any).headless,
     ignoreHTTPSErrors: true,
   };
-  return puppeteer.launch(launchOptions);
+  let lastError: any;
+  for (let attempt = 1; attempt <= BROWSER_LAUNCH_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await puppeteer.launch(launchOptions);
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableBrowserLaunchError(error) || attempt === BROWSER_LAUNCH_MAX_ATTEMPTS) throw error;
+      const delayMs = 250 * attempt;
+      console.warn(\`Chromium launch failed with a transient file-busy error; retrying in \${delayMs}ms.\`, error);
+      await wait(delayMs);
+    }
+  }
+  throw lastError;
 }
 
 async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
@@ -613,7 +682,7 @@ fs.writeFileSync(path.join(outRoot, 'README.md'), `# NexCV PDF Lambda
 
 Deploy \`dist/nexcv-pdf-lambda.zip\` to AWS Lambda with:
 
-- Runtime: Node.js 20.x
+- Runtime: Node.js 22.x
 - Handler: \`handler.handler\`
 - Architecture: x86_64
 - Memory: 1024 MB or higher
@@ -665,7 +734,7 @@ await esbuild.build({
   external: ['@sparticuz/chromium'],
   absWorkingDir: repoRoot,
   nodePaths: moduleResolutionPaths,
-  plugins: [createMonorepoResolvePlugin({ repoRoot, projectRoot })],
+  plugins: [createMonorepoResolvePlugin({ repoRoot, projectRoot, externalPackages: ['@sparticuz/chromium'] })],
   minify: true,
 });
 
@@ -679,28 +748,7 @@ fs.writeFileSync(path.join(buildDir, 'package.json'), JSON.stringify({
   },
 }, null, 2), 'utf8');
 
-copyDir(path.join(dependencyRoot, '@sparticuz'), path.join(buildDir, 'node_modules', '@sparticuz'));
-[
-  'follow-redirects',
-  'tar-fs',
-  'tar-stream',
-  'pump',
-  'end-of-stream',
-  'once',
-  'wrappy',
-  'streamx',
-  'events-universal',
-  'fast-fifo',
-  'text-decoder',
-  'bare-events',
-  'bare-fs',
-  'bare-os',
-  'bare-path',
-  'bare-stream',
-  'bare-url',
-].forEach((name) => {
-  copyDirIfExists(path.join(dependencyRoot, name), path.join(buildDir, 'node_modules', name));
-});
+copyPackageAndDependencies('@sparticuz/chromium');
 
 if (fs.existsSync(zipPath)) fs.rmSync(zipPath, { force: true });
 if (process.platform === 'win32') {

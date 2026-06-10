@@ -2,7 +2,7 @@
 
 Deploy `dist/nexcv-pdf-lambda.zip` to AWS Lambda with:
 
-- Runtime: Node.js 20.x
+- Runtime: Node.js 22.x
 - Handler: `handler.handler`
 - Architecture: x86_64
 - Memory: 1024 MB or higher

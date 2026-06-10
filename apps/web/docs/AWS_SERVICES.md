@@ -73,7 +73,7 @@ EMAIL_QUEUE_REGION=eu-north-1
 
 OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
 OCR_LAMBDA_REGION=eu-central-1
-OCR_LAMBDA_TIMEOUT_MS=45000
+OCR_LAMBDA_TIMEOUT_MS=90000
 
 PDF_LAMBDA_URL=https://your-pdf-renderer-lambda-url
 PDF_LAMBDA_TIMEOUT_MS=45000
@@ -225,7 +225,7 @@ MONGODB_URI=your_mongodb_uri
 GEMINI_API_KEY=your_gemini_key
 OCR_LAMBDA_FUNCTION_NAME=OCR_data_Extract
 OCR_LAMBDA_REGION=eu-central-1
-OCR_LAMBDA_TIMEOUT_MS=45000
+OCR_LAMBDA_TIMEOUT_MS=90000
 ```
 
 SQS trigger:
@@ -290,7 +290,7 @@ Region: eu-central-1
 Runtime: Node.js 20.x
 Handler: handler.handler
 Memory: 512 MB minimum
-Timeout: 60 seconds or higher
+Timeout: 90 seconds or higher
 ZIP: apps/workers/ocr-lambda/dist/nexcv-ocr-lambda.zip
 ```
 
