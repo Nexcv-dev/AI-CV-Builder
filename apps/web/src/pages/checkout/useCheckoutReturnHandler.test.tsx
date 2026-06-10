@@ -33,20 +33,25 @@ const paidUser: AuthUser = {
   id: 'user-1',
   email: 'user@example.com',
   displayName: 'Paid User',
+  role: 'user',
   plan: 'monthly',
   emailVerified: true,
+  authProvider: 'email',
 };
+
+type NavigateFn = (to: string, options?: { replace?: boolean }) => void;
+type SetSearchParamsFn = (nextInit: Record<string, string>, navigateOptions?: { replace?: boolean }) => void;
 
 function HookHarness({
   couponCode = '',
-  navigate = vi.fn(),
+  navigate = vi.fn<NavigateFn>(),
   search = '?plan=monthly&payment=return&order=order-1',
-  setSearchParams = vi.fn(),
+  setSearchParams = vi.fn<SetSearchParamsFn>(),
 }: {
   couponCode?: string;
-  navigate?: ReturnType<typeof vi.fn>;
+  navigate?: NavigateFn;
   search?: string;
-  setSearchParams?: ReturnType<typeof vi.fn>;
+  setSearchParams?: SetSearchParamsFn;
 }) {
   const checkoutInFlightRef = useRef(true);
   const confirmingReturnRef = useRef<string | null>(null);
