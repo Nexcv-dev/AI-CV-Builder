@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": [
+    "server.ts",
+    "routes/**/*.ts",
+    "services/**/*.ts",
+    "services/**/*.tsx",
+    "server-models/**/*.ts",
+    "server-utils/**/*.ts",
+    "middlewares/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": ["dist", "node_modules"]
+}

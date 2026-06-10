@@ -6,7 +6,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
+    "./contentDefaults": "./src/contentDefaults.ts",
     "./domain": "./src/domain.ts",
+    "./emailTemplateDefaults": "./src/emailTemplateDefaults.ts",
+    "./seo": "./src/seo.ts",
     "./queuePayloads": "./src/queuePayloads.ts"
   },
   "scripts": {

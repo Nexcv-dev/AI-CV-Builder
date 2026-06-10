@@ -3,8 +3,8 @@ services:
     name: free-ai-cv-builder
     env: node
     rootDir: "."
-    buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm --filter @nexcv/main build
-    startCommand: corepack pnpm --filter @nexcv/main start
+    buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm --filter @nexcv/web build
+    startCommand: corepack pnpm --filter @nexcv/api start
     healthCheckPath: /api/ready
     maxShutdownDelaySeconds: 60
     envVars:

@@ -4,10 +4,10 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "turbo run dev",
-    "dev:all": "turbo run dev:all --filter=@nexcv/main",
-    "server": "turbo run server --filter=@nexcv/main",
+    "dev:all": "turbo run dev --filter=@nexcv/api --filter=@nexcv/web",
+    "server": "turbo run server --filter=@nexcv/api",
     "build": "turbo run build",
-    "build:pdf-lambda": "turbo run build:pdf-lambda --filter=@nexcv/main",
+    "build:pdf-lambda": "turbo run build:pdf-lambda --filter=@nexcv/web",
     "build:pdf-worker-lambda": "turbo run build:lambda --filter=@nexcv/pdf-worker",
     "build:cv-import-worker-lambda": "turbo run build:lambda --filter=@nexcv/cv-import-worker",
     "build:email-worker-lambda": "turbo run build:lambda --filter=@nexcv/email-worker",
@@ -16,9 +16,14 @@
     "lint": "turbo run lint",
     "test": "turbo run test:run",
     "test:run": "turbo run test:run",
-    "launch:check": "turbo run launch:check --filter=@nexcv/main",
-    "validate:templates": "turbo run validate:templates --filter=@nexcv/main",
-    "validate:template-map": "turbo run validate:template-map --filter=@nexcv/main"
+    "launch:check": "turbo run launch:check --filter=@nexcv/web",
+    "validate:templates": "turbo run validate:templates --filter=@nexcv/web",
+    "validate:template-map": "turbo run validate:template-map --filter=@nexcv/web",
+    "templates:release": "turbo run templates:release --filter=@nexcv/web",
+    "templates:release:dry-run": "turbo run templates:release:dry-run --filter=@nexcv/web",
+    "templates:thumbnails": "turbo run templates:thumbnails --filter=@nexcv/web",
+    "templates:verify-s3": "turbo run templates:verify-s3 --filter=@nexcv/web",
+    "templates:sync-thumbnails": "turbo run templates:sync-thumbnails --filter=@nexcv/web"
   },
   "devDependencies": {
     "pnpm": "9.15.0",

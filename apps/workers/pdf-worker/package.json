@@ -1,0 +1,12 @@
+{
+  "name": "@nexcv/pdf-worker",
+  "private": true,
+  "version": "0.1.11",
+  "type": "module",
+  "dependencies": {
+    "@nexcv/shared": "workspace:*"
+  },
+  "scripts": {
+    "build:lambda": "node ../../web/scripts/build-pdf-worker-lambda.mjs"
+  }
+}

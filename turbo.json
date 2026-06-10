@@ -9,7 +9,7 @@
       "outputs": ["dist/*.zip"]
     },
     "build:pdf-lambda": {
-      "outputs": ["lambda-pdf/dist/*.zip"]
+      "outputs": ["../workers/pdf-lambda/dist/*.zip"]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -22,6 +22,22 @@
       "cache": false
     },
     "validate:template-map": {
+      "cache": false
+    },
+    "templates:release": {
+      "cache": false
+    },
+    "templates:release:dry-run": {
+      "cache": false
+    },
+    "templates:thumbnails": {
+      "cache": false,
+      "outputs": ["apps/web/public/templates/*.webp", "Admin Templates/**/thumbnail.webp"]
+    },
+    "templates:verify-s3": {
+      "cache": false
+    },
+    "templates:sync-thumbnails": {
       "cache": false
     },
     "dev": {
