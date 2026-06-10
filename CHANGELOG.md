@@ -3,26 +3,29 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #249 from Nexcv-dev/test/overview (d5f9c0b) - Bimantha Perera, 10 seconds ago
-* fix github action workflow node version warning (9f92bbc) - Bimantha Perera, 16 minutes ago
-* fix docker image build issue in pipeline (c9e0b3d) - Bimantha Perera, 26 minutes ago
-* update docs (ca5010e) - Bimantha Perera, 36 minutes ago
-* update docs (97c3fc2) - Bimantha Perera, 2 hours ago
-* isolate admin code (7cb898d) - Bimantha Perera, 2 hours ago
-* clean code architecture (4083ab1) - Bimantha Perera, 2 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (e9e6145) - bimanthaperera-lab, 14 hours ago
-* Merge pull request #248 from Nexcv-dev/test/overview (9f06d1f) - Bimantha Perera, 14 hours ago
-* Merge remote-tracking branch 'origin/main' into test/overview (e5e8a50) - Bimantha Perera, 14 hours ago
-* Merge branch 'test/overview' of https://github.com/Nexcv-dev/AI-CV-Builder into test/overview (e55458b) - Bimantha Perera, 14 hours ago
-* monorepo migration (45b39b7) - Bimantha Perera, 14 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (12247d6) - bimanthaperera-lab, 21 hours ago
-* Merge pull request #247 from Nexcv-dev/test/overview (28aebad) - Bimantha Perera, 21 hours ago
-* fix image upload error (d657c2e) - Bimantha Perera, 21 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (8ea3d81) - bimanthaperera-lab, 26 hours ago
-* Merge pull request #246 from Nexcv-dev/test/overview (4904a0d) - Bimantha Perera, 26 hours ago
-* chore: bump version to 0.1.13 (80db3ab) - bimanthaperera-lab, 26 hours ago
-* improve html to pdf UI / UX with scan animation (f44b0d0) - Bimantha Perera, 27 hours ago
-* improve upgrade popup logic and UI (9b85f5f) - Bimantha Perera, 27 hours ago
+* Merge pull request #252 from Nexcv-dev/test/overview (fca69f2) - Bimantha Perera, 8 seconds ago
+* fix pdf generation issue (76b2f7b) - Bimantha Perera, 39 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (2d582ad) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #249 from Nexcv-dev/test/overview (d5f9c0b) - Bimantha Perera, 4 hours ago
+* fix github action workflow node version warning (9f92bbc) - Bimantha Perera, 4 hours ago
+* fix docker image build issue in pipeline (c9e0b3d) - Bimantha Perera, 4 hours ago
+* update docs (ca5010e) - Bimantha Perera, 4 hours ago
+* update docs (97c3fc2) - Bimantha Perera, 5 hours ago
+* isolate admin code (7cb898d) - Bimantha Perera, 5 hours ago
+* clean code architecture (4083ab1) - Bimantha Perera, 6 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (e9e6145) - bimanthaperera-lab, 17 hours ago
+* Merge pull request #248 from Nexcv-dev/test/overview (9f06d1f) - Bimantha Perera, 17 hours ago
+* Merge remote-tracking branch 'origin/main' into test/overview (e5e8a50) - Bimantha Perera, 17 hours ago
+* Merge branch 'test/overview' of https://github.com/Nexcv-dev/AI-CV-Builder into test/overview (e55458b) - Bimantha Perera, 18 hours ago
+* monorepo migration (45b39b7) - Bimantha Perera, 18 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (12247d6) - bimanthaperera-lab, 25 hours ago
+* Merge pull request #247 from Nexcv-dev/test/overview (28aebad) - Bimantha Perera, 25 hours ago
+* fix image upload error (d657c2e) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (8ea3d81) - bimanthaperera-lab, 30 hours ago
+* Merge pull request #246 from Nexcv-dev/test/overview (4904a0d) - Bimantha Perera, 30 hours ago
+* chore: bump version to 0.1.13 (80db3ab) - bimanthaperera-lab, 30 hours ago
+* improve html to pdf UI / UX with scan animation (f44b0d0) - Bimantha Perera, 31 hours ago
+* improve upgrade popup logic and UI (9b85f5f) - Bimantha Perera, 31 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (71ea8a1) - bimanthaperera-lab, 2 days ago
 * Merge pull request #243 from Nexcv-dev/test/overview (e69b7d8) - Bimantha Perera, 2 days ago
 * improve UI of html to pdf page (4d8801e) - Bimantha Perera, 2 days ago
