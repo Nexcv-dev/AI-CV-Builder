@@ -78,7 +78,7 @@ jobs:
         working-directory: '.'
         run: |
           aws s3 rm s3://cv-template-bucket/lambda/nexcv-pdf-lambda.zip || true
-          aws s3 cp "Free CV Builder/lambda-pdf/dist/nexcv-pdf-lambda.zip" s3://cv-template-bucket/lambda/nexcv-pdf-lambda.zip
+          aws s3 cp "apps/workers/pdf-lambda/dist/nexcv-pdf-lambda.zip" s3://cv-template-bucket/lambda/nexcv-pdf-lambda.zip
 
       - name: Update PDF Lambda function
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
@@ -91,7 +91,7 @@ jobs:
       - name: Build Docker image
         run: |
           for attempt in 1 2 3; do
-            if docker build -f "Free CV Builder/Dockerfile" -t ai-cv-builder:latest .; then
+            if docker build -f apps/web/Dockerfile -t ai-cv-builder:latest .; then
               exit 0
             fi
             if [ "$attempt" -eq 3 ]; then
