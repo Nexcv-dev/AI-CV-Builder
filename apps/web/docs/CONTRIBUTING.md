@@ -75,6 +75,19 @@ corepack pnpm build:pdf-worker-lambda
 corepack pnpm build:cv-import-worker-lambda
 corepack pnpm build:ocr-lambda
 corepack pnpm build:email-worker-lambda
+corepack pnpm validate:lambda-artifacts
+```
+
+Worker/Lambda tests:
+
+```bash
+corepack pnpm test:run --filter @nexcv/pdf-lambda --filter @nexcv/email-worker --filter @nexcv/cv-import-worker --filter @nexcv/ocr-lambda
+```
+
+Focused app/API tests:
+
+```bash
+corepack pnpm test:run --filter @nexcv/api --filter @nexcv/web
 ```
 
 Use `corepack pnpm launch:check` before release-oriented changes. It runs lint, tests, build, and template validation.
@@ -139,6 +152,8 @@ corepack pnpm lint
 corepack pnpm test:run
 ```
 
+When touching queue enqueue services, auth/security helpers, or reliability utilities, add or update focused tests under `apps/api/services/` or `apps/api/server-utils/`. Cover configuration aliases, missing environment variables, rejected inputs, and downstream dependency calls.
+
 ## CV Import, OCR, And PDF Jobs
 
 CV import and PDF generation can run through queues:
@@ -152,6 +167,10 @@ When touching these flows, verify:
 
 - Guest import does not start before login.
 - Authenticated import works with a readable PDF or LinkedIn PDF.
+- Worker unit tests pass for the touched Lambda package, especially payload validation, missing environment variables, and downstream dependency calls.
+- Lambda ZIP artifacts validate after build so missing downloads, empty ZIPs, or missing `handler.js` files are caught before deploy.
+- PDF job service tests cover ready downloads, not-ready responses, unstreamable S3 bodies, Lambda generation failures, S3 upload failures, and quota rollback.
+- PDF Lambda handler tests cover warmup, invalid payloads, successful base64 PDF responses, and Chromium rendering errors.
 - Unclear/empty import files show a friendly retry message.
 - Jobs move through expected statuses and clear large payloads.
 - Queue worker env vars, regions, IAM permissions, and DLQs are documented.
@@ -163,6 +182,10 @@ Billing changes are high-risk. Read [Billing And Plans](BILLING.md), [Deployment
 When touching PayHere or Lemon Squeezy:
 
 - Do not activate paid plans from browser-submitted payment data.
+- Keep checkout utility tests current for amount formatting, plan fallback behavior, and PayHere form submission fields.
+- Keep builder download trigger tests current so the browser link click, filename, iOS target behavior, and blob URL cleanup stay verified.
+- Keep payment helper tests current for gateway signatures, country-to-provider routing, coupon-vs-promotion pricing, and invalid coupon windows.
+- Keep checkout return handler tests current for paid return confirmation, user refresh, cancellation cleanup, and URL reset behavior.
 - Keep webhook/IPN signature checks strict.
 - Preserve idempotency for duplicate IPNs/webhooks.
 - Keep PayHere LKR and Lemon Squeezy USD amounts/currencies separate.

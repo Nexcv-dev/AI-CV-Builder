@@ -106,16 +106,31 @@ corepack pnpm templates:verify-s3
 For PDF Lambda changes:
 
 ```powershell
+corepack pnpm test:run --filter @nexcv/pdf-lambda
 corepack pnpm build:pdf-lambda
+corepack pnpm validate:lambda-artifacts
 ```
+
+For API queue, auth/security, billing, or checkout changes:
+
+```powershell
+corepack pnpm test:run --filter @nexcv/api --filter @nexcv/web
+```
+
+For payment path changes, include PayHere/Lemon Squeezy helper coverage for signatures, amount/currency validation, market routing, coupon math, return confirmation, and cancellation cleanup.
+
+For PDF download runtime changes, include API tests that cover failed generation, failed S3 upload, not-ready jobs, and invalid S3 download bodies.
+For builder download UI changes, include web tests that verify the browser download link is created, clicked, and cleaned up.
 
 For worker changes:
 
 ```powershell
+corepack pnpm test:run --filter @nexcv/pdf-lambda --filter @nexcv/email-worker --filter @nexcv/cv-import-worker --filter @nexcv/ocr-lambda
 corepack pnpm build:pdf-worker-lambda
 corepack pnpm build:cv-import-worker-lambda
 corepack pnpm build:email-worker-lambda
 corepack pnpm build:ocr-lambda
+corepack pnpm validate:lambda-artifacts
 ```
 
 ## QA Sign-Off Template

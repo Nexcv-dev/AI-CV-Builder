@@ -11,6 +11,7 @@
     "build:cv-import-worker-lambda": "pnpm --filter @nexcv/cv-import-worker build:lambda",
     "build:email-worker-lambda": "pnpm --filter @nexcv/email-worker build:lambda",
     "build:ocr-lambda": "pnpm --filter @nexcv/ocr-lambda build:lambda",
+    "validate:lambda-artifacts": "node scripts/validate-lambda-artifacts.mjs",
     "templates:release": "pnpm run validate:template-map && pnpm run validate:templates && node scripts/release-admin-templates.mjs",
     "templates:release:dry-run": "pnpm run validate:template-map && pnpm run validate:templates && node scripts/release-admin-templates.mjs --dry-run",
     "templates:verify-s3": "node scripts/verify-s3-template-assets.mjs",

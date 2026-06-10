@@ -201,6 +201,8 @@ corepack pnpm --filter @nexcv/web dev                # Run Vite frontend only
 corepack pnpm --filter @nexcv/api server             # Run Express backend only
 corepack pnpm lint                                   # TypeScript compile check
 corepack pnpm test:run                               # Run Vitest once
+corepack pnpm test:run --filter @nexcv/api --filter @nexcv/web  # Run app/API tests
+corepack pnpm test:run --filter @nexcv/pdf-lambda --filter @nexcv/email-worker --filter @nexcv/cv-import-worker --filter @nexcv/ocr-lambda  # Run Lambda/worker tests
 corepack pnpm build                                  # Production frontend build
 corepack pnpm launch:check                           # Run launch readiness checks
 corepack pnpm build:pdf-lambda                       # Build PDF renderer Lambda ZIP
@@ -209,6 +211,7 @@ corepack pnpm build:cv-import-worker-lambda           # Build CV import SQS work
 corepack pnpm build:ocr-lambda                        # Build OCR/Textract Lambda ZIP
 corepack pnpm build:email-worker-lambda               # Build email SQS worker Lambda ZIP
 corepack pnpm build:workers                           # Build all worker Lambda ZIPs
+corepack pnpm validate:lambda-artifacts               # Verify Lambda ZIPs are present and contain handlers
 corepack pnpm validate:templates                     # Validate Admin Templates folders
 corepack pnpm templates:release:dry-run              # Validate and dry-run template release
 corepack pnpm templates:release                      # Validate and release admin templates

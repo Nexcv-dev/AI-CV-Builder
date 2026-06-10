@@ -7,6 +7,10 @@
     "@nexcv/shared": "workspace:*"
   },
   "scripts": {
-    "build:lambda": "node ../../web/scripts/build-cv-import-worker-lambda.mjs"
+    "build:lambda": "node ../../web/scripts/build-cv-import-worker-lambda.mjs",
+    "test:run": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.7"
   }
 }
