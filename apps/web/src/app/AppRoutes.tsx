@@ -26,7 +26,7 @@ const BlogPage = lazy(() => import('../pages/BlogPage'));
 const PricingPage = lazy(() => import('../pages/PricingPage'));
 const CheckoutPage = lazy(() => import('../pages/CheckoutPage'));
 const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
-const AdminDashboard = lazy(() => import('../pages/AdminDashboard'));
+const AdminDashboard = lazy(() => import('../features/admin/AdminDashboard'));
 const HtmlToPdf = lazy(() => import('../pages/HtmlToPdf'));
 
 function PublicAnnouncement({ settings }: { settings: PublicAppSettings }) {

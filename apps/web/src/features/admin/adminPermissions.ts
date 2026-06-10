@@ -1,4 +1,4 @@
-import { AuthUser } from './utils/api';
+import { AuthUser } from '../../utils/api';
 import {
   ADMIN_ROLE_ACCESS,
   ADMIN_ROLE_LABELS,

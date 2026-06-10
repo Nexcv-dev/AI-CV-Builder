@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, Code2, FileText, LayoutDashboard, LogOut, Plus, Shield, User } from 'lucide-react';
 import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification, notifyAuthUserChanged } from '../utils/api';
-import { isAdminUser } from '../adminPermissions';
+import { isAdminUser } from '../features/admin/adminPermissions';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },

@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useEffect, useLayoutEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { isAdminUser } from '../adminPermissions';
+import { isAdminUser } from '../features/admin/adminPermissions';
 import { getCurrentUser } from '../utils/api';
 
 const AuthModal = lazy(() => import('../components/AuthModal').then((module) => ({ default: module.AuthModal })));

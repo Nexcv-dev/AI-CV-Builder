@@ -121,10 +121,10 @@ Expected result:
 
 Target files:
 
-- `src/pages/AdminDashboard.tsx`
-- `src/pages/admin/BillingManagementSection.tsx`
-- `src/pages/admin/SettingsManagementSection.tsx`
-- `src/pages/admin/TemplateManagementSection.tsx`
+- `src/features/admin/AdminDashboard.tsx`
+- `src/features/admin/BillingManagementSection.tsx`
+- `src/features/admin/SettingsManagementSection.tsx`
+- `src/features/admin/TemplateManagementSection.tsx`
 
 Suggested hooks:
 

@@ -1,4 +1,4 @@
-import type { UserRole } from '../adminAccess';
+import type { UserRole } from '../features/admin/adminAccess';
 
 export interface AuthUser {
   id: string;

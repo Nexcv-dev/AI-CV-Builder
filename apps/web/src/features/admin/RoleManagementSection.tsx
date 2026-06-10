@@ -2,7 +2,7 @@ import React from 'react';
 import { Loader2, Shield, UserCog } from 'lucide-react';
 import type { AdminRoleConfig, AdminUserListItem } from './adminTypes';
 import { formatDate } from './adminUtils';
-import { ADMIN_ROLE_LABELS, isAdminRole, type UserRole } from '../../adminPermissions';
+import { ADMIN_ROLE_LABELS, isAdminRole, type UserRole } from './adminPermissions';
 
 export default function RoleManagementSection({
   roles,

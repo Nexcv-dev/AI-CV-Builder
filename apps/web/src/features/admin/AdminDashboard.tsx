@@ -2,8 +2,8 @@ import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
-import { ADMIN_ROLE_LABELS, getRoleAccess, hasAdminPermission, isAdminRole, type UserRole } from '../adminPermissions';
-import { apiFetch } from '../utils/api';
+import { ADMIN_ROLE_LABELS, getRoleAccess, hasAdminPermission, isAdminRole, type UserRole } from './adminPermissions';
+import { apiFetch } from '../../utils/api';
 
 import type {
   AdminBillingPlan,
@@ -16,23 +16,23 @@ import type {
   AdminSettingsSummary,
   AdminSupportTicket,
   AdminUserListItem,
-} from './admin/adminTypes';
-import { adminNavItems } from './admin/adminUtils';
-import { AdminMobileNav, AdminPageHeader, AdminSidebar } from './admin/AdminShellComponents';
-import { AdminOverviewSection, AnalyticsDashboardSection } from './admin/AdminOverviewSections';
-import { useAdminBootstrap } from './admin/hooks/useAdminBootstrap';
-import { useAdminTemplates } from './admin/hooks/useAdminTemplates';
-import { useAdminUsers } from './admin/hooks/useAdminUsers';
+} from './adminTypes';
+import { adminNavItems } from './adminUtils';
+import { AdminMobileNav, AdminPageHeader, AdminSidebar } from './AdminShellComponents';
+import { AdminOverviewSection, AnalyticsDashboardSection } from './AdminOverviewSections';
+import { useAdminBootstrap } from './hooks/useAdminBootstrap';
+import { useAdminTemplates } from './hooks/useAdminTemplates';
+import { useAdminUsers } from './hooks/useAdminUsers';
 
-const UserManagementSection = lazy(() => import('./admin/UserManagementSection'));
-const TemplateManagementSection = lazy(() => import('./admin/TemplateManagementSection'));
-const BillingManagementSection = lazy(() => import('./admin/BillingManagementSection'));
-const PromotionManagementSection = lazy(() => import('./admin/PromotionManagementSection'));
-const SupportManagementSection = lazy(() => import('./admin/SupportManagementSection'));
-const RoleManagementSection = lazy(() => import('./admin/RoleManagementSection'));
-const SettingsManagementSection = lazy(() => import('./admin/SettingsManagementSection'));
-const EmailManagementSection = lazy(() => import('./admin/EmailManagementSection'));
-const AuditLogSection = lazy(() => import('./admin/AuditLogSection'));
+const UserManagementSection = lazy(() => import('./UserManagementSection'));
+const TemplateManagementSection = lazy(() => import('./TemplateManagementSection'));
+const BillingManagementSection = lazy(() => import('./BillingManagementSection'));
+const PromotionManagementSection = lazy(() => import('./PromotionManagementSection'));
+const SupportManagementSection = lazy(() => import('./SupportManagementSection'));
+const RoleManagementSection = lazy(() => import('./RoleManagementSection'));
+const SettingsManagementSection = lazy(() => import('./SettingsManagementSection'));
+const EmailManagementSection = lazy(() => import('./EmailManagementSection'));
+const AuditLogSection = lazy(() => import('./AuditLogSection'));
 
 function AdminSectionFallback() {
   return (

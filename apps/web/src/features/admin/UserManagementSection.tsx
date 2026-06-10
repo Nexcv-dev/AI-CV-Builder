@@ -8,7 +8,7 @@ import {
 import type { AdminUserDetail, AdminUserDocument, AdminUserListItem } from './adminTypes';
 import { formatDate } from './adminUtils';
 import { DetailTile, PlanBadge } from './AdminSharedComponents';
-import { ADMIN_ROLE_LABELS, isAdminRole } from '../../adminPermissions';
+import { ADMIN_ROLE_LABELS, isAdminRole } from './adminPermissions';
 
 export default function UserManagementSection({
   users,
