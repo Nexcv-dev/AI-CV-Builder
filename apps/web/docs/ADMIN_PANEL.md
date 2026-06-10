@@ -2,6 +2,8 @@
 
 The NexCV admin panel is the protected operations area for platform owners and support/admin staff. It provides user, template, billing, support, settings, role, and audit management without direct database access.
 
+Frontend admin code is isolated in `apps/web/src/features/admin/`. Backend admin APIs live in `apps/api/routes/admin/`, with shared role and permission contracts in `packages/shared`.
+
 ## Access And Security
 
 - Admins must be authenticated.

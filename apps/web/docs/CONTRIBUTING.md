@@ -88,6 +88,7 @@ Important paths:
 - `packages/api-contracts/` - shared API response contracts used by frontend and backend.
 - `apps/web/` - React app, public assets, docs, and template scripts.
 - `apps/web/src/` - React pages, components, hooks, stores, and frontend utilities.
+- `apps/web/src/features/admin/` - admin panel shell, sections, hooks, permissions, types, and shared admin UI.
 - `apps/api/` - Express API, middleware, routes, services, models, backend utilities, and API tests.
 - `apps/workers/` - Lambda source for PDF, PDF worker, CV import worker, OCR, and email worker.
 - `apps/web/scripts/` - build, validation, template release, and metadata scripts.
