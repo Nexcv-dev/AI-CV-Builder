@@ -929,9 +929,8 @@ describe('Server Utils', () => {
         expect(html).toContain('position: sticky !important;');
         expect(html).toContain('margin: 0 auto 16px !important;');
         expect(html).toContain('@media screen and (min-width: 841px)');
-        expect(html).toContain('height: 100vh !important;');
         expect(html).toContain('overflow-y: auto !important;');
-        expect(html).toContain('scrollbar-gutter: stable !important;');
+        expect(html).toContain('overflow-y: visible !important;');
         expect(html).toContain('transform: scale(0.90) !important;');
         expect(html).toContain('transform: scale(0.82) !important;');
         expect(html).toContain('touch-action: pan-x pan-y pinch-zoom !important;');
@@ -949,9 +948,8 @@ describe('Server Utils', () => {
         expect(previewScript.headers.get('content-type')).toContain('application/javascript');
         expect(previewScript.headers.get('cache-control')).toContain('no-store');
         expect(previewScriptBody).toContain("matchMedia('(max-width: 840px)')");
-        expect(previewScriptBody).toContain('setupOverscrollGuard();');
-        expect(previewScriptBody).toContain('touchStartedAtBottom = maxScrollY > 1');
-        expect(previewScriptBody).toContain('pullingPastTop || pullingPastBottom');
+        expect(previewScriptBody).not.toContain('setupOverscrollGuard');
+        expect(previewScriptBody).not.toContain("document.addEventListener('touchmove'");
         expect(previewScriptBody).toContain("preview.style.setProperty('margin-bottom'");
         expect(previewScriptBody.indexOf('setupDownloadButton();')).toBeLessThan(previewScriptBody.indexOf('preview = findPreview();'));
         expect(previewScriptBody).toContain("button.textContent = 'Preparing PDF...'");

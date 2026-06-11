@@ -31,28 +31,6 @@ const publicCvPreviewScript = `(() => {
   let preview = null;
   let resizeObserver = null;
 
-  const setupOverscrollGuard = () => {
-    let touchStartY = 0;
-    let touchStartedAtBottom = false;
-
-    document.addEventListener('touchstart', (event) => {
-      if (event.touches.length !== 1) return;
-      touchStartY = event.touches[0].clientY;
-      const scrollingElement = document.scrollingElement || document.documentElement;
-      const maxScrollY = Math.max(0, scrollingElement.scrollHeight - scrollingElement.clientHeight);
-      touchStartedAtBottom = maxScrollY > 1 && scrollingElement.scrollTop >= maxScrollY - 1;
-    }, { passive: true });
-
-    document.addEventListener('touchmove', (event) => {
-      if (event.touches.length !== 1) return;
-
-      const currentY = event.touches[0].clientY;
-      const pullingPastTop = window.scrollY <= 0 && currentY > touchStartY;
-      const pullingPastBottom = touchStartedAtBottom && currentY < touchStartY;
-      if (pullingPastTop || pullingPastBottom) event.preventDefault();
-    }, { passive: false });
-  };
-
   const setupDownloadButton = () => {
     const button = document.querySelector('.nexcv-public-toolbar a');
     if (!button) return;
@@ -108,7 +86,6 @@ const publicCvPreviewScript = `(() => {
   };
 
   const start = () => {
-    setupOverscrollGuard();
     setupDownloadButton();
     preview = findPreview();
     if (!preview) return;
@@ -293,18 +270,16 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       to { transform: rotate(360deg); }
     }
   @media screen and (min-width: 841px) {
-    html {
-      height: 100% !important;
-      overflow-y: hidden !important;
-      overscroll-behavior-y: none !important;
+    html,
+    body {
+      height: auto !important;
+      min-height: 100% !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: auto !important;
+      touch-action: auto !important;
     }
     body {
-      height: 100vh !important;
-      min-height: 0 !important;
-      overflow-y: auto !important;
-      overscroll-behavior-y: none !important;
-      touch-action: auto !important;
-      scrollbar-gutter: stable !important;
+      overflow-y: visible !important;
     }
   }
   @media screen and (max-width: 840px) {
