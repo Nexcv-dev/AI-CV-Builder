@@ -3,24 +3,27 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #254 from Nexcv-dev/test/overview (d9ad227) - Bimantha Perera, 8 seconds ago
-* fix live link layout issue (cc9bf13) - Bimantha Perera, 9 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (71c17c9) - bimanthaperera-lab, 16 minutes ago
-* Merge pull request #253 from Nexcv-dev/test/overview (15f1401) - Bimantha Perera, 16 minutes ago
-* implement new live cv link option (139faf0) - Bimantha Perera, 29 minutes ago
-* Update useCheckoutReturnHandler.test.tsx (f896319) - Bimantha Perera, 12 hours ago
+* Merge pull request #255 from Nexcv-dev/test/overview (7280148) - Bimantha Perera, 8 seconds ago
+* add analytics for live link (0fcc685) - Bimantha Perera, 6 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (4a275f2) - bimanthaperera-lab, 21 minutes ago
+* Merge pull request #254 from Nexcv-dev/test/overview (d9ad227) - Bimantha Perera, 21 minutes ago
+* fix live link layout issue (cc9bf13) - Bimantha Perera, 30 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (71c17c9) - bimanthaperera-lab, 37 minutes ago
+* Merge pull request #253 from Nexcv-dev/test/overview (15f1401) - Bimantha Perera, 37 minutes ago
+* implement new live cv link option (139faf0) - Bimantha Perera, 50 minutes ago
+* Update useCheckoutReturnHandler.test.tsx (f896319) - Bimantha Perera, 13 hours ago
 * add test cases for pdf downloading and payment flow (757fb62) - Bimantha Perera, 13 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (c87ee91) - bimanthaperera-lab, 20 hours ago
 * Merge pull request #252 from Nexcv-dev/test/overview (fca69f2) - Bimantha Perera, 20 hours ago
 * Create html to pdf worker.txt (3bcf474) - Bimantha Perera, 20 hours ago
-* fix pdf generation issue (76b2f7b) - Bimantha Perera, 20 hours ago
+* fix pdf generation issue (76b2f7b) - Bimantha Perera, 21 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (2d582ad) - bimanthaperera-lab, 24 hours ago
 * Merge pull request #249 from Nexcv-dev/test/overview (d5f9c0b) - Bimantha Perera, 24 hours ago
 * fix github action workflow node version warning (9f92bbc) - Bimantha Perera, 24 hours ago
 * fix docker image build issue in pipeline (c9e0b3d) - Bimantha Perera, 24 hours ago
-* update docs (ca5010e) - Bimantha Perera, 24 hours ago
+* update docs (ca5010e) - Bimantha Perera, 25 hours ago
 * update docs (97c3fc2) - Bimantha Perera, 25 hours ago
-* isolate admin code (7cb898d) - Bimantha Perera, 25 hours ago
+* isolate admin code (7cb898d) - Bimantha Perera, 26 hours ago
 * clean code architecture (4083ab1) - Bimantha Perera, 26 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (e9e6145) - bimanthaperera-lab, 2 days ago
 * Merge pull request #248 from Nexcv-dev/test/overview (9f06d1f) - Bimantha Perera, 2 days ago
@@ -105,8 +108,8 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 6 days ago
 * Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 6 days ago
 * add cv import queue (b178a94) - Bimantha Perera, 6 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 6 days ago
-* Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 6 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 7 days ago
+* Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 7 days ago
 * add email to AWS que system (7f08638) - Bimantha Perera, 7 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (d5598a2) - bimanthaperera-lab, 7 days ago
 * Merge pull request #220 from bimanthaperera-lab/test/overview (f626f2c) - Bimantha Perera, 7 days ago
@@ -140,7 +143,7 @@ All notable changes to this project will be documented in this file.
 * make gest users can import cv data (1f35b0b) - Bimantha Perera, 8 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (fb7e0f9) - bimanthaperera-lab, 8 days ago
 * Merge pull request #211 from bimanthaperera-lab/test/overview (e6f2b38) - Bimantha Perera, 8 days ago
-* Add AWS Textract OCR Pdf data extarcting & Add new Social Logins (16478c8) - Bimantha Perera, 8 days ago
+* Add AWS Textract OCR Pdf data extarcting & Add new Social Logins (16478c8) - Bimantha Perera, 9 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (01488c5) - bimanthaperera-lab, 9 days ago
 * Merge pull request #210 from bimanthaperera-lab/test/overview (b62522b) - Bimantha Perera, 9 days ago
 * add test case for plan expire (e98c78b) - Bimantha Perera, 9 days ago
