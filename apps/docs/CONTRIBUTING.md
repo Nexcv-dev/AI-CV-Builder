@@ -45,7 +45,7 @@ Default local URLs:
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:3002`
 
-For environment variables, start with the root [README](../../../README.md), then use [Environment Variables](ENVIRONMENT.md) as the complete reference.
+For environment variables, start with the root [README](../../README.md), then use [Environment Variables](ENVIRONMENT.md) as the complete reference.
 
 ## Common Commands
 
@@ -106,7 +106,7 @@ Important paths:
 - `apps/workers/` - Lambda source for PDF, PDF worker, CV import worker, OCR, and email worker.
 - `apps/web/scripts/` - build, validation, template release, and metadata scripts.
 - `apps/web/tests/` and `apps/web/src/**/*.test.*` - frontend Vitest tests.
-- `apps/web/docs/` - operational, deployment, API, and feature documentation.
+- `apps/docs/` - operational, deployment, API, and feature documentation.
 
 ## Development Principles
 

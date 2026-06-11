@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Palette, Upload, ChevronDown, Check, Image as ImageIcon, MoveHorizontal, MoveVertical, Layout, Type, RotateCcw } from 'lucide-react';
+import { Palette, Upload, ChevronDown, Check, Image as ImageIcon, MoveHorizontal, MoveVertical, Layout, Type, RotateCcw, Loader2 } from 'lucide-react';
 import { getTemplateSurfaceColorFallback, getTemplateSurfaceColorLabel } from '../../templates';
 import { resolveTemplateSurfaceColorForData, resolveTemplateThemeColor, resolveTemplateThemeColorForData } from '@nexcv/templates/templateData';
 import { useBuilderStore } from '../../stores/useBuilderStore';
@@ -11,9 +11,10 @@ interface DesignPanelProps {
   isDarkMode?: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isImageUploading?: boolean;
 }
 
-export const DesignPanel = React.memo(({ templateDefaultThemeColor, isDarkMode, fileInputRef, onImageUpload }: DesignPanelProps) => {
+export const DesignPanel = React.memo(({ templateDefaultThemeColor, isDarkMode, fileInputRef, onImageUpload, isImageUploading = false }: DesignPanelProps) => {
   const cvData = useBuilderStore((state) => state.cvData);
   const setCvData = useBuilderStore((state) => state.setCvData);
   const template = useBuilderStore((state) => state.template);
@@ -87,28 +88,42 @@ export const DesignPanel = React.memo(({ templateDefaultThemeColor, isDarkMode, 
   return (
     <div className="animate-in fade-in duration-300 space-y-6 flex flex-col flex-1">
       {/* Profile Picture */}
-      <div className={`${DESIGN_CARD_CLASS} ${isDarkMode ? DESIGN_CARD_DARK : DESIGN_CARD_LIGHT}`}>
+      <div className={`${DESIGN_CARD_CLASS} ${isDarkMode ? DESIGN_CARD_DARK : DESIGN_CARD_LIGHT}`} aria-busy={isImageUploading}>
         <div className="flex items-center mb-4">
           <ImageIcon size={20} className={DESIGN_ICON_CLASS} />
           <h3 className={DESIGN_SECTION_TITLE_CLASS}>Profile Picture</h3>
         </div>
         <div className="flex flex-col space-y-5">
           <div className="flex items-center space-x-5">
-            {cvData.profileImage ? (
-              <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 shadow-sm flex items-center justify-center bg-white">
-                <img src={cvData.profileImage} alt="Profile" className="w-full h-full object-cover" style={{ transform: `scale(${cvData.imageZoom || 1}) translate(${cvData.imageX || 0}px, ${cvData.imageY || 0}px)` }} />
-              </div>
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-white border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400"><Upload size={24} /></div>
-            )}
-            <div className="flex flex-col space-y-2">
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sm px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium transition-colors shadow-sm">
-                {cvData.profileImage ? 'Change Photo' : 'Upload Photo'}
-              </button>
-              {cvData.profileImage && (<button type="button" onClick={() => setCvData(prev => ({ ...prev, profileImage: '' }))} className="text-sm text-red-500 hover:text-red-700 font-medium text-left px-1">Remove</button>)}
+            <div className="relative w-24 h-24 shrink-0">
+              {cvData.profileImage ? (
+                <div className="w-full h-full rounded-full overflow-hidden border-2 border-gray-200 shadow-sm flex items-center justify-center bg-white">
+                  <img src={cvData.profileImage} alt="Profile" className="w-full h-full object-cover" style={{ transform: `scale(${cvData.imageZoom || 1}) translate(${cvData.imageX || 0}px, ${cvData.imageY || 0}px)` }} />
+                </div>
+              ) : (
+                <div className="w-full h-full rounded-full bg-white border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400"><Upload size={24} /></div>
+              )}
+              {isImageUploading && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-slate-900/65 text-white" aria-hidden="true">
+                  <Loader2 size={28} className="animate-spin" />
+                </div>
+              )}
             </div>
-            <input id="profileImageUpload" name="profileImageUpload" type="file" ref={fileInputRef} onChange={onImageUpload} accept="image/*" className="hidden" aria-label="Upload profile picture" />
+            <div className="flex flex-col space-y-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isImageUploading}
+                className="inline-flex items-center justify-center gap-2 text-sm px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium transition-colors shadow-sm disabled:cursor-wait disabled:opacity-70"
+              >
+                {isImageUploading && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
+                {isImageUploading ? 'Uploading...' : cvData.profileImage ? 'Change Photo' : 'Upload Photo'}
+              </button>
+              {cvData.profileImage && (<button type="button" disabled={isImageUploading} onClick={() => setCvData(prev => ({ ...prev, profileImage: '' }))} className="text-sm text-red-500 hover:text-red-700 font-medium text-left px-1 disabled:cursor-not-allowed disabled:opacity-50">Remove</button>)}
+            </div>
+            <input id="profileImageUpload" name="profileImageUpload" type="file" ref={fileInputRef} onChange={onImageUpload} accept="image/*" disabled={isImageUploading} className="hidden" aria-label="Upload profile picture" />
           </div>
+          <p className="sr-only" role="status" aria-live="polite">{isImageUploading ? 'Profile photo is uploading.' : ''}</p>
           {cvData.profileImage && (
             <div className="space-y-4 pt-4 border-t border-gray-200">
               <div>

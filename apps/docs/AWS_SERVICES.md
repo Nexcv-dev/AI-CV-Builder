@@ -59,6 +59,8 @@ AWS_SECRET_ACCESS_KEY=main_app_iam_user_secret
 
 S3_TEMPLATE_BUCKET_NAME=your_template_bucket
 S3_TEMPLATE_PREFIX=templates
+S3_CV_ASSET_BUCKET_NAME=your_template_bucket
+S3_CV_ASSET_PREFIX=cv-assets
 
 PDF_QUEUE_URL=https://sqs.eu-north-1.amazonaws.com/040769423342/nexcv-pdf-jobs-prod1
 PDF_QUEUE_REGION=eu-north-1
@@ -106,6 +108,15 @@ Attach this to the IAM user whose access keys are used by the main app, for exam
       "Resource": "arn:aws:s3:::YOUR_TEMPLATE_BUCKET/templates/*"
     },
     {
+      "Sid": "ManageCvAssetObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": "arn:aws:s3:::YOUR_CV_ASSET_BUCKET/cv-assets/*"
+    },
+    {
       "Sid": "SendPdfJobs",
       "Effect": "Allow",
       "Action": [
@@ -143,6 +154,11 @@ Attach this to the IAM user whose access keys are used by the main app, for exam
   ]
 }
 ```
+
+`S3_CV_ASSET_BUCKET_NAME` may point to the template bucket or a separate private
+bucket. If it is omitted, the app falls back to `S3_TEMPLATE_BUCKET_NAME`, but
+the IAM policy must still allow the `cv-assets/*` prefix. Profile image uploads
+fail with `AccessDenied` when the main app user only has access to `templates/*`.
 
 If the main app streams generated PDFs from S3, also grant read access to the PDF output prefix:
 

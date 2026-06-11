@@ -104,6 +104,8 @@ Guest users must sign in before CV import starts. The frontend opens the auth mo
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `S3_TEMPLATE_BUCKET_NAME` / `TEMPLATE_BUCKET_NAME` | S3 templates | Bucket for admin/built-in template assets. |
+| `S3_CV_ASSET_BUCKET_NAME` / `CV_ASSET_BUCKET_NAME` | Profile images | Private bucket for uploaded CV assets; defaults to the template bucket. |
+| `S3_CV_ASSET_PREFIX` | Profile images | Object prefix for uploaded CV assets; defaults to `cv-assets`. |
 | `S3_TEMPLATE_PREFIX` | Optional | Template prefix. Defaults to `templates`. |
 | `S3_TEMPLATE_CACHE_TTL_MS` | Optional | Server-side template cache TTL. |
 | `AWS_REGION` | AWS SDK | Default AWS SDK region. |
