@@ -20,6 +20,12 @@ export interface SavedDocument {
   title: string;
   template: string;
   status?: DocumentStatus;
+  shareEnabled?: boolean;
+  shareSlug?: string | null;
+  shareUrl?: string | null;
+  shareCreatedAt?: string | Date | null;
+  shareUpdatedAt?: string | Date | null;
+  shareRevokedAt?: string | Date | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,6 +48,11 @@ export interface DocumentResponse {
 
 export interface DeleteDocumentResponse {
   message: string;
+}
+
+export interface DocumentShareResponse {
+  document: SavedDocument;
+  shareUrl: string | null;
 }
 
 export interface QueuedJob {

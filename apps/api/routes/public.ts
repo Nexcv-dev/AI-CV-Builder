@@ -23,7 +23,7 @@ const publicCacheControl = (browserMaxAgeSeconds: number, cdnMaxAgeSeconds = bro
 );
 
 export function registerPublicRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getCvAssetObjectStream, getS3ObjectStream, putS3Object, cvAssetS3Key, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, getReleasedTemplateDefinition, getReleasedTemplateSummaries } = bindDeps(deps);
+    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getCvAssetObjectStream, getS3ObjectStream, putS3Object, cvAssetS3Key, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, renderCvTemplateString, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, getReleasedTemplateDefinition, getReleasedTemplateSummaries } = bindDeps(deps);
 
     const localAdminTemplateFile = async (sourceFolder: string | undefined, fileName: string) => {
         if (!sourceFolder) return null;
@@ -32,6 +32,71 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         } catch {
             return null;
         }
+    };
+    const htmlEscape = (value: string) => (
+        value
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+    );
+    const publicCvCacheControl = () => {
+        const browserSeconds = Math.max(0, Number.parseInt(process.env.PUBLIC_CV_CACHE_BROWSER_SECONDS || '60', 10) || 60);
+        const cdnSeconds = Math.max(0, Number.parseInt(process.env.PUBLIC_CV_CACHE_CDN_SECONDS || '300', 10) || 300);
+        return `public, max-age=${browserSeconds}, s-maxage=${cdnSeconds}, stale-while-revalidate=600`;
+    };
+    const injectPublicCvMeta = (html: string, title: string, description: string, canonicalUrl: string) => {
+        const safeTitle = htmlEscape(title);
+        const safeDescription = htmlEscape(description);
+        const safeCanonicalUrl = htmlEscape(canonicalUrl);
+        const meta = [
+            `<meta name="description" content="${safeDescription}">`,
+            `<meta name="robots" content="noindex, nofollow">`,
+            `<link rel="canonical" href="${safeCanonicalUrl}">`,
+            '<meta property="og:type" content="profile">',
+            `<meta property="og:title" content="${safeTitle}">`,
+            `<meta property="og:description" content="${safeDescription}">`,
+            `<meta property="og:url" content="${safeCanonicalUrl}">`,
+            '<meta name="twitter:card" content="summary">',
+            `<meta name="twitter:title" content="${safeTitle}">`,
+            `<meta name="twitter:description" content="${safeDescription}">`,
+        ].join('\n');
+
+        const withTitle = /<title>[\s\S]*?<\/title>/i.test(html)
+            ? html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${safeTitle}</title>`)
+            : html.includes('</head>')
+                ? html.replace('</head>', `<title>${safeTitle}</title>\n</head>`)
+                : html;
+        return withTitle.includes('</head>')
+            ? withTitle.replace('</head>', `${meta}\n</head>`)
+            : `<!doctype html><html><head><title>${safeTitle}</title>${meta}</head><body>${withTitle}</body></html>`;
+    };
+    const renderSharedCvHtml = async (document: any, watermark: boolean) => {
+        const template = document.template || DEFAULT_TEMPLATE;
+        const isBuiltInTemplate = CV_TEMPLATES.some((item: any) => item.key === template);
+        let s3Html: string | null = null;
+
+        if (!isBuiltInTemplate) {
+            const customTemplate = await TemplateSetting
+                .findOne({ key: template, source: 'custom', status: 'active' })
+                .select('indexS3Key styleS3Key');
+
+            if (customTemplate?.indexS3Key) {
+                const indexHtml = await fetchS3Text(customTemplate.indexS3Key);
+                if (indexHtml) {
+                    const css = customTemplate.styleS3Key ? await fetchS3Text(customTemplate.styleS3Key) : '';
+                    const templateHtml = css
+                        ? indexHtml.includes('</head>')
+                            ? indexHtml.replace('</head>', `<style>\n${css}\n</style>\n</head>`)
+                            : `<style>\n${css}\n</style>\n${indexHtml}`
+                        : indexHtml;
+                    s3Html = renderCvTemplateString(templateHtml, { ...document.cvData, template }, { watermark });
+                }
+            }
+        }
+
+        s3Html = s3Html || await generateS3CVHTML(document.cvData, template, { watermark }).catch(() => null);
+        return s3Html || generateCVHTML(document.cvData, template, { watermark });
     };
 
     router.get('/api/health', (req: Request, res: Response) => {
@@ -123,6 +188,35 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             adminAccessAllowed: typeof deps.isAdminIpAllowed === 'function' ? deps.isAdminIpAllowed(req) : true,
         } satisfies PublicAppSettingsResponse;
         return res.json(response);
+    });
+
+    router.get('/cv/:shareSlug', async (req: Request, res: Response) => {
+        try {
+            const shareSlug = String(req.params.shareSlug || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,80}$/.test(shareSlug)) {
+                return res.status(404).type('text/plain').send('CV not found');
+            }
+
+            const document = await CVDocument
+                .findOne({ shareEnabled: true, shareSlug })
+                .populate('userId', 'role plan planExpiresAt');
+            if (!document) return res.status(404).type('text/plain').send('CV not found');
+
+            const owner = document.userId && typeof document.userId === 'object' ? document.userId : null;
+            const watermark = !owner || !isPaidPlan(owner);
+            const fullName = document.cvData?.personalInfo?.fullName || document.title || 'Public CV';
+            const summary = document.cvData?.personalInfo?.summary || document.title || 'Public CV';
+            const title = `${String(fullName).trim() || 'Public CV'} - CV`;
+            const description = String(summary).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180) || title;
+            const canonicalUrl = `${getApiOrigin(req).replace(/\/+$/, '')}/cv/${encodeURIComponent(shareSlug)}`;
+            const html = injectPublicCvMeta(await renderSharedCvHtml(document, watermark), title, description, canonicalUrl);
+
+            res.setHeader('Cache-Control', publicCvCacheControl());
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(html);
+        } catch (error) {
+            return sendError(res, 500, 'Could not load this shared CV.', error);
+        }
     });
 
 

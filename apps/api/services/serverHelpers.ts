@@ -125,11 +125,30 @@ export const getFrontendOrigin = (req: Request) => {
     return getApiOrigin(req);
 };
 
+export const getPublicCvBaseUrl = (req?: Request) => {
+    const configured = process.env.PUBLIC_CV_BASE_URL || process.env.FRONTEND_URL || process.env.ALLOWED_ORIGIN;
+    if (configured?.trim()) return configured.trim().replace(/\/+$/, '');
+    return req ? getApiOrigin(req) : '';
+};
+
+export const publicCvShareUrl = (shareSlug: unknown, req?: Request) => {
+    if (typeof shareSlug !== 'string' || !shareSlug.trim()) return null;
+    const path = `/cv/${encodeURIComponent(shareSlug.trim())}`;
+    const baseUrl = getPublicCvBaseUrl(req);
+    return baseUrl ? `${baseUrl}${path}` : path;
+};
+
 export const documentSummary = (document: any) => ({
     id: document._id.toString(),
     title: document.title,
     template: document.template,
     status: document.status || 'completed',
+    shareEnabled: Boolean(document.shareEnabled),
+    shareSlug: document.shareSlug || null,
+    shareUrl: document.shareEnabled ? publicCvShareUrl(document.shareSlug) : null,
+    shareCreatedAt: document.shareCreatedAt || null,
+    shareUpdatedAt: document.shareUpdatedAt || null,
+    shareRevokedAt: document.shareRevokedAt || null,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
 });

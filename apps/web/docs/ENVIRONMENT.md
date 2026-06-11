@@ -11,6 +11,9 @@ This reference lists the environment variables used by the main NexCV app, worke
 | `FRONTEND_URL` | Production | Public frontend origin for redirects, OAuth callbacks, emails, and checkout returns. |
 | `ALLOWED_ORIGIN` / `ALLOWED_ORIGINS` / `FRONTEND_ORIGIN` | Production | CORS and trusted browser origins. |
 | `API_PUBLIC_URL` / `BACKEND_PUBLIC_URL` | Recommended | Public API origin used when building absolute URLs. |
+| `PUBLIC_CV_BASE_URL` | Optional | Base origin used when returning public live CV share links. Falls back to `FRONTEND_URL`, then `ALLOWED_ORIGIN`. |
+| `PUBLIC_CV_CACHE_BROWSER_SECONDS` | Optional | Browser cache seconds for `/cv/:shareSlug`. Defaults to `60`. |
+| `PUBLIC_CV_CACHE_CDN_SECONDS` | Optional | CDN `s-maxage` seconds for `/cv/:shareSlug`. Defaults to `300`. |
 | `SESSION_SECRET` | Production | Long random session secret. Required in production. |
 | `SESSION_COOKIE_NAME` | Optional | Session cookie name. Defaults to `nexcv.sid`. |
 | `SESSION_STORE_MAX_POOL_SIZE` | Optional | Mongo session-store pool size. Defaults to `5`. |

@@ -6,6 +6,11 @@ export interface ICVDocument extends Document {
   template: string;
   cvData: Record<string, any>;
   status: 'draft' | 'completed';
+  shareEnabled: boolean;
+  shareSlug?: string | null;
+  shareCreatedAt?: Date | null;
+  shareUpdatedAt?: Date | null;
+  shareRevokedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +22,11 @@ const CVDocumentSchema = new Schema(
     template: { type: String, required: true },
     cvData: { type: Schema.Types.Mixed, required: true },
     status: { type: String, enum: ['draft', 'completed'], default: 'draft' },
+    shareEnabled: { type: Boolean, default: false, index: true },
+    shareSlug: { type: String, trim: true, default: null },
+    shareCreatedAt: { type: Date, default: null },
+    shareUpdatedAt: { type: Date, default: null },
+    shareRevokedAt: { type: Date, default: null },
   },
   {
     timestamps: true,
@@ -24,6 +34,8 @@ const CVDocumentSchema = new Schema(
 );
 
 CVDocumentSchema.index({ userId: 1, updatedAt: -1 });
+CVDocumentSchema.index({ shareSlug: 1 }, { unique: true, sparse: true });
+CVDocumentSchema.index({ shareEnabled: 1, shareSlug: 1 });
 CVDocumentSchema.index({ template: 1 });
 CVDocumentSchema.index({ createdAt: -1 });
 CVDocumentSchema.index({ updatedAt: -1 });
