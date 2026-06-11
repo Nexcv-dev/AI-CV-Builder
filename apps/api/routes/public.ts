@@ -294,15 +294,17 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     }
   @media screen and (min-width: 841px) {
     html {
-      height: auto !important;
-      overflow-y: auto !important;
+      height: 100% !important;
+      overflow-y: hidden !important;
       overscroll-behavior-y: none !important;
     }
     body {
-      height: auto !important;
-      min-height: 100vh !important;
-      overflow-y: visible !important;
+      height: 100vh !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: none !important;
       touch-action: auto !important;
+      scrollbar-gutter: stable !important;
     }
   }
   @media screen and (max-width: 840px) {
