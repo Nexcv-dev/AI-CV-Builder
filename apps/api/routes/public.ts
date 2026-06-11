@@ -23,6 +23,46 @@ const publicCacheControl = (browserMaxAgeSeconds: number, cdnMaxAgeSeconds = bro
 );
 
 const publicCvDownloadHits = new Map<string, { count: number; resetAt: number }>();
+const publicCvPreviewScript = `(() => {
+  const mobileQuery = window.matchMedia('(max-width: 620px)');
+  const findPreview = () => Array.from(document.body.children).find((element) => (
+    !element.matches('.nexcv-public-toolbar, .nexcv-watermark, script, style')
+  ));
+  let preview = null;
+  let resizeObserver = null;
+
+  const syncPreviewHeight = () => {
+    preview = preview || findPreview();
+    if (!preview) return;
+    if (!mobileQuery.matches) {
+      preview.style.removeProperty('margin-bottom');
+      return;
+    }
+
+    const transform = window.getComputedStyle(preview).transform;
+    const matrix = transform && transform !== 'none' ? new DOMMatrixReadOnly(transform) : null;
+    const scale = matrix ? Math.abs(matrix.a) : 1;
+    const reservedHeight = preview.scrollHeight;
+    const unusedHeight = Math.max(0, reservedHeight * (1 - scale));
+    preview.style.setProperty('margin-bottom', \`-\${unusedHeight}px\`, 'important');
+  };
+
+  const start = () => {
+    preview = findPreview();
+    if (!preview) return;
+    resizeObserver = new ResizeObserver(syncPreviewHeight);
+    resizeObserver.observe(preview);
+    syncPreviewHeight();
+    window.addEventListener('resize', syncPreviewHeight, { passive: true });
+    mobileQuery.addEventListener?.('change', syncPreviewHeight);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    start();
+  }
+})();`;
 
 export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getCvAssetObjectStream, getS3ObjectStream, putS3Object, cvAssetS3Key, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, renderCvTemplateString, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, getReleasedTemplateDefinition, getReleasedTemplateSummaries } = bindDeps(deps);
@@ -176,7 +216,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
   @media screen and (max-width: 620px) {
     body {
       align-items: center !important;
-      padding: 16px 12px calc(96px + env(safe-area-inset-bottom)) !important;
+      padding: 16px 12px calc(116px + env(safe-area-inset-bottom)) !important;
     }
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
       margin: 0 !important;
@@ -245,6 +285,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             `<meta name="twitter:title" content="${safeTitle}">`,
             `<meta name="twitter:description" content="${safeDescription}">`,
             publicPreviewCss,
+            '<script src="/assets/public-cv-preview.js" defer></script>',
         ].join('\n');
 
         const withTitle = /<title>[\s\S]*?<\/title>/i.test(html)
@@ -391,6 +432,11 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         }
 
         return res.json({ status: 'ready' });
+    });
+
+    router.get('/assets/public-cv-preview.js', (_req: Request, res: Response) => {
+        res.setHeader('Cache-Control', publicCacheControl(3600, 86400));
+        return res.type('application/javascript').send(publicCvPreviewScript);
     });
 
     router.get('/api/public/app-settings', (req: Request, res: Response) => {
