@@ -86,12 +86,12 @@ const publicCvPreviewScript = `(() => {
   };
 
   const start = () => {
+    setupDownloadButton();
     preview = findPreview();
     if (!preview) return;
     resizeObserver = new ResizeObserver(syncPreviewHeight);
     resizeObserver.observe(preview);
     syncPreviewHeight();
-    setupDownloadButton();
     window.addEventListener('resize', syncPreviewHeight, { passive: true });
     fittedPreviewQuery.addEventListener?.('change', syncPreviewHeight);
   };
@@ -355,7 +355,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             `<meta name="twitter:title" content="${safeTitle}">`,
             `<meta name="twitter:description" content="${safeDescription}">`,
             publicPreviewCss,
-            '<script src="/assets/public-cv-preview.js" defer></script>',
+            '<script src="/assets/public-cv-preview.js?v=20260611-2" defer></script>',
         ].join('\n');
 
         const withTitle = /<title>[\s\S]*?<\/title>/i.test(html)
@@ -505,7 +505,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     });
 
     router.get('/assets/public-cv-preview.js', (_req: Request, res: Response) => {
-        res.setHeader('Cache-Control', publicCacheControl(3600, 86400));
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         return res.type('application/javascript').send(publicCvPreviewScript);
     });
 

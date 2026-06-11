@@ -921,7 +921,7 @@ describe('Server Utils', () => {
         expect(html).toContain('<a href="https://example.com">Existing</a>');
         expect(html).toContain('<a href="/cv/public_slug_123456/download">Download PDF</a>');
         expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">');
-        expect(html).toContain('<script src="/assets/public-cv-preview.js" defer></script>');
+        expect(html).toContain('<script src="/assets/public-cv-preview.js?v=20260611-2" defer></script>');
         expect(html).toContain('box-sizing: border-box !important;');
         expect(html).toContain('overflow-x: hidden !important;');
         expect(html).toContain('touch-action: pan-y !important;');
@@ -942,8 +942,10 @@ describe('Server Utils', () => {
         const previewScriptBody = await previewScript.text();
         expect(previewScript.status).toBe(200);
         expect(previewScript.headers.get('content-type')).toContain('application/javascript');
+        expect(previewScript.headers.get('cache-control')).toContain('no-store');
         expect(previewScriptBody).toContain("matchMedia('(max-width: 840px)')");
         expect(previewScriptBody).toContain("preview.style.setProperty('margin-bottom'");
+        expect(previewScriptBody.indexOf('setupDownloadButton();')).toBeLessThan(previewScriptBody.indexOf('preview = findPreview();'));
         expect(previewScriptBody).toContain("button.textContent = 'Preparing PDF...'");
         expect(previewScriptBody).toContain("await fetch(button.href");
 
