@@ -11,4 +11,4 @@ coverage/
 *.tsbuildinfo
 
 # Local leftovers from the pre-monorepo app folder. Source now lives in apps/.
-/Free CV Builder/
+/nexcv-legacy-build/
