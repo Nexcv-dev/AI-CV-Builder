@@ -13,6 +13,7 @@
     "build:email-worker-lambda": "turbo run build:lambda --filter=@nexcv/email-worker",
     "build:ocr-lambda": "turbo run build:lambda --filter=@nexcv/ocr-lambda",
     "build:workers": "turbo run build:lambda --filter=@nexcv/pdf-worker --filter=@nexcv/cv-import-worker --filter=@nexcv/email-worker --filter=@nexcv/ocr-lambda",
+    "validate:lambda-artifacts": "node apps/web/scripts/validate-lambda-artifacts.mjs",
     "lint": "turbo run lint",
     "test": "turbo run test:run",
     "test:run": "turbo run test:run",

@@ -5,6 +5,7 @@ import type { TemplateName } from '@nexcv/templates';
 import type {
     CvImportJobResponse,
     DeleteDocumentResponse,
+    DocumentShareResponse,
     DocumentResponse,
     DocumentsResponse,
     PdfJobResponse,
@@ -27,7 +28,7 @@ import {
 type RouteDeps = Record<string, any>;
 
 export function registerCvRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, imageUploadJsonParser, authLimiter, aiLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, isCvAssetStorageConfigured, cvAssetS3Key, putCvAssetObject, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
+    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, imageUploadJsonParser, authLimiter, aiLimiter, cvImportLimiter, pdfLimiter, passwordResetLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getS3ObjectStream, isCvAssetStorageConfigured, cvAssetS3Key, putCvAssetObject, putS3Object, renderCvTemplateString, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, consumeDownloadQuota, rollbackDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, getPublicCvBaseUrl, publicCvShareUrl, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, sanitizeCvDataForStorage, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, extractCvText, parseCvTextToStructuredData, withImportMeta, logError, logEvent } = bindDeps(deps);
 
     const expireJobAndRollbackQuota = async (
         job: any,
@@ -77,6 +78,45 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
         : async () => {
             throw new Error('S3 CV asset bucket is not configured.');
         };
+    const makeShareSlug = () => randomBytes(18).toString('base64url');
+    const makeShareUrl = (slug: string, req: Request) => (
+        typeof publicCvShareUrl === 'function'
+            ? publicCvShareUrl(slug, req)
+            : `${(getPublicCvBaseUrl?.(req) || getApiOrigin(req)).replace(/\/+$/, '')}/cv/${encodeURIComponent(slug)}`
+    );
+    const findOwnedDocument = async (req: Request) => {
+        if (!isValidDocumentId(req.params.id)) return { status: 400, document: null, error: 'Invalid document id.' };
+        const document = await CVDocument.findOne({ _id: req.params.id, userId: currentUserId(req) });
+        if (!document) return { status: 404, document: null, error: 'Document not found.' };
+        return { status: 200, document, error: '' };
+    };
+    const enableDocumentShare = async (document: any, req: Request, regenerate = false) => {
+        if (document.shareEnabled && document.shareSlug && !regenerate) {
+            return {
+                document,
+                shareUrl: makeShareUrl(document.shareSlug, req),
+            };
+        }
+
+        const now = new Date();
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+            document.shareSlug = makeShareSlug();
+            document.shareEnabled = true;
+            document.shareCreatedAt = document.shareCreatedAt || now;
+            document.shareUpdatedAt = now;
+            document.shareRevokedAt = null;
+            try {
+                await document.save();
+                return {
+                    document,
+                    shareUrl: makeShareUrl(document.shareSlug, req),
+                };
+            } catch (error: any) {
+                if (!isMongoDuplicateKeyError?.(error) || attempt === 4) throw error;
+            }
+        }
+        throw new Error('Could not create a unique share link.');
+    };
 
     const parseProfileImageDataUrl = (value: unknown) => {
         if (typeof value !== 'string') return null;
@@ -243,6 +283,71 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             res.json(response);
         } catch (error) {
             return sendError(res, 500, 'Could not delete this document.', error);
+        }
+    });
+
+    router.post('/api/documents/:id/share', requireAuth, async (req: Request, res: Response) => {
+        try {
+            const result = await findOwnedDocument(req);
+            if (!result.document) return res.status(result.status).json({ error: result.error });
+
+            const share = await enableDocumentShare(result.document, req, false);
+            const response = {
+                document: documentSummary(share.document),
+                shareUrl: share.shareUrl,
+            } satisfies DocumentShareResponse;
+            return res.status(201).json(response);
+        } catch (error) {
+            return sendError(res, 500, 'Could not enable CV sharing.', error);
+        }
+    });
+
+    router.patch('/api/documents/:id/share', requireAuth, async (req: Request, res: Response) => {
+        try {
+            const result = await findOwnedDocument(req);
+            if (!result.document) return res.status(result.status).json({ error: result.error });
+
+            const enabled = req.body?.enabled !== false;
+            const regenerate = Boolean(req.body?.regenerate);
+            if (!enabled) {
+                result.document.shareEnabled = false;
+                result.document.shareRevokedAt = new Date();
+                result.document.shareUpdatedAt = new Date();
+                await result.document.save();
+                const response = {
+                    document: documentSummary(result.document),
+                    shareUrl: null,
+                } satisfies DocumentShareResponse;
+                return res.json(response);
+            }
+
+            const share = await enableDocumentShare(result.document, req, regenerate);
+            const response = {
+                document: documentSummary(share.document),
+                shareUrl: share.shareUrl,
+            } satisfies DocumentShareResponse;
+            return res.json(response);
+        } catch (error) {
+            return sendError(res, 500, 'Could not update CV sharing.', error);
+        }
+    });
+
+    router.delete('/api/documents/:id/share', requireAuth, async (req: Request, res: Response) => {
+        try {
+            const result = await findOwnedDocument(req);
+            if (!result.document) return res.status(result.status).json({ error: result.error });
+
+            result.document.shareEnabled = false;
+            result.document.shareRevokedAt = new Date();
+            result.document.shareUpdatedAt = new Date();
+            await result.document.save();
+            const response = {
+                document: documentSummary(result.document),
+                shareUrl: null,
+            } satisfies DocumentShareResponse;
+            return res.json(response);
+        } catch (error) {
+            return sendError(res, 500, 'Could not disable CV sharing.', error);
         }
     });
 

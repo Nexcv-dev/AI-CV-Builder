@@ -26,7 +26,7 @@ import { PdfLoadingOverlay } from './home/PdfLoadingOverlay';
 import { ThemeTransitionOverlay } from './home/ThemeTransitionOverlay';
 import { UpgradePromptModal } from './home/UpgradePromptModal';
 import type { CvCreationQuota, DownloadQuota, ThemeTransitionState, UpgradePlan, UpgradePrompt } from './home/homeTypes';
-import { downloadLimitMessage, getPlanLabel } from './home/homeUtils';
+import { downloadLimitMessage, getPlanLabel, triggerBrowserDownload } from './home/homeUtils';
 
 const THEME_STORAGE_KEY = 'cv-builder-theme';
 const LOCAL_STORAGE_DRAFT_KEY = 'nexcv-draft-data';
@@ -612,19 +612,7 @@ export default function Home() {
       const filename = `${safeName}_Resume.pdf`;
 
       const triggerDownload = (url: string, shouldRevoke = false) => {
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', filename);
-
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        if (isIOS) {
-          link.setAttribute('target', '_blank');
-        }
-
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        if (shouldRevoke) setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+        triggerBrowserDownload(url, filename, shouldRevoke);
       };
 
       const markQuotaUsed = () => {

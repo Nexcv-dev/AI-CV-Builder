@@ -1,10 +1,9 @@
 {
-  "name": "@nexcv/ocr-lambda",
+  "name": "@nexcv/pdf-lambda",
   "private": true,
   "version": "0.1.11",
   "type": "module",
   "scripts": {
-    "build:lambda": "node ../../web/scripts/build-ocr-lambda.mjs",
     "test:run": "vitest run"
   },
   "devDependencies": {

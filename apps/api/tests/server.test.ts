@@ -26,6 +26,7 @@ import {
 } from '../server';
 import { registerCvRoutes } from '../routes/cv';
 import { registerPaymentRoutes } from '../routes/payment';
+import { registerPublicRoutes } from '../routes/public';
 import { isSuperAdminEmail, roleForEmail, syncUserRoleFromAllowlist } from '../server-models/userRole';
 import { hasAdminPermission } from '@nexcv/shared/admin';
 import { buildCvCreationQuota, getDailyCvCreationLimit, getUtcDayBounds } from '../server-models/cvQuota';
@@ -666,6 +667,160 @@ describe('Server Utils', () => {
         expect(body.error).toContain('CV import limit reached');
         expect(body.upgradeRequired).toBe(true);
         expect(extractCvText).not.toHaveBeenCalled();
+      } finally {
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => error ? reject(error) : resolve());
+        });
+      }
+    });
+  });
+
+  describe('public CV sharing', () => {
+    it('should enable, return, and disable an owned live CV link', async () => {
+      const app = express();
+      const router = express.Router();
+      const user = { _id: '507f1f77bcf86cd799439011' };
+      const document = {
+        _id: '507f1f77bcf86cd799439012',
+        userId: user._id,
+        title: 'Jane CV',
+        template: 'classic',
+        status: 'completed',
+        cvData: { personalInfo: { fullName: 'Jane' } },
+        shareEnabled: false,
+        shareSlug: null,
+        shareRevokedAt: null as Date | null,
+        createdAt: new Date('2026-06-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-06-01T00:00:00.000Z'),
+        save: vi.fn().mockResolvedValue(undefined),
+      };
+      const CVDocument = {
+        findOne: vi.fn().mockResolvedValue(document),
+      };
+
+      app.use(express.json());
+      app.use((req: any, _res, next) => {
+        req.user = user;
+        req.isAuthenticated = () => true;
+        next();
+      });
+      registerCvRoutes(router, {
+        CVDocument,
+        aiLimiter: (_req: any, _res: any, next: any) => next(),
+        cvImportLimiter: (_req: any, _res: any, next: any) => next(),
+        pdfLimiter: (_req: any, _res: any, next: any) => next(),
+        cvImportJsonParser: express.json({ limit: '1mb' }),
+        pdfJsonParser: express.json({ limit: '1mb' }),
+        requireAuth: (_req: any, _res: any, next: any) => next(),
+        currentUserId: () => user._id,
+        isValidDocumentId: () => true,
+        randomBytes: () => Buffer.from('123456789012345678'),
+        isMongoDuplicateKeyError: () => false,
+        documentSummary: (doc: any) => ({
+          id: String(doc._id),
+          title: doc.title,
+          template: doc.template,
+          shareEnabled: Boolean(doc.shareEnabled),
+          shareSlug: doc.shareSlug,
+          shareUrl: doc.shareEnabled && doc.shareSlug ? `/cv/${doc.shareSlug}` : null,
+          createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
+        }),
+        publicCvShareUrl: (slug: string) => `https://app.example.com/cv/${slug}`,
+        getApiOrigin: () => 'https://app.example.com',
+        sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
+      });
+      app.use(router);
+
+      const server = await new Promise<Server>((resolve) => {
+        const listeningServer = app.listen(0, '127.0.0.1', () => resolve(listeningServer));
+      });
+      const address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not bind to a TCP port.');
+
+      try {
+        const enable = await fetch(`http://127.0.0.1:${address.port}/api/documents/${document._id}/share`, { method: 'POST' });
+        const enableBody = await enable.json() as { shareUrl: string; document: any };
+
+        expect(enable.status).toBe(201);
+        expect(enableBody.shareUrl).toMatch(/^https:\/\/app\.example\.com\/cv\//);
+        expect(enableBody.document.shareEnabled).toBe(true);
+        expect(document.shareEnabled).toBe(true);
+        expect(document.shareSlug).toBeTruthy();
+
+        const disable = await fetch(`http://127.0.0.1:${address.port}/api/documents/${document._id}/share`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: false }),
+        });
+        const disableBody = await disable.json() as { shareUrl: string | null; document: any };
+
+        expect(disable.status).toBe(200);
+        expect(disableBody.shareUrl).toBeNull();
+        expect(disableBody.document.shareEnabled).toBe(false);
+        expect(document.shareRevokedAt).toBeInstanceOf(Date);
+      } finally {
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => error ? reject(error) : resolve());
+        });
+      }
+    });
+
+    it('should render only enabled shared CVs through the public route', async () => {
+      const app = express();
+      const router = express.Router();
+      const publicDocument = {
+        _id: '507f1f77bcf86cd799439012',
+        title: 'Jane CV',
+        template: 'classic',
+        shareEnabled: true,
+        shareSlug: 'public_slug_123456',
+        userId: { role: 'user', plan: 'free' },
+        cvData: {
+          personalInfo: {
+            fullName: 'Jane Doe',
+            summary: 'Safe <strong>summary</strong><script>alert(1)</script>',
+          },
+        },
+      };
+      const CVDocument = {
+        findOne: vi.fn(() => ({
+          populate: vi.fn().mockResolvedValue(publicDocument),
+        })),
+      };
+
+      registerPublicRoutes(router, {
+        CVDocument,
+        CV_TEMPLATES: [{ key: 'classic' }],
+        DEFAULT_TEMPLATE: 'classic',
+        TemplateSetting: { findOne: vi.fn() },
+        publicFormLimiter: (_req: any, _res: any, next: any) => next(),
+        generateS3CVHTML: vi.fn().mockResolvedValue(null),
+        generateCVHTML: vi.fn((cvData: any) => `<html><head></head><body>${cvData.personalInfo.fullName}<script>alert(1)</script></body></html>`),
+        isPaidPlan: vi.fn(() => false),
+        getApiOrigin: () => 'https://app.example.com',
+        sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
+      });
+      app.use(router);
+
+      const server = await new Promise<Server>((resolve) => {
+        const listeningServer = app.listen(0, '127.0.0.1', () => resolve(listeningServer));
+      });
+      const address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not bind to a TCP port.');
+
+      try {
+        const response = await fetch(`http://127.0.0.1:${address.port}/cv/public_slug_123456`);
+        const html = await response.text();
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get('cache-control')).toContain('s-maxage=300');
+        expect(html).toContain('<title>Jane Doe - CV</title>');
+        expect(html).toContain('Jane Doe');
+        expect(CVDocument.findOne).toHaveBeenCalledWith({ shareEnabled: true, shareSlug: 'public_slug_123456' });
+
+        const missing = await fetch(`http://127.0.0.1:${address.port}/cv/bad`);
+        expect(missing.status).toBe(404);
       } finally {
         await new Promise<void>((resolve, reject) => {
           server.close((error) => error ? reject(error) : resolve());

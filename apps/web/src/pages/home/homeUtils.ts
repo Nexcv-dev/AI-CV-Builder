@@ -32,3 +32,19 @@ export function getPlanLabel(plan?: AuthPlan) {
   if (plan === 'unlimited') return 'Unlimited';
   return 'Free';
 }
+
+export function triggerBrowserDownload(url: string, filename: string, shouldRevoke = false) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS) {
+    link.setAttribute('target', '_blank');
+  }
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  if (shouldRevoke) setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+}

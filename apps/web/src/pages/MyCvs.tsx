@@ -7,23 +7,30 @@ import {
   BookOpen,
   CheckCircle2,
   Clock3,
+  Copy,
   Edit3,
+  ExternalLink,
   FileText,
   Filter,
   FolderArchive,
+  Link2,
   Loader2,
   MoreHorizontal,
   Plus,
+  RefreshCw,
   Search,
+  Share2,
   Trash2,
   X,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import type { DocumentShareResponse, DocumentsResponse } from '@nexcv/api-contracts/documents';
 import { AppShellHeader } from '../components/AppShellHeader';
 import { AppSidebar } from '../components/AppSidebar';
 import { apiFetch, setDashboardNotification } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 import { useTemplateConfig, type TemplateConfigItem } from '../hooks/useTemplateConfig';
-import { useDocumentsQuery, useRemoveDocumentFromCache, type SavedDocument } from '../hooks/useDocumentsQuery';
+import { documentsQueryKey, useDocumentsQuery, useRemoveDocumentFromCache, type SavedDocument } from '../hooks/useDocumentsQuery';
 
 type FilterTab = 'all' | 'recent' | 'drafts' | 'archived';
 
@@ -40,6 +47,7 @@ function formatRelativeTime(value: string) {
 
 export default function MyCvs() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { templateMap } = useTemplateConfig();
   const {
     data: documentsData,
@@ -52,7 +60,9 @@ export default function MyCvs() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [documentToDelete, setDocumentToDelete] = useState<SavedDocument | null>(null);
+  const [documentToShare, setDocumentToShare] = useState<SavedDocument | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [sharingAction, setSharingAction] = useState<'enable' | 'disable' | 'regenerate' | null>(null);
   const [openActionsDocumentId, setOpenActionsDocumentId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -100,6 +110,54 @@ export default function MyCvs() {
       toast.error(err instanceof Error ? err.message : 'Could not delete this document.');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const updateSharedDocumentInCache = (updatedDocument: SavedDocument) => {
+    queryClient.setQueryData<DocumentsResponse>(documentsQueryKey, (current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        documents: current.documents.map((document) => (
+          document.id === updatedDocument.id ? { ...document, ...updatedDocument } : document
+        )),
+      };
+    });
+    setDocumentToShare((current) => current?.id === updatedDocument.id ? { ...current, ...updatedDocument } : current);
+  };
+
+  const runShareAction = async (action: 'enable' | 'disable' | 'regenerate') => {
+    if (!documentToShare) return;
+    setSharingAction(action);
+    try {
+      const response = await apiFetch<DocumentShareResponse>(`/api/documents/${documentToShare.id}/share`, {
+        method: action === 'enable' ? 'POST' : 'PATCH',
+        body: action === 'enable' ? undefined : JSON.stringify({
+          enabled: action !== 'disable',
+          regenerate: action === 'regenerate',
+        }),
+      });
+      updateSharedDocumentInCache(response.document);
+      if (action === 'disable') {
+        toast.success('Public CV link disabled.');
+      } else if (action === 'regenerate') {
+        toast.success('New public CV link created.');
+      } else {
+        toast.success('Public CV link enabled.');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not update the share link.');
+    } finally {
+      setSharingAction(null);
+    }
+  };
+
+  const copyShareLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copied.');
+    } catch {
+      toast.error('Could not copy link. Please allow clipboard access and try again.');
     }
   };
 
@@ -209,6 +267,10 @@ export default function MyCvs() {
                         menuOpen={openActionsDocumentId === document.id}
                         onToggleMenu={() => setOpenActionsDocumentId((current) => current === document.id ? null : document.id)}
                         onEdit={() => navigate(`/builder?document=${document.id}`)}
+                        onShare={() => {
+                          setOpenActionsDocumentId(null);
+                          setDocumentToShare(document);
+                        }}
                         onDelete={() => {
                           setOpenActionsDocumentId(null);
                           setDocumentToDelete(document);
@@ -294,6 +356,17 @@ export default function MyCvs() {
           </div>
         </div>
       )}
+      {documentToShare && (
+        <ShareCvModal
+          document={documentToShare}
+          action={sharingAction}
+          onClose={() => setDocumentToShare(null)}
+          onEnable={() => runShareAction('enable')}
+          onDisable={() => runShareAction('disable')}
+          onRegenerate={() => runShareAction('regenerate')}
+          onCopy={copyShareLink}
+        />
+      )}
     </div>
   );
 }
@@ -312,7 +385,7 @@ function FilterButton({ active, onClick, label, count }: { active: boolean; onCl
   );
 }
 
-function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, onEdit, onDelete }: { document: SavedDocument; templateMap: Map<string, TemplateConfigItem>; deleting: boolean; menuOpen: boolean; onToggleMenu: () => void; onEdit: () => void; onDelete: () => void }) {
+function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, onEdit, onShare, onDelete }: { document: SavedDocument; templateMap: Map<string, TemplateConfigItem>; deleting: boolean; menuOpen: boolean; onToggleMenu: () => void; onEdit: () => void; onShare: () => void; onDelete: () => void }) {
   const meta = templateMap.get(document.template as any);
   const image = meta?.thumbnail || '/templates/professional.webp';
   const templateLabel = meta?.label || document.template;
@@ -365,6 +438,10 @@ function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, o
                 <Edit3 size={14} />
                 Edit
               </button>
+              <button type="button" onClick={onShare} className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition hover:bg-white/8">
+                <Share2 size={14} />
+                Share
+              </button>
               <button type="button" onClick={onDelete} disabled={deleting} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-red-200 transition hover:bg-red-500/10 disabled:opacity-60">
                 {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
                 Delete
@@ -384,6 +461,14 @@ function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, o
         </button>
         <button
           type="button"
+          onClick={onShare}
+          className={`inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-extrabold transition active:scale-[0.98] min-[380px]:gap-2 min-[380px]:px-3 ${document.shareEnabled ? 'border-emerald-300/25 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20' : 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+        >
+          <Share2 size={14} />
+          Share
+        </button>
+        <button
+          type="button"
           onClick={onDelete}
           disabled={deleting}
           className="inline-flex min-h-10 items-center justify-center rounded-xl border border-red-400/20 bg-red-500/10 px-2 py-2 text-xs font-extrabold text-red-200 transition hover:bg-red-500/20 active:scale-[0.98] disabled:opacity-60 min-[380px]:px-3"
@@ -393,6 +478,121 @@ function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, o
         </button>
       </div>
     </article>
+  );
+}
+
+function absoluteShareUrl(url?: string | null) {
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${window.location.origin}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
+function ShareCvModal({
+  document,
+  action,
+  onClose,
+  onEnable,
+  onDisable,
+  onRegenerate,
+  onCopy,
+}: {
+  document: SavedDocument;
+  action: 'enable' | 'disable' | 'regenerate' | null;
+  onClose: () => void;
+  onEnable: () => void;
+  onDisable: () => void;
+  onRegenerate: () => void;
+  onCopy: (url: string) => void;
+}) {
+  const shareUrl = absoluteShareUrl(document.shareUrl || (document.shareSlug ? `/cv/${document.shareSlug}` : ''));
+  const isSharing = Boolean(action);
+
+  return (
+    <div className="fixed inset-0 z-80 flex items-center justify-center bg-slate-950/75 px-4 py-5 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-slate-900 text-white shadow-2xl shadow-black/40">
+        <div className="h-1 bg-linear-to-r from-emerald-400 via-cyan-400 to-violet-500" />
+        <div className="p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-black uppercase text-emerald-300">Live CV Link</p>
+              <h2 className="mt-1 truncate font-montserrat text-2xl font-black">{document.title}</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
+              aria-label="Close share dialog"
+            >
+              <X size={17} />
+            </button>
+          </div>
+
+          {document.shareEnabled && shareUrl ? (
+            <>
+              <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                <div className="flex items-center gap-2 text-xs font-black uppercase text-slate-500">
+                  <Link2 size={14} />
+                  Public link
+                </div>
+                <p className="mt-2 break-all text-sm font-bold leading-6 text-slate-100">{shareUrl}</p>
+              </div>
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => onCopy(shareUrl)}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-extrabold text-slate-100 transition hover:bg-white/10 active:scale-[0.98]"
+                >
+                  <Copy size={16} />
+                  Copy
+                </button>
+                <a
+                  href={shareUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-extrabold text-slate-100 transition hover:bg-white/10 active:scale-[0.98]"
+                >
+                  <ExternalLink size={16} />
+                  Open
+                </a>
+                <button
+                  type="button"
+                  onClick={onRegenerate}
+                  disabled={isSharing}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm font-extrabold text-amber-100 transition hover:bg-amber-500/20 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {action === 'regenerate' ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+                  Regenerate
+                </button>
+                <button
+                  type="button"
+                  onClick={onDisable}
+                  disabled={isSharing}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-red-500 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {action === 'disable' ? <Loader2 className="animate-spin" size={16} /> : <X size={16} />}
+                  Disable
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="mt-6">
+              <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4 text-sm font-semibold leading-6 text-slate-300">
+                This CV is private. Enable sharing to create a public browser link that always shows the latest saved version.
+              </div>
+              <button
+                type="button"
+                onClick={onEnable}
+                disabled={isSharing}
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-60"
+              >
+                {action === 'enable' ? <Loader2 className="animate-spin" size={16} /> : <Share2 size={16} />}
+                Enable Live Link
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

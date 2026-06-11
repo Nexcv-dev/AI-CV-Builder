@@ -190,6 +190,8 @@ export {
     generateCVHTML,
     renderCvTemplateString,
     sanitizeCvDataForStorage,
+    getPublicCvBaseUrl,
+    publicCvShareUrl,
     PAYHERE_PLAN_PRICES,
     buildPayHereCheckoutHash,
     buildPayHereMd5Signature,
@@ -682,11 +684,30 @@ const getFrontendOrigin = (req: Request) => {
     return getApiOrigin(req);
 };
 
+const getPublicCvBaseUrl = (req?: Request) => {
+    const configured = process.env.PUBLIC_CV_BASE_URL || process.env.FRONTEND_URL || process.env.ALLOWED_ORIGIN;
+    if (configured?.trim()) return configured.trim().replace(/\/+$/, '');
+    return req ? getApiOrigin(req) : '';
+};
+
+const publicCvShareUrl = (shareSlug: unknown, req?: Request) => {
+    if (typeof shareSlug !== 'string' || !shareSlug.trim()) return null;
+    const path = `/cv/${encodeURIComponent(shareSlug.trim())}`;
+    const baseUrl = getPublicCvBaseUrl(req);
+    return baseUrl ? `${baseUrl}${path}` : path;
+};
+
 const documentSummary = (document: any) => ({
     id: document._id.toString(),
     title: document.title,
     template: document.template,
     status: document.status || 'completed',
+    shareEnabled: Boolean(document.shareEnabled),
+    shareSlug: document.shareSlug || null,
+    shareUrl: document.shareEnabled ? publicCvShareUrl(document.shareSlug) : null,
+    shareCreatedAt: document.shareCreatedAt || null,
+    shareUpdatedAt: document.shareUpdatedAt || null,
+    shareRevokedAt: document.shareRevokedAt || null,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
 });
@@ -939,7 +960,7 @@ const routeDeps = {
     createLemonSqueezyCheckout, deleteLemonSqueezyDiscount, deleteLemonSqueezyDiscountsByCode, getLemonSqueezyConfigIssues, getMissingLemonSqueezyConfigKeys, isLemonSqueezyConfigured, syncLemonSqueezyDiscount, verifyLemonSqueezySignature,
     generateTransactionId, planDisplayName, createPlanExpiry, createRenewedPlanExpiry, getEffectivePlan, isPaidPlan,
     markSessionCurrent, invalidateUserSessions,
-    documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
+    documentSummary, documentDetails, titleFromCvData, sanitizeCvDataForStorage, getPublicCvBaseUrl, publicCvShareUrl, resolveRequestedTemplate, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, MAX_BASE64_LENGTH,
     extractCvText, parseCvTextToStructuredData, withImportMeta,
     getCvCreationQuota, incrementCvCreationQuota, rollbackCvCreationQuota, getCvImportQuota, consumeCvImportQuota, rollbackCvImportQuota, getHtmlPdfQuota, consumeHtmlPdfQuota, rollbackHtmlPdfQuota, buildCvCreationQuota, buildDownloadQuota,
     requireVerifiedEmail, requirePaidPlan,

@@ -11,6 +11,7 @@ NexCV uses AWS in five areas:
 - CV import SQS queue plus worker Lambda for background CV import parsing.
 - PDF renderer Lambda plus PDF export SQS queue and worker Lambda for background PDF downloads.
 - Optional email SQS queue plus worker Lambda for async transactional email.
+- Public live CV links served by the main app at `/cv/:shareSlug`, optionally cached by CloudFront.
 
 The main app sends jobs to queues. Queue worker Lambdas do the expensive work and write results back to MongoDB or S3. This keeps the Node app host from spending memory and CPU on OCR, Chromium, and slow email providers.
 
@@ -77,6 +78,10 @@ OCR_LAMBDA_TIMEOUT_MS=90000
 
 PDF_LAMBDA_URL=https://your-pdf-renderer-lambda-url
 PDF_LAMBDA_TIMEOUT_MS=45000
+
+PUBLIC_CV_BASE_URL=https://app.nexcv.com
+PUBLIC_CV_CACHE_BROWSER_SECONDS=60
+PUBLIC_CV_CACHE_CDN_SECONDS=300
 ```
 
 `CV_IMPORT_LOCAL_WORKER_DISABLED=true` is important in production. It prevents the main app from running OCR/import parsing locally when the SQS queue is configured.
@@ -589,6 +594,37 @@ Prefix: ocr-imports/
 Public access: blocked
 Encryption: enabled
 Lifecycle: expire ocr-imports/ after 1 day
+```
+
+## Public Live CV Links
+
+Live CV links do not need a new AWS data store. The public slug and share state live on the saved CV document in MongoDB, while CV images and template files continue to use the existing private S3 buckets through app routes.
+
+If `PUBLIC_CV_BASE_URL` is omitted, the app falls back to `FRONTEND_URL`, then `ALLOWED_ORIGIN`. Put CloudFront in front of the app only if you want edge caching for public CV pages.
+
+Recommended CloudFront behavior for public links:
+
+```txt
+Path pattern: /cv/*
+Allowed methods: GET, HEAD
+Cache policy: respect origin Cache-Control
+Forward query strings: none
+Forward cookies: none
+```
+
+Keep authenticated routes uncached:
+
+```txt
+Path pattern: /api/*
+Cache policy: disabled
+Forward cookies: all
+Forward required CORS/auth headers
+```
+
+The origin response for public CV links uses:
+
+```txt
+Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=600
 ```
 
 ## Production Smoke Tests
