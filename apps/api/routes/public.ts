@@ -31,6 +31,25 @@ const publicCvPreviewScript = `(() => {
   let preview = null;
   let resizeObserver = null;
 
+  const setupOverscrollGuard = () => {
+    let touchStartY = 0;
+
+    document.addEventListener('touchstart', (event) => {
+      if (event.touches.length === 1) touchStartY = event.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (event) => {
+      if (event.touches.length !== 1) return;
+
+      const currentY = event.touches[0].clientY;
+      const pullingPastTop = window.scrollY <= 0 && currentY > touchStartY;
+      const viewportBottom = window.scrollY + window.innerHeight;
+      const documentBottom = document.documentElement.scrollHeight;
+      const pullingPastBottom = viewportBottom >= documentBottom - 1 && currentY < touchStartY;
+      if (pullingPastTop || pullingPastBottom) event.preventDefault();
+    }, { passive: false });
+  };
+
   const setupDownloadButton = () => {
     const button = document.querySelector('.nexcv-public-toolbar a');
     if (!button) return;
@@ -86,6 +105,7 @@ const publicCvPreviewScript = `(() => {
   };
 
   const start = () => {
+    setupOverscrollGuard();
     setupDownloadButton();
     preview = findPreview();
     if (!preview) return;
@@ -158,7 +178,10 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       min-height: 100% !important;
       overflow-x: hidden !important;
       overscroll-behavior-x: none !important;
-      background: #020617 !important;
+      overscroll-behavior-y: none !important;
+      background:
+        radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 32rem),
+        linear-gradient(135deg, #020617 0%, #111827 48%, #1e1b4b 100%) !important;
     }
     body {
       box-sizing: border-box !important;
@@ -170,6 +193,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       padding: 0 16px 32px !important;
       overflow-x: hidden !important;
       overscroll-behavior-x: none !important;
+      overscroll-behavior-y: none !important;
       touch-action: pan-y !important;
       display: flex !important;
       flex-direction: column !important;

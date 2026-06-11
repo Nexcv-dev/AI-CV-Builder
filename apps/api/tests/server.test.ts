@@ -924,6 +924,7 @@ describe('Server Utils', () => {
         expect(html).toContain('<script src="/assets/public-cv-preview.js?v=20260611-2" defer></script>');
         expect(html).toContain('box-sizing: border-box !important;');
         expect(html).toContain('overflow-x: hidden !important;');
+        expect(html).toContain('overscroll-behavior-y: none !important;');
         expect(html).toContain('touch-action: pan-y !important;');
         expect(html).toContain('position: sticky !important;');
         expect(html).toContain('margin: 0 auto 16px !important;');
@@ -944,6 +945,8 @@ describe('Server Utils', () => {
         expect(previewScript.headers.get('content-type')).toContain('application/javascript');
         expect(previewScript.headers.get('cache-control')).toContain('no-store');
         expect(previewScriptBody).toContain("matchMedia('(max-width: 840px)')");
+        expect(previewScriptBody).toContain('setupOverscrollGuard();');
+        expect(previewScriptBody).toContain('pullingPastTop || pullingPastBottom');
         expect(previewScriptBody).toContain("preview.style.setProperty('margin-bottom'");
         expect(previewScriptBody.indexOf('setupDownloadButton();')).toBeLessThan(previewScriptBody.indexOf('preview = findPreview();'));
         expect(previewScriptBody).toContain("button.textContent = 'Preparing PDF...'");
