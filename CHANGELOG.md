@@ -3,16 +3,19 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #260 from Nexcv-dev/test/overview (02410eb) - Bimantha Perera, 15 seconds ago
-* improve cv link download button layout (b48a348) - Bimantha Perera, 5 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (b10fab2) - bimanthaperera-lab, 30 minutes ago
-* Merge pull request #259 from Nexcv-dev/test/overview (4a1a891) - Bimantha Perera, 30 minutes ago
-* fix cv live link issue (333a352) - Bimantha Perera, 32 minutes ago
+* Merge pull request #261 from Nexcv-dev/test/overview (23ca975) - Bimantha Perera, 11 seconds ago
+* improve live cv link layout (42e8169) - Bimantha Perera, 3 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (071e037) - bimanthaperera-lab, 17 minutes ago
+* Merge pull request #260 from Nexcv-dev/test/overview (02410eb) - Bimantha Perera, 18 minutes ago
+* improve cv link download button layout (b48a348) - Bimantha Perera, 23 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (b10fab2) - bimanthaperera-lab, 47 minutes ago
+* Merge pull request #259 from Nexcv-dev/test/overview (4a1a891) - Bimantha Perera, 47 minutes ago
+* fix cv live link issue (333a352) - Bimantha Perera, 50 minutes ago
 * docs: auto-update CHANGELOG.md [skip ci] (3ca3e48) - bimanthaperera-lab, 9 hours ago
 * Merge pull request #255 from Nexcv-dev/test/overview (7280148) - Bimantha Perera, 9 hours ago
 * add analytics for live link (0fcc685) - Bimantha Perera, 9 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (4a275f2) - bimanthaperera-lab, 9 hours ago
-* Merge pull request #254 from Nexcv-dev/test/overview (d9ad227) - Bimantha Perera, 9 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (4a275f2) - bimanthaperera-lab, 10 hours ago
+* Merge pull request #254 from Nexcv-dev/test/overview (d9ad227) - Bimantha Perera, 10 hours ago
 * fix live link layout issue (cc9bf13) - Bimantha Perera, 10 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (71c17c9) - bimanthaperera-lab, 10 hours ago
 * Merge pull request #253 from Nexcv-dev/test/overview (15f1401) - Bimantha Perera, 10 hours ago
@@ -21,12 +24,12 @@ All notable changes to this project will be documented in this file.
 * add test cases for pdf downloading and payment flow (757fb62) - Bimantha Perera, 22 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (c87ee91) - bimanthaperera-lab, 29 hours ago
 * Merge pull request #252 from Nexcv-dev/test/overview (fca69f2) - Bimantha Perera, 29 hours ago
-* Create html to pdf worker.txt (3bcf474) - Bimantha Perera, 29 hours ago
+* Create html to pdf worker.txt (3bcf474) - Bimantha Perera, 30 hours ago
 * fix pdf generation issue (76b2f7b) - Bimantha Perera, 30 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (2d582ad) - bimanthaperera-lab, 33 hours ago
 * Merge pull request #249 from Nexcv-dev/test/overview (d5f9c0b) - Bimantha Perera, 33 hours ago
-* fix github action workflow node version warning (9f92bbc) - Bimantha Perera, 33 hours ago
-* fix docker image build issue in pipeline (c9e0b3d) - Bimantha Perera, 33 hours ago
+* fix github action workflow node version warning (9f92bbc) - Bimantha Perera, 34 hours ago
+* fix docker image build issue in pipeline (c9e0b3d) - Bimantha Perera, 34 hours ago
 * update docs (ca5010e) - Bimantha Perera, 34 hours ago
 * update docs (97c3fc2) - Bimantha Perera, 35 hours ago
 * isolate admin code (7cb898d) - Bimantha Perera, 35 hours ago
@@ -60,7 +63,7 @@ All notable changes to this project will be documented in this file.
 * add new social links to templates (5e6d21b) - Bimantha Perera, 3 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (4c0641c) - bimanthaperera-lab, 3 days ago
 * Merge pull request #238 from Nexcv-dev/test/overview (80a5254) - Bimantha Perera, 3 days ago
-* fix test failed issue (764c468) - Bimantha Perera, 3 days ago
+* fix test failed issue (764c468) - Bimantha Perera, 4 days ago
 * improve ui in html to pdf option (c701276) - Bimantha Perera, 4 days ago
 * give html to pdf option to geust users (4bd8aa4) - Bimantha Perera, 4 days ago
 * add html to pdf option (90ace46) - Bimantha Perera, 4 days ago
