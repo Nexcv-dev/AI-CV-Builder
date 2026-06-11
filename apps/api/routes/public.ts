@@ -49,6 +49,44 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         const safeTitle = htmlEscape(title);
         const safeDescription = htmlEscape(description);
         const safeCanonicalUrl = htmlEscape(canonicalUrl);
+        const publicPreviewCss = `
+<style id="nexcv-public-cv-preview">
+  @media screen {
+    html {
+      width: 100% !important;
+      min-width: 0 !important;
+      min-height: 100% !important;
+      overflow-x: auto !important;
+      background: #e5e7eb !important;
+    }
+    body {
+      width: 100% !important;
+      min-width: 0 !important;
+      min-height: 100vh !important;
+      margin: 0 !important;
+      padding: 24px 12px !important;
+      display: flex !important;
+      align-items: flex-start !important;
+      justify-content: center !important;
+      background: #e5e7eb !important;
+    }
+    body > :not(.nexcv-watermark):not(script):not(style) {
+      flex: 0 0 auto !important;
+      width: 210mm !important;
+      max-width: 210mm !important;
+      min-width: 210mm !important;
+      min-height: 297mm !important;
+      margin: 0 auto !important;
+      background: #ffffff !important;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22) !important;
+    }
+  }
+  @media screen and (max-width: 840px) {
+    body {
+      justify-content: flex-start !important;
+    }
+  }
+</style>`;
         const meta = [
             `<meta name="description" content="${safeDescription}">`,
             `<meta name="robots" content="noindex, nofollow">`,
@@ -60,6 +98,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             '<meta name="twitter:card" content="summary">',
             `<meta name="twitter:title" content="${safeTitle}">`,
             `<meta name="twitter:description" content="${safeDescription}">`,
+            publicPreviewCss,
         ].join('\n');
 
         const withTitle = /<title>[\s\S]*?<\/title>/i.test(html)
@@ -70,6 +109,24 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         return withTitle.includes('</head>')
             ? withTitle.replace('</head>', `${meta}\n</head>`)
             : `<!doctype html><html><head><title>${safeTitle}</title>${meta}</head><body>${withTitle}</body></html>`;
+    };
+    const linkifyPlainPublicCvUrls = (html: string) => {
+        const linkedText = (text: string) => text.replace(
+            /\bhttps?:\/\/[^\s<>"']+/gi,
+            (rawUrl) => {
+                const trailing = rawUrl.match(/[),.;:!?]+$/)?.[0] || '';
+                const url = trailing ? rawUrl.slice(0, -trailing.length) : rawUrl;
+                const safeUrl = htmlEscape(url);
+                return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>${trailing}`;
+            }
+        );
+
+        const chunks = html.split(/(<a\b[\s\S]*?<\/a>|<script\b[\s\S]*?<\/script>|<style\b[\s\S]*?<\/style>|<[^>]+>)/gi);
+        return chunks.map((chunk) => (
+            /^<(?:a|script|style)\b/i.test(chunk) || /^<[^>]+>$/.test(chunk)
+                ? chunk
+                : linkedText(chunk)
+        )).join('');
     };
     const renderSharedCvHtml = async (document: any, watermark: boolean) => {
         const template = document.template || DEFAULT_TEMPLATE;
@@ -209,7 +266,9 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             const title = `${String(fullName).trim() || 'Public CV'} - CV`;
             const description = String(summary).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180) || title;
             const canonicalUrl = `${getApiOrigin(req).replace(/\/+$/, '')}/cv/${encodeURIComponent(shareSlug)}`;
-            const html = injectPublicCvMeta(await renderSharedCvHtml(document, watermark), title, description, canonicalUrl);
+            const html = linkifyPlainPublicCvUrls(
+                injectPublicCvMeta(await renderSharedCvHtml(document, watermark), title, description, canonicalUrl)
+            );
 
             res.setHeader('Cache-Control', publicCvCacheControl());
             res.setHeader('Content-Type', 'text/html; charset=utf-8');

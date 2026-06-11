@@ -779,7 +779,7 @@ describe('Server Utils', () => {
         cvData: {
           personalInfo: {
             fullName: 'Jane Doe',
-            summary: 'Safe <strong>summary</strong><script>alert(1)</script>',
+            summary: 'Safe profile at https://github.com/Nexcv-dev/AI-CV-Builder',
           },
         },
       };
@@ -796,7 +796,7 @@ describe('Server Utils', () => {
         TemplateSetting: { findOne: vi.fn() },
         publicFormLimiter: (_req: any, _res: any, next: any) => next(),
         generateS3CVHTML: vi.fn().mockResolvedValue(null),
-        generateCVHTML: vi.fn((cvData: any) => `<html><head></head><body>${cvData.personalInfo.fullName}<script>alert(1)</script></body></html>`),
+        generateCVHTML: vi.fn((cvData: any) => `<html><head></head><body>${cvData.personalInfo.fullName}<p>${cvData.personalInfo.summary}</p><a href="https://example.com">Existing</a></body></html>`),
         isPaidPlan: vi.fn(() => false),
         getApiOrigin: () => 'https://app.example.com',
         sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
@@ -817,6 +817,8 @@ describe('Server Utils', () => {
         expect(response.headers.get('cache-control')).toContain('s-maxage=300');
         expect(html).toContain('<title>Jane Doe - CV</title>');
         expect(html).toContain('Jane Doe');
+        expect(html).toContain('<a href="https://github.com/Nexcv-dev/AI-CV-Builder" target="_blank" rel="noopener noreferrer">https://github.com/Nexcv-dev/AI-CV-Builder</a>');
+        expect(html).toContain('<a href="https://example.com">Existing</a>');
         expect(CVDocument.findOne).toHaveBeenCalledWith({ shareEnabled: true, shareSlug: 'public_slug_123456' });
 
         const missing = await fetch(`http://127.0.0.1:${address.port}/cv/bad`);
