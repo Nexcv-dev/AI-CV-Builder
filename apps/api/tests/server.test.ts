@@ -946,6 +946,7 @@ describe('Server Utils', () => {
         expect(previewScript.headers.get('cache-control')).toContain('no-store');
         expect(previewScriptBody).toContain("matchMedia('(max-width: 840px)')");
         expect(previewScriptBody).toContain('setupOverscrollGuard();');
+        expect(previewScriptBody).toContain('touchStartedAtBottom = maxScrollY > 1');
         expect(previewScriptBody).toContain('pullingPastTop || pullingPastBottom');
         expect(previewScriptBody).toContain("preview.style.setProperty('margin-bottom'");
         expect(previewScriptBody.indexOf('setupDownloadButton();')).toBeLessThan(previewScriptBody.indexOf('preview = findPreview();'));

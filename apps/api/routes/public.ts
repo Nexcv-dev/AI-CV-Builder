@@ -33,9 +33,14 @@ const publicCvPreviewScript = `(() => {
 
   const setupOverscrollGuard = () => {
     let touchStartY = 0;
+    let touchStartedAtBottom = false;
 
     document.addEventListener('touchstart', (event) => {
-      if (event.touches.length === 1) touchStartY = event.touches[0].clientY;
+      if (event.touches.length !== 1) return;
+      touchStartY = event.touches[0].clientY;
+      const scrollingElement = document.scrollingElement || document.documentElement;
+      const maxScrollY = Math.max(0, scrollingElement.scrollHeight - scrollingElement.clientHeight);
+      touchStartedAtBottom = maxScrollY > 1 && scrollingElement.scrollTop >= maxScrollY - 1;
     }, { passive: true });
 
     document.addEventListener('touchmove', (event) => {
@@ -43,9 +48,7 @@ const publicCvPreviewScript = `(() => {
 
       const currentY = event.touches[0].clientY;
       const pullingPastTop = window.scrollY <= 0 && currentY > touchStartY;
-      const viewportBottom = window.scrollY + window.innerHeight;
-      const documentBottom = document.documentElement.scrollHeight;
-      const pullingPastBottom = viewportBottom >= documentBottom - 1 && currentY < touchStartY;
+      const pullingPastBottom = touchStartedAtBottom && currentY < touchStartY;
       if (pullingPastTop || pullingPastBottom) event.preventDefault();
     }, { passive: false });
   };
