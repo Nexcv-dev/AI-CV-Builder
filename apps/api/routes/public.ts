@@ -292,6 +292,19 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     @keyframes nexcv-download-spin {
       to { transform: rotate(360deg); }
     }
+  @media screen and (min-width: 841px) {
+    html {
+      height: auto !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: none !important;
+    }
+    body {
+      height: auto !important;
+      min-height: 100vh !important;
+      overflow-y: visible !important;
+      touch-action: auto !important;
+    }
+  }
   @media screen and (max-width: 840px) {
     body {
       align-items: center !important;
