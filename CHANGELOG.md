@@ -3,22 +3,25 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #253 from Nexcv-dev/test/overview (15f1401) - Bimantha Perera, 10 seconds ago
-* implement new live cv link option (139faf0) - Bimantha Perera, 13 minutes ago
+* Merge pull request #254 from Nexcv-dev/test/overview (d9ad227) - Bimantha Perera, 8 seconds ago
+* fix live link layout issue (cc9bf13) - Bimantha Perera, 9 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (71c17c9) - bimanthaperera-lab, 16 minutes ago
+* Merge pull request #253 from Nexcv-dev/test/overview (15f1401) - Bimantha Perera, 16 minutes ago
+* implement new live cv link option (139faf0) - Bimantha Perera, 29 minutes ago
 * Update useCheckoutReturnHandler.test.tsx (f896319) - Bimantha Perera, 12 hours ago
-* add test cases for pdf downloading and payment flow (757fb62) - Bimantha Perera, 12 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (c87ee91) - bimanthaperera-lab, 19 hours ago
-* Merge pull request #252 from Nexcv-dev/test/overview (fca69f2) - Bimantha Perera, 19 hours ago
+* add test cases for pdf downloading and payment flow (757fb62) - Bimantha Perera, 13 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (c87ee91) - bimanthaperera-lab, 20 hours ago
+* Merge pull request #252 from Nexcv-dev/test/overview (fca69f2) - Bimantha Perera, 20 hours ago
 * Create html to pdf worker.txt (3bcf474) - Bimantha Perera, 20 hours ago
 * fix pdf generation issue (76b2f7b) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2d582ad) - bimanthaperera-lab, 23 hours ago
-* Merge pull request #249 from Nexcv-dev/test/overview (d5f9c0b) - Bimantha Perera, 23 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2d582ad) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #249 from Nexcv-dev/test/overview (d5f9c0b) - Bimantha Perera, 24 hours ago
 * fix github action workflow node version warning (9f92bbc) - Bimantha Perera, 24 hours ago
 * fix docker image build issue in pipeline (c9e0b3d) - Bimantha Perera, 24 hours ago
 * update docs (ca5010e) - Bimantha Perera, 24 hours ago
 * update docs (97c3fc2) - Bimantha Perera, 25 hours ago
 * isolate admin code (7cb898d) - Bimantha Perera, 25 hours ago
-* clean code architecture (4083ab1) - Bimantha Perera, 25 hours ago
+* clean code architecture (4083ab1) - Bimantha Perera, 26 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (e9e6145) - bimanthaperera-lab, 2 days ago
 * Merge pull request #248 from Nexcv-dev/test/overview (9f06d1f) - Bimantha Perera, 2 days ago
 * Merge remote-tracking branch 'origin/main' into test/overview (e5e8a50) - Bimantha Perera, 2 days ago
@@ -49,7 +52,7 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (4c0641c) - bimanthaperera-lab, 3 days ago
 * Merge pull request #238 from Nexcv-dev/test/overview (80a5254) - Bimantha Perera, 3 days ago
 * fix test failed issue (764c468) - Bimantha Perera, 3 days ago
-* improve ui in html to pdf option (c701276) - Bimantha Perera, 3 days ago
+* improve ui in html to pdf option (c701276) - Bimantha Perera, 4 days ago
 * give html to pdf option to geust users (4bd8aa4) - Bimantha Perera, 4 days ago
 * add html to pdf option (90ace46) - Bimantha Perera, 4 days ago
 * Update AdminOverviewSections.tsx (98e0b41) - Bimantha Perera, 4 days ago
@@ -104,7 +107,7 @@ All notable changes to this project will be documented in this file.
 * add cv import queue (b178a94) - Bimantha Perera, 6 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 6 days ago
 * Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 6 days ago
-* add email to AWS que system (7f08638) - Bimantha Perera, 6 days ago
+* add email to AWS que system (7f08638) - Bimantha Perera, 7 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (d5598a2) - bimanthaperera-lab, 7 days ago
 * Merge pull request #220 from bimanthaperera-lab/test/overview (f626f2c) - Bimantha Perera, 7 days ago
 * Code optimization and add pdf generation que system (6091eec) - Bimantha Perera, 7 days ago
