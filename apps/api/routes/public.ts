@@ -31,6 +31,25 @@ const publicCvPreviewScript = `(() => {
   let preview = null;
   let resizeObserver = null;
 
+  const setupOverscrollGuard = () => {
+    let touchStartY = 0;
+
+    document.addEventListener('touchstart', (event) => {
+      if (event.touches.length === 1) touchStartY = event.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (event) => {
+      if (event.touches.length !== 1) return;
+
+      const currentY = event.touches[0].clientY;
+      const pullingPastTop = window.scrollY <= 0 && currentY > touchStartY;
+      const viewportBottom = window.scrollY + window.innerHeight;
+      const documentBottom = document.documentElement.scrollHeight;
+      const pullingPastBottom = viewportBottom >= documentBottom - 1 && currentY < touchStartY;
+      if (pullingPastTop || pullingPastBottom) event.preventDefault();
+    }, { passive: false });
+  };
+
   const setupDownloadButton = () => {
     const button = document.querySelector('.nexcv-public-toolbar a');
     if (!button) return;
@@ -86,12 +105,13 @@ const publicCvPreviewScript = `(() => {
   };
 
   const start = () => {
+    setupOverscrollGuard();
+    setupDownloadButton();
     preview = findPreview();
     if (!preview) return;
     resizeObserver = new ResizeObserver(syncPreviewHeight);
     resizeObserver.observe(preview);
     syncPreviewHeight();
-    setupDownloadButton();
     window.addEventListener('resize', syncPreviewHeight, { passive: true });
     fittedPreviewQuery.addEventListener?.('change', syncPreviewHeight);
   };
@@ -158,7 +178,10 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       min-height: 100% !important;
       overflow-x: hidden !important;
       overscroll-behavior-x: none !important;
-      background: #020617 !important;
+      overscroll-behavior-y: none !important;
+      background:
+        radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 32rem),
+        linear-gradient(135deg, #020617 0%, #111827 48%, #1e1b4b 100%) !important;
     }
     body {
       box-sizing: border-box !important;
@@ -170,6 +193,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       padding: 0 16px 32px !important;
       overflow-x: hidden !important;
       overscroll-behavior-x: none !important;
+      overscroll-behavior-y: none !important;
       touch-action: pan-y !important;
       display: flex !important;
       flex-direction: column !important;
@@ -355,7 +379,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             `<meta name="twitter:title" content="${safeTitle}">`,
             `<meta name="twitter:description" content="${safeDescription}">`,
             publicPreviewCss,
-            '<script src="/assets/public-cv-preview.js" defer></script>',
+            '<script src="/assets/public-cv-preview.js?v=20260611-2" defer></script>',
         ].join('\n');
 
         const withTitle = /<title>[\s\S]*?<\/title>/i.test(html)
@@ -505,7 +529,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     });
 
     router.get('/assets/public-cv-preview.js', (_req: Request, res: Response) => {
-        res.setHeader('Cache-Control', publicCacheControl(3600, 86400));
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         return res.type('application/javascript').send(publicCvPreviewScript);
     });
 
