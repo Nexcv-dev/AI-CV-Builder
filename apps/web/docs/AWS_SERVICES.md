@@ -82,6 +82,7 @@ PDF_LAMBDA_TIMEOUT_MS=45000
 PUBLIC_CV_BASE_URL=https://app.nexcv.com
 PUBLIC_CV_CACHE_BROWSER_SECONDS=60
 PUBLIC_CV_CACHE_CDN_SECONDS=300
+PUBLIC_CV_DOWNLOAD_LIMIT_PER_HOUR=5
 ```
 
 `CV_IMPORT_LOCAL_WORKER_DISABLED=true` is important in production. It prevents the main app from running OCR/import parsing locally when the SQS queue is configured.

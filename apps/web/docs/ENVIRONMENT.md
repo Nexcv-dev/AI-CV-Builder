@@ -14,6 +14,7 @@ This reference lists the environment variables used by the main NexCV app, worke
 | `PUBLIC_CV_BASE_URL` | Optional | Base origin used when returning public live CV share links. Falls back to `FRONTEND_URL`, then `ALLOWED_ORIGIN`. |
 | `PUBLIC_CV_CACHE_BROWSER_SECONDS` | Optional | Browser cache seconds for `/cv/:shareSlug`. Defaults to `60`. |
 | `PUBLIC_CV_CACHE_CDN_SECONDS` | Optional | CDN `s-maxage` seconds for `/cv/:shareSlug`. Defaults to `300`. |
+| `PUBLIC_CV_DOWNLOAD_LIMIT_PER_HOUR` | Optional | Public shared CV PDF downloads allowed per IP per CV link per hour. Defaults to `5`. |
 | `SESSION_SECRET` | Production | Long random session secret. Required in production. |
 | `SESSION_COOKIE_NAME` | Optional | Session cookie name. Defaults to `nexcv.sid`. |
 | `SESSION_STORE_MAX_POOL_SIZE` | Optional | Mongo session-store pool size. Defaults to `5`. |

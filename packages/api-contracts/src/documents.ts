@@ -26,6 +26,10 @@ export interface SavedDocument {
   shareCreatedAt?: string | Date | null;
   shareUpdatedAt?: string | Date | null;
   shareRevokedAt?: string | Date | null;
+  shareViewCount?: number;
+  shareDownloadCount?: number;
+  shareLastViewedAt?: string | Date | null;
+  shareLastDownloadedAt?: string | Date | null;
   createdAt: string;
   updatedAt: string;
 }

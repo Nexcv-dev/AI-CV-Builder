@@ -787,7 +787,13 @@ describe('Server Utils', () => {
         findOne: vi.fn(() => ({
           populate: vi.fn().mockResolvedValue(publicDocument),
         })),
+        updateOne: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
       };
+      const generatePdfDocument = vi.fn().mockResolvedValue({
+        buffer: Buffer.from('%PDF-1.4 shared'),
+        renderer: 'test',
+        templateSource: 'shared-cv',
+      });
 
       registerPublicRoutes(router, {
         CVDocument,
@@ -797,6 +803,8 @@ describe('Server Utils', () => {
         publicFormLimiter: (_req: any, _res: any, next: any) => next(),
         generateS3CVHTML: vi.fn().mockResolvedValue(null),
         generateCVHTML: vi.fn((cvData: any) => `<html><head></head><body>${cvData.personalInfo.fullName}<p>${cvData.personalInfo.summary}</p><a href="https://example.com">Existing</a></body></html>`),
+        generatePdfDocument,
+        sanitizeCvData: vi.fn((data) => data),
         isPaidPlan: vi.fn(() => false),
         getApiOrigin: () => 'https://app.example.com',
         sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
@@ -823,6 +831,23 @@ describe('Server Utils', () => {
 
         const missing = await fetch(`http://127.0.0.1:${address.port}/cv/bad`);
         expect(missing.status).toBe(404);
+
+        const download = await fetch(`http://127.0.0.1:${address.port}/cv/public_slug_123456/download`);
+        const downloadBody = Buffer.from(await download.arrayBuffer()).toString('utf8');
+
+        expect(download.status).toBe(200);
+        expect(download.headers.get('content-type')).toContain('application/pdf');
+        expect(download.headers.get('content-disposition')).toContain('Jane_CV_Resume.pdf');
+        expect(downloadBody).toContain('%PDF-1.4 shared');
+        expect(generatePdfDocument).toHaveBeenCalledWith(expect.objectContaining({
+          template: 'classic',
+          watermark: true,
+          templateSource: 'shared-cv',
+        }));
+        expect(CVDocument.updateOne).toHaveBeenCalledWith(
+          { _id: publicDocument._id },
+          expect.objectContaining({ $inc: { shareDownloadCount: 1 } })
+        );
       } finally {
         await new Promise<void>((resolve, reject) => {
           server.close((error) => error ? reject(error) : resolve());
