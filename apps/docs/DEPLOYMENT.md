@@ -136,6 +136,8 @@ LEMON_SQUEEZY_WEBHOOK_SECRET=your_webhook_secret
 
 S3_TEMPLATE_BUCKET_NAME=your_template_bucket
 S3_TEMPLATE_PREFIX=templates
+S3_CV_ASSET_BUCKET_NAME=your_template_bucket
+S3_CV_ASSET_PREFIX=cv-assets
 AWS_REGION=eu-north-1
 
 PDF_LAMBDA_URL=https://your-lambda-url.example

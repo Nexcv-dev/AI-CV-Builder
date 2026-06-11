@@ -156,7 +156,22 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
         try {
             const documents = await CVDocument.find({ userId: currentUserId(req) })
                 .sort({ updatedAt: -1 })
-                .select('title template status createdAt updatedAt');
+                .select([
+                    'title',
+                    'template',
+                    'status',
+                    'shareEnabled',
+                    'shareSlug',
+                    'shareCreatedAt',
+                    'shareUpdatedAt',
+                    'shareRevokedAt',
+                    'shareViewCount',
+                    'shareDownloadCount',
+                    'shareLastViewedAt',
+                    'shareLastDownloadedAt',
+                    'createdAt',
+                    'updatedAt',
+                ].join(' '));
             const quota = await getCvCreationQuota(req.user);
             const downloadQuota = await getDownloadQuota(req.user);
             const response = { documents: documents.map(documentSummary), quota, downloadQuota } satisfies DocumentsResponse;

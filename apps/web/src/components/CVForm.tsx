@@ -86,6 +86,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
   const [expandedSection, setExpandedSection] = useState<string | null>('personalDetails');
   const [wizardStep, setWizardStep] = useState(0);
   const [isDraggingSection, setIsDraggingSection] = useState(false);
+  const [isProfileImageUploading, setIsProfileImageUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const progressContainerRef = useRef<HTMLDivElement>(null);
@@ -559,13 +560,14 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target;
     const file = target.files?.[0];
-    if (!file) return;
+    if (!file || isProfileImageUploading) return;
 
     if (file.size > MAX_IMAGE_FILE_SIZE) {
       toast.error('Image is too large. Maximum allowed size is 5 MB.');
       target.value = '';
       return;
     }
+    setIsProfileImageUploading(true);
     try {
       const compressedImage = await compressAndResizeImage(file);
       const { imageUrl } = await apiFetch<{ imageUrl: string }>('/api/profile-images', {
@@ -577,6 +579,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
       console.error('Error processing image:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to upload image.');
     } finally {
+      setIsProfileImageUploading(false);
       target.value = '';
     }
   };
@@ -930,6 +933,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
               isDarkMode={isDarkMode}
               fileInputRef={fileInputRef}
               onImageUpload={handleImageUpload}
+              isImageUploading={isProfileImageUploading}
             />
           </Suspense>
         ) : (

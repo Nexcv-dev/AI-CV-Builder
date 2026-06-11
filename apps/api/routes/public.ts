@@ -179,6 +179,10 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     }
     .nexcv-public-toolbar a {
       width: 100% !important;
+      min-height: 52px !important;
+      padding: 0 18px !important;
+      font-size: 15px !important;
+      border-radius: 12px !important;
     }
   }
   @media print {

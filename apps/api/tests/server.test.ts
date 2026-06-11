@@ -676,6 +676,98 @@ describe('Server Utils', () => {
   });
 
   describe('public CV sharing', () => {
+    it('should keep live-link analytics in the document list after reload', async () => {
+      const app = express();
+      const router = express.Router();
+      const user = { _id: '507f1f77bcf86cd799439011' };
+      const document = {
+        _id: '507f1f77bcf86cd799439012',
+        title: 'Jane CV',
+        template: 'classic',
+        status: 'completed',
+        shareEnabled: true,
+        shareSlug: 'public_slug_123456',
+        shareViewCount: 12,
+        shareDownloadCount: 4,
+        createdAt: new Date('2026-06-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+      };
+      const select = vi.fn().mockResolvedValue([document]);
+      const sort = vi.fn(() => ({ select }));
+      const CVDocument = {
+        find: vi.fn(() => ({ sort })),
+      };
+
+      app.use((req: any, _res, next) => {
+        req.user = user;
+        req.isAuthenticated = () => true;
+        next();
+      });
+      registerCvRoutes(router, {
+        CVDocument,
+        aiLimiter: (_req: any, _res: any, next: any) => next(),
+        cvImportLimiter: (_req: any, _res: any, next: any) => next(),
+        pdfLimiter: (_req: any, _res: any, next: any) => next(),
+        cvImportJsonParser: express.json({ limit: '1mb' }),
+        pdfJsonParser: express.json({ limit: '1mb' }),
+        requireAuth: (_req: any, _res: any, next: any) => next(),
+        currentUserId: () => user._id,
+        getCvCreationQuota: vi.fn().mockResolvedValue({
+          limit: 5,
+          used: 1,
+          remaining: 4,
+          reached: false,
+        }),
+        getDownloadQuota: vi.fn().mockResolvedValue({
+          limit: 1,
+          used: 0,
+          remaining: 1,
+          reached: false,
+        }),
+        documentSummary: (doc: any) => ({
+          id: String(doc._id),
+          title: doc.title,
+          template: doc.template,
+          status: doc.status,
+          shareEnabled: Boolean(doc.shareEnabled),
+          shareSlug: doc.shareSlug,
+          shareUrl: doc.shareEnabled ? `/cv/${doc.shareSlug}` : null,
+          shareViewCount: doc.shareViewCount,
+          shareDownloadCount: doc.shareDownloadCount,
+          createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
+        }),
+        sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
+      });
+      app.use(router);
+
+      const server = await new Promise<Server>((resolve) => {
+        const listeningServer = app.listen(0, '127.0.0.1', () => resolve(listeningServer));
+      });
+      const address = server.address();
+      if (!address || typeof address === 'string') throw new Error('Test server did not bind to a TCP port.');
+
+      try {
+        const response = await fetch(`http://127.0.0.1:${address.port}/api/documents`);
+        const body = await response.json() as { documents: any[] };
+
+        expect(response.status).toBe(200);
+        expect(body.documents[0]).toMatchObject({
+          shareEnabled: true,
+          shareSlug: 'public_slug_123456',
+          shareViewCount: 12,
+          shareDownloadCount: 4,
+        });
+        expect(select).toHaveBeenCalledWith(expect.stringContaining('shareEnabled'));
+        expect(select).toHaveBeenCalledWith(expect.stringContaining('shareViewCount'));
+        expect(select).toHaveBeenCalledWith(expect.stringContaining('shareDownloadCount'));
+      } finally {
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => error ? reject(error) : resolve());
+        });
+      }
+    });
+
     it('should enable, return, and disable an owned live CV link', async () => {
       const app = express();
       const router = express.Router();
@@ -827,6 +919,9 @@ describe('Server Utils', () => {
         expect(html).toContain('Jane Doe');
         expect(html).toContain('<a href="https://github.com/Nexcv-dev/AI-CV-Builder" target="_blank" rel="noopener noreferrer">https://github.com/Nexcv-dev/AI-CV-Builder</a>');
         expect(html).toContain('<a href="https://example.com">Existing</a>');
+        expect(html).toContain('<a href="/cv/public_slug_123456/download">Download PDF</a>');
+        expect(html).toContain('min-height: 52px !important;');
+        expect(html).toContain('font-size: 15px !important;');
         expect(CVDocument.findOne).toHaveBeenCalledWith({ shareEnabled: true, shareSlug: 'public_slug_123456' });
 
         const missing = await fetch(`http://127.0.0.1:${address.port}/cv/bad`);

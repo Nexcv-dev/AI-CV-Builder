@@ -155,6 +155,33 @@ describe('CVForm Logic', () => {
     expect(newState.imageY).toBe(0);
   });
 
+  it('shows a loading state while a profile image is uploading', async () => {
+    render(
+      <MemoryRouter>
+        <CVForm cvData={initialData} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByText(/Design/i).closest('button')!);
+
+    const imageInput = await waitFor(() => {
+      const input = document.querySelector('input[accept="image/*"]') as HTMLInputElement;
+      if (!input) throw new Error('Image input not found');
+      return input;
+    });
+    const file = new File(['image content'], 'test.png', { type: 'image/png' });
+
+    fireEvent.change(imageInput, { target: { files: [file] } });
+
+    const uploadButton = await screen.findByRole('button', { name: 'Uploading...' });
+    expect(uploadButton).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('Profile photo is uploading.');
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Upload Photo' })).toBeEnabled();
+    });
+  });
+
   it('applies aria-label to skill level buttons for accessibility', async () => {
     const dataWithSkills = {
       ...initialData,
