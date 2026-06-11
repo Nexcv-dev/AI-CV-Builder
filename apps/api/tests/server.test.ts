@@ -920,8 +920,12 @@ describe('Server Utils', () => {
         expect(html).toContain('<a href="https://github.com/Nexcv-dev/AI-CV-Builder" target="_blank" rel="noopener noreferrer">https://github.com/Nexcv-dev/AI-CV-Builder</a>');
         expect(html).toContain('<a href="https://example.com">Existing</a>');
         expect(html).toContain('<a href="/cv/public_slug_123456/download">Download PDF</a>');
-        expect(html).toContain('min-height: 52px !important;');
-        expect(html).toContain('font-size: 15px !important;');
+        expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">');
+        expect(html).toContain('position: sticky !important;');
+        expect(html).toContain('margin: 0 auto 16px !important;');
+        expect(html).toContain('bottom: max(12px, env(safe-area-inset-bottom)) !important;');
+        expect(html).toContain('min-height: 56px !important;');
+        expect(html).toContain('font-size: 16px !important;');
         expect(CVDocument.findOne).toHaveBeenCalledWith({ shareEnabled: true, shareSlug: 'public_slug_123456' });
 
         const missing = await fetch(`http://127.0.0.1:${address.port}/cv/bad`);
