@@ -927,7 +927,7 @@ describe('Server Utils', () => {
         expect(html).toContain('position: sticky !important;');
         expect(html).toContain('margin: 0 auto 16px !important;');
         expect(html).toContain('bottom: max(12px, env(safe-area-inset-bottom)) !important;');
-        expect(html).toContain('zoom: 0.46;');
+        expect(html).toContain('transform: scale(0.46) !important;');
         expect(html).toContain('min-height: 44px !important;');
         expect(html).toContain('font-size: 13px !important;');
         expect(CVDocument.findOne).toHaveBeenCalledWith({ shareEnabled: true, shareSlug: 'public_slug_123456' });

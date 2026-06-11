@@ -181,7 +181,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
       margin: 0 !important;
       transform-origin: top center !important;
-      zoom: 0.75;
+      transform: scale(0.75) !important;
     }
     .nexcv-public-toolbar {
       position: fixed !important;
@@ -208,22 +208,22 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
   }
   @media screen and (max-width: 540px) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
-      zoom: 0.65;
+      transform: scale(0.65) !important;
     }
   }
   @media screen and (max-width: 460px) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
-      zoom: 0.54;
+      transform: scale(0.54) !important;
     }
   }
   @media screen and (max-width: 400px) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
-      zoom: 0.46;
+      transform: scale(0.46) !important;
     }
   }
   @media screen and (max-width: 360px) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
-      zoom: 0.42;
+      transform: scale(0.42) !important;
     }
   }
   @media print {
