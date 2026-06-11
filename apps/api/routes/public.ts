@@ -77,15 +77,21 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       width: 100% !important;
       min-width: 0 !important;
       min-height: 100% !important;
-      overflow-x: auto !important;
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none !important;
       background: #020617 !important;
     }
     body {
+      box-sizing: border-box !important;
       width: 100% !important;
+      max-width: 100vw !important;
       min-width: 0 !important;
       min-height: 100vh !important;
       margin: 0 !important;
       padding: 0 16px 32px !important;
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none !important;
+      touch-action: pan-y !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: flex-start !important;
@@ -169,7 +175,13 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
   }
   @media screen and (max-width: 620px) {
     body {
+      align-items: center !important;
       padding: 16px 12px calc(96px + env(safe-area-inset-bottom)) !important;
+    }
+    body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
+      margin: 0 !important;
+      transform-origin: top center !important;
+      zoom: 0.75;
     }
     .nexcv-public-toolbar {
       position: fixed !important;
@@ -177,20 +189,41 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       bottom: max(12px, env(safe-area-inset-bottom)) !important;
       left: 50% !important;
       transform: translateX(-50%) !important;
-      width: calc(100vw - 24px) !important;
+      width: auto !important;
       margin: 0 !important;
-      padding: 8px !important;
-      border-radius: 16px !important;
+      padding: 6px !important;
+      border-radius: 14px !important;
     }
     .nexcv-public-toolbar > div {
       display: none !important;
     }
     .nexcv-public-toolbar a {
-      width: 100% !important;
-      min-height: 56px !important;
-      padding: 0 18px !important;
-      font-size: 16px !important;
-      border-radius: 12px !important;
+      width: auto !important;
+      min-width: 150px !important;
+      min-height: 44px !important;
+      padding: 0 16px !important;
+      font-size: 13px !important;
+      border-radius: 10px !important;
+    }
+  }
+  @media screen and (max-width: 540px) {
+    body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
+      zoom: 0.65;
+    }
+  }
+  @media screen and (max-width: 460px) {
+    body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
+      zoom: 0.54;
+    }
+  }
+  @media screen and (max-width: 400px) {
+    body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
+      zoom: 0.46;
+    }
+  }
+  @media screen and (max-width: 360px) {
+    body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
+      zoom: 0.42;
     }
   }
   @media print {
