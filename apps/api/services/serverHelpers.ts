@@ -149,6 +149,10 @@ export const documentSummary = (document: any) => ({
     shareCreatedAt: document.shareCreatedAt || null,
     shareUpdatedAt: document.shareUpdatedAt || null,
     shareRevokedAt: document.shareRevokedAt || null,
+    shareViewCount: Math.max(0, Number(document.shareViewCount || 0)),
+    shareDownloadCount: Math.max(0, Number(document.shareDownloadCount || 0)),
+    shareLastViewedAt: document.shareLastViewedAt || null,
+    shareLastDownloadedAt: document.shareLastDownloadedAt || null,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
 });

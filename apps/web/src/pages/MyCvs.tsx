@@ -412,7 +412,17 @@ function CvListItem({ document, templateMap, deleting, menuOpen, onToggleMenu, o
             )}
           </div>
           <p className="mt-1 truncate text-sm font-semibold text-slate-400">{templateLabel} template</p>
-          <p className="mt-2 text-xs font-bold text-slate-500">Updated {formatRelativeTime(document.updatedAt)}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-bold text-slate-500">
+            <span>Updated {formatRelativeTime(document.updatedAt)}</span>
+            {document.shareEnabled && (
+              <>
+                <span className="text-slate-700">|</span>
+                <span className="text-emerald-300">Live</span>
+                <span>{document.shareViewCount || 0} views</span>
+                <span>{document.shareDownloadCount || 0} downloads</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
       <div className="absolute right-3 top-3 min-[380px]:right-4 min-[380px]:top-4 sm:hidden" data-cv-actions-menu>

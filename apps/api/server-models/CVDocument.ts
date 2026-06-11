@@ -11,6 +11,10 @@ export interface ICVDocument extends Document {
   shareCreatedAt?: Date | null;
   shareUpdatedAt?: Date | null;
   shareRevokedAt?: Date | null;
+  shareViewCount: number;
+  shareDownloadCount: number;
+  shareLastViewedAt?: Date | null;
+  shareLastDownloadedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +31,10 @@ const CVDocumentSchema = new Schema(
     shareCreatedAt: { type: Date, default: null },
     shareUpdatedAt: { type: Date, default: null },
     shareRevokedAt: { type: Date, default: null },
+    shareViewCount: { type: Number, default: 0, min: 0 },
+    shareDownloadCount: { type: Number, default: 0, min: 0 },
+    shareLastViewedAt: { type: Date, default: null },
+    shareLastDownloadedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

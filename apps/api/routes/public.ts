@@ -22,6 +22,8 @@ const publicCacheControl = (browserMaxAgeSeconds: number, cdnMaxAgeSeconds = bro
     `public, max-age=${browserMaxAgeSeconds}, s-maxage=${cdnMaxAgeSeconds}, stale-while-revalidate=${cdnMaxAgeSeconds}`
 );
 
+const publicCvDownloadHits = new Map<string, { count: number; resetAt: number }>();
+
 export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, TemplateName, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getCvAssetObjectStream, getS3ObjectStream, putS3Object, cvAssetS3Key, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, renderCvTemplateString, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, ensureDefaultBillingPlans, billingPlanSummary, normalizeCouponCode,  isPaidBillingPlan, calculateBillingQuote, parsePayherePlan, verifyPayhereMd5Signature, markPaymentProcessed, createCheckoutHash, createCheckoutOrderId, getPayhereConfig, buildPayhereCheckoutPayload, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, buildInitialCvData, parsePdfText, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, consumeCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, getReleasedTemplateDefinition, getReleasedTemplateSummaries } = bindDeps(deps);
 
@@ -45,6 +47,25 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         const cdnSeconds = Math.max(0, Number.parseInt(process.env.PUBLIC_CV_CACHE_CDN_SECONDS || '300', 10) || 300);
         return `public, max-age=${browserSeconds}, s-maxage=${cdnSeconds}, stale-while-revalidate=600`;
     };
+    const publicCvDownloadLimit = () => Math.max(1, Number.parseInt(process.env.PUBLIC_CV_DOWNLOAD_LIMIT_PER_HOUR || '5', 10) || 5);
+    const publicCvDownloadRateLimit = (req: Request, shareSlug: string) => {
+        const now = Date.now();
+        const key = `${shareSlug}:${req.ip || req.socket.remoteAddress || 'unknown'}`;
+        const current = publicCvDownloadHits.get(key);
+        if (!current || current.resetAt <= now) {
+            publicCvDownloadHits.set(key, { count: 1, resetAt: now + 60 * 60 * 1000 });
+            return { allowed: true, remaining: publicCvDownloadLimit() - 1, resetAt: now + 60 * 60 * 1000 };
+        }
+        if (current.count >= publicCvDownloadLimit()) {
+            return { allowed: false, remaining: 0, resetAt: current.resetAt };
+        }
+        current.count += 1;
+        return { allowed: true, remaining: Math.max(publicCvDownloadLimit() - current.count, 0), resetAt: current.resetAt };
+    };
+    const contentDispositionFileName = (value: string) => {
+        const safe = value.replace(/[^\w\s.-]+/g, '').trim().replace(/\s+/g, '_').slice(0, 80) || 'CV';
+        return `${safe}_Resume.pdf`;
+    };
     const injectPublicCvMeta = (html: string, title: string, description: string, canonicalUrl: string) => {
         const safeTitle = htmlEscape(title);
         const safeDescription = htmlEscape(description);
@@ -57,20 +78,22 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       min-width: 0 !important;
       min-height: 100% !important;
       overflow-x: auto !important;
-      background: #e5e7eb !important;
+      background: #020617 !important;
     }
     body {
       width: 100% !important;
       min-width: 0 !important;
       min-height: 100vh !important;
       margin: 0 !important;
-      padding: 24px 12px !important;
+      padding: 88px 16px 32px !important;
       display: flex !important;
       align-items: flex-start !important;
       justify-content: center !important;
-      background: #e5e7eb !important;
+      background:
+        radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 32rem),
+        linear-gradient(135deg, #020617 0%, #111827 48%, #1e1b4b 100%) !important;
     }
-    body > :not(.nexcv-watermark):not(script):not(style) {
+    body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
       flex: 0 0 auto !important;
       width: 210mm !important;
       max-width: 210mm !important;
@@ -78,12 +101,89 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       min-height: 297mm !important;
       margin: 0 auto !important;
       background: #ffffff !important;
-      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22) !important;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.36) !important;
+    }
+    .nexcv-public-toolbar {
+      position: fixed !important;
+      z-index: 2147483640 !important;
+      top: 14px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: min(980px, calc(100vw - 24px)) !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      padding: 10px 12px !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      border-radius: 14px !important;
+      background: rgba(15, 23, 42, 0.86) !important;
+      color: #f8fafc !important;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.24) !important;
+      backdrop-filter: blur(16px) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+    }
+    .nexcv-public-toolbar strong {
+      display: block !important;
+      max-width: 52vw !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      font-size: 14px !important;
+      line-height: 1.2 !important;
+      letter-spacing: 0 !important;
+      color: #ffffff !important;
+    }
+    .nexcv-public-toolbar span {
+      display: block !important;
+      margin-top: 2px !important;
+      font-size: 11px !important;
+      line-height: 1.2 !important;
+      color: #94a3b8 !important;
+    }
+    .nexcv-public-toolbar a {
+      flex: 0 0 auto !important;
+      min-width: auto !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-height: 40px !important;
+      padding: 0 14px !important;
+      border-radius: 10px !important;
+      background: #7c3aed !important;
+      color: #ffffff !important;
+      font-size: 13px !important;
+      font-weight: 800 !important;
+      text-decoration: none !important;
+      box-shadow: 0 10px 24px rgba(124, 58, 237, 0.28) !important;
     }
   }
   @media screen and (max-width: 840px) {
     body {
       justify-content: flex-start !important;
+    }
+  }
+  @media screen and (max-width: 620px) {
+    body {
+      padding-top: 104px !important;
+    }
+    .nexcv-public-toolbar {
+      align-items: stretch !important;
+      flex-direction: column !important;
+    }
+    .nexcv-public-toolbar strong {
+      max-width: 100% !important;
+    }
+    .nexcv-public-toolbar a {
+      width: 100% !important;
+    }
+  }
+  @media print {
+    .nexcv-public-toolbar {
+      display: none !important;
     }
   }
 </style>`;
@@ -109,6 +209,15 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         return withTitle.includes('</head>')
             ? withTitle.replace('</head>', `${meta}\n</head>`)
             : `<!doctype html><html><head><title>${safeTitle}</title>${meta}</head><body>${withTitle}</body></html>`;
+    };
+    const injectPublicCvToolbar = (html: string, title: string, shareSlug: string) => {
+        const toolbar = `<div class="nexcv-public-toolbar" aria-label="Shared CV actions">
+  <div><strong>${htmlEscape(title)}</strong><span>Shared live CV</span></div>
+  <a href="/cv/${encodeURIComponent(shareSlug)}/download">Download PDF</a>
+</div>`;
+        return html.includes('<body')
+            ? html.replace(/(<body\b[^>]*>)/i, `$1${toolbar}`)
+            : `${toolbar}${html}`;
     };
     const linkifyPlainPublicCvUrls = (html: string) => {
         const linkedText = (text: string) => text.replace(
@@ -154,6 +263,12 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
 
         s3Html = s3Html || await generateS3CVHTML(document.cvData, template, { watermark }).catch(() => null);
         return s3Html || generateCVHTML(document.cvData, template, { watermark });
+    };
+    const findSharedDocument = async (shareSlug: string) => {
+        if (!/^[A-Za-z0-9_-]{16,80}$/.test(shareSlug)) return null;
+        return CVDocument
+            .findOne({ shareEnabled: true, shareSlug })
+            .populate('userId', 'role plan planExpiresAt');
     };
 
     router.get('/api/health', (req: Request, res: Response) => {
@@ -254,9 +369,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
                 return res.status(404).type('text/plain').send('CV not found');
             }
 
-            const document = await CVDocument
-                .findOne({ shareEnabled: true, shareSlug })
-                .populate('userId', 'role plan planExpiresAt');
+            const document = await findSharedDocument(shareSlug);
             if (!document) return res.status(404).type('text/plain').send('CV not found');
 
             const owner = document.userId && typeof document.userId === 'object' ? document.userId : null;
@@ -267,14 +380,66 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
             const description = String(summary).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180) || title;
             const canonicalUrl = `${getApiOrigin(req).replace(/\/+$/, '')}/cv/${encodeURIComponent(shareSlug)}`;
             const html = linkifyPlainPublicCvUrls(
-                injectPublicCvMeta(await renderSharedCvHtml(document, watermark), title, description, canonicalUrl)
+                injectPublicCvToolbar(
+                    injectPublicCvMeta(await renderSharedCvHtml(document, watermark), title, description, canonicalUrl),
+                    title,
+                    shareSlug
+                )
             );
+            void CVDocument.updateOne(
+                { _id: document._id },
+                { $inc: { shareViewCount: 1 }, $set: { shareLastViewedAt: new Date() } }
+            ).catch(() => undefined);
 
             res.setHeader('Cache-Control', publicCvCacheControl());
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.send(html);
         } catch (error) {
             return sendError(res, 500, 'Could not load this shared CV.', error);
+        }
+    });
+
+    router.get('/cv/:shareSlug/download', async (req: Request, res: Response) => {
+        try {
+            const shareSlug = String(req.params.shareSlug || '').trim();
+            const limit = publicCvDownloadRateLimit(req, shareSlug);
+            res.setHeader('X-RateLimit-Limit', String(publicCvDownloadLimit()));
+            res.setHeader('X-RateLimit-Remaining', String(limit.remaining));
+            res.setHeader('X-RateLimit-Reset', String(Math.ceil(limit.resetAt / 1000)));
+            if (!limit.allowed) {
+                return res.status(429).json({ error: 'Download limit reached. Please try again later.' });
+            }
+
+            const document = await findSharedDocument(shareSlug);
+            if (!document) return res.status(404).type('text/plain').send('CV not found');
+
+            const owner = document.userId && typeof document.userId === 'object' ? document.userId : null;
+            const watermark = !owner || !isPaidPlan(owner);
+            const template = document.template || DEFAULT_TEMPLATE;
+            const safeCvData = typeof sanitizeCvData === 'function' ? sanitizeCvData(document.cvData) : document.cvData;
+            const html = await renderSharedCvHtml({ ...document.toObject?.() || document, cvData: safeCvData }, watermark);
+            const pdf = await generatePdfDocument({
+                cvData: safeCvData,
+                template,
+                watermark,
+                html,
+                templateSource: 'shared-cv',
+                useWarmBrowser: false,
+                useLambda: CV_TEMPLATES.some((item: any) => item.key === template),
+            });
+
+            await CVDocument.updateOne(
+                { _id: document._id },
+                { $inc: { shareDownloadCount: 1 }, $set: { shareLastDownloadedAt: new Date() } }
+            ).catch(() => undefined);
+
+            res.setHeader('Cache-Control', 'no-store');
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Length', pdf.buffer.length.toString());
+            res.setHeader('Content-Disposition', `attachment; filename="${contentDispositionFileName(document.title || 'CV')}"`);
+            return res.send(Buffer.from(pdf.buffer));
+        } catch (error) {
+            return sendError(res, 500, 'Could not download this shared CV.', error);
         }
     });
 
