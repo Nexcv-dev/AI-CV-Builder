@@ -24,17 +24,55 @@ const publicCacheControl = (browserMaxAgeSeconds: number, cdnMaxAgeSeconds = bro
 
 const publicCvDownloadHits = new Map<string, { count: number; resetAt: number }>();
 const publicCvPreviewScript = `(() => {
-  const mobileQuery = window.matchMedia('(max-width: 620px)');
+  const fittedPreviewQuery = window.matchMedia('(max-width: 840px)');
   const findPreview = () => Array.from(document.body.children).find((element) => (
     !element.matches('.nexcv-public-toolbar, .nexcv-watermark, script, style')
   ));
   let preview = null;
   let resizeObserver = null;
 
+  const setupDownloadButton = () => {
+    const button = document.querySelector('.nexcv-public-toolbar a');
+    if (!button) return;
+
+    button.addEventListener('click', async (event) => {
+      event.preventDefault();
+      if (button.classList.contains('is-loading')) return;
+
+      const originalLabel = button.textContent || 'Download PDF';
+      button.classList.add('is-loading');
+      button.setAttribute('aria-busy', 'true');
+      button.textContent = 'Preparing PDF...';
+
+      try {
+        const response = await fetch(button.href, { credentials: 'same-origin' });
+        if (!response.ok) throw new Error('PDF download failed');
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        const disposition = response.headers.get('content-disposition') || '';
+        const fileName = disposition.match(/filename="?([^";]+)"?/i)?.[1] || 'CV_Resume.pdf';
+        downloadLink.href = objectUrl;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      } catch {
+        window.alert('Could not download the PDF. Please try again.');
+      } finally {
+        button.classList.remove('is-loading');
+        button.removeAttribute('aria-busy');
+        button.textContent = originalLabel;
+      }
+    });
+  };
+
   const syncPreviewHeight = () => {
     preview = preview || findPreview();
     if (!preview) return;
-    if (!mobileQuery.matches) {
+    if (!fittedPreviewQuery.matches) {
       preview.style.removeProperty('margin-bottom');
       return;
     }
@@ -53,8 +91,9 @@ const publicCvPreviewScript = `(() => {
     resizeObserver = new ResizeObserver(syncPreviewHeight);
     resizeObserver.observe(preview);
     syncPreviewHeight();
+    setupDownloadButton();
     window.addEventListener('resize', syncPreviewHeight, { passive: true });
-    mobileQuery.addEventListener?.('change', syncPreviewHeight);
+    fittedPreviewQuery.addEventListener?.('change', syncPreviewHeight);
   };
 
   if (document.readyState === 'loading') {
@@ -208,9 +247,40 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       box-shadow: 0 10px 24px rgba(124, 58, 237, 0.28) !important;
     }
   }
+    .nexcv-public-toolbar a.is-loading {
+      cursor: wait !important;
+      opacity: 0.82 !important;
+      pointer-events: none !important;
+    }
+    .nexcv-public-toolbar a.is-loading::before {
+      content: "" !important;
+      width: 14px !important;
+      height: 14px !important;
+      flex: 0 0 14px !important;
+      border: 2px solid rgba(255,255,255,0.4) !important;
+      border-top-color: #ffffff !important;
+      border-radius: 999px !important;
+      animation: nexcv-download-spin 0.7s linear infinite !important;
+    }
+    @keyframes nexcv-download-spin {
+      to { transform: rotate(360deg); }
+    }
   @media screen and (max-width: 840px) {
     body {
+      align-items: center !important;
       justify-content: flex-start !important;
+      touch-action: pan-x pan-y pinch-zoom !important;
+    }
+    body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      transform-origin: top center !important;
+      transform: scale(0.90) !important;
+    }
+  }
+  @media screen and (max-width: 720px) {
+    body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
+      transform: scale(0.82) !important;
     }
   }
   @media screen and (max-width: 620px) {
@@ -221,7 +291,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
       margin: 0 !important;
       transform-origin: top center !important;
-      transform: scale(0.75) !important;
+      transform: scale(0.70) !important;
     }
     .nexcv-public-toolbar {
       position: fixed !important;
@@ -248,22 +318,22 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
   }
   @media screen and (max-width: 540px) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
-      transform: scale(0.65) !important;
+      transform: scale(0.61) !important;
     }
   }
   @media screen and (max-width: 460px) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
-      transform: scale(0.54) !important;
+      transform: scale(0.51) !important;
     }
   }
   @media screen and (max-width: 400px) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
-      transform: scale(0.46) !important;
+      transform: scale(0.43) !important;
     }
   }
   @media screen and (max-width: 360px) {
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
-      transform: scale(0.42) !important;
+      transform: scale(0.39) !important;
     }
   }
   @media print {
@@ -273,7 +343,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
   }
 </style>`;
         const meta = [
-            '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">',
             `<meta name="description" content="${safeDescription}">`,
             `<meta name="robots" content="noindex, nofollow">`,
             `<link rel="canonical" href="${safeCanonicalUrl}">`,
