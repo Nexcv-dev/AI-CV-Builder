@@ -921,16 +921,24 @@ describe('Server Utils', () => {
         expect(html).toContain('<a href="https://example.com">Existing</a>');
         expect(html).toContain('<a href="/cv/public_slug_123456/download">Download PDF</a>');
         expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">');
+        expect(html).toContain('<script src="/assets/public-cv-preview.js" defer></script>');
         expect(html).toContain('box-sizing: border-box !important;');
         expect(html).toContain('overflow-x: hidden !important;');
         expect(html).toContain('touch-action: pan-y !important;');
         expect(html).toContain('position: sticky !important;');
         expect(html).toContain('margin: 0 auto 16px !important;');
+        expect(html).toContain('padding: 16px 12px calc(116px + env(safe-area-inset-bottom)) !important;');
         expect(html).toContain('bottom: max(12px, env(safe-area-inset-bottom)) !important;');
         expect(html).toContain('transform: scale(0.46) !important;');
         expect(html).toContain('min-height: 44px !important;');
         expect(html).toContain('font-size: 13px !important;');
         expect(CVDocument.findOne).toHaveBeenCalledWith({ shareEnabled: true, shareSlug: 'public_slug_123456' });
+
+        const previewScript = await fetch(`http://127.0.0.1:${address.port}/assets/public-cv-preview.js`);
+        const previewScriptBody = await previewScript.text();
+        expect(previewScript.status).toBe(200);
+        expect(previewScript.headers.get('content-type')).toContain('application/javascript');
+        expect(previewScriptBody).toContain("preview.style.setProperty('margin-bottom'");
 
         const missing = await fetch(`http://127.0.0.1:${address.port}/cv/bad`);
         expect(missing.status).toBe(404);
