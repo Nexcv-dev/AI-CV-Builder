@@ -223,9 +223,8 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     }
     .nexcv-public-toolbar {
       box-sizing: border-box !important;
-      position: sticky !important;
+      position: relative !important;
       z-index: 2147483640 !important;
-      top: 12px !important;
       left: auto !important;
       transform: none !important;
       width: min(980px, calc(100vw - 24px)) !important;
@@ -233,7 +232,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       height: auto !important;
       min-height: 62px !important;
       max-height: none !important;
-      margin: 0 auto 16px !important;
+      margin: 12px auto 16px !important;
       padding: 10px 12px !important;
       overflow: visible !important;
       border: 1px solid rgba(255,255,255,0.12) !important;
@@ -350,10 +349,10 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     .nexcv-public-toolbar {
       position: fixed !important;
       top: auto !important;
-      bottom: max(12px, env(safe-area-inset-bottom)) !important;
+      bottom: max(16px, env(safe-area-inset-bottom)) !important;
       left: 50% !important;
       transform: translateX(-50%) !important;
-      width: auto !important;
+      width: calc(100vw - 32px) !important;
       height: auto !important;
       min-height: 0 !important;
       margin: 0 !important;
@@ -364,11 +363,11 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       display: none !important;
     }
     .nexcv-public-toolbar a {
-      width: auto !important;
-      min-width: 150px !important;
-      min-height: 44px !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      min-height: 48px !important;
       padding: 0 16px !important;
-      font-size: 13px !important;
+      font-size: 15px !important;
       border-radius: 10px !important;
     }
   }
