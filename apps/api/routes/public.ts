@@ -31,6 +31,28 @@ const publicCvPreviewScript = `(() => {
   let preview = null;
   let resizeObserver = null;
 
+  const setupOverscrollGuard = () => {
+    let touchStartY = 0;
+
+    document.body.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1) return;
+      touchStartY = event.touches[0].clientY;
+    }, { passive: true });
+
+    document.body.addEventListener('touchmove', (event) => {
+      if (event.touches.length !== 1) return;
+
+      const currentY = event.touches[0].clientY;
+      const maxScrollY = Math.max(0, document.body.scrollHeight - document.body.clientHeight);
+      const pullingPastTop = document.body.scrollTop <= 0 && currentY > touchStartY;
+      const pullingPastBottom = maxScrollY > 1
+        && document.body.scrollTop >= maxScrollY - 1
+        && currentY < touchStartY;
+
+      if (pullingPastTop || pullingPastBottom) event.preventDefault();
+    }, { passive: false });
+  };
+
   const setupDownloadButton = () => {
     const button = document.querySelector('.nexcv-public-toolbar a');
     if (!button) return;
@@ -86,6 +108,7 @@ const publicCvPreviewScript = `(() => {
   };
 
   const start = () => {
+    setupOverscrollGuard();
     setupDownloadButton();
     preview = findPreview();
     if (!preview) return;
@@ -155,8 +178,10 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     html {
       width: 100% !important;
       min-width: 0 !important;
+      height: 100% !important;
       min-height: 100% !important;
       overflow-x: hidden !important;
+      overflow-y: hidden !important;
       overscroll-behavior-x: none !important;
       overscroll-behavior-y: none !important;
       background:
@@ -168,10 +193,12 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       width: 100% !important;
       max-width: 100vw !important;
       min-width: 0 !important;
-      min-height: 100vh !important;
+      height: 100% !important;
+      min-height: 0 !important;
       margin: 0 !important;
       padding: 0 16px 32px !important;
       overflow-x: hidden !important;
+      overflow-y: auto !important;
       overscroll-behavior-x: none !important;
       overscroll-behavior-y: none !important;
       touch-action: pan-y !important;
@@ -182,6 +209,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       background:
         radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 32rem),
         linear-gradient(135deg, #020617 0%, #111827 48%, #1e1b4b 100%) !important;
+      -webkit-overflow-scrolling: touch !important;
     }
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
       flex: 0 0 auto !important;
@@ -270,16 +298,18 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
       to { transform: rotate(360deg); }
     }
   @media screen and (min-width: 841px) {
-    html,
-    body {
-      height: auto !important;
-      min-height: 100% !important;
-      overflow-y: auto !important;
+    html {
+      height: 100% !important;
+      overflow-y: hidden !important;
       overscroll-behavior-y: auto !important;
       touch-action: auto !important;
     }
     body {
-      overflow-y: visible !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: none !important;
+      touch-action: auto !important;
     }
   }
   @media screen and (max-width: 840px) {
