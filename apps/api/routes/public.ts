@@ -168,6 +168,119 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         const safe = value.replace(/[^\w\s.-]+/g, '').trim().replace(/\s+/g, '_').slice(0, 80) || 'CV';
         return `${safe}_Resume.pdf`;
     };
+    const sendPublicCvUnavailable = (req: Request, res: Response) => {
+        const homeUrl = htmlEscape(getFrontendOrigin(req).replace(/\/+$/, '') || '/');
+        const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>CV unavailable | NexCV</title>
+  <style>
+    * { box-sizing: border-box; }
+    html { color-scheme: dark; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(124, 58, 237, .2), transparent 32rem),
+        radial-gradient(circle at 85% 85%, rgba(37, 99, 235, .14), transparent 28rem),
+        #070b16;
+      color: #f8fafc;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(100%, 560px);
+      padding: clamp(28px, 6vw, 48px);
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 28px;
+      background: rgba(15, 23, 42, .78);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, .35);
+      text-align: center;
+      backdrop-filter: blur(18px);
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #c4b5fd;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border-radius: 13px;
+      background: linear-gradient(135deg, #8b5cf6, #4f46e5);
+      color: white;
+      box-shadow: 0 12px 28px rgba(124, 58, 237, .35);
+    }
+    .status {
+      margin: 30px 0 12px;
+      color: #a78bfa;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 7vw, 44px);
+      line-height: 1.08;
+      letter-spacing: -.035em;
+    }
+    p {
+      max-width: 430px;
+      margin: 18px auto 0;
+      color: #94a3b8;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    a {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 30px;
+      padding: 0 22px;
+      border-radius: 14px;
+      background: #7c3aed;
+      color: white;
+      font-size: 14px;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 14px 30px rgba(124, 58, 237, .3);
+      transition: transform .18s ease, background .18s ease;
+    }
+    a:hover { background: #8b5cf6; transform: translateY(-2px); }
+    a:focus-visible { outline: 3px solid #c4b5fd; outline-offset: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">N</span>
+      <span>NexCV</span>
+    </div>
+    <div class="status">Link unavailable</div>
+    <h1>This CV is no longer available</h1>
+    <p>The owner may have disabled this link or replaced it. Please ask them to share a new link with you.</p>
+    <a href="${homeUrl}">Go to NexCV</a>
+  </main>
+</body>
+</html>`;
+
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(404).type('text/html').send(html);
+    };
     const injectPublicCvMeta = (html: string, title: string, description: string, canonicalUrl: string) => {
         const safeTitle = htmlEscape(title);
         const safeDescription = htmlEscape(description);
@@ -590,11 +703,11 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         try {
             const shareSlug = String(req.params.shareSlug || '').trim();
             if (!/^[A-Za-z0-9_-]{16,80}$/.test(shareSlug)) {
-                return res.status(404).type('text/plain').send('CV not found');
+                return sendPublicCvUnavailable(req, res);
             }
 
             const document = await findSharedDocument(shareSlug);
-            if (!document) return res.status(404).type('text/plain').send('CV not found');
+            if (!document) return sendPublicCvUnavailable(req, res);
 
             const owner = document.userId && typeof document.userId === 'object' ? document.userId : null;
             const watermark = !owner || !isPaidPlan(owner);
