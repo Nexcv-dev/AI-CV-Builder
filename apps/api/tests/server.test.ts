@@ -937,7 +937,7 @@ describe('Server Utils', () => {
         expect(html).toContain('transform: scale(0.90) !important;');
         expect(html).toContain('transform: scale(0.82) !important;');
         expect(html).toContain('touch-action: pan-x pan-y pinch-zoom !important;');
-        expect(html).toContain('height: calc(164px + env(safe-area-inset-bottom)) !important;');
+        expect(html).toContain('height: calc(100px + env(safe-area-inset-bottom)) !important;');
         expect(html).toContain('bottom: max(16px, env(safe-area-inset-bottom)) !important;');
         expect(html).toContain('transform: scale(0.43) !important;');
         expect(html).toContain('min-height: 48px !important;');
