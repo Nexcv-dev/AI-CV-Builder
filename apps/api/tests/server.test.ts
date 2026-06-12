@@ -926,11 +926,10 @@ describe('Server Utils', () => {
         expect(html).toContain('overflow-x: hidden !important;');
         expect(html).toContain('overscroll-behavior-y: none !important;');
         expect(html).toContain('touch-action: pan-y !important;');
-        expect(html).toContain('position: sticky !important;');
-        expect(html).toContain('top: 12px !important;');
+        expect(html).toContain('position: relative !important;');
         expect(html).toContain('min-height: 62px !important;');
         expect(html).toContain('overflow: visible !important;');
-        expect(html).toContain('margin: 0 auto 16px !important;');
+        expect(html).toContain('margin: 12px auto 16px !important;');
         expect(html).toContain('@media screen and (min-width: 841px)');
         expect(html).toContain('padding-top: 12px !important;');
         expect(html).toContain('overflow-y: auto !important;');
@@ -939,10 +938,10 @@ describe('Server Utils', () => {
         expect(html).toContain('transform: scale(0.82) !important;');
         expect(html).toContain('touch-action: pan-x pan-y pinch-zoom !important;');
         expect(html).toContain('padding: 16px 12px calc(164px + env(safe-area-inset-bottom)) !important;');
-        expect(html).toContain('bottom: max(12px, env(safe-area-inset-bottom)) !important;');
+        expect(html).toContain('bottom: max(16px, env(safe-area-inset-bottom)) !important;');
         expect(html).toContain('transform: scale(0.43) !important;');
-        expect(html).toContain('min-height: 44px !important;');
-        expect(html).toContain('font-size: 13px !important;');
+        expect(html).toContain('min-height: 48px !important;');
+        expect(html).toContain('font-size: 15px !important;');
         expect(html).toContain('.nexcv-public-toolbar a.is-loading::before');
         expect(CVDocument.findOne).toHaveBeenCalledWith({ shareEnabled: true, shareSlug: 'public_slug_123456' });
 
