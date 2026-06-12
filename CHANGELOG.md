@@ -3,86 +3,92 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge branch 'main' of https://github.com/Nexcv-dev/AI-CV-Builder (392375f) - Bimantha Perera, 34 seconds ago
-* fix gest user profile pic upload block (ace02d3) - Bimantha Perera, 64 seconds ago
-* docs: auto-update CHANGELOG.md [skip ci] (d536d28) - bimanthaperera-lab, 15 minutes ago
-* inline profile images for PDF rendering (7286c4a) - Bimantha Perera, 16 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (46ee76c) - bimanthaperera-lab, 23 minutes ago
-* Merge profile image redirect fix (b7fd2e3) - Bimantha Perera, 24 minutes ago
-* fix redirected profile images in PDF exports (693c5b3) - Bimantha Perera, 25 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (3acb23a) - bimanthaperera-lab, 2 hours ago
-* Merge pull request #280 from Nexcv-dev/test/overview (99beb1d) - Bimantha Perera, 2 hours ago
-* fix profile pic rendering bug (204c69c) - Bimantha Perera, 2 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (280b5cd) - bimanthaperera-lab, 8 hours ago
-* Merge pull request #278 from Nexcv-dev/test/overview (eb77588) - Bimantha Perera, 8 hours ago
-* Update handler.ts (1ef89aa) - Bimantha Perera, 8 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2adfb61) - bimanthaperera-lab, 8 hours ago
-* Merge pull request #277 from Nexcv-dev/test/overview (9fa2743) - Bimantha Perera, 8 hours ago
-* improve UI (2951ac6) - Bimantha Perera, 8 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (ffaf3e4) - bimanthaperera-lab, 8 hours ago
-* Merge pull request #276 from Nexcv-dev/test/overview (8aa8559) - Bimantha Perera, 8 hours ago
-* fix cv live link mobile download button scrolling issue (4c9b02e) - Bimantha Perera, 8 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (b658776) - bimanthaperera-lab, 9 hours ago
-* Merge pull request #275 from Nexcv-dev/test/overview (3bbf78f) - Bimantha Perera, 9 hours ago
-* Update DesignPanel.tsx (914b376) - Bimantha Perera, 9 hours ago
-* improve UI live cv link buttons (1d8adc2) - Bimantha Perera, 9 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (ae4cd41) - bimanthaperera-lab, 13 hours ago
-* Merge pull request #274 from Nexcv-dev/test/overview (97995d8) - Bimantha Perera, 13 hours ago
-* add safe gap for mobile download button (094a807) - Bimantha Perera, 13 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (3dfaf64) - bimanthaperera-lab, 13 hours ago
-* Merge pull request #273 from Nexcv-dev/test/overview (aaacc78) - Bimantha Perera, 13 hours ago
-* fix tool bar border (0bcaf28) - Bimantha Perera, 13 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (a5491ba) - bimanthaperera-lab, 14 hours ago
-* Merge pull request #272 from Nexcv-dev/test/overview (a99c62a) - Bimantha Perera, 14 hours ago
-* fix bug (20f6cdb) - Bimantha Perera, 14 hours ago
-* Delete README.md (ad93623) - Bimantha Perera, 14 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (97b1eb6) - bimanthaperera-lab, 14 hours ago
-* Merge pull request #271 from Nexcv-dev/test/overview (749d61b) - Bimantha Perera, 14 hours ago
-* remove rubber band gurd effect (aab6d38) - Bimantha Perera, 14 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2198774) - bimanthaperera-lab, 19 hours ago
-* Merge pull request #270 from Nexcv-dev/test/overview (4b38272) - Bimantha Perera, 19 hours ago
-* Create README.md (ad64d37) - Bimantha Perera, 20 hours ago
-* remove rubber band effect gaurd (5d40b3b) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (0579f40) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #269 from Nexcv-dev/test/overview (e429f03) - Bimantha Perera, 20 hours ago
-* fix scroll bug (2f42cb0) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (f47d9f6) - bimanthaperera-lab, 20 hours ago
-* Merge pull request #268 from Nexcv-dev/test/overview (671624c) - Bimantha Perera, 20 hours ago
-* fix live cv scroll bug in desktop (e6a1d69) - Bimantha Perera, 20 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (cb2dd31) - bimanthaperera-lab, 21 hours ago
-* Merge pull request #267 from Nexcv-dev/test/overview (dd3e84e) - Bimantha Perera, 21 hours ago
-* fix live cv link scroll issue (883845c) - Bimantha Perera, 21 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (4b0645a) - bimanthaperera-lab, 21 hours ago
-* Merge pull request #266 from Nexcv-dev/test/overview (86d39bf) - Bimantha Perera, 21 hours ago
-* fix rubber band behave from live cv link (9b52e18) - Bimantha Perera, 21 hours ago
-* add loading state to live cv download button (82a0456) - Bimantha Perera, 21 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (2277589) - bimanthaperera-lab, 22 hours ago
-* Merge pull request #265 from Nexcv-dev/test/overview (5f78593) - Bimantha Perera, 22 hours ago
-* fix layout issue in live cv link (5e30753) - Bimantha Perera, 22 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (39c0950) - bimanthaperera-lab, 22 hours ago
-* Merge pull request #264 from Nexcv-dev/test/overview (c537529) - Bimantha Perera, 22 hours ago
-* fix over gap issue live cv link (71dce68) - Bimantha Perera, 22 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (bb7cc11) - bimanthaperera-lab, 23 hours ago
-* Merge pull request #263 from Nexcv-dev/test/overview (141f08a) - Bimantha Perera, 23 hours ago
-* fix live cv link mobile preview (88fa814) - Bimantha Perera, 23 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (148a9a0) - bimanthaperera-lab, 23 hours ago
-* Merge pull request #261 from Nexcv-dev/test/overview (23ca975) - Bimantha Perera, 23 hours ago
-* improve live cv link layout (42e8169) - Bimantha Perera, 23 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (071e037) - bimanthaperera-lab, 23 hours ago
-* Merge pull request #260 from Nexcv-dev/test/overview (02410eb) - Bimantha Perera, 23 hours ago
-* improve cv link download button layout (b48a348) - Bimantha Perera, 23 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (b10fab2) - bimanthaperera-lab, 24 hours ago
-* Merge pull request #259 from Nexcv-dev/test/overview (4a1a891) - Bimantha Perera, 24 hours ago
-* fix cv live link issue (333a352) - Bimantha Perera, 24 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (3ca3e48) - bimanthaperera-lab, 32 hours ago
-* Merge pull request #255 from Nexcv-dev/test/overview (7280148) - Bimantha Perera, 32 hours ago
-* add analytics for live link (0fcc685) - Bimantha Perera, 32 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (4a275f2) - bimanthaperera-lab, 33 hours ago
-* Merge pull request #254 from Nexcv-dev/test/overview (d9ad227) - Bimantha Perera, 33 hours ago
-* fix live link layout issue (cc9bf13) - Bimantha Perera, 33 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (71c17c9) - bimanthaperera-lab, 33 hours ago
-* Merge pull request #253 from Nexcv-dev/test/overview (15f1401) - Bimantha Perera, 33 hours ago
-* implement new live cv link option (139faf0) - Bimantha Perera, 33 hours ago
+* Merge pull request #281 from Nexcv-dev/test/overview (1f8fa85) - Bimantha Perera, 10 seconds ago
+* Update public.ts (109e7da) - Bimantha Perera, 4 minutes ago
+* configure posthog for analytics (fb0f40f) - Bimantha Perera, 11 minutes ago
+* improve ui for live link disable page (07b767f) - Bimantha Perera, 2 hours ago
+* remove backend packages from web folder (e439d1d) - Bimantha Perera, 2 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (6281f4b) - bimanthaperera-lab, 2 hours ago
+* Merge branch 'main' of https://github.com/Nexcv-dev/AI-CV-Builder (392375f) - Bimantha Perera, 2 hours ago
+* fix gest user profile pic upload block (ace02d3) - Bimantha Perera, 2 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (d536d28) - bimanthaperera-lab, 3 hours ago
+* inline profile images for PDF rendering (7286c4a) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (46ee76c) - bimanthaperera-lab, 3 hours ago
+* Merge profile image redirect fix (b7fd2e3) - Bimantha Perera, 3 hours ago
+* fix redirected profile images in PDF exports (693c5b3) - Bimantha Perera, 3 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (3acb23a) - bimanthaperera-lab, 4 hours ago
+* Merge pull request #280 from Nexcv-dev/test/overview (99beb1d) - Bimantha Perera, 4 hours ago
+* fix profile pic rendering bug (204c69c) - Bimantha Perera, 4 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (280b5cd) - bimanthaperera-lab, 10 hours ago
+* Merge pull request #278 from Nexcv-dev/test/overview (eb77588) - Bimantha Perera, 10 hours ago
+* Update handler.ts (1ef89aa) - Bimantha Perera, 10 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2adfb61) - bimanthaperera-lab, 10 hours ago
+* Merge pull request #277 from Nexcv-dev/test/overview (9fa2743) - Bimantha Perera, 10 hours ago
+* improve UI (2951ac6) - Bimantha Perera, 11 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (ffaf3e4) - bimanthaperera-lab, 11 hours ago
+* Merge pull request #276 from Nexcv-dev/test/overview (8aa8559) - Bimantha Perera, 11 hours ago
+* fix cv live link mobile download button scrolling issue (4c9b02e) - Bimantha Perera, 11 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (b658776) - bimanthaperera-lab, 11 hours ago
+* Merge pull request #275 from Nexcv-dev/test/overview (3bbf78f) - Bimantha Perera, 11 hours ago
+* Update DesignPanel.tsx (914b376) - Bimantha Perera, 11 hours ago
+* improve UI live cv link buttons (1d8adc2) - Bimantha Perera, 12 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (ae4cd41) - bimanthaperera-lab, 15 hours ago
+* Merge pull request #274 from Nexcv-dev/test/overview (97995d8) - Bimantha Perera, 15 hours ago
+* add safe gap for mobile download button (094a807) - Bimantha Perera, 15 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (3dfaf64) - bimanthaperera-lab, 15 hours ago
+* Merge pull request #273 from Nexcv-dev/test/overview (aaacc78) - Bimantha Perera, 15 hours ago
+* fix tool bar border (0bcaf28) - Bimantha Perera, 16 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (a5491ba) - bimanthaperera-lab, 16 hours ago
+* Merge pull request #272 from Nexcv-dev/test/overview (a99c62a) - Bimantha Perera, 16 hours ago
+* fix bug (20f6cdb) - Bimantha Perera, 16 hours ago
+* Delete README.md (ad93623) - Bimantha Perera, 16 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (97b1eb6) - bimanthaperera-lab, 16 hours ago
+* Merge pull request #271 from Nexcv-dev/test/overview (749d61b) - Bimantha Perera, 16 hours ago
+* remove rubber band gurd effect (aab6d38) - Bimantha Perera, 16 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2198774) - bimanthaperera-lab, 22 hours ago
+* Merge pull request #270 from Nexcv-dev/test/overview (4b38272) - Bimantha Perera, 22 hours ago
+* Create README.md (ad64d37) - Bimantha Perera, 22 hours ago
+* remove rubber band effect gaurd (5d40b3b) - Bimantha Perera, 22 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (0579f40) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #269 from Nexcv-dev/test/overview (e429f03) - Bimantha Perera, 23 hours ago
+* fix scroll bug (2f42cb0) - Bimantha Perera, 23 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (f47d9f6) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #268 from Nexcv-dev/test/overview (671624c) - Bimantha Perera, 23 hours ago
+* fix live cv scroll bug in desktop (e6a1d69) - Bimantha Perera, 23 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (cb2dd31) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #267 from Nexcv-dev/test/overview (dd3e84e) - Bimantha Perera, 23 hours ago
+* fix live cv link scroll issue (883845c) - Bimantha Perera, 23 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (4b0645a) - bimanthaperera-lab, 23 hours ago
+* Merge pull request #266 from Nexcv-dev/test/overview (86d39bf) - Bimantha Perera, 23 hours ago
+* fix rubber band behave from live cv link (9b52e18) - Bimantha Perera, 24 hours ago
+* add loading state to live cv download button (82a0456) - Bimantha Perera, 24 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (2277589) - bimanthaperera-lab, 24 hours ago
+* Merge pull request #265 from Nexcv-dev/test/overview (5f78593) - Bimantha Perera, 24 hours ago
+* fix layout issue in live cv link (5e30753) - Bimantha Perera, 24 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (39c0950) - bimanthaperera-lab, 25 hours ago
+* Merge pull request #264 from Nexcv-dev/test/overview (c537529) - Bimantha Perera, 25 hours ago
+* fix over gap issue live cv link (71dce68) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (bb7cc11) - bimanthaperera-lab, 25 hours ago
+* Merge pull request #263 from Nexcv-dev/test/overview (141f08a) - Bimantha Perera, 25 hours ago
+* fix live cv link mobile preview (88fa814) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (148a9a0) - bimanthaperera-lab, 25 hours ago
+* Merge pull request #261 from Nexcv-dev/test/overview (23ca975) - Bimantha Perera, 25 hours ago
+* improve live cv link layout (42e8169) - Bimantha Perera, 25 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (071e037) - bimanthaperera-lab, 26 hours ago
+* Merge pull request #260 from Nexcv-dev/test/overview (02410eb) - Bimantha Perera, 26 hours ago
+* improve cv link download button layout (b48a348) - Bimantha Perera, 26 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (b10fab2) - bimanthaperera-lab, 26 hours ago
+* Merge pull request #259 from Nexcv-dev/test/overview (4a1a891) - Bimantha Perera, 26 hours ago
+* fix cv live link issue (333a352) - Bimantha Perera, 26 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (3ca3e48) - bimanthaperera-lab, 35 hours ago
+* Merge pull request #255 from Nexcv-dev/test/overview (7280148) - Bimantha Perera, 35 hours ago
+* add analytics for live link (0fcc685) - Bimantha Perera, 35 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (4a275f2) - bimanthaperera-lab, 35 hours ago
+* Merge pull request #254 from Nexcv-dev/test/overview (d9ad227) - Bimantha Perera, 35 hours ago
+* fix live link layout issue (cc9bf13) - Bimantha Perera, 35 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (71c17c9) - bimanthaperera-lab, 35 hours ago
+* Merge pull request #253 from Nexcv-dev/test/overview (15f1401) - Bimantha Perera, 35 hours ago
+* implement new live cv link option (139faf0) - Bimantha Perera, 2 days ago
 * Update useCheckoutReturnHandler.test.tsx (f896319) - Bimantha Perera, 2 days ago
 * add test cases for pdf downloading and payment flow (757fb62) - Bimantha Perera, 2 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (c87ee91) - bimanthaperera-lab, 2 days ago
@@ -94,9 +100,9 @@ All notable changes to this project will be documented in this file.
 * fix github action workflow node version warning (9f92bbc) - Bimantha Perera, 2 days ago
 * fix docker image build issue in pipeline (c9e0b3d) - Bimantha Perera, 2 days ago
 * update docs (ca5010e) - Bimantha Perera, 2 days ago
-* update docs (97c3fc2) - Bimantha Perera, 2 days ago
-* isolate admin code (7cb898d) - Bimantha Perera, 2 days ago
-* clean code architecture (4083ab1) - Bimantha Perera, 2 days ago
+* update docs (97c3fc2) - Bimantha Perera, 3 days ago
+* isolate admin code (7cb898d) - Bimantha Perera, 3 days ago
+* clean code architecture (4083ab1) - Bimantha Perera, 3 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (e9e6145) - bimanthaperera-lab, 3 days ago
 * Merge pull request #248 from Nexcv-dev/test/overview (9f06d1f) - Bimantha Perera, 3 days ago
 * Merge remote-tracking branch 'origin/main' into test/overview (e5e8a50) - Bimantha Perera, 3 days ago
@@ -105,11 +111,11 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (12247d6) - bimanthaperera-lab, 3 days ago
 * Merge pull request #247 from Nexcv-dev/test/overview (28aebad) - Bimantha Perera, 3 days ago
 * fix image upload error (d657c2e) - Bimantha Perera, 3 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (8ea3d81) - bimanthaperera-lab, 3 days ago
-* Merge pull request #246 from Nexcv-dev/test/overview (4904a0d) - Bimantha Perera, 3 days ago
-* chore: bump version to 0.1.13 (80db3ab) - bimanthaperera-lab, 3 days ago
-* improve html to pdf UI / UX with scan animation (f44b0d0) - Bimantha Perera, 3 days ago
-* improve upgrade popup logic and UI (9b85f5f) - Bimantha Perera, 3 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (8ea3d81) - bimanthaperera-lab, 4 days ago
+* Merge pull request #246 from Nexcv-dev/test/overview (4904a0d) - Bimantha Perera, 4 days ago
+* chore: bump version to 0.1.13 (80db3ab) - bimanthaperera-lab, 4 days ago
+* improve html to pdf UI / UX with scan animation (f44b0d0) - Bimantha Perera, 4 days ago
+* improve upgrade popup logic and UI (9b85f5f) - Bimantha Perera, 4 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (71ea8a1) - bimanthaperera-lab, 4 days ago
 * Merge pull request #243 from Nexcv-dev/test/overview (e69b7d8) - Bimantha Perera, 4 days ago
 * improve UI of html to pdf page (4d8801e) - Bimantha Perera, 4 days ago
@@ -124,9 +130,9 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (ccda230) - bimanthaperera-lab, 4 days ago
 * Merge pull request #239 from Nexcv-dev/test/overview (9cd8440) - Bimantha Perera, 4 days ago
 * add new social links to templates (5e6d21b) - Bimantha Perera, 4 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (4c0641c) - bimanthaperera-lab, 4 days ago
-* Merge pull request #238 from Nexcv-dev/test/overview (80a5254) - Bimantha Perera, 4 days ago
-* fix test failed issue (764c468) - Bimantha Perera, 4 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (4c0641c) - bimanthaperera-lab, 5 days ago
+* Merge pull request #238 from Nexcv-dev/test/overview (80a5254) - Bimantha Perera, 5 days ago
+* fix test failed issue (764c468) - Bimantha Perera, 5 days ago
 * improve ui in html to pdf option (c701276) - Bimantha Perera, 5 days ago
 * give html to pdf option to geust users (4bd8aa4) - Bimantha Perera, 5 days ago
 * add html to pdf option (90ace46) - Bimantha Perera, 5 days ago
@@ -134,9 +140,9 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (87378a9) - bimanthaperera-lab, 5 days ago
 * Merge pull request #235 from Nexcv-dev/test/overview (c3cd0d1) - Bimantha Perera, 5 days ago
 * improve error handling and bug fixing (fc55f1c) - Bimantha Perera, 5 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (10b5b7f) - bimanthaperera-lab, 5 days ago
-* Merge pull request #234 from Nexcv-dev/test/overview (f364f7b) - Bimantha Perera, 5 days ago
-* fix bug (468d253) - Bimantha Perera, 5 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (10b5b7f) - bimanthaperera-lab, 6 days ago
+* Merge pull request #234 from Nexcv-dev/test/overview (f364f7b) - Bimantha Perera, 6 days ago
+* fix bug (468d253) - Bimantha Perera, 6 days ago
 * Delete Screenshot 2026-06-03 151939.png (2248cb7) - Bimantha Perera, 6 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (cd9c70d) - bimanthaperera-lab, 6 days ago
 * Merge pull request #233 from Nexcv-dev/test/overview (4e79580) - Bimantha Perera, 6 days ago
@@ -177,9 +183,9 @@ All notable changes to this project will be documented in this file.
 * Merge pull request #223 from bimanthaperera-lab/test/overview (dc06a40) - Bimantha Perera, 7 days ago
 * Improve CV Import Card UI (c5fa8ae) - Bimantha Perera, 7 days ago
 * fix import error not authenticated for guest users (7f8e226) - Bimantha Perera, 7 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 7 days ago
-* Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 7 days ago
-* add cv import queue (b178a94) - Bimantha Perera, 7 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (b0dfd26) - bimanthaperera-lab, 8 days ago
+* Merge pull request #222 from bimanthaperera-lab/test/overview (4e289c0) - Bimantha Perera, 8 days ago
+* add cv import queue (b178a94) - Bimantha Perera, 8 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (019e47e) - bimanthaperera-lab, 8 days ago
 * Merge pull request #221 from bimanthaperera-lab/test/overview (de86542) - Bimantha Perera, 8 days ago
 * add email to AWS que system (7f08638) - Bimantha Perera, 8 days ago
@@ -206,15 +212,15 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (4cd0ce3) - bimanthaperera-lab, 9 days ago
 * Merge pull request #214 from bimanthaperera-lab/test/overview (ceda315) - Bimantha Perera, 9 days ago
 * improve data parsing (93dc62c) - Bimantha Perera, 9 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (9a4ed06) - bimanthaperera-lab, 9 days ago
-* Merge pull request #213 from bimanthaperera-lab/test/overview (7535bda) - Bimantha Perera, 9 days ago
-* improve data parsing (8cf80b5) - Bimantha Perera, 9 days ago
-* Improve OCR text extract (2dccdb2) - Bimantha Perera, 9 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (1dcb31b) - bimanthaperera-lab, 9 days ago
-* Merge pull request #212 from bimanthaperera-lab/test/overview (3a07360) - Bimantha Perera, 9 days ago
-* make gest users can import cv data (1f35b0b) - Bimantha Perera, 9 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (fb7e0f9) - bimanthaperera-lab, 9 days ago
-* Merge pull request #211 from bimanthaperera-lab/test/overview (e6f2b38) - Bimantha Perera, 9 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (9a4ed06) - bimanthaperera-lab, 10 days ago
+* Merge pull request #213 from bimanthaperera-lab/test/overview (7535bda) - Bimantha Perera, 10 days ago
+* improve data parsing (8cf80b5) - Bimantha Perera, 10 days ago
+* Improve OCR text extract (2dccdb2) - Bimantha Perera, 10 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (1dcb31b) - bimanthaperera-lab, 10 days ago
+* Merge pull request #212 from bimanthaperera-lab/test/overview (3a07360) - Bimantha Perera, 10 days ago
+* make gest users can import cv data (1f35b0b) - Bimantha Perera, 10 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (fb7e0f9) - bimanthaperera-lab, 10 days ago
+* Merge pull request #211 from bimanthaperera-lab/test/overview (e6f2b38) - Bimantha Perera, 10 days ago
 * Add AWS Textract OCR Pdf data extarcting & Add new Social Logins (16478c8) - Bimantha Perera, 10 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (01488c5) - bimanthaperera-lab, 10 days ago
 * Merge pull request #210 from bimanthaperera-lab/test/overview (b62522b) - Bimantha Perera, 10 days ago
@@ -223,9 +229,9 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (ee787b6) - bimanthaperera-lab, 10 days ago
 * Merge pull request #209 from bimanthaperera-lab/test/overview (a5efef8) - Bimantha Perera, 10 days ago
 * Price UI Change (2e55d49) - Bimantha Perera, 10 days ago
-* docs: auto-update CHANGELOG.md [skip ci] (765247f) - bimanthaperera-lab, 10 days ago
-* Merge pull request #208 from bimanthaperera-lab/test/overview (6e5c6c5) - Bimantha Perera, 10 days ago
-* Improve UX (0648919) - Bimantha Perera, 10 days ago
+* docs: auto-update CHANGELOG.md [skip ci] (765247f) - bimanthaperera-lab, 11 days ago
+* Merge pull request #208 from bimanthaperera-lab/test/overview (6e5c6c5) - Bimantha Perera, 11 days ago
+* Improve UX (0648919) - Bimantha Perera, 11 days ago
 * fix bug in executive pro template (bc42afd) - Bimantha Perera, 11 days ago
 * docs: auto-update CHANGELOG.md [skip ci] (4dc0ea3) - bimanthaperera-lab, 11 days ago
 * Merge pull request #207 from bimanthaperera-lab/test/overview (9d39489) - Bimantha Perera, 11 days ago
@@ -296,7 +302,7 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (b243b92) - bimanthaperera-lab, 2 weeks ago
 * Merge pull request #182 from bimanthaperera-lab/test/overview (ae3a582) - Bimantha Perera, 2 weeks ago
 * fix mobile preview scrolling bug (6386995) - Bimantha Perera, 2 weeks ago
-* Optimize and documentation update (3116b32) - Bimantha Perera, 2 weeks ago
+* Optimize and documentation update (3116b32) - Bimantha Perera, 3 weeks ago
 * add template per color behavior (be3ebbd) - Bimantha Perera, 3 weeks ago
 * docs: auto-update CHANGELOG.md [skip ci] (464ea93) - bimanthaperera-lab, 3 weeks ago
 * Merge pull request #180 from bimanthaperera-lab/test/overview (244492e) - Bimantha Perera, 3 weeks ago
@@ -401,7 +407,7 @@ All notable changes to this project will be documented in this file.
 * Merge pull request #146 from bimanthaperera-lab/test/overview (7a9cc0e) - Bimantha Perera, 3 weeks ago
 * Send template request to S3 bucket (77118d3) - Bimantha Perera, 3 weeks ago
 * Implement Support Ticket (1e7163a) - Bimantha Perera, 3 weeks ago
-* move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 3 weeks ago
+* move pdf generation to AWS lambda (966cf77) - Bimantha Perera, 4 weeks ago
 * Update CVForm.tsx (37f2feb) - Bimantha Perera, 4 weeks ago
 * implement template management settings with backend (932c731) - Bimantha Perera, 4 weeks ago
 * implement Admin Panel Template and dashboard settings (07345f4) - Bimantha Perera, 4 weeks ago
@@ -508,7 +514,7 @@ All notable changes to this project will be documented in this file.
 * Fix security issues (71cf799) - Bimantha Perera, 4 weeks ago
 * fix security issues (32c0076) - Bimantha Perera, 4 weeks ago
 * Improve UI/UX with user logins and create profile, dashboard,settings pages (61d7944) - Bimantha Perera, 4 weeks ago
-* Create User Login (0ab92c2) - Bimantha Perera, 4 weeks ago
+* Create User Login (0ab92c2) - Bimantha Perera, 5 weeks ago
 * docs: auto-update CHANGELOG.md [skip ci] (e1f7032) - bimanthaperera-lab, 5 weeks ago
 * Merge pull request #92 from bimanthaperera-lab/test/overview (f6ee3e1) - Bimantha Perera, 5 weeks ago
 * Implement MongoDB database and Google Auth for Future Developments (65dd7b5) - Bimantha Perera, 5 weeks ago
@@ -752,9 +758,9 @@ All notable changes to this project will be documented in this file.
 * Update server.ts (e91b077) - Bimantha Perera, 8 weeks ago
 * Update server.ts (3a47f97) - Bimantha Perera, 8 weeks ago
 * Delete test.js (5c7ca97) - Bimantha Perera, 8 weeks ago
-* Update server.ts (fdfffa8) - Bimantha Perera, 8 weeks ago
-* Pdf bug fixing (c29d3d5) - Bimantha Perera, 8 weeks ago
-* remove unnecessary files and  install puppeteer light version (ed63a3e) - Bimantha Perera, 8 weeks ago
+* Update server.ts (fdfffa8) - Bimantha Perera, 9 weeks ago
+* Pdf bug fixing (c29d3d5) - Bimantha Perera, 9 weeks ago
+* remove unnecessary files and  install puppeteer light version (ed63a3e) - Bimantha Perera, 9 weeks ago
 * fix pdf download (7b6473a) - Bimantha Perera, 9 weeks ago
 * fix issues (9b528a3) - Bimantha Perera, 9 weeks ago
 * Update server.ts (05c4405) - Bimantha Perera, 9 weeks ago
