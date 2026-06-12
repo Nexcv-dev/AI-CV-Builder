@@ -143,13 +143,27 @@ describe('pdf lambda handler', () => {
     const requestHandler = pageOn.mock.calls.find(([event]) => event === 'request')?.[1];
     expect(requestHandler).toBeTypeOf('function');
 
-    const profileRequest = { url: () => profileImage, continue: vi.fn(), abort: vi.fn() };
-    const unrelatedRequest = { url: () => 'https://example.com/tracker.png', continue: vi.fn(), abort: vi.fn() };
+    const profileRequest = { url: () => profileImage, redirectChain: () => [], continue: vi.fn(), abort: vi.fn() };
+    const redirectedProfileRequest = {
+      url: () => 'https://cdn.example.com/profile-photo.webp',
+      redirectChain: () => [{ url: () => profileImage }],
+      continue: vi.fn(),
+      abort: vi.fn(),
+    };
+    const unrelatedRequest = {
+      url: () => 'https://example.com/tracker.png',
+      redirectChain: () => [],
+      continue: vi.fn(),
+      abort: vi.fn(),
+    };
     requestHandler(profileRequest);
+    requestHandler(redirectedProfileRequest);
     requestHandler(unrelatedRequest);
 
     expect(profileRequest.continue).toHaveBeenCalledTimes(1);
     expect(profileRequest.abort).not.toHaveBeenCalled();
+    expect(redirectedProfileRequest.continue).toHaveBeenCalledTimes(1);
+    expect(redirectedProfileRequest.abort).not.toHaveBeenCalled();
     expect(unrelatedRequest.abort).toHaveBeenCalledTimes(1);
     expect(unrelatedRequest.continue).not.toHaveBeenCalled();
   });
