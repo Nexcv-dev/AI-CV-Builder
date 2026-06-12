@@ -299,8 +299,10 @@ const SAFE_IMAGE_DATA_URI = /^data:image\\/(?:png|jpe?g|webp);base64,[a-z0-9+/=\
 const sanitizePdfImageSource = (value: unknown) => {
   if (typeof value !== 'string') return '';
   const source = value.trim();
-  if (!source || source.length > MAX_IMAGE_DATA_URI_LENGTH) return '';
-  if (!SAFE_IMAGE_DATA_URI.test(source)) return '';
+  if (!source) return '';
+  if (/^[^\\s"'<>]+$/.test(source) && /^https:\\/\\//i.test(source)) return source;
+  if (/^[^\\s"'<>]+$/.test(source) && /^http:\\/\\/(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::\\d+)?\\/api\\/cv-assets\\//i.test(source)) return source;
+  if (source.length > MAX_IMAGE_DATA_URI_LENGTH || !SAFE_IMAGE_DATA_URI.test(source)) return '';
   return source.replace(/\\s/g, '');
 };
 
@@ -570,6 +572,7 @@ async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
     throw new Error('S3 template unavailable for "' + requestedTemplate + '" (' + lastS3TemplateDebug + ').');
   }
   html = html || generateCVHTML(safeCvData, requestedTemplate, { watermark });
+  const profileImageUrl = sanitizePdfImageSource(safeCvData?.profileImage);
   const browser = await launchBrowser();
   let page: any = null;
   try {
@@ -578,7 +581,8 @@ async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
     page.on('request', (request: any) => {
       const url = request.url();
       const isAllowedFont = url.startsWith('https://fonts.googleapis.com/') || url.startsWith('https://fonts.gstatic.com/');
-      if (url.startsWith('data:') || url === 'about:blank' || isAllowedFont) {
+      const isProfileImage = Boolean(profileImageUrl) && url === profileImageUrl;
+      if (url.startsWith('data:') || url === 'about:blank' || isAllowedFont || isProfileImage) {
         request.continue();
         return;
       }

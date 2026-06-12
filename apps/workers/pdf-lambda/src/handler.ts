@@ -1722,6 +1722,7 @@ async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
     throw new Error('S3 template unavailable for "' + requestedTemplate + '" (' + lastS3TemplateDebug + ').');
   }
   html = html || generateCVHTML(safeCvData, requestedTemplate, { watermark });
+  const profileImageUrl = sanitizePdfImageSource(safeCvData?.profileImage);
   const browser = await launchBrowser();
   let page: any = null;
   try {
@@ -1730,7 +1731,8 @@ async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
     page.on('request', (request: any) => {
       const url = request.url();
       const isAllowedFont = url.startsWith('https://fonts.googleapis.com/') || url.startsWith('https://fonts.gstatic.com/');
-      if (url.startsWith('data:') || url === 'about:blank' || isAllowedFont) {
+      const isProfileImage = Boolean(profileImageUrl) && url === profileImageUrl;
+      if (url.startsWith('data:') || url === 'about:blank' || isAllowedFont || isProfileImage) {
         request.continue();
         return;
       }

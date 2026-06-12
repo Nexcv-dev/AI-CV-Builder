@@ -6,6 +6,7 @@ const browserClose = vi.fn();
 const browserNewPage = vi.fn();
 const puppeteerLaunch = vi.fn();
 const s3Send = vi.fn();
+const pageOn = vi.fn();
 
 vi.mock('puppeteer-core', () => ({
   default: {
@@ -33,7 +34,7 @@ vi.mock('@aws-sdk/client-s3', () => ({
 
 const makePage = () => ({
   setRequestInterception: vi.fn(),
-  on: vi.fn(),
+  on: pageOn,
   setViewport: vi.fn(),
   setContent: vi.fn(),
   evaluate: vi.fn(),
@@ -121,6 +122,36 @@ describe('pdf lambda handler', () => {
     });
     expect(pageClose).toHaveBeenCalledTimes(1);
     expect(browserClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows the sanitized profile image request while blocking unrelated URLs', async () => {
+    const profileImage = 'https://api.example.com/api/cv-assets/user-1/photo.webp';
+    const { handler } = await import('./handler');
+
+    const response = await handler({
+      cvData: {
+        personalInfo: { fullName: 'Test User' },
+        profileImage,
+        experience: [],
+        education: [],
+        skills: [],
+      },
+      template: 'professional',
+    });
+
+    expect(response.statusCode).toBe(200);
+    const requestHandler = pageOn.mock.calls.find(([event]) => event === 'request')?.[1];
+    expect(requestHandler).toBeTypeOf('function');
+
+    const profileRequest = { url: () => profileImage, continue: vi.fn(), abort: vi.fn() };
+    const unrelatedRequest = { url: () => 'https://example.com/tracker.png', continue: vi.fn(), abort: vi.fn() };
+    requestHandler(profileRequest);
+    requestHandler(unrelatedRequest);
+
+    expect(profileRequest.continue).toHaveBeenCalledTimes(1);
+    expect(profileRequest.abort).not.toHaveBeenCalled();
+    expect(unrelatedRequest.abort).toHaveBeenCalledTimes(1);
+    expect(unrelatedRequest.continue).not.toHaveBeenCalled();
   });
 
   it('returns a 500 JSON response when Chromium PDF rendering fails', async () => {

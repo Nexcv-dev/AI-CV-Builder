@@ -1048,11 +1048,13 @@ export async function generatePdfDocument({ cvData, template, watermark, html, t
         page = await browser.newPage();
         console.timeEnd('NewPage');
 
+        const profileImageUrl = sanitizePdfImageSource(cvData?.profileImage);
         await page.setRequestInterception(true);
         page.on('request', request => {
             const url = request.url();
             const isAllowedFont = url.startsWith('https://fonts.googleapis.com/') || url.startsWith('https://fonts.gstatic.com/');
-            if (url.startsWith('data:') || url === 'about:blank' || isAllowedFont) {
+            const isProfileImage = Boolean(profileImageUrl) && url === profileImageUrl;
+            if (url.startsWith('data:') || url === 'about:blank' || isAllowedFont || isProfileImage) {
                 request.continue();
                 return;
             }
