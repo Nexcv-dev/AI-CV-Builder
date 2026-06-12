@@ -344,7 +344,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     body::after {
       content: "" !important;
       display: block !important;
-      height: calc(164px + env(safe-area-inset-bottom)) !important;
+      height: calc(100px + env(safe-area-inset-bottom)) !important;
       flex-shrink: 0 !important;
       width: 100% !important;
     }
