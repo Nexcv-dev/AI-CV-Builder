@@ -116,7 +116,6 @@ export const DesignPanel = React.memo(({ templateDefaultThemeColor, isDarkMode, 
                 disabled={isImageUploading}
                 className="inline-flex items-center justify-center gap-2 text-sm px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium transition-colors shadow-sm disabled:cursor-wait disabled:opacity-70"
               >
-                {isImageUploading && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
                 {isImageUploading ? 'Uploading...' : cvData.profileImage ? 'Change Photo' : 'Upload Photo'}
               </button>
               {cvData.profileImage && (<button type="button" disabled={isImageUploading} onClick={() => setCvData(prev => ({ ...prev, profileImage: '' }))} className="text-sm text-red-500 hover:text-red-700 font-medium text-left px-1 disabled:cursor-not-allowed disabled:opacity-50">Remove</button>)}
