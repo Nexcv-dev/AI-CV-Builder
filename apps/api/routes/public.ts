@@ -224,7 +224,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     .nexcv-public-toolbar {
       position: sticky !important;
       z-index: 2147483640 !important;
-      top: 0 !important;
+      top: 12px !important;
       left: auto !important;
       transform: none !important;
       width: min(980px, calc(100vw - 24px)) !important;
@@ -307,6 +307,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
     body {
       height: 100% !important;
       min-height: 0 !important;
+      padding-top: 12px !important;
       overflow-y: auto !important;
       overscroll-behavior-y: none !important;
       touch-action: auto !important;
