@@ -64,5 +64,9 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: VITE_POSTHOG_TOKEN
+        sync: false
+      - key: VITE_POSTHOG_HOST
+        value: https://us.i.posthog.com
       - key: ALLOWED_ORIGIN
         sync: false

@@ -1,22 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { disableAnalytics, initializeAnalytics } from '../analytics';
 
 const COOKIE_CONSENT_KEY = 'nexcv-cookie-consent';
-const UMAMI_SCRIPT_ID = 'nexcv-umami-analytics';
-const UMAMI_WEBSITE_ID = 'dd03ee20-40f5-4886-b4d4-8120d4cfe368';
 
 type CookieConsent = 'accepted' | 'rejected';
-
-function loadAnalytics() {
-  if (document.getElementById(UMAMI_SCRIPT_ID)) return;
-
-  const script = document.createElement('script');
-  script.id = UMAMI_SCRIPT_ID;
-  script.defer = true;
-  script.src = 'https://cloud.umami.is/script.js';
-  script.dataset.websiteId = UMAMI_WEBSITE_ID;
-  document.head.appendChild(script);
-}
 
 function readConsent(): CookieConsent | null {
   try {
@@ -43,7 +31,9 @@ export function CookieConsentBanner() {
 
   useEffect(() => {
     if (consent === 'accepted') {
-      loadAnalytics();
+      void initializeAnalytics();
+    } else if (consent === 'rejected') {
+      disableAnalytics();
     }
   }, [consent]);
 

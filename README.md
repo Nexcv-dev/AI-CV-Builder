@@ -182,6 +182,8 @@ SENTRY_TRACES_SAMPLE_RATE=0.1
 VITE_SENTRY_DSN=https://your-frontend-dsn@sentry.io/project-id
 VITE_SENTRY_ENVIRONMENT=production
 VITE_SENTRY_TRACES_SAMPLE_RATE=0.1
+VITE_POSTHOG_TOKEN=phc_your_project_token
+VITE_POSTHOG_HOST=https://us.i.posthog.com
 
 SUPER_ADMIN_EMAILS=owner@example.com
 ADMIN_ALLOWED_IPS=

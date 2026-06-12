@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { capturePageView } from '../analytics';
 import { Layout } from './Layout';
 import { PageLoadingOverlay, RouteLoadingFallback } from './loading';
 import { AdminProtectedRoute, ProtectedRoute } from './routeGuards';
@@ -28,6 +29,16 @@ const CheckoutPage = lazy(() => import('../pages/CheckoutPage'));
 const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
 const AdminDashboard = lazy(() => import('../features/admin/AdminDashboard'));
 const HtmlToPdf = lazy(() => import('../pages/HtmlToPdf'));
+
+function AnalyticsPageView() {
+  const location = useLocation();
+
+  useEffect(() => {
+    capturePageView(location.pathname);
+  }, [location.pathname]);
+
+  return null;
+}
 
 function PublicAnnouncement({ settings }: { settings: PublicAppSettings }) {
   const text = settings.announcementText || settings.announcement?.text;
@@ -100,6 +111,7 @@ export function AppRoutes() {
       <PageLoadingOverlay />
       {publicSettings && location.pathname === '/' && <PublicAnnouncement settings={publicSettings} />}
       <CookieConsentBanner />
+      <AnalyticsPageView />
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           <Route path="/print" element={<PrintView />} />
