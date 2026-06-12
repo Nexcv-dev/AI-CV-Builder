@@ -169,7 +169,12 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         return `${safe}_Resume.pdf`;
     };
     const sendPublicCvUnavailable = (req: Request, res: Response) => {
-        const homeUrl = htmlEscape(getFrontendOrigin(req).replace(/\/+$/, '') || '/');
+        const resolvedHomeUrl = typeof getFrontendOrigin === 'function'
+            ? getFrontendOrigin(req)
+            : typeof getApiOrigin === 'function'
+                ? getApiOrigin(req)
+                : `${req.protocol}://${req.get('host') || ''}`;
+        const homeUrl = htmlEscape(String(resolvedHomeUrl || '/').replace(/\/+$/, '') || '/');
         const html = `<!doctype html>
 <html lang="en">
 <head>
