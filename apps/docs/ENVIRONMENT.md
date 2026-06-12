@@ -171,6 +171,8 @@ Guest users must sign in before CV import starts. The frontend opens the auth mo
 | `VITE_SENTRY_ENVIRONMENT` | Optional | Frontend Sentry environment. |
 | `VITE_SENTRY_RELEASE` | Optional | Frontend release. |
 | `VITE_SENTRY_TRACES_SAMPLE_RATE` | Optional | Frontend traces sample rate. |
+| `VITE_POSTHOG_TOKEN` | Optional | PostHog project token used after analytics consent. |
+| `VITE_POSTHOG_HOST` | Optional | PostHog ingest host. Defaults to the US Cloud host. |
 | `API_REQUEST_TIMEOUT_MS` | Optional | Default API request timeout. |
 | `AI_REQUEST_TIMEOUT_MS` | Optional | AI route timeout. |
 | `SERVER_REQUEST_TIMEOUT_MS` | Optional | Node server request timeout. |
