@@ -340,7 +340,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
   @media screen and (max-width: 620px) {
     body {
       align-items: center !important;
-      padding: 16px 12px calc(116px + env(safe-area-inset-bottom)) !important;
+      padding: 16px 12px calc(164px + env(safe-area-inset-bottom)) !important;
     }
     body > :not(.nexcv-watermark):not(.nexcv-public-toolbar):not(script):not(style) {
       margin: 0 !important;
