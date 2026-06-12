@@ -927,8 +927,10 @@ describe('Server Utils', () => {
         expect(html).toContain('overscroll-behavior-y: none !important;');
         expect(html).toContain('touch-action: pan-y !important;');
         expect(html).toContain('position: sticky !important;');
+        expect(html).toContain('top: 12px !important;');
         expect(html).toContain('margin: 0 auto 16px !important;');
         expect(html).toContain('@media screen and (min-width: 841px)');
+        expect(html).toContain('padding-top: 12px !important;');
         expect(html).toContain('overflow-y: auto !important;');
         expect(html).toContain('-webkit-overflow-scrolling: touch !important;');
         expect(html).toContain('transform: scale(0.90) !important;');
