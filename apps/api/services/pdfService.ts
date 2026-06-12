@@ -27,6 +27,12 @@ const sanitizePdfImageSource = (value: unknown) => {
     return source.replace(/\s/g, '');
 };
 
+const isAllowedProfileImageRequest = (request: any, profileImageUrl: string) => {
+    if (!profileImageUrl) return false;
+    if (request.url() === profileImageUrl) return true;
+    return request.redirectChain().some((redirect: any) => redirect.url() === profileImageUrl);
+};
+
 const safeNumber = (value: unknown, fallback: number, min: number, max: number) => {
     const number = Number(value);
     return Number.isFinite(number) ? Math.min(Math.max(number, min), max) : fallback;
@@ -1053,7 +1059,7 @@ export async function generatePdfDocument({ cvData, template, watermark, html, t
         page.on('request', request => {
             const url = request.url();
             const isAllowedFont = url.startsWith('https://fonts.googleapis.com/') || url.startsWith('https://fonts.gstatic.com/');
-            const isProfileImage = Boolean(profileImageUrl) && url === profileImageUrl;
+            const isProfileImage = isAllowedProfileImageRequest(request, profileImageUrl);
             if (url.startsWith('data:') || url === 'about:blank' || isAllowedFont || isProfileImage) {
                 request.continue();
                 return;
