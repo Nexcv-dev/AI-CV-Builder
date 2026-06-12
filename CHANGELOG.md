@@ -3,14 +3,18 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #271 from Nexcv-dev/test/overview (749d61b) - Bimantha Perera, 9 seconds ago
-* remove rubber band gurd effect (aab6d38) - Bimantha Perera, 11 minutes ago
+* Merge pull request #272 from Nexcv-dev/test/overview (a99c62a) - Bimantha Perera, 7 seconds ago
+* fix bug (20f6cdb) - Bimantha Perera, 4 minutes ago
+* Delete README.md (ad93623) - Bimantha Perera, 10 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (97b1eb6) - bimanthaperera-lab, 15 minutes ago
+* Merge pull request #271 from Nexcv-dev/test/overview (749d61b) - Bimantha Perera, 15 minutes ago
+* remove rubber band gurd effect (aab6d38) - Bimantha Perera, 26 minutes ago
 * docs: auto-update CHANGELOG.md [skip ci] (2198774) - bimanthaperera-lab, 6 hours ago
 * Merge pull request #270 from Nexcv-dev/test/overview (4b38272) - Bimantha Perera, 6 hours ago
 * Create README.md (ad64d37) - Bimantha Perera, 6 hours ago
 * remove rubber band effect gaurd (5d40b3b) - Bimantha Perera, 6 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (0579f40) - bimanthaperera-lab, 6 hours ago
-* Merge pull request #269 from Nexcv-dev/test/overview (e429f03) - Bimantha Perera, 6 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (0579f40) - bimanthaperera-lab, 7 hours ago
+* Merge pull request #269 from Nexcv-dev/test/overview (e429f03) - Bimantha Perera, 7 hours ago
 * fix scroll bug (2f42cb0) - Bimantha Perera, 7 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (f47d9f6) - bimanthaperera-lab, 7 hours ago
 * Merge pull request #268 from Nexcv-dev/test/overview (671624c) - Bimantha Perera, 7 hours ago
@@ -18,9 +22,9 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (cb2dd31) - bimanthaperera-lab, 7 hours ago
 * Merge pull request #267 from Nexcv-dev/test/overview (dd3e84e) - Bimantha Perera, 7 hours ago
 * fix live cv link scroll issue (883845c) - Bimantha Perera, 7 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (4b0645a) - bimanthaperera-lab, 7 hours ago
-* Merge pull request #266 from Nexcv-dev/test/overview (86d39bf) - Bimantha Perera, 7 hours ago
-* fix rubber band behave from live cv link (9b52e18) - Bimantha Perera, 7 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (4b0645a) - bimanthaperera-lab, 8 hours ago
+* Merge pull request #266 from Nexcv-dev/test/overview (86d39bf) - Bimantha Perera, 8 hours ago
+* fix rubber band behave from live cv link (9b52e18) - Bimantha Perera, 8 hours ago
 * add loading state to live cv download button (82a0456) - Bimantha Perera, 8 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (2277589) - bimanthaperera-lab, 8 hours ago
 * Merge pull request #265 from Nexcv-dev/test/overview (5f78593) - Bimantha Perera, 8 hours ago
@@ -34,8 +38,8 @@ All notable changes to this project will be documented in this file.
 * docs: auto-update CHANGELOG.md [skip ci] (148a9a0) - bimanthaperera-lab, 9 hours ago
 * Merge pull request #261 from Nexcv-dev/test/overview (23ca975) - Bimantha Perera, 9 hours ago
 * improve live cv link layout (42e8169) - Bimantha Perera, 9 hours ago
-* docs: auto-update CHANGELOG.md [skip ci] (071e037) - bimanthaperera-lab, 9 hours ago
-* Merge pull request #260 from Nexcv-dev/test/overview (02410eb) - Bimantha Perera, 9 hours ago
+* docs: auto-update CHANGELOG.md [skip ci] (071e037) - bimanthaperera-lab, 10 hours ago
+* Merge pull request #260 from Nexcv-dev/test/overview (02410eb) - Bimantha Perera, 10 hours ago
 * improve cv link download button layout (b48a348) - Bimantha Perera, 10 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (b10fab2) - bimanthaperera-lab, 10 hours ago
 * Merge pull request #259 from Nexcv-dev/test/overview (4a1a891) - Bimantha Perera, 10 hours ago
@@ -48,8 +52,8 @@ All notable changes to this project will be documented in this file.
 * fix live link layout issue (cc9bf13) - Bimantha Perera, 19 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (71c17c9) - bimanthaperera-lab, 19 hours ago
 * Merge pull request #253 from Nexcv-dev/test/overview (15f1401) - Bimantha Perera, 19 hours ago
-* implement new live cv link option (139faf0) - Bimantha Perera, 19 hours ago
-* Update useCheckoutReturnHandler.test.tsx (f896319) - Bimantha Perera, 31 hours ago
+* implement new live cv link option (139faf0) - Bimantha Perera, 20 hours ago
+* Update useCheckoutReturnHandler.test.tsx (f896319) - Bimantha Perera, 32 hours ago
 * add test cases for pdf downloading and payment flow (757fb62) - Bimantha Perera, 32 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (c87ee91) - bimanthaperera-lab, 2 days ago
 * Merge pull request #252 from Nexcv-dev/test/overview (fca69f2) - Bimantha Perera, 2 days ago
