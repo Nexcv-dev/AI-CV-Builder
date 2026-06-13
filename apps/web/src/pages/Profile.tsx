@@ -26,10 +26,13 @@ import {
 } from 'lucide-react';
 import { AppShellHeader } from '../components/AppShellHeader';
 import { AppSidebar } from '../components/AppSidebar';
-import { AuthUser, apiFetch, getCurrentUser, notifyAuthUserChanged } from '../utils/api';
+import { AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 import { compressAndResizeImage } from '../utils/imageUtils';
 import { useDocumentsQuery } from '../hooks/useDocumentsQuery';
+import { useCurrentUserQuery, useSetCurrentUserCache } from '../hooks/useCurrentUserQuery';
+import { documentsQueryKey } from '../hooks/useDocumentsQuery';
+import { useQueryClient } from '@tanstack/react-query';
 
 type ProfileTab = 'personal' | 'security' | 'account';
 
@@ -62,12 +65,18 @@ function formatRelativeTime(value?: string) {
 
 export default function Profile() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const {
     data: documentsData,
     isPending: documentsLoading,
     error: documentsError,
   } = useDocumentsQuery();
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const {
+    data: user = null,
+    isPending: userLoading,
+    error: userError,
+  } = useCurrentUserQuery();
+  const setCurrentUserCache = useSetCurrentUserCache();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
   const [form, setForm] = useState({
@@ -82,7 +91,7 @@ export default function Profile() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userLoading, setUserLoading] = useState(true);
+  const [isProfileImageUploading, setIsProfileImageUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const documents = documentsData?.documents ?? [];
@@ -90,41 +99,26 @@ export default function Profile() {
 
   useEffect(() => {
     clearPageScrollLock();
-    let ignore = false;
-
-    async function loadProfile() {
-      try {
-        const currentUser = await getCurrentUser();
-
-        if (ignore) return;
-        setUser(currentUser);
-        setForm({
-          displayName: currentUser.displayName || '',
-          profileImage: currentUser.profileImage || '',
-          phone: currentUser.phone || '',
-          address: currentUser.address || '',
-          dob: currentUser.dob || '',
-          gender: currentUser.gender || '',
-          nationality: currentUser.nationality || '',
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Could not load profile.';
-        toast.error(message);
-      } finally {
-        if (!ignore) setUserLoading(false);
-      }
-    }
-
-    loadProfile();
-    return () => {
-      ignore = true;
-    };
   }, []);
 
   useEffect(() => {
-    if (!documentsError) return;
-    toast.error(documentsError instanceof Error ? documentsError.message : 'Could not load profile.');
-  }, [documentsError]);
+    if (!user) return;
+    setForm({
+      displayName: user.displayName || '',
+      profileImage: user.profileImage || '',
+      phone: user.phone || '',
+      address: user.address || '',
+      dob: user.dob || '',
+      gender: user.gender || '',
+      nationality: user.nationality || '',
+    });
+  }, [user?.id]);
+
+  useEffect(() => {
+    const error = userError || documentsError;
+    if (!error) return;
+    toast.error(error instanceof Error ? error.message : 'Could not load profile.');
+  }, [documentsError, userError]);
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -164,19 +158,32 @@ export default function Profile() {
       return;
     }
 
+    setIsProfileImageUploading(true);
     try {
       const image = await compressAndResizeImage(file, 320, 320);
       updateField('profileImage', image);
-      toast.success('Profile picture ready to save.');
-    } catch {
-      toast.error('Could not process this image.');
+
+      const { imageUrl } = await apiFetch<{ imageUrl: string }>('/api/profile-images', {
+        method: 'POST',
+        body: JSON.stringify({ imageData: image }),
+      });
+      updateField('profileImage', imageUrl);
+      toast.success('Profile picture uploaded.');
+    } catch (error) {
+      setForm((current) => ({ ...current, profileImage: user?.profileImage || '' }));
+      toast.error(error instanceof Error ? error.message : 'Could not upload this image.');
     } finally {
+      setIsProfileImageUploading(false);
       event.target.value = '';
     }
   };
 
   const saveProfile = async (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
+    if (isProfileImageUploading) {
+      toast.error('Wait for the profile picture upload to finish.');
+      return;
+    }
     setIsSaving(true);
 
     try {
@@ -184,7 +191,7 @@ export default function Profile() {
         method: 'PATCH',
         body: JSON.stringify(form),
       });
-      setUser(data.user);
+      setCurrentUserCache(data.user);
       setForm((current) => ({ ...current, profileImage: data.user.profileImage || '' }));
       notifyAuthUserChanged(data.user);
       toast.success('Profile updated successfully.');
@@ -223,6 +230,9 @@ export default function Profile() {
 
   const logout = async () => {
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+    setCurrentUserCache(null);
+    queryClient.removeQueries({ queryKey: documentsQueryKey });
+    notifyAuthUserChanged();
     navigate('/');
   };
 
@@ -230,6 +240,9 @@ export default function Profile() {
     const confirmed = window.confirm('Delete your account and all saved CVs? This cannot be undone.');
     if (!confirmed) return;
     await apiFetch('/api/auth/account', { method: 'DELETE' });
+    setCurrentUserCache(null);
+    queryClient.removeQueries({ queryKey: documentsQueryKey });
+    notifyAuthUserChanged();
     navigate('/');
   };
 
@@ -257,11 +270,11 @@ export default function Profile() {
             <button
               type="button"
               onClick={() => saveProfile()}
-              disabled={isSaving || isLoading}
+              disabled={isSaving || isLoading || isProfileImageUploading}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-violet-600/25 transition hover:bg-violet-500 active:scale-[0.98] disabled:opacity-60"
             >
-              {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-              Save Changes
+              {isSaving || isProfileImageUploading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+              {isProfileImageUploading ? 'Uploading Photo...' : 'Save Changes'}
             </button>
           </div>
         </section>
@@ -301,10 +314,16 @@ export default function Profile() {
                         avatarInitial
                       )}
                     </span>
+                    {isProfileImageUploading && (
+                      <span className="absolute inset-0 flex items-center justify-center rounded-full bg-slate-950/55 text-white backdrop-blur-[2px]" role="status" aria-label="Uploading profile picture">
+                        <Loader2 size={24} className="animate-spin" />
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-slate-700 text-slate-100 shadow-lg ring-4 ring-slate-950 transition hover:bg-violet-600"
+                      disabled={isProfileImageUploading}
+                      className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-slate-700 text-slate-100 shadow-lg ring-4 ring-slate-950 transition hover:bg-violet-600 disabled:cursor-wait disabled:opacity-60"
                       aria-label="Change profile picture"
                     >
                       <Camera size={15} />
@@ -314,12 +333,13 @@ export default function Profile() {
                     <button
                       type="button"
                       onClick={() => updateField('profileImage', '')}
-                      className="mt-3 inline-flex items-center justify-center rounded-full bg-violet-500/15 px-3 py-1.5 text-xs font-black text-violet-200 ring-1 ring-violet-300/20 transition hover:bg-violet-500/25 active:scale-95"
+                      disabled={isProfileImageUploading}
+                      className="mt-3 inline-flex items-center justify-center rounded-full bg-violet-500/15 px-3 py-1.5 text-xs font-black text-violet-200 ring-1 ring-violet-300/20 transition hover:bg-violet-500/25 active:scale-95 disabled:cursor-wait disabled:opacity-50"
                     >
                       Remove
                     </button>
                   )}
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={uploadProfileImage} />
+                  <input ref={fileInputRef} type="file" accept="image/*" disabled={isProfileImageUploading} className="hidden" onChange={uploadProfileImage} />
                   <h2 className="mt-5 max-w-full truncate font-montserrat text-xl font-black sm:text-2xl">{form.displayName || user?.displayName}</h2>
                   <p className="mt-1 max-w-full truncate text-sm font-semibold text-slate-400">{user?.email}</p>
                   <span className={`mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-950/60 px-3 py-1.5 text-xs font-black ring-1 ${planBadgeClass}`}>
