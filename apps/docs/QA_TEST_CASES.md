@@ -20,6 +20,7 @@ This is the manual QA checklist for NexCV releases. Run it before production rel
 | QA-004 | Auth | Login with valid user | User session persists after refresh. |
 | QA-005 | Auth | Logout | Protected pages require login again. |
 | QA-006 | Navigation | Visit dashboard, My CVs, profile, pricing, templates | Pages load without blank screens or console-breaking errors. |
+| QA-007 | Auth Cache | Log in or log out while multiple authenticated UI areas are mounted | Header, account menu, route guards, and pages update from the shared current-user cache without a stale user or duplicate fetch loop. |
 
 ## CV Builder
 
@@ -89,6 +90,27 @@ This is the manual QA checklist for NexCV releases. Run it before production rel
 | QA-603 | Email Verify | Request/enter OTP | Email verification updates user state. |
 | QA-604 | CSRF/Auth | Submit sensitive action after logout | Request fails safely. |
 | QA-605 | Upload Safety | Upload invalid image/CV data | Request is rejected with clear error. |
+| QA-606 | Session Revocation | Invalidate a user's sessions, then reuse an older session | The old session is rejected while a newly established session remains valid. |
+| QA-607 | API Timeout | Hold a normal API request beyond its configured timeout | The API returns `503` with the safe timeout message and does not send a second response after completion. |
+| QA-608 | Cached Settings | Update cached settings/template data and trigger invalidation | Exact-key or prefix invalidation removes stale data; disabled or expired cache entries reload from the source. |
+
+## Automated Critical Coverage
+
+Keep these focused regression suites current when changing authentication caching, session security, request reliability, or backend caching:
+
+| Test File | Covered Behavior |
+| --- | --- |
+| `apps/web/src/hooks/useCurrentUserQuery.test.tsx` | Initial current-user fetch, fresh-cache reuse, login/logout event synchronization, and direct authenticated-flow cache updates. |
+| `apps/api/services/sessionService.test.ts` | Session-version normalization, marking a session current, invalidating older sessions, and legacy-user behavior. |
+| `apps/api/middlewares/requestTimeout.test.ts` | Non-API bypass, route-specific timeout response, timer cleanup on finish/close, and protection after headers are sent. |
+| `apps/api/server-utils/ttlCache.test.ts` | TTL parsing, expiry, cache-hit loader reuse, exact/prefix invalidation, and disabled-cache behavior. |
+
+Run the focused app suites with:
+
+```powershell
+corepack pnpm --filter @nexcv/web test:run
+corepack pnpm --filter @nexcv/api test:run
+```
 
 ## Regression Commands
 
@@ -116,6 +138,8 @@ For API queue, auth/security, billing, or checkout changes:
 ```powershell
 corepack pnpm test:run --filter @nexcv/api --filter @nexcv/web
 ```
+
+Auth-cache, session-version, cache-TTL, and request-timeout changes must keep the focused suites in **Automated Critical Coverage** passing in addition to the full app/API run.
 
 For payment path changes, include PayHere/Lemon Squeezy helper coverage for signatures, amount/currency validation, market routing, coupon math, return confirmation, and cancellation cleanup.
 

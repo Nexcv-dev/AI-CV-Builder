@@ -6,6 +6,7 @@ Use this checklist before moving NexCV to live traffic. Keep evidence links or s
 
 - `corepack pnpm launch:check` passes.
 - `corepack pnpm templates:release:dry-run` passes before any template release.
+- Current-user cache synchronization, session invalidation, API request timeout, and TTL cache regression suites pass.
 
 ## Environment
 

@@ -45,11 +45,14 @@ Main documentation lives in [apps/docs](apps/docs/README.md).
 - [Architecture](apps/docs/ARCHITECTURE.md)
 - [API Docs](apps/docs/API_DOCS.md)
 - [Admin Panel](apps/docs/ADMIN_PANEL.md)
+- [Billing And Plans](apps/docs/BILLING.md)
 - [Deployment](apps/docs/DEPLOYMENT.md)
 - [Environment Variables](apps/docs/ENVIRONMENT.md)
 - [AWS Services](apps/docs/AWS_SERVICES.md)
 - [Backup And Restore](apps/docs/BACKUP_RESTORE.md)
 - [Operations Runbook](apps/docs/OPERATIONS_RUNBOOK.md)
+- [Launch Checklist](apps/docs/LAUNCH_CHECKLIST.md)
+- [QA Test Cases](apps/docs/QA_TEST_CASES.md)
 - [PDF Rendering](apps/docs/PDF_RENDERING.md)
 - [Template System](apps/docs/TEMPLATES.md)
 - [Template Authoring Guide](apps/docs/template-authoring-guide.md)
@@ -59,29 +62,31 @@ Main documentation lives in [apps/docs](apps/docs/README.md).
 ## Repository Layout
 
 ```text
-AI-CV-Builder/
-  README.md
-  package.json                 # pnpm workspace entrypoint
-  pnpm-workspace.yaml
-  turbo.json
-  pnpm-lock.yaml
-  render.yaml
-  docker-compose.yml
-  Admin Templates/             # Local source folders for admin templates
-  sample templates/            # Static preview samples
-  packages/
-    shared/                    # Shared domain, queue payload, and admin contracts
-    templates/                 # Built-in template metadata/contracts
-    api-contracts/             # Shared frontend/backend API response contracts
-  apps/
-    web/                       # React/Vite frontend, public assets, docs, and template scripts
-    api/                       # Express API, routes, middleware, models, services, and API tests
-    workers/
-      cv-import-worker/        # SQS worker for background CV import jobs
-      email-worker/            # SQS worker for async transactional email
-      ocr-lambda/              # OCR/Textract Lambda for CV import text extraction
-      pdf-lambda/              # AWS Lambda PDF renderer
-      pdf-worker/              # SQS worker for background PDF export jobs
+Free-AI-CV-Builder/
+├── README.md
+├── package.json                 # pnpm workspace entrypoint
+├── pnpm-workspace.yaml
+├── turbo.json
+├── pnpm-lock.yaml
+├── render.yaml
+├── docker-compose.yml
+├── Admin Templates/             # Local source folders for admin templates
+├── sample templates/            # Static preview samples
+├── templates/                   # Tracked template assets
+├── packages/
+│   ├── shared/                  # Shared domain, queue payload, and admin contracts
+│   ├── templates/               # Built-in template metadata and validation
+│   └── api-contracts/           # Shared frontend/backend API response contracts
+└── apps/
+    ├── web/                     # React/Vite frontend, public assets, tests, and scripts
+    ├── api/                     # Express API, routes, middleware, services, models, and tests
+    ├── docs/                    # Architecture, deployment, operations, and feature docs
+    └── workers/
+        ├── cv-import-worker/    # SQS worker for background CV import jobs
+        ├── email-worker/        # SQS worker for async transactional email
+        ├── ocr-lambda/          # OCR/Textract Lambda for CV import text extraction
+        ├── pdf-lambda/          # AWS Lambda PDF renderer
+        └── pdf-worker/          # SQS worker for background PDF export jobs
 ```
 
 ## Local Development

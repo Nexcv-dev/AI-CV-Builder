@@ -11,7 +11,7 @@ Built-in templates are shipped with the frontend code and public assets. They pr
 Relevant files:
 
 - `src/templates.ts`
-- `src/utils/templateData.ts`
+- `packages/templates/src/templateData.ts`
 - `src/utils/templateRenderer.ts`
 - `public/templates/`
 
@@ -23,10 +23,10 @@ Expected folder shape:
 
 ```text
 Admin Templates/
-  template-key/
-    index.html
-    style.css
-    thumbnail.webp
+└── template-key/
+    ├── index.html
+    ├── style.css
+    └── thumbnail.webp
 ```
 
 Template folders should use lowercase letters, numbers, and hyphens.

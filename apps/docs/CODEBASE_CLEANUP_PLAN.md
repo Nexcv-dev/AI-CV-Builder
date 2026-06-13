@@ -397,7 +397,8 @@ Do not treat "100% clean" as "no future work." It means the code is easy to chan
 
 Architecture boundaries:
 
-- `apps/web` contains frontend UI, frontend hooks, frontend utilities, public assets, and docs only.
+- `apps/web` contains frontend UI, frontend hooks, frontend utilities, public assets, tests, and build/template scripts only.
+- `apps/docs` contains project, feature, deployment, and operations documentation.
 - `apps/api` contains Express routes, backend services, middleware, models, backend utilities, and API tests only.
 - `apps/workers` contains deployable worker/Lambda packages only.
 - `packages/shared`, `packages/templates`, and `packages/api-contracts` contain cross-app contracts and logic that must stay consistent.
