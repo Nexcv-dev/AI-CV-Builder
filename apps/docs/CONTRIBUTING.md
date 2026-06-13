@@ -99,7 +99,7 @@ Important paths:
 - `packages/shared/` - shared domain constants, queue payload helpers, and admin role contracts.
 - `packages/templates/` - built-in template metadata and access helpers.
 - `packages/api-contracts/` - shared API response contracts used by frontend and backend.
-- `apps/web/` - React app, public assets, docs, and template scripts.
+- `apps/web/` - React app, public assets, frontend tests, and template scripts.
 - `apps/web/src/` - React pages, components, hooks, stores, and frontend utilities.
 - `apps/web/src/features/admin/` - admin panel shell, sections, hooks, permissions, types, and shared admin UI.
 - `apps/api/` - Express API, middleware, routes, services, models, backend utilities, and API tests.
@@ -153,6 +153,20 @@ corepack pnpm test:run
 ```
 
 When touching queue enqueue services, auth/security helpers, or reliability utilities, add or update focused tests under `apps/api/services/` or `apps/api/server-utils/`. Cover configuration aliases, missing environment variables, rejected inputs, and downstream dependency calls.
+
+Critical regression coverage currently includes:
+
+- `apps/web/src/hooks/useCurrentUserQuery.test.tsx` for current-user query caching, auth event synchronization, and direct cache updates.
+- `apps/api/services/sessionService.test.ts` for session-version normalization and old-session invalidation.
+- `apps/api/middlewares/requestTimeout.test.ts` for API timeout selection, safe `503` responses, and timer cleanup.
+- `apps/api/server-utils/ttlCache.test.ts` for TTL expiry, loader reuse, invalidation, and disabled caching.
+
+When changing one of these behaviors, update its focused suite and run both affected app tests:
+
+```bash
+corepack pnpm --filter @nexcv/web test:run
+corepack pnpm --filter @nexcv/api test:run
+```
 
 ## CV Import, OCR, And PDF Jobs
 
@@ -233,7 +247,7 @@ Update docs in the same PR when behavior changes. Useful targets:
 Check markdown links after larger doc edits:
 
 ```powershell
-$files = @('README.md','apps\\web\\README.md') + (Get-ChildItem 'apps\\web\\docs' -Filter *.md | ForEach-Object { $_.FullName })
+$files = @('README.md') + (Get-ChildItem 'apps\\docs' -Filter *.md | ForEach-Object { $_.FullName })
 $missing = @()
 foreach ($file in $files) {
   $dir = Split-Path -Parent $file

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, Code2, FileText, LayoutDashboard, User } from 'lucide-react';
 import { AccountMenu } from './AccountMenu';
-import { AuthUser, getCurrentUser } from '../utils/api';
+import { useCurrentUserQuery } from '../hooks/useCurrentUserQuery';
 
 const mobileNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -15,30 +15,9 @@ const mobileNavItems = [
 export function AppShellHeader() {
   const location = useLocation();
   const [mobileNavVisible, setMobileNavVisible] = useState(false);
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const { data: user = null } = useCurrentUserQuery();
   const lastScrollYRef = useRef(0);
   const visibleMobileNavItems = user ? mobileNavItems : mobileNavItems.filter((item) => item.to === '/tips');
-
-  useEffect(() => {
-    let ignore = false;
-    getCurrentUser()
-      .then((currentUser) => {
-        if (!ignore) setUser(currentUser);
-      })
-      .catch(() => {
-        if (!ignore) setUser(null);
-      });
-
-    const handleAuthUserChanged = (event: Event) => {
-      setUser((event as CustomEvent<AuthUser | undefined>).detail || null);
-    };
-
-    window.addEventListener('auth-user-changed', handleAuthUserChanged);
-    return () => {
-      ignore = true;
-      window.removeEventListener('auth-user-changed', handleAuthUserChanged);
-    };
-  }, []);
 
   useEffect(() => {
     lastScrollYRef.current = window.scrollY;

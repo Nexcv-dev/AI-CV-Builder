@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, Code2, FileText, LayoutDashboard, LogOut, Plus, Shield, User } from 'lucide-react';
-import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification, notifyAuthUserChanged } from '../utils/api';
+import { apiFetch, DASHBOARD_NOTIFICATION_EVENT, hasDashboardNotification, notifyAuthUserChanged } from '../utils/api';
 import { isAdminUser } from '../features/admin/adminPermissions';
+import { useCurrentUserQuery, useSetCurrentUserCache } from '../hooks/useCurrentUserQuery';
+import { documentsQueryKey } from '../hooks/useDocumentsQuery';
+import { useQueryClient } from '@tanstack/react-query';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -15,41 +18,26 @@ const navItems = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const queryClient = useQueryClient();
+  const { data: user = null } = useCurrentUserQuery();
+  const setCurrentUserCache = useSetCurrentUserCache();
   const [dashboardNotification, setDashboardNotificationState] = useState(() => hasDashboardNotification());
 
   useEffect(() => {
-    let ignore = false;
-    getCurrentUser()
-      .then((currentUser) => {
-        if (!ignore) setUser(currentUser);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleAuthUserChanged = (event: Event) => {
-      setUser((event as CustomEvent<AuthUser | undefined>).detail || null);
-    };
     const handleDashboardNotificationChanged = (event: Event) => {
       setDashboardNotificationState((event as CustomEvent<boolean>).detail);
     };
 
-    window.addEventListener('auth-user-changed', handleAuthUserChanged);
     window.addEventListener(DASHBOARD_NOTIFICATION_EVENT, handleDashboardNotificationChanged);
     return () => {
-      window.removeEventListener('auth-user-changed', handleAuthUserChanged);
       window.removeEventListener(DASHBOARD_NOTIFICATION_EVENT, handleDashboardNotificationChanged);
     };
   }, []);
 
   const signOut = async () => {
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
-    setUser(null);
+    setCurrentUserCache(null);
+    queryClient.removeQueries({ queryKey: documentsQueryKey });
     notifyAuthUserChanged();
     navigate('/');
   };

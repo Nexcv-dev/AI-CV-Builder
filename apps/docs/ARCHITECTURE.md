@@ -27,10 +27,10 @@ The frontend lives in `apps/web/src/`.
 - `src/pages/` contains public pages, dashboard pages, checkout, and profile screens.
 - `src/features/admin/` contains the protected admin panel shell, sections, hooks, types, permissions, and shared admin UI.
 - `src/components/` contains the CV form, preview, shared layout, auth modals, and form sections.
-- `src/hooks/` contains template and public content hooks.
-- `src/utils/templateData.ts` and `src/utils/templateRenderer.ts` prepare data for built-in and custom templates.
+- `src/hooks/` contains authentication cache, template, document, and public-content hooks.
+- `packages/templates/src/templateData.ts` and `src/utils/templateRenderer.ts` prepare data for built-in and custom templates.
 
-The app uses local React state and focused hooks rather than a global state library. Admin code is isolated as a feature module under `src/features/admin/`, with lazy-loaded admin sections to keep the initial bundle lighter.
+The app uses Zustand for shared builder state, TanStack Query for server-state caching, and focused local hooks for page behavior. Admin code is isolated as a feature module under `src/features/admin/`, with lazy-loaded admin sections to keep the initial bundle lighter.
 
 ## Workspace Packages
 

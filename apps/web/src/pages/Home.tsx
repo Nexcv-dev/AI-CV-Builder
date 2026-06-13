@@ -25,6 +25,7 @@ import { DownloadErrorModal } from './home/DownloadErrorModal';
 import { PdfLoadingOverlay } from './home/PdfLoadingOverlay';
 import { ThemeTransitionOverlay } from './home/ThemeTransitionOverlay';
 import { UpgradePromptModal } from './home/UpgradePromptModal';
+import { UnsavedChangesModal } from './home/UnsavedChangesModal';
 import type { CvCreationQuota, DownloadQuota, ThemeTransitionState, UpgradePlan, UpgradePrompt } from './home/homeTypes';
 import { downloadLimitMessage, getPlanLabel, triggerBrowserDownload } from './home/homeUtils';
 
@@ -58,7 +59,6 @@ export default function Home() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const [cloudSaveStatus, setCloudSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const lastSavedDataRef = useRef<string>(JSON.stringify({ cvData: initialBuilderCvData, template: DEFAULT_TEMPLATE, title: 'Untitled CV' }));
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
@@ -88,6 +88,7 @@ export default function Home() {
   const [upgradePrompt, setUpgradePrompt] = useState<UpgradePrompt | null>(null);
   const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<UpgradePlan | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
   const [authRedirectTo, setAuthRedirectTo] = useState('/builder');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     try {
@@ -240,6 +241,12 @@ export default function Home() {
         if (isTemplateName(data.document.template)) {
           setTemplate(data.document.template);
         }
+        const loadedTemplate = isTemplateName(data.document.template) ? data.document.template : DEFAULT_TEMPLATE;
+        lastSavedDataRef.current = JSON.stringify({
+          cvData: data.document.cvData,
+          template: loadedTemplate,
+          title: data.document.title,
+        });
       } catch (error) {
         console.warn('Failed to load saved document:', error);
         setCloudSaveStatus('error');
@@ -312,56 +319,6 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [cvData]);
 
-  // Check whether the CV form has any meaningful user-entered content.
-  // Returns false when the form is essentially empty (no name, no email, no entries, etc.)
-  const hasMeaningfulContent = useCallback((data: CVData) => {
-    const p = data.personalInfo;
-    const hasPersonalInfo = !!(
-      p.fullName?.trim() || p.email?.trim() || p.phone?.trim() || p.summary?.trim()
-    );
-    const hasEntries =
-      (data.experience?.length || 0) > 0 ||
-      (data.education?.length || 0) > 0 ||
-      (data.skills?.length || 0) > 0 ||
-      (data.projects?.length || 0) > 0 ||
-      (data.courses?.length || 0) > 0 ||
-      (data.awards?.length || 0) > 0 ||
-      (data.languages?.length || 0) > 0 ||
-      (data.references?.length || 0) > 0;
-    return hasPersonalInfo || hasEntries;
-  }, []);
-
-  // Auto-save logic
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const title = debouncedCvData.personalInfo.fullName?.trim() ? `${debouncedCvData.personalInfo.fullName.trim()} CV` : documentTitle;
-      const currentDataStr = JSON.stringify({ cvData: debouncedCvData, template, title });
-      
-      // Don't auto-save if the form has no meaningful content (unless updating an existing document)
-      if (!documentId && !hasMeaningfulContent(debouncedCvData)) {
-        return;
-      }
-      
-      if (currentDataStr !== lastSavedDataRef.current) {
-        lastSavedDataRef.current = currentDataStr;
-        
-        if (currentUser && currentUser.emailVerified) {
-           handleCloudSave('draft', true);
-        } else if (!currentUser) {
-           try {
-             localStorage.setItem(LOCAL_STORAGE_DRAFT_KEY, JSON.stringify(debouncedCvData));
-             setIsAutoSaving(true);
-             setTimeout(() => setIsAutoSaving(false), 1500);
-           } catch (e) {
-             console.warn('Failed to auto-save to local storage', e);
-           }
-        }
-      }
-    }, 2500);
-    
-    return () => clearTimeout(timer);
-  }, [debouncedCvData, template, documentTitle, currentUser, documentId, hasMeaningfulContent]);
-
   useEffect(() => {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? 'dark' : 'light');
@@ -412,20 +369,27 @@ export default function Home() {
     setSelectedUpgradePlan(null);
   }, [upgradePrompt]);
 
-  const handleCloudSave = useCallback(async (status: 'draft' | 'completed' = 'completed', isSilent = false) => {
+  const handleCloudSave = useCallback(async (status: 'draft' | 'completed' = 'draft', isSilent = false): Promise<boolean> => {
     if (saveInFlightRef.current) {
       if (!isSilent) toast.error('Save already in progress.');
-      return;
+      return false;
     }
 
     if (currentUser && !currentUser.emailVerified) {
       if (!isSilent) toast.error('Verify your email to save CVs.');
-      return;
+      return false;
+    }
+
+    if (!currentUser) {
+      if (!isSilent) {
+        setAuthRedirectTo('/builder');
+        setAuthModalOpen(true);
+      }
+      return false;
     }
 
     saveInFlightRef.current = true;
     if (!isSilent) setCloudSaveStatus('saving');
-    else setIsAutoSaving(true);
 
     try {
       const title = cvData.personalInfo.fullName?.trim() ? `${cvData.personalInfo.fullName.trim()} CV` : documentTitle;
@@ -445,7 +409,7 @@ export default function Home() {
       if (!isSilent) {
         setCloudSaveStatus('saved');
         setDashboardNotification(true);
-        toast.success('CV saved successfully.');
+        toast.success(status === 'draft' ? 'Draft saved successfully.' : 'CV saved successfully.');
         setTimeout(() => setCloudSaveStatus('idle'), 2200);
       }
       
@@ -453,6 +417,7 @@ export default function Home() {
       try {
         localStorage.removeItem(LOCAL_STORAGE_DRAFT_KEY);
       } catch {}
+      return true;
     } catch (error) {
       console.warn('Failed to save document:', error);
       if (error instanceof ApiError && error.data?.upgradeRequired) {
@@ -461,18 +426,67 @@ export default function Home() {
           openUpgradePrompt('save', 'You have already saved 1 CV on the Free plan. Upgrade to create and save more CVs.');
         }
         if (!isSilent) setCloudSaveStatus('idle');
-        return;
+        return false;
       }
       if (!isSilent) {
         setCloudSaveStatus('error');
         toast.error(error instanceof Error ? error.message : 'Could not save your CV. Please try again.');
         setTimeout(() => setCloudSaveStatus('idle'), 4000);
       }
+      return false;
     } finally {
       saveInFlightRef.current = false;
-      if (isSilent) setIsAutoSaving(false);
     }
   }, [currentUser, cvData, documentId, documentTitle, openUpgradePrompt, queryClient, template]);
+
+  const currentDocumentTitle = cvData.personalInfo.fullName?.trim()
+    ? `${cvData.personalInfo.fullName.trim()} CV`
+    : documentTitle;
+  const currentDataSnapshot = JSON.stringify({ cvData, template, title: currentDocumentTitle });
+  const hasUnsavedChanges = !isLoadingSavedDocument && currentDataSnapshot !== lastSavedDataRef.current;
+
+  useEffect(() => {
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    const interceptNavigation = (event: MouseEvent) => {
+      if (!hasUnsavedChanges || event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const anchor = (event.target as Element | null)?.closest('a[href]') as HTMLAnchorElement | null;
+      if (!anchor || anchor.hasAttribute('download') || anchor.target === '_blank') return;
+
+      const destination = new URL(anchor.href, window.location.href);
+      if (destination.href === window.location.href) return;
+
+      event.preventDefault();
+      setAuthModalOpen(false);
+      setPendingNavigationUrl(destination.href);
+    };
+
+    document.addEventListener('click', interceptNavigation, true);
+    return () => document.removeEventListener('click', interceptNavigation, true);
+  }, [hasUnsavedChanges]);
+
+  const leaveBuilder = useCallback(() => {
+    if (!pendingNavigationUrl) return;
+    const destination = pendingNavigationUrl;
+    setPendingNavigationUrl(null);
+    window.location.assign(destination);
+  }, [pendingNavigationUrl]);
+
+  const saveDraftAndLeave = useCallback(async () => {
+    const saved = await handleCloudSave('draft');
+    if (saved) leaveBuilder();
+  }, [handleCloudSave, leaveBuilder]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -795,7 +809,7 @@ export default function Home() {
           isDarkMode={isDarkMode}
           isPopupVisible={isPopupVisible}
           mobileView={mobileView}
-          onCloudSave={() => { handleCloudSave('completed'); }}
+          onCloudSave={() => { handleCloudSave('draft'); }}
           onLogin={openBuilderLogin}
           onMobileViewChange={setMobileView}
           onThemeToggle={handleThemeToggle}
@@ -923,13 +937,13 @@ export default function Home() {
               <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:hidden print:hidden">
                 <div className="grid w-full max-w-md grid-cols-[0.9fr_1.1fr] gap-2">
                   <button
-                    onClick={currentUser ? () => { handleCloudSave('completed'); } : openBuilderLogin}
+                    onClick={currentUser ? () => { handleCloudSave('draft'); } : openBuilderLogin}
                     disabled={cloudSaveStatus === 'saving'}
                     className={`pointer-events-auto flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-extrabold shadow-2xl ring-1 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 ${isDarkMode
                         ? 'border-slate-700 bg-slate-900/95 text-slate-100 shadow-black/35 ring-white/10'
                         : 'border-slate-200 bg-white/95 text-slate-900 shadow-slate-900/15 ring-slate-900/5'
                       }`}
-                    aria-label="Save CV"
+                    aria-label="Save draft"
                   >
                     {cloudSaveStatus === 'saving' ? (
                       <Loader2 size={19} className="shrink-0 animate-spin" />
@@ -938,7 +952,7 @@ export default function Home() {
                     ) : (
                       <Save size={19} className="shrink-0" />
                     )}
-                    <span className="truncate">{cloudSaveStatus === 'saving' ? 'Saving...' : cloudSaveStatus === 'saved' ? 'Saved' : 'Save'}</span>
+                    <span className="truncate">{cloudSaveStatus === 'saving' ? 'Saving...' : cloudSaveStatus === 'saved' ? 'Saved' : 'Save Draft'}</span>
                   </button>
                   <button
                     onClick={requestDownload}
@@ -968,6 +982,15 @@ export default function Home() {
           isOpen={showDownloadConfirm}
           onCancel={() => setShowDownloadConfirm(false)}
           onConfirm={handlePrint}
+        />
+
+        <UnsavedChangesModal
+          isDarkMode={isDarkMode}
+          isOpen={Boolean(pendingNavigationUrl)}
+          isSaving={cloudSaveStatus === 'saving'}
+          onCancel={() => setPendingNavigationUrl(null)}
+          onDiscard={leaveBuilder}
+          onSaveDraft={saveDraftAndLeave}
         />
 
         <UpgradePromptModal

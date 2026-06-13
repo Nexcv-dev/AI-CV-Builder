@@ -21,10 +21,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AppShellHeader } from '../components/AppShellHeader';
 import { AppSidebar } from '../components/AppSidebar';
 import { EmailVerificationModal } from '../components/EmailVerificationModal';
-import { AuthUser, apiFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
+import { apiFetch, setDashboardNotification } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 import { useTemplateConfig, type TemplateConfigItem } from '../hooks/useTemplateConfig';
 import { useDocumentsQuery, useRemoveDocumentFromCache, type SavedDocument } from '../hooks/useDocumentsQuery';
+import { useCurrentUserQuery, useSetCurrentUserCache } from '../hooks/useCurrentUserQuery';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
@@ -55,8 +56,12 @@ export default function Dashboard() {
     error: documentsError,
   } = useDocumentsQuery();
   const removeDocumentFromCache = useRemoveDocumentFromCache();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [userLoading, setUserLoading] = useState(true);
+  const {
+    data: user = null,
+    isPending: userLoading,
+    error: userError,
+  } = useCurrentUserQuery();
+  const setCurrentUserCache = useSetCurrentUserCache();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<SavedDocument | null>(null);
   const [openActionsDocumentId, setOpenActionsDocumentId] = useState<string | null>(null);
@@ -70,32 +75,13 @@ export default function Dashboard() {
     clearPageScrollLock();
     setDashboardNotification(false);
 
-    let ignore = false;
-
-    async function loadUser() {
-      try {
-        const currentUser = await getCurrentUser();
-        if (!ignore) setUser(currentUser);
-      } catch (err) {
-        if (!ignore) {
-          const message = err instanceof Error ? err.message : 'Could not load dashboard.';
-          toast.error(message);
-        }
-      } finally {
-        if (!ignore) setUserLoading(false);
-      }
-    }
-
-    loadUser();
-    return () => {
-      ignore = true;
-    };
   }, []);
 
   useEffect(() => {
-    if (!documentsError) return;
-    toast.error(documentsError instanceof Error ? documentsError.message : 'Could not load dashboard.');
-  }, [documentsError]);
+    const error = userError || documentsError;
+    if (!error) return;
+    toast.error(error instanceof Error ? error.message : 'Could not load dashboard.');
+  }, [documentsError, userError]);
 
   const recentDocuments = useMemo(() => documents.slice(0, 3), [documents]);
   const templatesUsed = useMemo(() => new Set(documents.map((document) => document.template)).size, [documents]);
@@ -465,7 +451,7 @@ export default function Dashboard() {
         user={user}
         onClose={() => setVerificationModalOpen(false)}
         onVerified={(verifiedUser) => {
-          setUser(verifiedUser);
+          setCurrentUserCache(verifiedUser);
           if (verifiedUser.emailVerified) {
             setVerificationBannerDismissed(false);
           }

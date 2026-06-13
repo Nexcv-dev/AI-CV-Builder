@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FileText, LayoutDashboard, LogOut, User } from 'lucide-react';
-import { apiFetch, AuthUser, DASHBOARD_NOTIFICATION_EVENT, getCurrentUser, hasDashboardNotification, notifyAuthUserChanged } from '../utils/api';
+import { apiFetch, DASHBOARD_NOTIFICATION_EVENT, hasDashboardNotification, notifyAuthUserChanged } from '../utils/api';
+import { useCurrentUserQuery, useSetCurrentUserCache } from '../hooks/useCurrentUserQuery';
+import { documentsQueryKey } from '../hooks/useDocumentsQuery';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AccountMenuProps {
   isDarkMode?: boolean;
@@ -20,8 +23,10 @@ const menuItems = [
 export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profileImage, showName = false }: AccountMenuProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loadedUser, setLoadedUser] = useState<AuthUser | null>(null);
+  const { data: loadedUser = null } = useCurrentUserQuery();
+  const setCurrentUserCache = useSetCurrentUserCache();
   const [dashboardNotification, setDashboardNotificationState] = useState(() => hasDashboardNotification());
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonSize = size === 'sm' ? 'h-10 w-10' : 'h-12 w-12';
@@ -30,29 +35,6 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
   const visibleImage = profileImage || loadedUser?.profileImage || '';
   const initial = visibleName.charAt(0).toUpperCase() || 'U';
   const isSignedIn = Boolean(displayName || profileImage || loadedUser);
-
-  useEffect(() => {
-    if (displayName || profileImage) return;
-    let ignore = false;
-    getCurrentUser()
-      .then((user) => {
-        if (!ignore) setLoadedUser(user);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      ignore = true;
-    };
-  }, [displayName, profileImage]);
-
-  useEffect(() => {
-    const handleAuthUserChanged = (event: Event) => {
-      setLoadedUser((event as CustomEvent<AuthUser | undefined>).detail || null);
-    };
-
-    window.addEventListener('auth-user-changed', handleAuthUserChanged);
-    return () => window.removeEventListener('auth-user-changed', handleAuthUserChanged);
-  }, []);
 
   useEffect(() => {
     const handleDashboardNotificationChanged = (event: Event) => {
@@ -79,7 +61,8 @@ export function AccountMenu({ isDarkMode = true, size = 'md', displayName, profi
   const signOut = async () => {
     setMenuOpen(false);
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
-    setLoadedUser(null);
+    setCurrentUserCache(null);
+    queryClient.removeQueries({ queryKey: documentsQueryKey });
     notifyAuthUserChanged();
     navigate('/');
   };

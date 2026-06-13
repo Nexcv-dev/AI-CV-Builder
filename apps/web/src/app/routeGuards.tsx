@@ -1,29 +1,16 @@
-import React, { Suspense, lazy, useEffect, useLayoutEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { isAdminUser } from '../features/admin/adminPermissions';
-import { getCurrentUser } from '../utils/api';
+import { useCurrentUserQuery, useSetCurrentUserCache } from '../hooks/useCurrentUserQuery';
 
 const AuthModal = lazy(() => import('../components/AuthModal').then((module) => ({ default: module.AuthModal })));
 
 export function AdminProtectedRoute({ children }: { children: React.ReactElement }) {
   const location = useLocation();
-  const [status, setStatus] = useState<'loading' | 'authed' | 'guest' | 'forbidden'>('loading');
   const [loginOpen, setLoginOpen] = useState(false);
-
-  useLayoutEffect(() => {
-    let ignore = false;
-    getCurrentUser()
-      .then((user) => {
-        if (!ignore) setStatus(isAdminUser(user) ? 'authed' : 'forbidden');
-      })
-      .catch(() => {
-        if (!ignore) setStatus('guest');
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const { data: user = null, isPending, isError } = useCurrentUserQuery();
+  const setCurrentUserCache = useSetCurrentUserCache();
+  const status = isPending ? 'loading' : isError || !user ? 'guest' : isAdminUser(user) ? 'authed' : 'forbidden';
 
   if (status === 'loading') {
     return (
@@ -55,7 +42,7 @@ export function AdminProtectedRoute({ children }: { children: React.ReactElement
             redirectTo={location.pathname}
             onClose={() => setLoginOpen(false)}
             onAuthenticated={(user) => {
-              setStatus(isAdminUser(user) ? 'authed' : 'forbidden');
+              setCurrentUserCache(user);
               setLoginOpen(false);
             }}
           />
@@ -83,27 +70,11 @@ export function AdminProtectedRoute({ children }: { children: React.ReactElement
 
 export function ProtectedRoute({ children }: { children: React.ReactElement }) {
   const location = useLocation();
-  const [status, setStatus] = useState<'loading' | 'authed' | 'guest'>('loading');
   const [loginOpen, setLoginOpen] = useState(false);
   const redirectTo = `${location.pathname}${location.search}${location.hash}`;
-
-  useLayoutEffect(() => {
-    let ignore = false;
-    setStatus('loading');
-    setLoginOpen(false);
-
-    getCurrentUser()
-      .then(() => {
-        if (!ignore) setStatus('authed');
-      })
-      .catch(() => {
-        if (!ignore) setStatus('guest');
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [redirectTo]);
+  const { data: user = null, isPending, isError } = useCurrentUserQuery();
+  const setCurrentUserCache = useSetCurrentUserCache();
+  const status = isPending ? 'loading' : isError || !user ? 'guest' : 'authed';
 
   useEffect(() => {
     if (status === 'guest') setLoginOpen(true);
@@ -141,8 +112,8 @@ export function ProtectedRoute({ children }: { children: React.ReactElement }) {
             initialMode="login"
             redirectTo={redirectTo}
             onClose={() => setLoginOpen(false)}
-            onAuthenticated={() => {
-              setStatus('authed');
+            onAuthenticated={(user) => {
+              setCurrentUserCache(user);
               setLoginOpen(false);
             }}
           />

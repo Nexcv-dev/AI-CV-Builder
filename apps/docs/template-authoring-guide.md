@@ -157,7 +157,7 @@ Example:
 }
 ```
 
-If a template has its own accent color, add it to `TEMPLATE_DEFAULT_THEME_COLORS` in `src/utils/templateData.ts`. Then:
+If a template has its own accent color, add it to `TEMPLATE_DEFAULT_THEME_COLORS` in `packages/templates/src/templateData.ts`. Then:
 - default black `#000000` becomes the template accent
 - user-selected Design panel colors still override it
 
