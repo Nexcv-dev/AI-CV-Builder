@@ -111,7 +111,7 @@ export function AppRoutes() {
       {publicSettings && location.pathname === '/' && <PublicAnnouncement settings={publicSettings} />}
       <CookieConsentBanner />
       <AnalyticsPageView />
-      <Suspense fallback={<RouteLoadingFallback />}>
+      <Suspense key={location.pathname} fallback={<RouteLoadingFallback />}>
         <Routes>
           <Route path="/print" element={<PrintView />} />
 
