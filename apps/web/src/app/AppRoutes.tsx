@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { capturePageView } from '../analytics';
 import { Layout } from './Layout';
-import { PageLoadingOverlay, RouteLoadingFallback } from './loading';
+import { RouteLoadingFallback } from './loading';
 import { AdminProtectedRoute, ProtectedRoute } from './routeGuards';
 import { AdminDisabledPage, MaintenancePage, NotFound } from './systemPages';
 import type { PublicAppSettings } from './types';
@@ -108,7 +108,6 @@ export function AppRoutes() {
   return (
     <>
       <SeoHead />
-      <PageLoadingOverlay />
       {publicSettings && location.pathname === '/' && <PublicAnnouncement settings={publicSettings} />}
       <CookieConsentBanner />
       <AnalyticsPageView />
