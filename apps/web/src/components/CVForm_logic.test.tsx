@@ -182,6 +182,34 @@ describe('CVForm Logic', () => {
     });
   });
 
+  it('stores a compressed profile image locally for signed-out users', async () => {
+    render(
+      <MemoryRouter>
+        <CVForm
+          cvData={initialData}
+          setCvData={mockSetCvData}
+          template="classic"
+          setTemplate={mockSetTemplate}
+          canImportCv={false}
+        />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByText(/Design/i).closest('button')!);
+    const imageInput = await waitFor(() => {
+      const input = document.querySelector('input[accept="image/*"]') as HTMLInputElement;
+      if (!input) throw new Error('Image input not found');
+      return input;
+    });
+    const file = new File(['image content'], 'guest.png', { type: 'image/png' });
+
+    fireEvent.change(imageInput, { target: { files: [file] } });
+    await waitFor(() => expect(mockSetCvData).toHaveBeenCalled());
+
+    const updater = mockSetCvData.mock.calls[0][0];
+    expect(updater(initialData).profileImage).toBe('data:image/png;base64,mocked-image-data');
+  });
+
   it('applies aria-label to skill level buttons for accessibility', async () => {
     const dataWithSkills = {
       ...initialData,
