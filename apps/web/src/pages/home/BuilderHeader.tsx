@@ -45,6 +45,24 @@ export function BuilderHeader({
           </div>
         </h1>
         <div className="lg:hidden flex items-center gap-2">
+          {currentUser && (
+            <button
+              type="button"
+              onClick={onCloudSave}
+              disabled={cloudSaveStatus === 'saving'}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-70"
+              aria-label="Save draft"
+              title="Save Draft"
+            >
+              {cloudSaveStatus === 'saving' ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : cloudSaveStatus === 'saved' ? (
+                <CheckCircle2 size={16} />
+              ) : (
+                <Save size={16} />
+              )}
+            </button>
+          )}
           {!authLoaded ? (
             <div
               className={`h-10 w-10 rounded-full border shadow-lg ${isDarkMode ? 'border-slate-700 bg-slate-800 shadow-black/20' : 'border-gray-200 bg-white shadow-slate-900/10'}`}
@@ -96,7 +114,8 @@ export function BuilderHeader({
             onClick={onCloudSave}
             disabled={cloudSaveStatus === 'saving'}
             className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-500 active:scale-95 disabled:opacity-70"
-            aria-label="Save CV"
+            aria-label="Save draft"
+            title="Save Draft"
           >
             {cloudSaveStatus === 'saving' ? (
               <Loader2 size={18} className="animate-spin" />
