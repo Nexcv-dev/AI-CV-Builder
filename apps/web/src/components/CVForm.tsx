@@ -568,14 +568,29 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
       return;
     }
     setIsProfileImageUploading(true);
+    const previousProfileImage = cvData.profileImage;
     try {
       const compressedImage = await compressAndResizeImage(file);
+      setCvData((prev) => ({
+        ...prev,
+        profileImage: compressedImage,
+        imageZoom: 1,
+        imageX: 0,
+        imageY: 0,
+      }));
       const { imageUrl } = await apiFetch<{ imageUrl: string }>('/api/profile-images', {
         method: 'POST',
         body: JSON.stringify({ imageData: compressedImage }),
       });
-      setCvData((prev) => ({ ...prev, profileImage: imageUrl, imageZoom: 1, imageX: 0, imageY: 0 }));
+      setCvData((prev) => ({
+        ...prev,
+        profileImage: prev.profileImage === compressedImage ? imageUrl : prev.profileImage,
+      }));
     } catch (error) {
+      setCvData((prev) => ({
+        ...prev,
+        profileImage: prev.profileImage.startsWith('data:image/') ? previousProfileImage : prev.profileImage,
+      }));
       console.error('Error processing image:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to upload image.');
     } finally {

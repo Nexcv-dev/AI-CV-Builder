@@ -104,6 +104,7 @@ export default function Home() {
   const rafRef = useRef<number | null>(null);
   const saveInFlightRef = useRef(false);
   const pdfInFlightRef = useRef(false);
+  const allowNavigationRef = useRef(false);
 
   useEffect(() => {
     if (initialDocumentId.current) return;
@@ -447,7 +448,7 @@ export default function Home() {
 
   useEffect(() => {
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!hasUnsavedChanges) return;
+      if (!hasUnsavedChanges || allowNavigationRef.current) return;
       event.preventDefault();
       event.returnValue = '';
     };
@@ -479,6 +480,7 @@ export default function Home() {
   const leaveBuilder = useCallback(() => {
     if (!pendingNavigationUrl) return;
     const destination = pendingNavigationUrl;
+    allowNavigationRef.current = true;
     setPendingNavigationUrl(null);
     window.location.assign(destination);
   }, [pendingNavigationUrl]);
