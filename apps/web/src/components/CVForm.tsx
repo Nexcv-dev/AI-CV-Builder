@@ -568,8 +568,16 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
       return;
     }
     setIsProfileImageUploading(true);
+    const previousProfileImage = cvData.profileImage;
     try {
       const compressedImage = await compressAndResizeImage(file);
+      setCvData((prev) => ({
+        ...prev,
+        profileImage: compressedImage,
+        imageZoom: 1,
+        imageX: 0,
+        imageY: 0,
+      }));
       if (!canImportCv) {
         setCvData((prev) => ({ ...prev, profileImage: compressedImage, imageZoom: 1, imageX: 0, imageY: 0 }));
         return;
@@ -578,8 +586,15 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         method: 'POST',
         body: JSON.stringify({ imageData: compressedImage }),
       });
-      setCvData((prev) => ({ ...prev, profileImage: imageUrl, imageZoom: 1, imageX: 0, imageY: 0 }));
+      setCvData((prev) => ({
+        ...prev,
+        profileImage: prev.profileImage === compressedImage ? imageUrl : prev.profileImage,
+      }));
     } catch (error) {
+      setCvData((prev) => ({
+        ...prev,
+        profileImage: prev.profileImage.startsWith('data:image/') ? previousProfileImage : prev.profileImage,
+      }));
       console.error('Error processing image:', error);
       if (error instanceof ApiError && error.status === 401) {
         toast.error('Your session expired. Please sign in again to upload a profile photo.');
