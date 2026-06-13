@@ -7,6 +7,7 @@ const browserNewPage = vi.fn();
 const puppeteerLaunch = vi.fn();
 const s3Send = vi.fn();
 const pageOn = vi.fn();
+const imageFetch = vi.fn();
 
 vi.mock('puppeteer-core', () => ({
   default: {
@@ -51,6 +52,8 @@ describe('pdf lambda handler', () => {
     pageClose.mockResolvedValue(undefined);
     browserClose.mockResolvedValue(undefined);
     browserNewPage.mockResolvedValue(makePage());
+    imageFetch.mockReset();
+    vi.stubGlobal('fetch', imageFetch);
     puppeteerLaunch.mockResolvedValue({
       newPage: browserNewPage,
       close: browserClose,
@@ -126,6 +129,10 @@ describe('pdf lambda handler', () => {
 
   it('allows the sanitized profile image request while blocking unrelated URLs', async () => {
     const profileImage = 'https://api.example.com/api/cv-assets/user-1/photo.webp';
+    imageFetch.mockResolvedValue({
+      ok: false,
+      headers: new Headers(),
+    });
     const { handler } = await import('./handler');
 
     const response = await handler({
@@ -166,6 +173,35 @@ describe('pdf lambda handler', () => {
     expect(redirectedProfileRequest.abort).not.toHaveBeenCalled();
     expect(unrelatedRequest.abort).toHaveBeenCalledTimes(1);
     expect(unrelatedRequest.continue).not.toHaveBeenCalled();
+  });
+
+  it('inlines a remote profile image before rendering the PDF', async () => {
+    const profileImage = 'https://api.example.com/api/cv-assets/user-1/photo.webp';
+    imageFetch.mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'image/webp', 'content-length': '4' }),
+      arrayBuffer: vi.fn(async () => Uint8Array.from([1, 2, 3, 4]).buffer),
+    });
+    const page = makePage();
+    browserNewPage.mockResolvedValueOnce(page);
+    const { handler } = await import('./handler');
+
+    const response = await handler({
+      cvData: {
+        personalInfo: { fullName: 'Test User' },
+        profileImage,
+        experience: [],
+        education: [],
+        skills: [],
+      },
+      template: 'professional',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(imageFetch).toHaveBeenCalledWith(profileImage, expect.objectContaining({ redirect: 'follow' }));
+    const renderedHtml = page.setContent.mock.calls[0]?.[0] || '';
+    expect(renderedHtml).toContain('data:image/webp;base64,AQIDBA==');
+    expect(renderedHtml).not.toContain(profileImage);
   });
 
   it('returns a 500 JSON response when Chromium PDF rendering fails', async () => {

@@ -82,6 +82,34 @@ const isAllowedProfileImageRequest = (request: any, profileImageUrl: string) => 
   return request.redirectChain().some((redirect: any) => redirect.url() === profileImageUrl);
 };
 
+const inlineRemoteProfileImage = async (cvData: any) => {
+  const source = sanitizePdfImageSource(cvData?.profileImage);
+  if (!/^https:\/\//i.test(source)) return cvData;
+
+  try {
+    const response = await fetch(source, {
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
+    });
+    const contentType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (!response.ok || !['image/png', 'image/jpeg', 'image/webp'].includes(contentType)) return cvData;
+
+    const declaredLength = Number(response.headers.get('content-length') || 0);
+    if (declaredLength > 1024 * 1024) return cvData;
+
+    const image = Buffer.from(await response.arrayBuffer());
+    if (!image.length || image.length > 1024 * 1024) return cvData;
+
+    return {
+      ...cvData,
+      profileImage: `data:${contentType};base64,${image.toString('base64')}`,
+    };
+  } catch (error) {
+    console.warn('Could not inline the PDF profile image; using its original URL.', error);
+    return cvData;
+  }
+};
+
 type CvFontOption = {
   name: string;
   description: string;
@@ -1715,7 +1743,7 @@ async function launchBrowser() {
 async function renderPdf(cvData: any, template: unknown, watermark: boolean) {
   const requestedTemplate = isTemplateName(template) ? template : DEFAULT_TEMPLATE;
   const isBuiltInTemplate = TEMPLATE_KEYS.includes(requestedTemplate as any);
-  const safeCvData = sanitizeCvData(cvData);
+  const safeCvData = await inlineRemoteProfileImage(sanitizeCvData(cvData));
   let html: string | null = null;
   try {
     html = await generateS3CVHTML(safeCvData, requestedTemplate, { watermark });

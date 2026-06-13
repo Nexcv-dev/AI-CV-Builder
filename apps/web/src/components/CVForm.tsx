@@ -14,7 +14,7 @@ import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
 import { applyTemplateColorDefaults } from '@nexcv/templates/templateData';
-import { apiFetch, csrfFetch } from '../utils/api';
+import { ApiError, apiFetch, csrfFetch } from '../utils/api';
 import type { CvImportJobResponse } from '@nexcv/api-contracts/documents';
 
 import {
@@ -578,6 +578,10 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         imageX: 0,
         imageY: 0,
       }));
+      if (!canImportCv) {
+        setCvData((prev) => ({ ...prev, profileImage: compressedImage, imageZoom: 1, imageX: 0, imageY: 0 }));
+        return;
+      }
       const { imageUrl } = await apiFetch<{ imageUrl: string }>('/api/profile-images', {
         method: 'POST',
         body: JSON.stringify({ imageData: compressedImage }),
@@ -592,6 +596,11 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         profileImage: prev.profileImage.startsWith('data:image/') ? previousProfileImage : prev.profileImage,
       }));
       console.error('Error processing image:', error);
+      if (error instanceof ApiError && error.status === 401) {
+        toast.error('Your session expired. Please sign in again to upload a profile photo.');
+        onAuthRequired?.();
+        return;
+      }
       toast.error(error instanceof Error ? error.message : 'Failed to upload image.');
     } finally {
       setIsProfileImageUploading(false);
