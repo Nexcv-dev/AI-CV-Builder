@@ -36,11 +36,13 @@ The app uses Zustand for shared builder state, TanStack Query for server-state c
 
 Shared code that must stay consistent across frontend, backend, and workers lives under the root `packages/` folder:
 
-- `@nexcv/shared` - domain constants, queue payload parsing, admin roles, and permissions.
+- `@nexcv/shared` - domain constants, API error codes, queue payload parsing, admin roles, and permissions.
 - `@nexcv/templates` - built-in template metadata and template access helpers.
 - `@nexcv/api-contracts` - shared API response contracts for public settings, templates, admin, billing, documents, and async jobs.
 
 The main app keeps thin compatibility wrappers for some older local import paths while new code should prefer package imports where practical.
+
+API error codes are owned by `packages/shared/src/apiErrors.ts`. Express routes return those codes with user-safe messages, while `apps/web/src/utils/api.ts` normalizes responses, network failures, CSRF retries, and intentional cancellations. UI behavior is code-driven; messages remain display text. See [API Error Handling](ERROR_HANDLING.md).
 
 ## Backend
 

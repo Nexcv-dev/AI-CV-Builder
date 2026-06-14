@@ -44,6 +44,7 @@ Main documentation lives in [apps/docs](apps/docs/README.md).
 
 - [Architecture](apps/docs/ARCHITECTURE.md)
 - [API Docs](apps/docs/API_DOCS.md)
+- [API Error Handling](apps/docs/ERROR_HANDLING.md)
 - [Admin Panel](apps/docs/ADMIN_PANEL.md)
 - [Billing And Plans](apps/docs/BILLING.md)
 - [Deployment](apps/docs/DEPLOYMENT.md)

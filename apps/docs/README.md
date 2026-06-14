@@ -6,6 +6,7 @@ This folder is the main documentation hub for the NexCV application.
 
 - [Architecture](ARCHITECTURE.md) - application structure, request flow, storage, and integrations.
 - [API Docs](API_DOCS.md) - current Express endpoints grouped by route module.
+- [API Error Handling](ERROR_HANDLING.md) - shared error contract, frontend classification, and implementation checklist.
 - [Billing And Plans](BILLING.md) - paid plan keys, PayHere/Lemon Squeezy flows, coupons, and revenue reporting.
 - [Deployment](DEPLOYMENT.md) - production setup, Render notes, Lambda deployment, and environment variables.
 - [Environment Variables](ENVIRONMENT.md) - complete env/secrets reference for the app, workers, scripts, and GitHub Actions.

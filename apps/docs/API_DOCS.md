@@ -8,6 +8,21 @@ Most authenticated routes use `httpOnly` session cookies. Frontend calls should 
 fetch(url, { credentials: 'include' })
 ```
 
+## Error Responses
+
+JSON API failures return a user-safe `error` message and a stable machine-readable `code`:
+
+```json
+{
+  "error": "Email or password is incorrect.",
+  "code": "INVALID_CREDENTIALS"
+}
+```
+
+Frontend behavior must use the shared code rather than matching message text. The canonical registry is `packages/shared/src/apiErrors.ts`. See [API Error Handling](ERROR_HANDLING.md) for backend usage, frontend helpers, network/cancellation behavior, compatibility fallbacks, and the endpoint checklist.
+
+Provider webhook routes may return plain text when required by the provider protocol.
+
 ## Health And Public Routes
 
 | Method | Path | Purpose |
