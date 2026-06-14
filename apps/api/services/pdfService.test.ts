@@ -46,6 +46,7 @@ import { generateCVHTML, generatePdfDocument } from './pdfService';
 describe('PDF profile image rendering', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('PUPPETEER_EXECUTABLE_PATH', '/usr/bin/fake-chrome');
 
     const page = {
       close: pageClose.mockResolvedValue(undefined),
