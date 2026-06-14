@@ -36,6 +36,7 @@ import {
 } from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 import { compressAndResizeImage } from '../utils/imageUtils';
+import { syncProfileImage } from '../utils/profileImageSync';
 import { useDocumentsQuery } from '../hooks/useDocumentsQuery';
 import { useCurrentUserQuery, useSetCurrentUserCache } from '../hooks/useCurrentUserQuery';
 import { documentsQueryKey } from '../hooks/useDocumentsQuery';
@@ -174,11 +175,8 @@ export default function Profile() {
       updateField('profileImage', image);
 
       let syncPromise: Promise<string | null>;
-      syncPromise = apiFetch<{ imageUrl: string }>('/api/profile-images', {
-          method: 'POST',
-          body: JSON.stringify({ imageData: image }),
-        })
-        .then(({ imageUrl }) => {
+      syncPromise = syncProfileImage(image)
+        .then((imageUrl) => {
           if (profileImageUploadIdRef.current !== uploadId) return null;
           setForm((current) => ({
             ...current,
@@ -189,6 +187,10 @@ export default function Profile() {
         .catch((error) => {
           if (profileImageUploadIdRef.current !== uploadId) return null;
           console.error('Error syncing profile image:', error);
+          setForm((current) => ({
+            ...current,
+            profileImage: current.profileImage === image ? user?.profileImage || '' : current.profileImage,
+          }));
           toast.error(error instanceof Error ? error.message : 'Could not sync this image.');
           return null;
         })

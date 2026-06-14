@@ -107,8 +107,7 @@ export function getUserErrorMessage(error: unknown, fallback = 'Something went w
   return normalizeApiError(error, fallback).message || fallback;
 }
 
-export async function readApiResponse<T>(response: Response, fallback = 'Something went wrong. Please try again.'): Promise<T> {
-  const responseText = await response.text();
+function parseApiResponseText(responseText: string) {
   let data: any = {};
 
   if (responseText) {
@@ -119,14 +118,33 @@ export async function readApiResponse<T>(response: Response, fallback = 'Somethi
     }
   }
 
+  return data;
+}
+
+function throwApiResponseError(response: Response, data: ApiErrorData, fallback: string): never {
+  const defaultMessage = response.status === 429
+    ? 'Too many requests. Please wait a moment and try again.'
+    : fallback;
+  throw new ApiError(data.error || data.message || defaultMessage, response.status, data);
+}
+
+export async function readApiResponse<T>(response: Response, fallback = 'Something went wrong. Please try again.'): Promise<T> {
+  const responseText = await response.text();
+  const data = parseApiResponseText(responseText);
+
   if (!response.ok) {
-    const defaultMessage = response.status === 429
-      ? 'Too many requests. Please wait a moment and try again.'
-      : fallback;
-    throw new ApiError(data.error || data.message || defaultMessage, response.status, data);
+    throwApiResponseError(response, data, fallback);
   }
 
   return data as T;
+}
+
+export async function readApiTextResponse(response: Response, fallback = 'Something went wrong. Please try again.'): Promise<string> {
+  const responseText = await response.text();
+  if (!response.ok) {
+    throwApiResponseError(response, parseApiResponseText(responseText), fallback);
+  }
+  return responseText;
 }
 
 let csrfToken: string | null = null;
@@ -218,6 +236,14 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
   });
 
   return readApiResponse<T>(response);
+}
+
+export async function apiFetchText(url: string, options: RequestInit = {}, fallback?: string): Promise<string> {
+  const response = await csrfFetch(url, options).catch((error) => {
+    throw normalizeApiError(error, fallback);
+  });
+
+  return readApiTextResponse(response, fallback);
 }
 
 export async function getCurrentUser() {

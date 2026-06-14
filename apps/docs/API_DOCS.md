@@ -8,6 +8,21 @@ Most authenticated routes use `httpOnly` session cookies. Frontend calls should 
 fetch(url, { credentials: 'include' })
 ```
 
+## Error Responses
+
+JSON API failures return a user-safe `error` message and a stable machine-readable `code`:
+
+```json
+{
+  "error": "Email or password is incorrect.",
+  "code": "INVALID_CREDENTIALS"
+}
+```
+
+Frontend behavior must use the shared code rather than matching message text. The canonical registry is `packages/shared/src/apiErrors.ts`. See [API Error Handling](ERROR_HANDLING.md) for backend usage, frontend helpers, network/cancellation behavior, compatibility fallbacks, and the endpoint checklist.
+
+Provider webhook routes may return plain text when required by the provider protocol.
+
 ## Health And Public Routes
 
 | Method | Path | Purpose |
@@ -48,6 +63,10 @@ fetch(url, { credentials: 'include' })
 | `POST` | `/api/documents` | Create a CV document. |
 | `PUT` | `/api/documents/:id` | Update a CV document. |
 | `DELETE` | `/api/documents/:id` | Delete a CV document. |
+
+Document CRUD validation failures return `VALIDATION_FAILED`, missing documents return `DOCUMENT_NOT_FOUND`, and save-limit responses return `FORBIDDEN` with `upgradeRequired: true`.
+
+Profile image uploads use `POST /api/profile-images`. Invalid compressed images return `PROFILE_IMAGE_INVALID`, unavailable asset storage returns `PROFILE_IMAGE_STORAGE_UNAVAILABLE`, and upload failures return `PROFILE_IMAGE_UPLOAD_FAILED`. Stored object keys are content-addressed per user to avoid duplicate S3 objects.
 | `POST` | `/api/parse-cv` | Legacy/direct CV parsing endpoint. Prefer queued import jobs for normal UI imports. |
 | `POST` | `/api/cv-import-jobs` | Queue an authenticated CV import job from PDF/JPG/PNG/LinkedIn PDF base64 data. |
 | `GET` | `/api/cv-import-jobs/:id` | Poll the current user's CV import job until it is ready, failed, or expired. |

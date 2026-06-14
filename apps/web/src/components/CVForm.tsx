@@ -13,6 +13,7 @@ import { useBuilderStore } from '../stores/useBuilderStore';
 import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
+import { syncProfileImage } from '../utils/profileImageSync';
 import { applyTemplateColorDefaults } from '@nexcv/templates/templateData';
 import {
   ApiError,
@@ -572,11 +573,8 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         return;
       }
 
-      void apiFetch<{ imageUrl: string }>('/api/profile-images', {
-          method: 'POST',
-          body: JSON.stringify({ imageData: compressedImage }),
-        })
-        .then(({ imageUrl }) => {
+      void syncProfileImage(compressedImage)
+        .then((imageUrl) => {
           if (profileImageUploadIdRef.current !== uploadId) return;
           setCvData((prev) => ({
             ...prev,

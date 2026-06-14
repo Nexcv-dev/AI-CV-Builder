@@ -96,7 +96,7 @@ Use `corepack pnpm launch:check` before release-oriented changes. It runs lint, 
 
 Important paths:
 
-- `packages/shared/` - shared domain constants, queue payload helpers, and admin role contracts.
+- `packages/shared/` - shared domain constants, API error codes, queue payload helpers, and admin role contracts.
 - `packages/templates/` - built-in template metadata and access helpers.
 - `packages/api-contracts/` - shared API response contracts used by frontend and backend.
 - `apps/web/` - React app, public assets, frontend tests, and template scripts.
@@ -122,6 +122,8 @@ Important paths:
 
 - Follow existing React/Vite patterns and component structure.
 - Use `csrfFetch`/`apiFetch` helpers for API calls instead of ad hoc fetch wrappers.
+- Use shared `API_ERROR_CODES` and code predicates for UI behavior. Never branch on error message text.
+- Use `getUserErrorMessage` for display and keep intentional request cancellation silent.
 - Keep guest/auth gates before expensive client work when possible. For example, CV import should open login before reading files or queueing jobs.
 - Keep mobile layouts compact and verify text does not overflow buttons/cards/modals.
 - Prefer existing styling conventions, Tailwind utilities, and lucide icons.
@@ -142,6 +144,7 @@ corepack pnpm build
 - Require auth, plan, quota, and admin permission checks before creating jobs or mutating data.
 - Use existing logging helpers for operationally important failures.
 - Keep errors safe for users and detailed for logs.
+- Return `{ error, code }` for expected JSON failures and pass an explicit shared code to `sendError` when the frontend needs domain-specific behavior.
 - Roll back quota reservations when job creation or processing fails.
 - Clear uploaded base64 data from import/PDF jobs after completion or failure.
 
@@ -153,6 +156,14 @@ corepack pnpm test:run
 ```
 
 When touching queue enqueue services, auth/security helpers, or reliability utilities, add or update focused tests under `apps/api/services/` or `apps/api/server-utils/`. Cover configuration aliases, missing environment variables, rejected inputs, and downstream dependency calls.
+
+When adding or changing an API failure:
+
+1. Reuse or add the code in `packages/shared/src/apiErrors.ts`.
+2. Assert the backend response code in a focused test.
+3. Use `apiFetch`, or `csrfFetch` plus `readApiResponse`, in the frontend.
+4. Add a code-based frontend predicate test when the UI takes a distinct action.
+5. Follow [API Error Handling](ERROR_HANDLING.md).
 
 Critical regression coverage currently includes:
 
