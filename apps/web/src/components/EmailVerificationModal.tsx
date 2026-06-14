@@ -1,7 +1,13 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import { ArrowRight, RotateCcw, ShieldCheck, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
+import {
+  AuthUser,
+  apiFetch,
+  getUserErrorMessage,
+  isOtpInvalidError,
+  notifyAuthUserChanged,
+} from '../utils/api';
 
 interface EmailVerificationModalProps {
   isOpen: boolean;
@@ -76,7 +82,11 @@ export function EmailVerificationModal({ isOpen, user, onClose, onVerified }: Em
       toast.success(data.message || 'Email verified successfully.');
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not verify email.');
+      if (isOtpInvalidError(err)) {
+        setVerificationCode('');
+        window.setTimeout(() => document.getElementById('email-verification-otp-0')?.focus(), 0);
+      }
+      setError(getUserErrorMessage(err, 'Could not verify email.'));
     } finally {
       setIsVerifying(false);
     }
@@ -98,7 +108,7 @@ export function EmailVerificationModal({ isOpen, user, onClose, onVerified }: Em
         onClose();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not resend verification OTP.');
+      setError(getUserErrorMessage(err, 'Could not resend verification OTP.'));
     } finally {
       setIsResending(false);
     }

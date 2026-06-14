@@ -1,6 +1,12 @@
 import React, { ChangeEvent, CSSProperties, DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Copy, Crown, Download, Eye, FileText, FileUp, Info, Loader2, Palette, ShieldCheck, Type, UploadCloud, X, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
-import { ApiError, apiFetch } from '../utils/api';
+import {
+  API_ERROR_CODES,
+  ApiError,
+  apiFetch,
+  getUserErrorMessage,
+  hasApiErrorCode,
+} from '../utils/api';
 import { AuthModal } from '../components/AuthModal';
 import { SiteHeader } from '../components/SiteHeader';
 import { HtmlPdfRuleCheck, validateHtmlPdfRules } from '@nexcv/templates/htmlPdfValidation';
@@ -237,8 +243,10 @@ export default function HtmlToPdf() {
         void loadQuota();
       }
     } catch (pollError) {
-      const normalized = pollError instanceof ApiError ? pollError : null;
-      setError(normalized?.message || 'Could not check PDF status.');
+      if (hasApiErrorCode(pollError, API_ERROR_CODES.HTML_PDF_JOB_NOT_FOUND)) {
+        setJob(null);
+      }
+      setError(getUserErrorMessage(pollError, 'Could not check PDF status.'));
     }
   };
 
@@ -448,8 +456,11 @@ export default function HtmlToPdf() {
       void pollJob(data.job.id);
     } catch (submitError) {
       const normalized = submitError instanceof ApiError ? submitError : null;
-      setError(normalized?.message || 'Could not queue PDF generation.');
-      if (normalized?.data?.quota) setQuota(normalized.data.quota);
+      setError(getUserErrorMessage(submitError, 'Could not queue PDF generation.'));
+      if (hasApiErrorCode(submitError, API_ERROR_CODES.HTML_PDF_LIMIT_REACHED)
+        && normalized?.data?.quota) {
+        setQuota(normalized.data.quota);
+      }
     } finally {
       setSubmitting(false);
     }

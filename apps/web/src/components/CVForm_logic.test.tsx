@@ -155,7 +155,7 @@ describe('CVForm Logic', () => {
     expect(newState.imageY).toBe(0);
   });
 
-  it('shows a loading state while a profile image is uploading', async () => {
+  it('keeps the profile image controls usable while the S3 sync runs in the background', async () => {
     render(
       <MemoryRouter>
         <CVForm cvData={initialData} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} />
@@ -173,12 +173,16 @@ describe('CVForm Logic', () => {
 
     fireEvent.change(imageInput, { target: { files: [file] } });
 
-    const uploadButton = await screen.findByRole('button', { name: 'Uploading...' });
-    expect(uploadButton).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('Profile photo is uploading.');
-
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Upload Photo' })).toBeEnabled();
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('');
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/profile-images',
+        expect.objectContaining({ method: 'POST' }),
+      );
     });
   });
 
@@ -206,8 +210,10 @@ describe('CVForm Logic', () => {
     fireEvent.change(imageInput, { target: { files: [file] } });
     await waitFor(() => expect(mockSetCvData).toHaveBeenCalled());
 
-    const updater = mockSetCvData.mock.calls[0][0];
-    expect(updater(initialData).profileImage).toBe('data:image/png;base64,mocked-image-data');
+    const localImageUpdate = mockSetCvData.mock.calls
+      .map(([updater]) => updater(initialData))
+      .find((updated) => updated.profileImage === 'data:image/png;base64,mocked-image-data');
+    expect(localImageUpdate?.profileImage).toBe('data:image/png;base64,mocked-image-data');
   });
 
   it('applies aria-label to skill level buttons for accessibility', async () => {
@@ -374,5 +380,44 @@ describe('CVForm Logic', () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Mocked server error message');
     });
+  });
+
+  it('silently cancels AI generation when the user moves to the next step', async () => {
+    vi.stubGlobal('fetch', vi.fn((input: any, options?: RequestInit) => {
+      const urlStr = typeof input === 'string' ? input : (input?.url || '');
+      if (urlStr.includes('csrf-token')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ csrfToken: 'mock-token' }),
+          text: () => Promise.resolve('{"csrfToken":"mock-token"}'),
+        });
+      }
+
+      return new Promise((_resolve, reject) => {
+        options?.signal?.addEventListener('abort', () => {
+          reject(new DOMException('The operation was aborted.', 'AbortError'));
+        }, { once: true });
+      });
+    }));
+
+    const toast = (await import('react-hot-toast')).default;
+
+    render(
+      <MemoryRouter>
+        <CVForm cvData={initialData} setCvData={mockSetCvData} template="classic" setTemplate={mockSetTemplate} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(await screen.findByText('Summary'));
+    fireEvent.click(await screen.findByText(/Generate with AI/i));
+    expect(await screen.findByText(/Generating/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Generating/i)).not.toBeInTheDocument();
+    });
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
   });
 });

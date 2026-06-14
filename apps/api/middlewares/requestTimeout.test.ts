@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { configureRequestTimeout } from './requestTimeout';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 
 const createMiddleware = () => {
   const app = { use: vi.fn() };
@@ -51,7 +52,10 @@ describe('configureRequestTimeout', () => {
 
     vi.advanceTimersByTime(1);
     expect(res.status).toHaveBeenCalledWith(503);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Request timed out. Please try again.' });
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Request timed out. Please try again.',
+      code: API_ERROR_CODES.REQUEST_TIMEOUT,
+    });
   });
 
   it('cancels the timeout when the response finishes or closes', () => {

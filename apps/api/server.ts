@@ -84,6 +84,7 @@ import { createPlanExpiry, createRenewedPlanExpiry, getEffectivePlan, isPaidPlan
 import type { BillingPlan } from './server-models/userPlan';
 import { isAdminIpAllowed, requireAdminAllowedIp, requireAdminPageAllowedIp } from './server-utils/adminIpAllowlist';
 import { logError, logEvent } from './server-utils/logger';
+import { defaultApiErrorCode, type ApiErrorCode } from './server-utils/apiErrors';
 import {
     adminTemplateSummary,
     customTemplateSummary,
@@ -313,11 +314,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Helper to provide private error responses
-export const sendError = (res: express.Response, status: number, clientMessage: string, internalError?: any) => {
-    const errorId = logError('http.request_failed', internalError, { status, clientMessage });
+export const sendError = (res: express.Response, status: number, clientMessage: string, internalError?: any, code?: ApiErrorCode) => {
+    const errorCode = code || defaultApiErrorCode(status);
+    const errorId = logError('http.request_failed', internalError, { status, clientMessage, code: errorCode });
 
     return res.status(status).json({
         error: clientMessage,
+        code: errorCode,
         errorId: process.env.NODE_ENV !== 'production' ? errorId : undefined
     });
 };

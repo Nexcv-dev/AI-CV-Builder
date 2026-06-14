@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from 'express';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 
 const parsePositiveInt = (value: string | undefined, fallback: number) => {
     const parsed = Number.parseInt(value || '', 10);
@@ -25,7 +26,10 @@ export const configureRequestTimeout = (app: Express) => {
         const timeoutMs = routeTimeoutMs(req.path);
         const timer = setTimeout(() => {
             if (!res.headersSent) {
-                res.status(503).json({ error: 'Request timed out. Please try again.' });
+                res.status(503).json({
+                    error: 'Request timed out. Please try again.',
+                    code: API_ERROR_CODES.REQUEST_TIMEOUT,
+                });
             }
         }, timeoutMs);
 

@@ -11,6 +11,7 @@ import {
   getHtmlPdfQuarterlyDailyLimit,
 } from '../server-models/htmlPdfQuota';
 import { calculateHtmlPdfAutoScale, calculateHtmlPdfFitScale, sanitizeHtmlPdfFilename, sanitizeHtmlPdfInput } from '../services/htmlPdfJobService';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 
 const validHtml = `
   <html>
@@ -167,5 +168,32 @@ describe('HTML to PDF feature', () => {
         server.close((error) => error ? reject(error) : resolve());
       });
     }
+  });
+
+  it('returns a stable validation code for invalid HTML PDF job ids', async () => {
+    const routes: Array<{ path: string; handlers: any[] }> = [];
+    const router = {
+      get: vi.fn((path: string, ...handlers: any[]) => {
+        routes.push({ path, handlers });
+        return router;
+      }),
+      post: vi.fn(() => router),
+    } as any;
+    registerHtmlPdfRoutes(router, {
+      isValidDocumentId: vi.fn((id: string) => id === 'valid-id'),
+      currentUserId: vi.fn(),
+      getHtmlPdfQuota: vi.fn(),
+      consumeHtmlPdfQuota: vi.fn(),
+      rollbackHtmlPdfQuota: vi.fn(),
+      sendError: vi.fn(),
+    });
+
+    const handler = routes.find((route) => route.path === '/api/html-pdf-jobs/:id')?.handlers.at(-1);
+    const invalidRes = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+    await handler({ params: { id: 'invalid' }, headers: {}, socket: {} }, invalidRes);
+    expect(invalidRes.json).toHaveBeenCalledWith({
+      error: 'Invalid HTML PDF job id.',
+      code: API_ERROR_CODES.VALIDATION_FAILED,
+    });
   });
 });

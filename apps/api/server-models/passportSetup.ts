@@ -3,6 +3,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import * as dotenv from 'dotenv';
 import User from './User';
 import { roleForEmail, syncUserRoleFromAllowlist } from './userRole';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 
 dotenv.config();
 
@@ -47,7 +48,10 @@ export const resolveGoogleOAuthUser = async (profile: any) => {
   if (user) {
     return {
       user: null,
-      info: { message: GOOGLE_EMAIL_CONFLICT_MESSAGE },
+      info: {
+        message: GOOGLE_EMAIL_CONFLICT_MESSAGE,
+        code: API_ERROR_CODES.ACCOUNT_EXISTS,
+      },
     };
   }
 

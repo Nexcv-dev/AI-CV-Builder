@@ -2,7 +2,12 @@ import React, { FormEvent, useEffect, useState } from 'react';
 import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, Lock } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { csrfFetch } from '../utils/api';
+import {
+  csrfFetch,
+  getUserErrorMessage,
+  isPasswordResetTokenInvalidError,
+  readApiResponse,
+} from '../utils/api';
 
 function ResetPasswordStateCard({
   title,
@@ -44,10 +49,12 @@ export default function ResetPassword() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidatingToken, setIsValidatingToken] = useState(Boolean(token));
   const [tokenError, setTokenError] = useState('');
+  const [tokenErrorTitle, setTokenErrorTitle] = useState('Invalid Link');
 
   useEffect(() => {
     if (!token) {
       setIsValidatingToken(false);
+      setTokenErrorTitle('Invalid Link');
       setTokenError('The password reset link is invalid or missing the token.');
       return;
     }
@@ -67,13 +74,11 @@ export default function ResetPassword() {
           body: JSON.stringify({ token }),
         });
 
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Password reset token is invalid or has expired.');
-        }
+        await readApiResponse(response, 'Password reset token is invalid or has expired.');
       } catch (err) {
         if (!ignore) {
-          setTokenError(err instanceof Error ? err.message : 'Password reset token is invalid or has expired.');
+          setTokenErrorTitle(isPasswordResetTokenInvalidError(err) ? 'Invalid Link' : 'Could Not Check Link');
+          setTokenError(getUserErrorMessage(err, 'Password reset token is invalid or has expired.'));
         }
       } finally {
         if (!ignore) setIsValidatingToken(false);
@@ -111,16 +116,12 @@ export default function ResetPassword() {
         body: JSON.stringify({ token, password }),
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to reset password.');
-      }
+      await readApiResponse(response, 'Failed to reset password.');
 
       toast.success('Password successfully reset. You can now login.');
       navigate('/');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'An error occurred. Please try again.');
+      toast.error(getUserErrorMessage(err, 'Failed to reset password.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +142,7 @@ export default function ResetPassword() {
   if (tokenError) {
     return (
       <main className="password-reset-page flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-12 text-white sm:px-6 lg:px-8">
-        <ResetPasswordStateCard title="Invalid Link" message={tokenError} />
+        <ResetPasswordStateCard title={tokenErrorTitle} message={tokenError} />
       </main>
     );
   }

@@ -26,7 +26,14 @@ import {
 } from 'lucide-react';
 import { AppShellHeader } from '../components/AppShellHeader';
 import { AppSidebar } from '../components/AppSidebar';
-import { AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
+import {
+  API_ERROR_CODES,
+  AuthUser,
+  apiFetch,
+  getUserErrorMessage,
+  hasApiErrorCode,
+  notifyAuthUserChanged,
+} from '../utils/api';
 import { clearPageScrollLock } from '../utils/scrollLock';
 import { compressAndResizeImage } from '../utils/imageUtils';
 import { useDocumentsQuery } from '../hooks/useDocumentsQuery';
@@ -78,6 +85,8 @@ export default function Profile() {
   } = useCurrentUserQuery();
   const setCurrentUserCache = useSetCurrentUserCache();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const profileImageUploadIdRef = useRef(0);
+  const profileImageSyncPromiseRef = useRef<Promise<string | null> | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
   const [form, setForm] = useState({
     displayName: '',
@@ -159,19 +168,39 @@ export default function Profile() {
     }
 
     setIsProfileImageUploading(true);
+    const uploadId = ++profileImageUploadIdRef.current;
     try {
       const image = await compressAndResizeImage(file, 320, 320);
       updateField('profileImage', image);
 
-      const { imageUrl } = await apiFetch<{ imageUrl: string }>('/api/profile-images', {
-        method: 'POST',
-        body: JSON.stringify({ imageData: image }),
-      });
-      updateField('profileImage', imageUrl);
-      toast.success('Profile picture uploaded.');
+      let syncPromise: Promise<string | null>;
+      syncPromise = apiFetch<{ imageUrl: string }>('/api/profile-images', {
+          method: 'POST',
+          body: JSON.stringify({ imageData: image }),
+        })
+        .then(({ imageUrl }) => {
+          if (profileImageUploadIdRef.current !== uploadId) return null;
+          setForm((current) => ({
+            ...current,
+            profileImage: current.profileImage === image ? imageUrl : current.profileImage,
+          }));
+          return imageUrl;
+        })
+        .catch((error) => {
+          if (profileImageUploadIdRef.current !== uploadId) return null;
+          console.error('Error syncing profile image:', error);
+          toast.error(error instanceof Error ? error.message : 'Could not sync this image.');
+          return null;
+        })
+        .finally(() => {
+          if (profileImageSyncPromiseRef.current === syncPromise) {
+            profileImageSyncPromiseRef.current = null;
+          }
+        });
+      profileImageSyncPromiseRef.current = syncPromise;
     } catch (error) {
       setForm((current) => ({ ...current, profileImage: user?.profileImage || '' }));
-      toast.error(error instanceof Error ? error.message : 'Could not upload this image.');
+      toast.error(error instanceof Error ? error.message : 'Could not process this image.');
     } finally {
       setIsProfileImageUploading(false);
       event.target.value = '';
@@ -187,9 +216,13 @@ export default function Profile() {
     setIsSaving(true);
 
     try {
+      const syncedProfileImage = await profileImageSyncPromiseRef.current;
       const data = await apiFetch<{ user: AuthUser }>('/api/auth/profile', {
         method: 'PATCH',
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          profileImage: syncedProfileImage || form.profileImage,
+        }),
       });
       setCurrentUserCache(data.user);
       setForm((current) => ({ ...current, profileImage: data.user.profileImage || '' }));
@@ -221,8 +254,10 @@ export default function Profile() {
       setConfirmPassword('');
       toast.success('Password updated.');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not update password.';
-      toast.error(message);
+      if (hasApiErrorCode(err, API_ERROR_CODES.CURRENT_PASSWORD_INVALID)) {
+        setCurrentPassword('');
+      }
+      toast.error(getUserErrorMessage(err, 'Could not update password.'));
     } finally {
       setIsSavingPassword(false);
     }

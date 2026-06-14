@@ -4,6 +4,7 @@ import { isEmailVerified } from '../server-utils/userAuth';
 import { getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
 import { payHereAmountToCents } from '../server-utils/payHere';
 import { logError } from '../server-utils/logger';
+import { API_ERROR_CODES, defaultApiErrorCode, type ApiErrorCode } from '../server-utils/apiErrors';
 import type { Request, Response, NextFunction } from 'express';
 import { isSuperAdmin } from '../server-models/userRole';
 import { hasAdminPermission, isAdminRole, isUserRole, type AdminPermission } from '@nexcv/shared/admin';
@@ -42,7 +43,7 @@ export const isMongoValidationError = (error: any) => error?.name === 'Validatio
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        return res.status(401).json({ error: 'Not authenticated', code: API_ERROR_CODES.AUTH_REQUIRED });
     }
     next();
 };
@@ -52,7 +53,7 @@ export const requireVerifiedEmail = (req: Request, res: Response) => {
         return true;
     }
     if (!isEmailVerified(req.user)) {
-        res.status(403).json({ error: 'Verify your email to save CVs.' });
+        res.status(403).json({ error: 'Verify your email to save CVs.', code: API_ERROR_CODES.EMAIL_VERIFICATION_REQUIRED });
         return false;
     }
     return true;
@@ -64,6 +65,7 @@ export const requirePaidPlan = (req: Request, res: Response) => {
     if (!isPaidPlan(req.user as any)) {
         res.status(403).json({
             error: 'AI features are available on paid plans.',
+            code: API_ERROR_CODES.FORBIDDEN,
             upgradeRequired: true,
         });
         return false;
@@ -83,28 +85,30 @@ export const sanitizeContactMessage = (value: unknown) => (
 
 export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        return res.status(401).json({ error: 'Not authenticated', code: API_ERROR_CODES.AUTH_REQUIRED });
     }
     if (!isSuperAdmin(req.user as any)) {
-        return res.status(403).json({ error: 'Admin access required.' });
+        return res.status(403).json({ error: 'Admin access required.', code: API_ERROR_CODES.FORBIDDEN });
     }
     next();
 };
 
 export const requireAdminPermission = (permission: AdminPermission) => (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        return res.status(401).json({ error: 'Not authenticated', code: API_ERROR_CODES.AUTH_REQUIRED });
     }
     if (!hasAdminPermission(req.user as any, permission)) {
-        return res.status(403).json({ error: 'Admin permission required.' });
+        return res.status(403).json({ error: 'Admin permission required.', code: API_ERROR_CODES.FORBIDDEN });
     }
     next();
 };
 
-export const sendError = (res: Response, status: number, clientMessage: string, internalError?: any) => {
-    const errorId = logError('http.request_failed', internalError, { status, clientMessage });
+export const sendError = (res: Response, status: number, clientMessage: string, internalError?: any, code?: ApiErrorCode) => {
+    const errorCode = code || defaultApiErrorCode(status);
+    const errorId = logError('http.request_failed', internalError, { status, clientMessage, code: errorCode });
     return res.status(status).json({
         error: clientMessage,
+        code: errorCode,
         errorId: process.env.NODE_ENV !== 'production' ? errorId : undefined
     });
 };

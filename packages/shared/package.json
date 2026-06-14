@@ -10,7 +10,8 @@
     "./domain": "./src/domain.ts",
     "./emailTemplateDefaults": "./src/emailTemplateDefaults.ts",
     "./seo": "./src/seo.ts",
-    "./queuePayloads": "./src/queuePayloads.ts"
+    "./queuePayloads": "./src/queuePayloads.ts",
+    "./apiErrors": "./src/apiErrors.ts"
   },
   "scripts": {
     "lint": "tsc --noEmit",

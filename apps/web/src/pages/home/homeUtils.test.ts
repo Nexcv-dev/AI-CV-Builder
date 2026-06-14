@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { triggerBrowserDownload } from './homeUtils';
+import { NETWORK_ERROR_MESSAGE } from '../../utils/api';
+import { getPdfDownloadErrorMessage, PDF_SERVER_ERROR_MESSAGE, triggerBrowserDownload } from './homeUtils';
 
 describe('triggerBrowserDownload', () => {
   afterEach(() => {
@@ -40,5 +41,35 @@ describe('triggerBrowserDownload', () => {
     expect(revokeObjectURL).not.toHaveBeenCalled();
     vi.advanceTimersByTime(10000);
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/pdf');
+  });
+});
+
+describe('getPdfDownloadErrorMessage', () => {
+  it('shows the internet message only for an actual network failure', () => {
+    expect(getPdfDownloadErrorMessage({
+      name: 'ApiError',
+      message: NETWORK_ERROR_MESSAGE,
+      data: { networkError: true },
+    })).toBe(NETWORK_ERROR_MESSAGE);
+  });
+
+  it('preserves a server-provided PDF error message', () => {
+    expect(getPdfDownloadErrorMessage({
+      message: 'Failed to queue PDF: Internal Server Error',
+      responseBody: JSON.stringify({ error: 'Could not queue PDF download. Please try again.' }),
+    })).toBe('Could not queue PDF download. Please try again.');
+  });
+
+  it('does not describe an unknown server failure as an internet problem', () => {
+    expect(getPdfDownloadErrorMessage(
+      new Error('Failed to generate PDF: Internal Server Error'),
+    )).toBe(PDF_SERVER_ERROR_MESSAGE);
+  });
+
+  it('uses the server fallback for a malformed error response', () => {
+    expect(getPdfDownloadErrorMessage({
+      message: 'Failed to check PDF status: Service Unavailable',
+      responseBody: '<html>Service unavailable</html>',
+    })).toBe(PDF_SERVER_ERROR_MESSAGE);
   });
 });

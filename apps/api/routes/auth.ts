@@ -1,6 +1,7 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { bindDeps } from './_shared';
 import { validateAuthEmail } from '../services/authValidationService';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 
 type RouteDeps = Record<string, any>;
 
@@ -205,7 +206,10 @@ const resolveLinkedInOAuthUser = async ({
     if (user) {
         return {
             user: null,
-            info: { message: 'A NexCV account already exists for this email. Sign in with email first.' },
+            info: {
+                message: 'A NexCV account already exists for this email. Sign in with email first.',
+                code: API_ERROR_CODES.ACCOUNT_EXISTS,
+            },
         };
     }
 
@@ -277,7 +281,10 @@ const resolveGitHubOAuthUser = async ({
     if (user) {
         return {
             user: null,
-            info: { message: 'A NexCV account already exists for this email. Sign in with email first.' },
+            info: {
+                message: 'A NexCV account already exists for this email. Sign in with email first.',
+                code: API_ERROR_CODES.ACCOUNT_EXISTS,
+            },
         };
     }
 
@@ -347,7 +354,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     router.post('/api/auth/signup', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
         try {
             if (mongoose.connection.readyState !== 1) {
-                return res.status(503).json({ error: 'Database is not connected. Check MongoDB settings and try again.' });
+                return res.status(503).json({
+                    error: 'Database is not connected. Check MongoDB settings and try again.',
+                    code: API_ERROR_CODES.AUTH_SERVICE_UNAVAILABLE,
+                });
             }
     
             const email = normalizeEmail(req.body.email);
@@ -358,32 +368,35 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             const emailError = validateAuthEmail(email, isValidEmail);
             if (emailError) {
-                return res.status(400).json({ error: emailError });
+                return res.status(400).json({ error: emailError, code: API_ERROR_CODES.VALIDATION_FAILED });
             }
 
             if (roleForEmail(email) !== 'user') {
-                return res.status(400).json({ error: genericSignupError });
+                return res.status(400).json({ error: genericSignupError, code: API_ERROR_CODES.VALIDATION_FAILED });
             }
     
             if (!displayName) {
-                return res.status(400).json({ error: 'Enter your name.' });
+                return res.status(400).json({ error: 'Enter your name.', code: API_ERROR_CODES.VALIDATION_FAILED });
             }
 
             if (!phone) {
-                return res.status(400).json({ error: 'Enter your contact number.' });
+                return res.status(400).json({ error: 'Enter your contact number.', code: API_ERROR_CODES.VALIDATION_FAILED });
             }
 
             if (!acceptedTerms) {
-                return res.status(400).json({ error: 'Please accept the Terms and Privacy Policy to create your account.' });
+                return res.status(400).json({
+                    error: 'Please accept the Terms and Privacy Policy to create your account.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
     
             if (!validatePasswordStrength(password)) {
-                return res.status(400).json({ error: passwordPolicyMessage });
+                return res.status(400).json({ error: passwordPolicyMessage, code: API_ERROR_CODES.PASSWORD_INVALID });
             }
     
             const existingUser = await User.findOne({ email });
             if (existingUser) {
-                return res.status(409).json({ error: existingAccountSignupError, code: 'account_exists' });
+                return res.status(409).json({ error: existingAccountSignupError, code: API_ERROR_CODES.ACCOUNT_EXISTS });
             }
     
             const verification = generateEmailVerificationOtp();
@@ -414,14 +427,17 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             });
         } catch (error) {
             if (isMongoDuplicateKeyError(error)) {
-                return res.status(400).json({ error: genericSignupError });
+                return res.status(400).json({ error: genericSignupError, code: API_ERROR_CODES.VALIDATION_FAILED });
             }
     
             if (isMongoValidationError(error)) {
-                return res.status(400).json({ error: 'Please check your signup details and try again.' });
+                return res.status(400).json({
+                    error: 'Please check your signup details and try again.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
     
-            return sendError(res, 500, 'Could not create your account.', error);
+            return sendError(res, 500, 'Could not create your account.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
 
@@ -433,12 +449,18 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             const emailError = validateAuthEmail(email, isValidEmail);
             if (emailError || !password) {
-                return res.status(400).json({ error: emailError || 'Enter your email and password.' });
+                return res.status(400).json({
+                    error: emailError || 'Enter your email and password.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
     
             const user = await User.findOne({ email });
             if (!user || !user.passwordHash || !verifyPassword(password, user.passwordHash)) {
-                return res.status(401).json({ error: 'Email or password is incorrect.' });
+                return res.status(401).json({
+                    error: 'Email or password is incorrect.',
+                    code: API_ERROR_CODES.INVALID_CREDENTIALS,
+                });
             }
     
             await syncUserRoleFromAllowlist(user);
@@ -448,7 +470,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 return res.json({ user: publicUser(user) });
             });
         } catch (error) {
-            return sendError(res, 500, 'Could not sign you in.', error);
+            return sendError(res, 500, 'Could not sign you in.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
 
@@ -460,21 +482,21 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
 
             const emailError = validateAuthEmail(email, isValidEmail);
             if (emailError) {
-                return res.status(400).json({ error: emailError });
+                return res.status(400).json({ error: emailError, code: API_ERROR_CODES.VALIDATION_FAILED });
             }
 
             if (intent === 'signup' && roleForEmail(email) !== 'user') {
-                return res.status(400).json({ error: genericSignupError });
+                return res.status(400).json({ error: genericSignupError, code: API_ERROR_CODES.VALIDATION_FAILED });
             }
 
             const user = await User.findOne({ email });
             if (intent === 'signup' && user) {
-                return res.status(409).json({ error: existingAccountSignupError, code: 'account_exists' });
+                return res.status(409).json({ error: existingAccountSignupError, code: API_ERROR_CODES.ACCOUNT_EXISTS });
             }
 
             return res.json({ exists: Boolean(user), method: user?.passwordHash ? 'password' : 'otp' });
         } catch (error) {
-            return sendError(res, 500, 'Could not check this email.', error);
+            return sendError(res, 500, 'Could not check this email.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
 
@@ -482,11 +504,17 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     router.post('/api/auth/email/start', emailVerificationLimiter, async (req: Request, res: Response) => {
         try {
             if (mongoose.connection.readyState !== 1) {
-                return res.status(503).json({ error: 'Database is not connected. Check MongoDB settings and try again.' });
+                return res.status(503).json({
+                    error: 'Database is not connected. Check MongoDB settings and try again.',
+                    code: API_ERROR_CODES.AUTH_SERVICE_UNAVAILABLE,
+                });
             }
 
             if (!isEmailServiceConfigured()) {
-                return res.status(503).json({ error: 'We could not send your OTP right now. Please try again in a few minutes.' });
+                return res.status(503).json({
+                    error: 'We could not send your OTP right now. Please try again in a few minutes.',
+                    code: API_ERROR_CODES.OTP_DELIVERY_FAILED,
+                });
             }
 
             const email = normalizeEmail(req.body.email);
@@ -497,18 +525,18 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
 
             const emailError = validateAuthEmail(email, isValidEmail);
             if (emailError) {
-                return res.status(400).json({ error: emailError });
+                return res.status(400).json({ error: emailError, code: API_ERROR_CODES.VALIDATION_FAILED });
             }
 
             if (intent === 'signup' && roleForEmail(email) !== 'user') {
-                return res.status(400).json({ error: genericSignupError });
+                return res.status(400).json({ error: genericSignupError, code: API_ERROR_CODES.VALIDATION_FAILED });
             }
 
             let user = await User.findOne({ email });
             const isNewUser = !user;
 
             if (intent === 'signup' && user) {
-                return res.status(409).json({ error: existingAccountSignupError, code: 'account_exists' });
+                return res.status(409).json({ error: existingAccountSignupError, code: API_ERROR_CODES.ACCOUNT_EXISTS });
             }
 
             if (!displayName && isNewUser) {
@@ -516,11 +544,14 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             }
 
             if (isNewUser && !acceptedTerms) {
-                return res.status(400).json({ error: 'Please accept the Terms and Privacy Policy to create your account.' });
+                return res.status(400).json({
+                    error: 'Please accept the Terms and Privacy Policy to create your account.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
 
             if ((isNewUser || (intent === 'signup' && !user?.passwordHash)) && !validatePasswordStrength(password)) {
-                return res.status(400).json({ error: passwordPolicyMessage });
+                return res.status(400).json({ error: passwordPolicyMessage, code: API_ERROR_CODES.PASSWORD_INVALID });
             }
 
             const verification = generateEmailVerificationOtp();
@@ -556,7 +587,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 if (isNewUser) {
                     await User.findByIdAndDelete(user._id).catch(() => undefined);
                 }
-                return res.status(502).json({ error: 'We could not send your OTP right now. Please try again in a few minutes.' });
+                return res.status(502).json({
+                    error: 'We could not send your OTP right now. Please try again in a few minutes.',
+                    code: API_ERROR_CODES.OTP_DELIVERY_FAILED,
+                });
             }
 
             return res.json({
@@ -565,14 +599,20 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             });
         } catch (error) {
             if (isMongoDuplicateKeyError(error)) {
-                return res.status(409).json({ error: 'Could not start email login. Please try again.' });
+                return res.status(409).json({
+                    error: 'Could not start email login. Please try again.',
+                    code: API_ERROR_CODES.AUTH_OPERATION_FAILED,
+                });
             }
 
             if (isMongoValidationError(error)) {
-                return res.status(400).json({ error: 'Please check your details and try again.' });
+                return res.status(400).json({
+                    error: 'Please check your details and try again.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
 
-            return sendError(res, 500, 'Could not start email login.', error);
+            return sendError(res, 500, 'Could not start email login.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
 
@@ -584,11 +624,14 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
 
             const emailError = validateAuthEmail(email, isValidEmail);
             if (emailError) {
-                return res.status(400).json({ error: emailError });
+                return res.status(400).json({ error: emailError, code: API_ERROR_CODES.VALIDATION_FAILED });
             }
 
             if (!/^\d{6}$/.test(code)) {
-                return res.status(400).json({ error: 'Enter the 6-digit verification code.' });
+                return res.status(400).json({
+                    error: 'Enter the 6-digit verification code.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
 
             const user = await User.findOne({
@@ -598,7 +641,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             });
 
             if (!user) {
-                return res.status(400).json({ error: 'OTP is invalid or has expired.' });
+                return res.status(400).json({
+                    error: 'OTP is invalid or has expired.',
+                    code: API_ERROR_CODES.OTP_INVALID,
+                });
             }
 
             user.emailVerified = true;
@@ -613,7 +659,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 return res.json({ user: publicUser(user), message: 'Logged in successfully.' });
             });
         } catch (error) {
-            return sendError(res, 500, 'Could not verify OTP.', error);
+            return sendError(res, 500, 'Could not verify OTP.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
 
@@ -629,15 +675,21 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const nationality = sanitizeProfileField(req.body.nationality, 80);
     
             if (!displayName) {
-                return res.status(400).json({ error: 'Enter your name.' });
+                return res.status(400).json({ error: 'Enter your name.', code: API_ERROR_CODES.VALIDATION_FAILED });
             }
     
             if (profileImage && profileImage.length > 2 * 1024 * 1024) {
-                return res.status(400).json({ error: 'Profile image is too large.' });
+                return res.status(400).json({
+                    error: 'Profile image is too large.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
     
             if (profileImage && !profileImage.startsWith('data:image/') && !profileImage.startsWith('https://')) {
-                return res.status(400).json({ error: 'Profile image format is not supported.' });
+                return res.status(400).json({
+                    error: 'Profile image format is not supported.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
     
             const user = await User.findByIdAndUpdate(
@@ -647,12 +699,12 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             );
     
             if (!user) {
-                return res.status(404).json({ error: 'User not found.' });
+                return res.status(404).json({ error: 'User not found.', code: API_ERROR_CODES.USER_NOT_FOUND });
             }
     
             res.json({ user: publicUser(user) });
         } catch (error) {
-            return sendError(res, 500, 'Could not update your profile.', error);
+            return sendError(res, 500, 'Could not update your profile.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
 
@@ -663,20 +715,26 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : '';
     
             if (!validatePasswordStrength(newPassword)) {
-                return res.status(400).json({ error: passwordPolicyMessage });
+                return res.status(400).json({ error: passwordPolicyMessage, code: API_ERROR_CODES.PASSWORD_INVALID });
             }
     
             const user = await User.findById(currentUserId(req));
             if (!user) {
-                return res.status(404).json({ error: 'User not found.' });
+                return res.status(404).json({ error: 'User not found.', code: API_ERROR_CODES.USER_NOT_FOUND });
             }
     
             if (!user.passwordHash) {
-                return res.status(400).json({ error: 'This account does not have a password yet. Use forgot password to create one securely.' });
+                return res.status(400).json({
+                    error: 'This account does not have a password yet. Use forgot password to create one securely.',
+                    code: API_ERROR_CODES.PASSWORD_NOT_CONFIGURED,
+                });
             }
 
             if (!verifyPassword(currentPassword, user.passwordHash)) {
-                return res.status(401).json({ error: 'Current password is incorrect.' });
+                return res.status(401).json({
+                    error: 'Current password is incorrect.',
+                    code: API_ERROR_CODES.CURRENT_PASSWORD_INVALID,
+                });
             }
     
             user.passwordHash = hashPassword(newPassword);
@@ -687,7 +745,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             res.json({ message: 'Password updated successfully.' });
         } catch (error) {
-            return sendError(res, 500, 'Could not update your password.', error);
+            return sendError(res, 500, 'Could not update your password.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
 
@@ -706,7 +764,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 });
             });
         } catch (error) {
-            return sendError(res, 500, 'Could not delete your account.', error);
+            return sendError(res, 500, 'Could not delete your account.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
     
@@ -724,11 +782,14 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const email = normalizeEmail(req.body.email);
             const emailError = validateAuthEmail(email, isValidEmail);
             if (emailError) {
-                return res.status(400).json({ error: emailError });
+                return res.status(400).json({ error: emailError, code: API_ERROR_CODES.VALIDATION_FAILED });
             }
 
             if (!isEmailServiceConfigured()) {
-                return res.status(500).json({ error: 'Email service is not configured.' });
+                return res.status(503).json({
+                    error: 'Email service is not configured.',
+                    code: API_ERROR_CODES.AUTH_SERVICE_UNAVAILABLE,
+                });
             }
 
             const user = await User.findOne({ email });
@@ -780,7 +841,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             res.json({ message: genericPasswordResetMessage });
         } catch (error) {
-            return sendError(res, 500, 'Could not send reset password email.', error);
+            return sendError(res, 500, 'Could not send reset password email.', error, API_ERROR_CODES.PASSWORD_RESET_FAILED);
         }
     });
 
@@ -790,17 +851,23 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const token = typeof req.body.token === 'string' ? req.body.token : '';
     
             if (!token) {
-                return res.status(400).json({ error: 'Password reset token is missing.' });
+                return res.status(400).json({
+                    error: 'Password reset token is missing.',
+                    code: API_ERROR_CODES.PASSWORD_RESET_TOKEN_INVALID,
+                });
             }
     
             const user = await findUserByValidPasswordResetToken(token).select('_id');
             if (!user) {
-                return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
+                return res.status(400).json({
+                    error: 'Password reset token is invalid or has expired.',
+                    code: API_ERROR_CODES.PASSWORD_RESET_TOKEN_INVALID,
+                });
             }
     
             res.json({ valid: true });
         } catch (error) {
-            return sendError(res, 500, 'Could not validate password reset token.', error);
+            return sendError(res, 500, 'Could not validate password reset token.', error, API_ERROR_CODES.PASSWORD_RESET_FAILED);
         }
     });
 
@@ -811,17 +878,23 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             const newPassword = typeof req.body.password === 'string' ? req.body.password : '';
     
             if (!token) {
-                return res.status(400).json({ error: 'Password reset token is missing.' });
+                return res.status(400).json({
+                    error: 'Password reset token is missing.',
+                    code: API_ERROR_CODES.PASSWORD_RESET_TOKEN_INVALID,
+                });
             }
     
             if (!validatePasswordStrength(newPassword)) {
-                return res.status(400).json({ error: passwordPolicyMessage });
+                return res.status(400).json({ error: passwordPolicyMessage, code: API_ERROR_CODES.PASSWORD_INVALID });
             }
     
             const user = await findUserByValidPasswordResetToken(token);
     
             if (!user) {
-                return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
+                return res.status(400).json({
+                    error: 'Password reset token is invalid or has expired.',
+                    code: API_ERROR_CODES.PASSWORD_RESET_TOKEN_INVALID,
+                });
             }
     
             user.passwordHash = hashPassword(newPassword);
@@ -832,7 +905,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             res.json({ message: 'Password has been successfully reset.' });
         } catch (error) {
-            return sendError(res, 500, 'Could not reset password.', error);
+            return sendError(res, 500, 'Could not reset password.', error, API_ERROR_CODES.PASSWORD_RESET_FAILED);
         }
     });
 
@@ -841,7 +914,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         try {
             const code = typeof req.body.code === 'string' ? req.body.code.replace(/\D/g, '') : '';
             if (!/^\d{6}$/.test(code)) {
-                return res.status(400).json({ error: 'Enter the 6-digit verification code.' });
+                return res.status(400).json({
+                    error: 'Enter the 6-digit verification code.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
     
             const user = await User.findOne({
@@ -851,7 +927,10 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             });
     
             if (!user) {
-                return res.status(400).json({ error: 'Verification code is invalid or has expired.' });
+                return res.status(400).json({
+                    error: 'Verification code is invalid or has expired.',
+                    code: API_ERROR_CODES.OTP_INVALID,
+                });
             }
     
             user.emailVerified = true;
@@ -861,7 +940,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             return res.json({ user: publicUser(user), message: 'Email verified successfully.' });
         } catch (error) {
-            return sendError(res, 500, 'Could not verify email.', error);
+            return sendError(res, 500, 'Could not verify email.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
 
@@ -870,7 +949,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         try {
             const user = await User.findById(currentUserId(req));
             if (!user) {
-                return res.status(404).json({ error: 'User not found.' });
+                return res.status(404).json({ error: 'User not found.', code: API_ERROR_CODES.USER_NOT_FOUND });
             }
     
             if (isEmailVerified(user)) {
@@ -884,12 +963,15 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
     
             const verificationEmailSent = await sendEmailVerificationWithRetry(user, verification.code);
             if (!verificationEmailSent) {
-                return res.status(502).json({ error: 'Could not send verification OTP. Please try again.' });
+                return res.status(502).json({
+                    error: 'Could not send verification OTP. Please try again.',
+                    code: API_ERROR_CODES.OTP_DELIVERY_FAILED,
+                });
             }
     
             return res.json({ user: publicUser(user), message: 'Verification OTP sent. Please check your inbox.' });
         } catch (error) {
-            return sendError(res, 500, 'Could not send verification OTP.', error);
+            return sendError(res, 500, 'Could not send verification OTP.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
     
@@ -919,7 +1001,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             }
             if (!user) {
                 console.warn('Google Auth failed:', info?.message || 'No user returned');
-                const reason = info?.message?.includes('already exists') ? 'account_exists' : 'denied';
+                const reason = info?.code === API_ERROR_CODES.ACCOUNT_EXISTS ? 'account_exists' : 'denied';
                 return res.redirect(`/?auth=failed&reason=${reason}`);
             }
             loginWithRegeneratedSession(req, user, (loginErr) => {
@@ -1021,7 +1103,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             });
 
             if (!result.user) {
-                const reason = result.info?.message?.includes('already exists') ? 'account_exists' : 'denied';
+                const reason = result.info?.code === API_ERROR_CODES.ACCOUNT_EXISTS ? 'account_exists' : 'denied';
                 return res.redirect(`/?auth=failed&reason=${reason}`);
             }
 
@@ -1111,7 +1193,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
             });
 
             if (!result.user) {
-                const reason = result.info?.message?.includes('already exists') ? 'account_exists' : 'denied';
+                const reason = result.info?.code === API_ERROR_CODES.ACCOUNT_EXISTS ? 'account_exists' : 'denied';
                 return res.redirect(`/?auth=failed&reason=${reason}`);
             }
 
@@ -1139,9 +1221,9 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
                 await syncUserRoleFromAllowlist(req.user as any);
                 return res.json({ user: publicUser(req.user) });
             }
-            return res.status(401).json({ error: 'Not authenticated' });
+            return res.status(401).json({ error: 'Not authenticated', code: API_ERROR_CODES.AUTH_REQUIRED });
         } catch (error) {
-            return sendError(res, 500, 'Could not load current user.', error);
+            return sendError(res, 500, 'Could not load current user.', error, API_ERROR_CODES.AUTH_OPERATION_FAILED);
         }
     });
     

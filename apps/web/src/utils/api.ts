@@ -1,4 +1,19 @@
 import type { UserRole } from '../features/admin/adminAccess';
+import { API_ERROR_CODES, type ApiErrorCode } from '@nexcv/shared/apiErrors';
+
+export { API_ERROR_CODES };
+
+export interface ApiErrorData {
+  code?: ApiErrorCode | string;
+  error?: string;
+  message?: string;
+  networkError?: boolean;
+  cancelled?: boolean;
+  upgradeRequired?: boolean;
+  reason?: string;
+  quota?: any;
+  [key: string]: any;
+}
 
 export interface AuthUser {
   id: string;
@@ -20,17 +35,20 @@ export interface AuthUser {
 
 export class ApiError extends Error {
   status: number;
-  data: any;
+  data: ApiErrorData;
+  code?: ApiErrorCode | string;
 
-  constructor(message: string, status: number, data: any) {
+  constructor(message: string, status: number, data: ApiErrorData = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.data = data;
+    this.code = data.code;
   }
 }
 
 export const NETWORK_ERROR_MESSAGE = "Could not connect to the server. Check your internet connection and try again.";
+export const CANCELLED_ERROR_MESSAGE = 'Request cancelled.';
 
 function isFetchNetworkError(error: unknown) {
   if (!(error instanceof Error)) return false;
@@ -38,11 +56,77 @@ function isFetchNetworkError(error: unknown) {
     || /failed to fetch|networkerror|load failed|fetch/i.test(error.message);
 }
 
+export function isCancelledError(error: unknown, signal?: AbortSignal | null) {
+  if (signal?.aborted) return true;
+  if (error instanceof ApiError && error.data?.cancelled) return true;
+  return Boolean(error && typeof error === 'object' && 'name' in error && error.name === 'AbortError');
+}
+
+export function hasApiErrorCode(error: unknown, ...codes: ApiErrorCode[]) {
+  return error instanceof ApiError
+    && typeof error.code === 'string'
+    && codes.includes(error.code as ApiErrorCode);
+}
+
+export function isAuthRequiredError(error: unknown) {
+  return hasApiErrorCode(error, API_ERROR_CODES.AUTH_REQUIRED)
+    || (error instanceof ApiError && !error.code && error.status === 401);
+}
+
+export function isAccountExistsError(error: unknown) {
+  return hasApiErrorCode(error, API_ERROR_CODES.ACCOUNT_EXISTS);
+}
+
+export function isEmailVerificationRequiredError(error: unknown) {
+  return hasApiErrorCode(error, API_ERROR_CODES.EMAIL_VERIFICATION_REQUIRED);
+}
+
+export function isOtpInvalidError(error: unknown) {
+  return hasApiErrorCode(error, API_ERROR_CODES.OTP_INVALID);
+}
+
+export function isPasswordResetTokenInvalidError(error: unknown) {
+  return hasApiErrorCode(error, API_ERROR_CODES.PASSWORD_RESET_TOKEN_INVALID);
+}
+
+export function isUpgradeRequiredError(error: unknown) {
+  if (!(error instanceof ApiError) || !error.data.upgradeRequired) return false;
+  return hasApiErrorCode(error, API_ERROR_CODES.FORBIDDEN)
+    || (!error.code && error.status === 403);
+}
+
 export function normalizeApiError(error: unknown, fallback = 'Something went wrong. Please try again.') {
   if (error instanceof ApiError) return error;
+  if (isCancelledError(error)) return new ApiError(CANCELLED_ERROR_MESSAGE, 0, { cancelled: true });
   if (isFetchNetworkError(error)) return new ApiError(NETWORK_ERROR_MESSAGE, 0, { networkError: true });
   if (error instanceof Error) return new ApiError(error.message || fallback, 0, {});
   return new ApiError(fallback, 0, {});
+}
+
+export function getUserErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.') {
+  return normalizeApiError(error, fallback).message || fallback;
+}
+
+export async function readApiResponse<T>(response: Response, fallback = 'Something went wrong. Please try again.'): Promise<T> {
+  const responseText = await response.text();
+  let data: any = {};
+
+  if (responseText) {
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = { message: responseText };
+    }
+  }
+
+  if (!response.ok) {
+    const defaultMessage = response.status === 429
+      ? 'Too many requests. Please wait a moment and try again.'
+      : fallback;
+    throw new ApiError(data.error || data.message || defaultMessage, response.status, data);
+  }
+
+  return data as T;
 }
 
 let csrfToken: string | null = null;
@@ -82,7 +166,7 @@ async function getCsrfToken(forceRefresh = false) {
 async function isCsrfFailure(response: Response) {
   if (response.status !== 403) return false;
   const data = await response.clone().json().catch(() => ({}));
-  return data.code === 'CSRF_TOKEN_INVALID';
+  return data.code === API_ERROR_CODES.CSRF_TOKEN_INVALID;
 }
 
 export async function csrfFetch(input: RequestInfo | URL, options: RequestInit = {}): Promise<Response> {
@@ -133,14 +217,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
     throw normalizeApiError(error);
   });
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new ApiError(data.error || 'Too many requests. Please wait a moment and try again.', response.status, data);
-    }
-    throw new ApiError(data.error || 'Something went wrong. Please try again.', response.status, data);
-  }
-  return data as T;
+  return readApiResponse<T>(response);
 }
 
 export async function getCurrentUser() {

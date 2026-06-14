@@ -2,7 +2,7 @@ import React, { FormEvent, useState } from 'react';
 import { ArrowRight, CheckCircle2, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { csrfFetch } from '../utils/api';
+import { csrfFetch, getUserErrorMessage, readApiResponse } from '../utils/api';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -22,16 +22,12 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send reset link.');
-      }
+      const data = await readApiResponse<{ message?: string }>(response, 'Failed to send reset link.');
 
       setSentMessage(data.message || 'Reset link sent to your email.');
       setEmail('');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'An error occurred. Please try again.');
+      toast.error(getUserErrorMessage(err, 'Failed to send reset link.'));
     } finally {
       setIsSubmitting(false);
     }

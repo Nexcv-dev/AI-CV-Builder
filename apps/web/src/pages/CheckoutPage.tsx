@@ -7,7 +7,14 @@ import {
 } from 'lucide-react';
 import { SiteHeader } from '../components/SiteHeader';
 import { AuthModal } from '../components/AuthModal';
-import { AuthUser, apiFetch, getCurrentUser } from '../utils/api';
+import {
+  AuthUser,
+  apiFetch,
+  getCurrentUser,
+  getUserErrorMessage,
+  isAuthRequiredError,
+  isEmailVerificationRequiredError,
+} from '../utils/api';
 import { COUNTRIES, countryFromCode, countryNameFromCode, detectClientBillingCountry } from '../utils/countries';
 import { CheckoutCustomerForm } from './checkout/CheckoutCustomerForm';
 import { CheckoutFooter } from './checkout/CheckoutFooter';
@@ -271,7 +278,13 @@ export default function CheckoutPage() {
       }));
       submitPayHereForm(checkout.actionUrl, checkout.fields);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not open checkout.');
+      if (isAuthRequiredError(error)) {
+        setAuthModalOpen(true);
+      } else if (isEmailVerificationRequiredError(error)) {
+        toast.error('Verify your email before completing checkout.');
+      } else {
+        toast.error(getUserErrorMessage(error, 'Could not open checkout.'));
+      }
       checkoutInFlightRef.current = false;
       setSubmitting(false);
     }
