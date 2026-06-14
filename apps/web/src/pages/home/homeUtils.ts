@@ -1,4 +1,44 @@
 import type { AuthPlan, DownloadQuota } from './homeTypes';
+import { ApiError, NETWORK_ERROR_MESSAGE } from '../../utils/api';
+
+export const PDF_SERVER_ERROR_MESSAGE = 'The PDF server could not complete your request. Please try again.';
+
+export function getPdfDownloadErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    if (error.data.networkError) return NETWORK_ERROR_MESSAGE;
+    return error.message || PDF_SERVER_ERROR_MESSAGE;
+  }
+
+  const candidate = error as {
+    name?: string;
+    message?: string;
+    responseBody?: string;
+    data?: { networkError?: boolean };
+  } | null;
+
+  if (candidate?.data?.networkError
+    || candidate?.name === 'TypeError'
+    || /failed to fetch|networkerror|load failed/i.test(candidate?.message || '')) {
+    return NETWORK_ERROR_MESSAGE;
+  }
+
+  if (candidate?.responseBody) {
+    try {
+      const parsed = JSON.parse(candidate.responseBody);
+      if (typeof parsed.details === 'string' && parsed.details.trim()) return parsed.details;
+      if (typeof parsed.error === 'string' && parsed.error.trim()) return parsed.error;
+    } catch {
+      return PDF_SERVER_ERROR_MESSAGE;
+    }
+  }
+
+  if (candidate?.message
+    && !/^Failed to (?:generate|queue|check) PDF\b/i.test(candidate.message)) {
+    return candidate.message;
+  }
+
+  return PDF_SERVER_ERROR_MESSAGE;
+}
 
 function formatDownloadResetTime(resetAt?: string) {
   if (!resetAt) return 'tomorrow';

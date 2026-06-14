@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AppRoutes } from './app/AppRoutes';
+import { RouteLoadingFallback } from './app/loading';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,7 +40,9 @@ function App() {
             },
           }}
         />
-        <AppRoutes />
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <AppRoutes />
+        </Suspense>
       </Router>
     </QueryClientProvider>
   );

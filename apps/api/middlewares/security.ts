@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { randomBytes } from 'crypto';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 
 const normalizeDsnOrigin = (value: string | undefined) => {
     if (!value?.trim()) return '';
@@ -131,17 +132,26 @@ export const integrityCheck = (req: Request, res: Response, next: NextFunction) 
 
     const appSource = req.header('X-App-Source');
     if (appSource !== 'cv-builder-app') {
-        return res.status(403).json({ error: 'Unauthorized request source' });
+        return res.status(403).json({
+            error: 'Unauthorized request source',
+            code: API_ERROR_CODES.REQUEST_SOURCE_INVALID,
+        });
     }
 
     if (!isTrustedRequestOrigin(req)) {
-        return res.status(403).json({ error: 'Untrusted request origin' });
+        return res.status(403).json({
+            error: 'Untrusted request origin',
+            code: API_ERROR_CODES.REQUEST_ORIGIN_UNTRUSTED,
+        });
     }
 
     const sessionToken = (req.session as any)?.csrfToken;
     const requestToken = req.header('X-CSRF-Token');
     if (!sessionToken || !requestToken || requestToken !== sessionToken) {
-        return res.status(403).json({ error: 'Invalid CSRF token', code: 'CSRF_TOKEN_INVALID' });
+        return res.status(403).json({
+            error: 'Invalid CSRF token',
+            code: API_ERROR_CODES.CSRF_TOKEN_INVALID,
+        });
     }
 
     return next();

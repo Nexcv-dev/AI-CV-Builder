@@ -6,16 +6,19 @@ export function BuilderLoadingOverlay({ isDarkMode }: { isDarkMode: boolean }) {
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className={`fixed inset-0 flex flex-col items-center justify-center z-200 ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}
+      className={`fixed inset-0 z-200 flex items-center justify-center ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}
+      role="status"
+      aria-label="Loading NexCV builder"
     >
-      <div className="relative mb-6">
-        <div className={`w-20 h-20 border-4 border-t-violet-600 rounded-full animate-spin ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`}></div>
-        <img src="/brand/faviconblack.svg" alt="NexCV" className="absolute inset-0 m-auto h-12 w-12 rounded-2xl" />
+      <div className="relative flex h-24 w-24 items-center justify-center">
+        <div className={`absolute inset-0 animate-spin rounded-full border-4 border-t-violet-600 ${isDarkMode ? 'border-violet-900/60' : 'border-violet-100'}`} />
+        <div className="absolute inset-2 animate-pulse rounded-full bg-violet-500/10 blur-md" />
+        <img
+          src="/brand/faviconblack.svg"
+          alt=""
+          className="relative h-14 w-14 rounded-2xl drop-shadow-[0_12px_24px_rgba(124,58,237,0.35)]"
+        />
       </div>
-      <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r ${isDarkMode ? 'from-slate-100 to-violet-400' : 'from-slate-800 to-violet-600'}`}>
-        NexCV
-      </h2>
-      <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Preparing your workspace...</p>
     </motion.div>
   );
 }

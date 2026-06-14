@@ -14,7 +14,16 @@ import { EditorFooter } from './EditorFooter';
 import { WizardNav } from './WizardNav';
 import { compressAndResizeImage } from '../utils/imageUtils';
 import { applyTemplateColorDefaults } from '@nexcv/templates/templateData';
-import { ApiError, apiFetch, csrfFetch } from '../utils/api';
+import {
+  ApiError,
+  apiFetch,
+  csrfFetch,
+  getUserErrorMessage,
+  isAuthRequiredError,
+  isCancelledError,
+  isUpgradeRequiredError,
+  readApiResponse,
+} from '../utils/api';
 import type { CvImportJobResponse } from '@nexcv/api-contracts/documents';
 
 import {
@@ -89,6 +98,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
   const [isProfileImageUploading, setIsProfileImageUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const profileImageUploadIdRef = useRef(0);
   const progressContainerRef = useRef<HTMLDivElement>(null);
   const formContainerRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -188,6 +198,11 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
     }
   }, [wizardStep, activeMainTab]);
 
+  useEffect(() => () => {
+    abortControllerRef.current?.abort();
+    importAbortControllerRef.current?.abort();
+  }, []);
+
   // Cancel CV import if modal is closed during import
   useEffect(() => {
     if (!showUploadModal && isImporting && importAbortControllerRef.current) {
@@ -211,8 +226,9 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
       return;
     }
 
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     aiRequestIdsRef.current.add('summary');
     setRefining('summary', true);
@@ -225,33 +241,26 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
           education: cvData.education,
           skills: cvData.skills,
         }),
-        signal: abortControllerRef.current.signal,
+        signal: controller.signal,
       });
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = res.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Failed to generate summary";
-        try {
-          const errorJson = JSON.parse(errorText);
-          if (errorJson.upgradeRequired) {
-            onUpgradeRequired?.('ai');
-            return;
-          }
-          errorMessage = errorJson.error || errorJson.message || errorText;
-        } catch (e) {
-          errorMessage = errorText;
-        }
-        throw new Error(errorMessage);
-      }
-      const data = await res.json();
+      const data = await readApiResponse<{ summary?: string }>(res, 'Failed to generate summary. Please try again.');
+      if (controller.signal.aborted) return;
       if (data.summary) {
         setCvData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, summary: data.summary } }));
         toast.success("Summary generated!");
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError' || abortControllerRef.current?.signal.aborted) return;
+    } catch (error) {
+      if (isCancelledError(error, controller.signal)) return;
+      if (isUpgradeRequiredError(error)) {
+        onUpgradeRequired?.('ai');
+        return;
+      }
       console.error('Error generating summary:', error);
-      toast.error(error.message || 'Failed to generate summary. Please try again.');
+      toast.error(getUserErrorMessage(error, 'Failed to generate summary. Please try again.'));
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
       aiRequestIdsRef.current.delete('summary');
       setRefining('summary', false);
     }
@@ -268,8 +277,9 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
     const plainText = stripHtml(text || '');
     if (!plainText.trim()) return;
 
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     aiRequestIdsRef.current.add(id);
     setRefining(id, true);
@@ -278,33 +288,26 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: plainText, sectionType, context }),
-        signal: abortControllerRef.current.signal,
+        signal: controller.signal,
       });
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = res.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Failed to refine text";
-        try {
-          const errorJson = JSON.parse(errorText);
-          if (errorJson.upgradeRequired) {
-            onUpgradeRequired?.('ai');
-            return;
-          }
-          errorMessage = errorJson.error || errorJson.message || errorText;
-        } catch (e) {
-          errorMessage = errorText;
-        }
-        throw new Error(errorMessage);
-      }
-      const data = await res.json();
+      const data = await readApiResponse<{ refined?: string }>(res, 'Failed to refine text. Please try again.');
+      if (controller.signal.aborted) return;
       if (data.refined) {
         onUpdate(data.refined);
         toast.success("Text refined!");
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError' || abortControllerRef.current?.signal.aborted) return;
+    } catch (error) {
+      if (isCancelledError(error, controller.signal)) return;
+      if (isUpgradeRequiredError(error)) {
+        onUpgradeRequired?.('ai');
+        return;
+      }
       console.error('Error refining text:', error);
-      toast.error(error.message || 'Failed to refine text. Please try again.');
+      toast.error(getUserErrorMessage(error, 'Failed to refine text. Please try again.'));
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
       aiRequestIdsRef.current.delete(id);
       setRefining(id, false);
     }
@@ -319,19 +322,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
       if (signal?.aborted) throw Object.assign(new Error('Import cancelled.'), { name: 'AbortError' });
 
       const statusResponse = await csrfFetch(`/api/cv-import-jobs/${jobId}`, { signal });
-      if (!statusResponse.ok) {
-        const errorText = await statusResponse.text();
-        let errorMessage = statusResponse.status === 429 ? 'Too many requests. Please wait a moment and try again.' : 'Could not check import status.';
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error || errorJson.message || errorText;
-        } catch (e) {
-          errorMessage = errorText || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-
-      const data = await statusResponse.json() as CvImportJobResponse;
+      const data = await readApiResponse<CvImportJobResponse>(statusResponse, 'Could not check import status.');
       if (data.job?.status === 'ready' && data.job.result) return data.job.result;
       if (data.job?.status === 'failed' || data.job?.status === 'expired') {
         throw new Error(data.job.error || 'CV import failed. Please try again.');
@@ -345,8 +336,11 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
   }, []);
 
   const friendlyImportError = useCallback((error: any) => {
+    if (error instanceof ApiError && error.data?.networkError) {
+      return getUserErrorMessage(error);
+    }
     const rawMessage = String(error?.message || '').trim();
-    if (!rawMessage || error?.name === 'TypeError') {
+    if (!rawMessage) {
       return 'Something went wrong. Please try again in a moment.';
     }
 
@@ -405,28 +399,23 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
             signal: importAbortControllerRef.current.signal,
           });
 
-          if (!queueResponse.ok) {
-            const errorText = await queueResponse.text();
-            let errorMessage = queueResponse.status === 429 ? 'Too many requests. Please wait a moment and try again.' : "Unknown server error";
-            try {
-              const errorJson = JSON.parse(errorText);
-              if (queueResponse.status === 401) {
-                setImportMessage({ type: 'error', text: 'Please sign in to import your CV.' });
-                onAuthRequired?.();
-                return;
-              }
-              if (errorJson.upgradeRequired && errorJson.reason !== 'basic_import') {
-                onUpgradeRequired?.('ai');
-                return;
-              }
-              errorMessage = errorJson.error || errorJson.message || errorText;
-            } catch (e) {
-              errorMessage = errorText;
+          let queuedImport: CvImportJobResponse;
+          try {
+            queuedImport = await readApiResponse<CvImportJobResponse>(queueResponse, 'Could not queue CV import. Please try again.');
+          } catch (error) {
+            if (isAuthRequiredError(error)) {
+              setImportMessage({ type: 'error', text: 'Please sign in to import your CV.' });
+              onAuthRequired?.();
+              return;
             }
-            throw new Error(errorMessage);
+            if (isUpgradeRequiredError(error)
+              && error instanceof ApiError
+              && error.data.reason !== 'basic_import') {
+              onUpgradeRequired?.('ai');
+              return;
+            }
+            throw error;
           }
-
-          const queuedImport = await queueResponse.json() as CvImportJobResponse;
           const result = queuedImport.job?.id
             ? await waitForImportJob(queuedImport.job.id)
             : queuedImport;
@@ -520,8 +509,8 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
               completeLoginImportStep();
             }, 1500);
           }
-        } catch (error: any) {
-          if (error.name === 'AbortError' || importAbortControllerRef.current?.signal.aborted) {
+        } catch (error) {
+          if (isCancelledError(error, importAbortControllerRef.current?.signal)) {
             console.log('CV Import aborted by user');
             return;
           }
@@ -568,6 +557,7 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
       return;
     }
     setIsProfileImageUploading(true);
+    const uploadId = ++profileImageUploadIdRef.current;
     const previousProfileImage = cvData.profileImage;
     try {
       const compressedImage = await compressAndResizeImage(file);
@@ -579,29 +569,37 @@ export default function CVForm({ cvData: cvDataProp, setCvData: setCvDataProp, t
         imageY: 0,
       }));
       if (!canImportCv) {
-        setCvData((prev) => ({ ...prev, profileImage: compressedImage, imageZoom: 1, imageX: 0, imageY: 0 }));
         return;
       }
-      const { imageUrl } = await apiFetch<{ imageUrl: string }>('/api/profile-images', {
-        method: 'POST',
-        body: JSON.stringify({ imageData: compressedImage }),
-      });
-      setCvData((prev) => ({
-        ...prev,
-        profileImage: prev.profileImage === compressedImage ? imageUrl : prev.profileImage,
-      }));
+
+      void apiFetch<{ imageUrl: string }>('/api/profile-images', {
+          method: 'POST',
+          body: JSON.stringify({ imageData: compressedImage }),
+        })
+        .then(({ imageUrl }) => {
+          if (profileImageUploadIdRef.current !== uploadId) return;
+          setCvData((prev) => ({
+            ...prev,
+            profileImage: prev.profileImage === compressedImage ? imageUrl : prev.profileImage,
+          }));
+        })
+        .catch((error) => {
+          if (profileImageUploadIdRef.current !== uploadId) return;
+          console.error('Error syncing profile image:', error);
+          if (isAuthRequiredError(error)) {
+            toast.error('Your session expired. Please sign in again to sync the profile photo.');
+            onAuthRequired?.();
+            return;
+          }
+          toast.error(error instanceof Error ? error.message : 'Could not sync the profile photo.');
+        });
     } catch (error) {
       setCvData((prev) => ({
         ...prev,
-        profileImage: prev.profileImage.startsWith('data:image/') ? previousProfileImage : prev.profileImage,
+        profileImage: profileImageUploadIdRef.current === uploadId ? previousProfileImage : prev.profileImage,
       }));
       console.error('Error processing image:', error);
-      if (error instanceof ApiError && error.status === 401) {
-        toast.error('Your session expired. Please sign in again to upload a profile photo.');
-        onAuthRequired?.();
-        return;
-      }
-      toast.error(error instanceof Error ? error.message : 'Failed to upload image.');
+      toast.error(error instanceof Error ? error.message : 'Failed to process image.');
     } finally {
       setIsProfileImageUploading(false);
       target.value = '';

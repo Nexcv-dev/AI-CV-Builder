@@ -2,7 +2,14 @@ import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, X, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { AuthUser, apiFetch, notifyAuthUserChanged } from '../utils/api';
+import {
+  API_ERROR_CODES,
+  ApiError,
+  AuthUser,
+  apiFetch,
+  isOtpInvalidError,
+  notifyAuthUserChanged,
+} from '../utils/api';
 import { AuthChoiceStep } from './auth/AuthChoiceStep';
 import { AuthEmailStep } from './auth/AuthEmailStep';
 import { AuthNameStep } from './auth/AuthNameStep';
@@ -27,6 +34,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResendingOtp, setIsResendingOtp] = useState(false);
 
@@ -41,7 +49,17 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const passwordStrengthTextClass = isPasswordStrong ? 'text-emerald-200' : isPasswordIntermediate ? 'text-amber-200' : 'text-red-200';
   const passwordStrengthSegments = isPasswordStrong ? 5 : isPasswordIntermediate ? 3 : password ? 1 : 0;
   const isLogin = mode === 'login';
-  const showLoginFromSignupError = mode === 'signup' && error.toLowerCase().includes('already exists');
+  const showLoginFromSignupError = mode === 'signup' && errorCode === API_ERROR_CODES.ACCOUNT_EXISTS;
+
+  const clearError = () => {
+    setError('');
+    setErrorCode(undefined);
+  };
+
+  const setRequestError = (requestError: unknown, fallback: string) => {
+    setError(requestError instanceof Error ? requestError.message : fallback);
+    setErrorCode(requestError instanceof ApiError ? requestError.code : undefined);
+  };
 
   const title = useMemo(() => {
     if (step === 'email') return isLogin ? 'Login with email' : 'Sign up with email';
@@ -63,7 +81,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     setDisplayName('');
     setAcceptedTerms(false);
     setVerificationCode('');
-    setError('');
+    clearError();
     setIsSubmitting(false);
     setIsResendingOtp(false);
   }, [initialMode, isOpen]);
@@ -87,7 +105,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
     setDisplayName('');
     setAcceptedTerms(false);
     setVerificationCode('');
-    setError('');
+    clearError();
     setIsResendingOtp(false);
   };
 
@@ -109,10 +127,11 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const handleEmailSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
-    setError('');
+    clearError();
     const emailError = getAuthEmailError(email);
     if (emailError) {
       setError(emailError);
+      setErrorCode(undefined);
       return;
     }
     setIsSubmitting(true);
@@ -132,7 +151,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
         window.setTimeout(() => document.getElementById('auth-display-name')?.focus(), 0);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not continue with email.');
+      setRequestError(err, 'Could not continue with email.');
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +160,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
-    setError('');
+    clearError();
     setIsSubmitting(true);
     try {
       if (redirectTo.startsWith('/builder')) {
@@ -153,7 +172,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
       });
       completeAuthRedirect(data.user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not sign you in.');
+      setRequestError(err, 'Could not sign you in.');
     } finally {
       setIsSubmitting(false);
     }
@@ -162,9 +181,10 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const handleNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
-    setError('');
+    clearError();
     if (!acceptedTerms) {
       setError('Please accept the Terms and Privacy Policy to continue.');
+      setErrorCode(undefined);
       return;
     }
     setIsSubmitting(true);
@@ -174,7 +194,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
       setStep('signup-password');
       window.setTimeout(() => document.getElementById('auth-signup-password')?.focus(), 0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not continue.');
+      setRequestError(err, 'Could not continue.');
     } finally {
       setIsSubmitting(false);
     }
@@ -183,21 +203,23 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const handleSignupPasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
-    setError('');
+    clearError();
     const passwordError = getPasswordError(password);
     if (passwordError) {
       setError(passwordError);
+      setErrorCode(undefined);
       return;
     }
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      setErrorCode(undefined);
       return;
     }
     setIsSubmitting(true);
     try {
       await startEmailOtp(displayName, acceptedTerms, 'signup');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send OTP.');
+      setRequestError(err, 'Could not send OTP.');
     } finally {
       setIsSubmitting(false);
     }
@@ -206,7 +228,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   const handleVerifyOtp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting || isResendingOtp) return;
-    setError('');
+    clearError();
     setIsSubmitting(true);
     try {
       const data = await apiFetch<{ user: AuthUser; message: string }>('/api/auth/email/verify', {
@@ -216,7 +238,11 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
       toast.success(data.message || 'Logged in successfully.');
       completeAuthRedirect(data.user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not verify OTP.');
+      if (isOtpInvalidError(err)) {
+        setVerificationCode('');
+        window.setTimeout(() => document.getElementById('auth-otp-0')?.focus(), 0);
+      }
+      setRequestError(err, 'Could not verify OTP.');
     } finally {
       setIsSubmitting(false);
     }
@@ -224,12 +250,12 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
 
   const handleResendOtp = async () => {
     if (isSubmitting || isResendingOtp) return;
-    setError('');
+    clearError();
     setIsResendingOtp(true);
     try {
       await startEmailOtp(displayName, acceptedTerms, mode);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not resend OTP.');
+      setRequestError(err, 'Could not resend OTP.');
     } finally {
       setIsResendingOtp(false);
     }
@@ -257,7 +283,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
   };
 
   const goBack = () => {
-    setError('');
+    clearError();
     if (step === 'choice') return;
     if (step === 'password') {
       setStep('email');
@@ -327,17 +353,17 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               showLoginFromSignupError={showLoginFromSignupError}
               onEmailChange={(nextEmail) => {
                 setEmail(nextEmail);
-                setError('');
+                clearError();
               }}
               onEmailSuggestionClick={(nextEmail) => {
                 setEmail(nextEmail);
-                setError('');
+                clearError();
               }}
               onExistingAccountLogin={() => {
                 setMode('login');
                 setStep('password');
                 setPassword('');
-                setError('');
+                clearError();
                 window.setTimeout(() => document.getElementById('auth-password')?.focus(), 0);
               }}
               onSubmit={handleEmailSubmit}
@@ -389,7 +415,7 @@ export function AuthModal({ isOpen, initialMode, onClose, redirectTo = '/builder
               passwordStrengthTextClass={passwordStrengthTextClass}
               showPassword={showPassword}
               onConfirmPasswordChange={setConfirmPassword}
-              onErrorClear={() => setError('')}
+              onErrorClear={clearError}
               onPasswordChange={setPassword}
               onShowPasswordChange={setShowPassword}
               onSubmit={handleSignupPasswordSubmit}

@@ -1,5 +1,6 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { bindDeps } from './_shared';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 import type { BillingPlan } from '../server-models/userPlan';
 import type { TemplateName } from '@nexcv/templates';
 import type {
@@ -637,7 +638,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 logError?.('cv_import.ai_fallback', aiError, { usedOcr, extractedTextLength: extractedText.length });
                 if (!extractedText.trim()) {
                     importQuotaReserved = false;
-                    return sendError(res, 500, "Failed to process document. Please try again.", aiError);
+                    return sendError(res, 500, "Failed to process document. Please try again.", aiError, API_ERROR_CODES.CV_IMPORT_FAILED);
                 }
 
                 importQuotaReserved = false;
@@ -657,7 +658,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 return;
             }
             await rollbackImportQuotaIfNeeded();
-            return sendError(res, 500, "Failed to process document. Please try again.", error);
+            return sendError(res, 500, "Failed to process document. Please try again.", error, API_ERROR_CODES.CV_IMPORT_FAILED);
         } finally {
             res.off?.('close', abortForClientDisconnect);
         }
@@ -719,7 +720,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     });
                 });
             }
-            return sendError(res, 500, 'Could not queue CV import. Please try again.', error);
+            return sendError(res, 500, 'Could not queue CV import. Please try again.', error, API_ERROR_CODES.CV_IMPORT_FAILED);
         }
     });
 
@@ -747,7 +748,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             } satisfies CvImportJobResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not check CV import job status.', error);
+            return sendError(res, 500, 'Could not check CV import job status.', error, API_ERROR_CODES.CV_IMPORT_FAILED);
         }
     });
     
@@ -761,7 +762,10 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             }
     
             if (!process.env.GEMINI_API_KEY) {
-                return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
+                return res.status(503).json({
+                    error: 'AI service is not configured. Please contact the administrator.',
+                    code: API_ERROR_CODES.AI_SERVICE_UNAVAILABLE,
+                });
             }
     
             const { experience, education, skills } = req.body;
@@ -812,10 +816,13 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             if (text) {
                 return res.json({ summary: text });
             } else {
-                return res.status(500).json({ error: "No summary generated. Please try again." });
+                return res.status(500).json({
+                    error: "No summary generated. Please try again.",
+                    code: API_ERROR_CODES.AI_GENERATION_FAILED,
+                });
             }
         } catch (error: any) {
-            return sendError(res, 500, "Failed to generate summary. Please try again.", error);
+            return sendError(res, 500, "Failed to generate summary. Please try again.", error, API_ERROR_CODES.AI_GENERATION_FAILED);
         }
     });
     
@@ -829,7 +836,10 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             }
     
             if (!process.env.GEMINI_API_KEY) {
-                return res.status(500).json({ error: 'AI service is not configured. Please contact the administrator.' });
+                return res.status(503).json({
+                    error: 'AI service is not configured. Please contact the administrator.',
+                    code: API_ERROR_CODES.AI_SERVICE_UNAVAILABLE,
+                });
             }
     
             const { text, sectionType, context } = req.body;
@@ -919,11 +929,14 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 result = result.replace(/^```(?:html)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
                 return res.json({ refined: result });
             } else {
-                return res.status(500).json({ error: "No refined text generated. Please try again." });
+                return res.status(500).json({
+                    error: "No refined text generated. Please try again.",
+                    code: API_ERROR_CODES.AI_GENERATION_FAILED,
+                });
             }
         } catch (error: any) {
             console.error("Refine Text Error:", error);
-            return res.status(500).json({ error: "Failed to refine text. Please try again." });
+            return sendError(res, 500, "Failed to refine text. Please try again.", error, API_ERROR_CODES.AI_GENERATION_FAILED);
         }
     });
     
@@ -936,7 +949,10 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
         let quotaReserved = false;
         try {
             if (!isPdfJobStorageConfigured()) {
-                return res.status(503).json({ error: 'PDF queue storage is not configured.' });
+                return res.status(503).json({
+                    error: 'PDF queue storage is not configured.',
+                    code: API_ERROR_CODES.PDF_SERVICE_UNAVAILABLE,
+                });
             }
 
             const { cvData, template } = req.body;
@@ -1013,7 +1029,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                     });
                 });
             }
-            return sendError(res, 500, 'Could not queue PDF download. Please try again.', error);
+            return sendError(res, 500, 'Could not queue PDF download. Please try again.', error, API_ERROR_CODES.PDF_GENERATION_FAILED);
         }
     });
 
@@ -1042,7 +1058,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             } satisfies PdfJobResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not check PDF job status.', error);
+            return sendError(res, 500, 'Could not check PDF job status.', error, API_ERROR_CODES.PDF_GENERATION_FAILED);
         }
     });
 
@@ -1059,7 +1075,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             const safeName = `${sanitizeContextField(requestedName) || 'CV'}_Resume.pdf`;
             await sendPdfJobDownload(job, res, safeName);
         } catch (error) {
-            return sendError(res, 500, 'Could not download PDF.', error);
+            return sendError(res, 500, 'Could not download PDF.', error, API_ERROR_CODES.PDF_GENERATION_FAILED);
         }
     });
 
@@ -1182,7 +1198,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 userId: req.user ? currentUserId(req) : undefined,
                 template: req.body?.template,
             });
-            return sendError(res, 500, "Failed to generate PDF. Please try again.", error);
+            return sendError(res, 500, "Failed to generate PDF. Please try again.", error, API_ERROR_CODES.PDF_GENERATION_FAILED);
         }
     });
 }

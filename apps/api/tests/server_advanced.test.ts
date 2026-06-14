@@ -4,6 +4,7 @@ import { isAdminIpAllowed, requireAdminPageAllowedIp, resolveAdminClientIp } fro
 import User from '../server-models/User';
 import { GOOGLE_EMAIL_CONFLICT_MESSAGE, resolveGoogleOAuthUser } from '../server-models/passportSetup';
 import { registerAuthRoutes } from '../routes/auth';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 
 const restoreEnvValue = (name: string, value: string | undefined) => {
   if (value === undefined) {
@@ -96,7 +97,7 @@ describe('Advanced Server Security', () => {
       expect(res.status).toHaveBeenCalledWith(409);
       expect(res.json).toHaveBeenCalledWith({
         error: 'An account already exists for this email. Please log in instead.',
-        code: 'account_exists',
+        code: API_ERROR_CODES.ACCOUNT_EXISTS,
       });
       expect(existingUser.save).not.toHaveBeenCalled();
       expect(generateEmailVerificationOtp).not.toHaveBeenCalled();
@@ -133,6 +134,7 @@ describe('Advanced Server Security', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Could not create your account. Please check your details and try again.',
+        code: API_ERROR_CODES.VALIDATION_FAILED,
       });
       expect(findOne).not.toHaveBeenCalled();
       expect(create).not.toHaveBeenCalled();
@@ -170,6 +172,7 @@ describe('Advanced Server Security', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Could not create your account. Please check your details and try again.',
+        code: API_ERROR_CODES.VALIDATION_FAILED,
       });
       expect(findOne).not.toHaveBeenCalled();
       expect(create).not.toHaveBeenCalled();
@@ -200,7 +203,7 @@ describe('Advanced Server Security', () => {
       expect(res.status).toHaveBeenCalledWith(409);
       expect(res.json).toHaveBeenCalledWith({
         error: 'An account already exists for this email. Please log in instead.',
-        code: 'account_exists',
+        code: API_ERROR_CODES.ACCOUNT_EXISTS,
       });
 
       findOne.mockRestore();
@@ -224,9 +227,44 @@ describe('Advanced Server Security', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Could not create your account. Please check your details and try again.',
+        code: API_ERROR_CODES.VALIDATION_FAILED,
       });
       expect(findOne).not.toHaveBeenCalled();
 
+      findOne.mockRestore();
+    });
+
+    it('returns a stable code for invalid login credentials', async () => {
+      const findOne = vi.spyOn(User, 'findOne').mockResolvedValue(null);
+      const { handler } = getAuthPostHandler('/api/auth/login');
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+
+      await handler({
+        body: { email: 'user@gmail.com', password: 'wrong-password' },
+      }, res, vi.fn());
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Email or password is incorrect.',
+        code: API_ERROR_CODES.INVALID_CREDENTIALS,
+      });
+      findOne.mockRestore();
+    });
+
+    it('returns a stable code for an invalid or expired OTP', async () => {
+      const findOne = vi.spyOn(User, 'findOne').mockResolvedValue(null);
+      const { handler } = getAuthPostHandler('/api/auth/email/verify');
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
+
+      await handler({
+        body: { email: 'user@gmail.com', code: '123456' },
+      }, res, vi.fn());
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'OTP is invalid or has expired.',
+        code: API_ERROR_CODES.OTP_INVALID,
+      });
       findOne.mockRestore();
     });
   });
@@ -253,7 +291,10 @@ describe('Advanced Server Security', () => {
 
       integrityCheck(req, res, next);
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Unauthorized request source' }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Unauthorized request source',
+        code: API_ERROR_CODES.REQUEST_SOURCE_INVALID,
+      }));
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -316,7 +357,7 @@ describe('Advanced Server Security', () => {
 
       integrityCheck(req, res, next);
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'CSRF_TOKEN_INVALID' }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: API_ERROR_CODES.CSRF_TOKEN_INVALID }));
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -331,7 +372,10 @@ describe('Advanced Server Security', () => {
 
       integrityCheck(req, res, next);
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Unauthorized request source' }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Unauthorized request source',
+        code: API_ERROR_CODES.REQUEST_SOURCE_INVALID,
+      }));
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -353,7 +397,10 @@ describe('Advanced Server Security', () => {
 
       integrityCheck(req, res, next);
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Untrusted request origin' }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Untrusted request origin',
+        code: API_ERROR_CODES.REQUEST_ORIGIN_UNTRUSTED,
+      }));
       expect(next).not.toHaveBeenCalled();
     });
   });
@@ -369,6 +416,7 @@ describe('Advanced Server Security', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       const jsonResponse = res.json.mock.calls[0][0];
       expect(jsonResponse.error).toBe('Public Message');
+      expect(jsonResponse.code).toBe('INTERNAL_ERROR');
       expect(jsonResponse.errorId).toBeUndefined();
       
       process.env.NODE_ENV = originalEnv;
@@ -382,6 +430,7 @@ describe('Advanced Server Security', () => {
       sendError(res, 400, 'Bad Request');
       
       const jsonResponse = res.json.mock.calls[0][0];
+      expect(jsonResponse.code).toBe('VALIDATION_FAILED');
       expect(jsonResponse.errorId).toBeDefined();
       expect(typeof jsonResponse.errorId).toBe('string');
       
@@ -474,7 +523,10 @@ describe('Advanced Server Security', () => {
       });
 
       expect(result.user).toBeNull();
-      expect(result.info).toEqual({ message: GOOGLE_EMAIL_CONFLICT_MESSAGE });
+      expect(result.info).toEqual({
+        message: GOOGLE_EMAIL_CONFLICT_MESSAGE,
+        code: API_ERROR_CODES.ACCOUNT_EXISTS,
+      });
       expect(existingUser.googleId).toBeUndefined();
       expect(existingUser.authProvider).toBe('email');
       expect(existingUser.profileImage).toBe('https://example.com/original.png');

@@ -50,4 +50,121 @@ describe('api helpers', () => {
       data: { networkError: true },
     });
   });
+
+  it('preserves intentional request cancellation separately from network failures', async () => {
+    const { isCancelledError, normalizeApiError } = await import('./api');
+    const abortError = new DOMException('The operation was aborted.', 'AbortError');
+    const normalized = normalizeApiError(abortError);
+
+    expect(isCancelledError(normalized)).toBe(true);
+    expect(normalized).toMatchObject({
+      status: 0,
+      data: { cancelled: true },
+    });
+  });
+
+  it('reads server errors into an ApiError with status and response data', async () => {
+    const { readApiResponse } = await import('./api');
+    const response = new Response(JSON.stringify({
+      error: 'AI service is temporarily unavailable.',
+      code: 'AI_SERVICE_UNAVAILABLE',
+    }), { status: 503 });
+
+    await expect(readApiResponse(response, 'Could not generate summary.')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 503,
+      message: 'AI service is temporarily unavailable.',
+      code: 'AI_SERVICE_UNAVAILABLE',
+      data: { code: 'AI_SERVICE_UNAVAILABLE' },
+    });
+  });
+
+  it('classifies authentication errors by code with a legacy status fallback', async () => {
+    const {
+      API_ERROR_CODES,
+      ApiError,
+      isAuthRequiredError,
+    } = await import('./api');
+
+    expect(isAuthRequiredError(new ApiError('Sign in.', 401, {
+      code: API_ERROR_CODES.AUTH_REQUIRED,
+    }))).toBe(true);
+    expect(isAuthRequiredError(new ApiError('Sign in.', 401))).toBe(true);
+    expect(isAuthRequiredError(new ApiError('Invalid input.', 401, {
+      code: API_ERROR_CODES.VALIDATION_FAILED,
+    }))).toBe(false);
+  });
+
+  it('requires both the forbidden code and upgrade flag for upgrade behavior', async () => {
+    const {
+      API_ERROR_CODES,
+      ApiError,
+      isUpgradeRequiredError,
+    } = await import('./api');
+
+    expect(isUpgradeRequiredError(new ApiError('Upgrade.', 403, {
+      code: API_ERROR_CODES.FORBIDDEN,
+      upgradeRequired: true,
+    }))).toBe(true);
+    expect(isUpgradeRequiredError(new ApiError('Forbidden.', 403, {
+      code: API_ERROR_CODES.FORBIDDEN,
+    }))).toBe(false);
+  });
+
+  it('classifies existing-account conflicts by code instead of message text', async () => {
+    const {
+      API_ERROR_CODES,
+      ApiError,
+      isAccountExistsError,
+    } = await import('./api');
+
+    expect(isAccountExistsError(new ApiError('Any localized message.', 409, {
+      code: API_ERROR_CODES.ACCOUNT_EXISTS,
+    }))).toBe(true);
+    expect(isAccountExistsError(new ApiError('An account already exists.', 409))).toBe(false);
+  });
+
+  it('classifies email verification requirements by code', async () => {
+    const {
+      API_ERROR_CODES,
+      ApiError,
+      isEmailVerificationRequiredError,
+    } = await import('./api');
+
+    expect(isEmailVerificationRequiredError(new ApiError('Verify your email.', 403, {
+      code: API_ERROR_CODES.EMAIL_VERIFICATION_REQUIRED,
+    }))).toBe(true);
+    expect(isEmailVerificationRequiredError(new ApiError('Forbidden.', 403, {
+      code: API_ERROR_CODES.FORBIDDEN,
+    }))).toBe(false);
+  });
+
+  it('classifies invalid OTP and password reset token errors by code only', async () => {
+    const {
+      API_ERROR_CODES,
+      ApiError,
+      isOtpInvalidError,
+      isPasswordResetTokenInvalidError,
+    } = await import('./api');
+
+    expect(isOtpInvalidError(new ApiError('Localized OTP message.', 400, {
+      code: API_ERROR_CODES.OTP_INVALID,
+    }))).toBe(true);
+    expect(isOtpInvalidError(new ApiError('OTP is invalid.', 400))).toBe(false);
+
+    expect(isPasswordResetTokenInvalidError(new ApiError('Localized reset message.', 400, {
+      code: API_ERROR_CODES.PASSWORD_RESET_TOKEN_INVALID,
+    }))).toBe(true);
+    expect(isPasswordResetTokenInvalidError(new ApiError('Token expired.', 400))).toBe(false);
+  });
+
+  it('uses the caller fallback for an empty server error response', async () => {
+    const { readApiResponse } = await import('./api');
+    const response = new Response('', { status: 500 });
+
+    await expect(readApiResponse(response, 'Could not save your CV.')).rejects.toMatchObject({
+      status: 500,
+      message: 'Could not save your CV.',
+    });
+  });
 });

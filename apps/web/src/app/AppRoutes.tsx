@@ -1,8 +1,7 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { lazy, useEffect } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { capturePageView } from '../analytics';
 import { Layout } from './Layout';
-import { RouteLoadingFallback } from './loading';
 import { AdminProtectedRoute, ProtectedRoute } from './routeGuards';
 import { AdminDisabledPage, MaintenancePage, NotFound } from './systemPages';
 import type { PublicAppSettings } from './types';
@@ -29,6 +28,28 @@ const CheckoutPage = lazy(() => import('../pages/CheckoutPage'));
 const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
 const AdminDashboard = lazy(() => import('../features/admin/AdminDashboard'));
 const HtmlToPdf = lazy(() => import('../pages/HtmlToPdf'));
+
+let publicSettings: PublicAppSettings | null = null;
+let publicSettingsLoaded = false;
+let publicSettingsPromise: Promise<void> | null = null;
+
+function readPublicSettings() {
+  if (publicSettingsLoaded) return publicSettings;
+
+  if (!publicSettingsPromise) {
+    publicSettingsPromise = fetch('/api/public/app-settings', { credentials: 'include' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        publicSettings = data;
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        publicSettingsLoaded = true;
+      });
+  }
+
+  throw publicSettingsPromise;
+}
 
 function AnalyticsPageView() {
   const location = useLocation();
@@ -68,80 +89,52 @@ function PublicAnnouncement({ settings }: { settings: PublicAppSettings }) {
 
 export function AppRoutes() {
   const location = useLocation();
-  const [publicSettings, setPublicSettings] = useState<PublicAppSettings | null>(null);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const isRecoveryRoute = location.pathname === '/forgot-password' || location.pathname === '/reset-password';
+  const settings = isRecoveryRoute ? publicSettings : readPublicSettings();
 
-  useEffect(() => {
-    let ignore = false;
-    fetch('/api/public/app-settings', { credentials: 'include' })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => {
-        if (!ignore && data) setPublicSettings(data);
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (!ignore) setSettingsLoaded(true);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  if (!settingsLoaded && !isRecoveryRoute) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm font-bold text-slate-400">
-        Loading NexCV...
-      </div>
-    );
+  if (settings?.maintenanceMode && !location.pathname.startsWith('/admin')) {
+    return <MaintenancePage supportEmail={settings.supportEmail || 'support@nexcv.com'} />;
   }
 
-  if (publicSettings?.maintenanceMode && !location.pathname.startsWith('/admin')) {
-    return <MaintenancePage supportEmail={publicSettings.supportEmail || 'support@nexcv.com'} />;
-  }
-
-  if (location.pathname.startsWith('/admin') && publicSettings?.adminAccessAllowed === false) {
+  if (location.pathname.startsWith('/admin') && settings?.adminAccessAllowed === false) {
     return <AdminDisabledPage />;
   }
 
   return (
     <>
       <SeoHead />
-      {publicSettings && location.pathname === '/' && <PublicAnnouncement settings={publicSettings} />}
+      {settings && location.pathname === '/' && <PublicAnnouncement settings={settings} />}
       <CookieConsentBanner />
       <AnalyticsPageView />
-      <Suspense key={location.pathname} fallback={<RouteLoadingFallback />}>
-        <Routes>
-          <Route path="/print" element={<PrintView />} />
+      <Routes>
+        <Route path="/print" element={<PrintView />} />
 
-          <Route element={<Layout />}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-            <Route path="/admin/*" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-            <Route path="/my-cvs" element={<ProtectedRoute><MyCvs /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/settings" element={<Navigate to="/profile" replace />} />
-            <Route path="/templates" element={<TemplatesPage />} />
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/builder" element={<Home />} />
-            <Route path="/html-to-pdf" element={<HtmlToPdf />} />
-            <Route path="/tips" element={<ProtectedRoute><TipsAndResources /></ProtectedRoute>} />
-            <Route path="/blog" element={<BlogPage />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/refund-policy" element={<RefundPolicy />} />
-            <Route path="/terms" element={<TermsAndConditions />} />
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/contact" element={<ContactUs />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/verify-email" element={<Navigate to="/builder" replace />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </Suspense>
+        <Route element={<Layout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+          <Route path="/admin/*" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+          <Route path="/my-cvs" element={<ProtectedRoute><MyCvs /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/settings" element={<Navigate to="/profile" replace />} />
+          <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/builder" element={<Home />} />
+          <Route path="/html-to-pdf" element={<HtmlToPdf />} />
+          <Route path="/tips" element={<ProtectedRoute><TipsAndResources /></ProtectedRoute>} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<Navigate to="/builder" replace />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
     </>
   );
 }

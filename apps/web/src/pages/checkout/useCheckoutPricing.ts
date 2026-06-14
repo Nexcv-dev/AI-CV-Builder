@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import toast from 'react-hot-toast';
-import { apiFetch } from '../../utils/api';
+import {
+  API_ERROR_CODES,
+  apiFetch,
+  getUserErrorMessage,
+  hasApiErrorCode,
+} from '../../utils/api';
 import { countryNameFromCode } from '../../utils/countries';
 import type { BillingPlansResponse, CheckoutQuoteResponse } from '@nexcv/api-contracts/billing';
 import type { BillingPlanPrice, CheckoutCustomerFormData, CheckoutPlanKey, CheckoutQuote } from './checkoutTypes';
@@ -68,7 +73,14 @@ export function useCheckoutPricing({
         .catch((error) => {
           if (!ignore) {
             setQuote(null);
-            if (couponCode.trim()) toast.error(error instanceof Error ? error.message : 'Coupon is not valid.');
+            const isCouponError = hasApiErrorCode(
+              error,
+              API_ERROR_CODES.COUPON_INVALID,
+              API_ERROR_CODES.COUPON_LIMIT_REACHED,
+            );
+            if (couponCode.trim() || isCouponError) {
+              toast.error(getUserErrorMessage(error, 'Could not calculate checkout total.'));
+            }
           }
         })
         .finally(() => {

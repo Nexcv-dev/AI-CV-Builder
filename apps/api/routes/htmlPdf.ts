@@ -14,6 +14,7 @@ import {
     sendHtmlPdfJobDownload,
 } from '../services/htmlPdfJobService';
 import type { HtmlPdfJobResponse, HtmlPdfQuotaResponse } from '@nexcv/api-contracts/documents';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 
 type RouteDeps = Record<string, any>;
 
@@ -80,7 +81,7 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
             const response = { quota: await getHtmlPdfQuota(getHtmlPdfOwner(req)) } satisfies HtmlPdfQuotaResponse;
             res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not load HTML PDF quota.', error);
+            return sendError(res, 500, 'Could not load HTML PDF quota.', error, API_ERROR_CODES.HTML_PDF_GENERATION_FAILED);
         }
     });
 
@@ -88,7 +89,10 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
         let quotaReserved = false;
         try {
             if (!isHtmlPdfJobStorageConfigured()) {
-                return res.status(503).json({ error: 'HTML PDF storage is not configured.' });
+                return res.status(503).json({
+                    error: 'HTML PDF storage is not configured.',
+                    code: API_ERROR_CODES.HTML_PDF_SERVICE_UNAVAILABLE,
+                });
             }
 
             const input = sanitizeHtmlPdfInput({ html: req.body?.html, css: req.body?.css });
@@ -99,6 +103,7 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
                     error: 'Daily HTML to PDF limit reached.',
                     quota: { ...quota, reserved: undefined },
                     upgradeRequired: false,
+                    code: API_ERROR_CODES.HTML_PDF_LIMIT_REACHED,
                 });
             }
             quotaReserved = quota.limit !== null;
@@ -139,18 +144,32 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
                 });
             }
             const status = Number.isInteger(error?.status) ? error.status : 500;
-            return sendError(res, status, status === 500 ? 'Could not queue HTML PDF. Please try again.' : error.message, error);
+            return sendError(
+                res,
+                status,
+                status === 500 ? 'Could not queue HTML PDF. Please try again.' : error.message,
+                error,
+                status >= 500 ? API_ERROR_CODES.HTML_PDF_GENERATION_FAILED : API_ERROR_CODES.VALIDATION_FAILED,
+            );
         }
     });
 
     router.get('/api/html-pdf-jobs/:id', async (req: Request, res: Response) => {
         try {
             if (!isValidDocumentId(req.params.id)) {
-                return res.status(400).json({ error: 'Invalid HTML PDF job id.' });
+                return res.status(400).json({
+                    error: 'Invalid HTML PDF job id.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
 
             const job = await findUserHtmlPdfJob(req.params.id, getHtmlPdfJobOwnerFilter(req));
-            if (!job) return res.status(404).json({ error: 'HTML PDF job not found.' });
+            if (!job) {
+                return res.status(404).json({
+                    error: 'HTML PDF job not found.',
+                    code: API_ERROR_CODES.HTML_PDF_JOB_NOT_FOUND,
+                });
+            }
 
             if (job.expiresAt.getTime() < Date.now() && job.status !== 'ready') {
                 await expireJobAndRollbackQuota(job);
@@ -168,21 +187,29 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
             } satisfies HtmlPdfJobResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not check HTML PDF job status.', error);
+            return sendError(res, 500, 'Could not check HTML PDF job status.', error, API_ERROR_CODES.HTML_PDF_GENERATION_FAILED);
         }
     });
 
     router.get('/api/html-pdf-jobs/:id/download', async (req: Request, res: Response) => {
         try {
             if (!isValidDocumentId(req.params.id)) {
-                return res.status(400).json({ error: 'Invalid HTML PDF job id.' });
+                return res.status(400).json({
+                    error: 'Invalid HTML PDF job id.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
 
             const job = await findUserHtmlPdfJob(req.params.id, getHtmlPdfJobOwnerFilter(req));
-            if (!job) return res.status(404).json({ error: 'HTML PDF job not found.' });
+            if (!job) {
+                return res.status(404).json({
+                    error: 'HTML PDF job not found.',
+                    code: API_ERROR_CODES.HTML_PDF_JOB_NOT_FOUND,
+                });
+            }
             await sendHtmlPdfJobDownload(job, res);
         } catch (error) {
-            return sendError(res, 500, 'Could not download HTML PDF.', error);
+            return sendError(res, 500, 'Could not download HTML PDF.', error, API_ERROR_CODES.HTML_PDF_GENERATION_FAILED);
         }
     });
 }

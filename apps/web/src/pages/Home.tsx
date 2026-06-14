@@ -12,7 +12,18 @@ import { DEFAULT_TEMPLATE, isTemplateName, TemplateName } from '../templates';
 import { useTemplateConfig } from '../hooks/useTemplateConfig';
 import { documentsQueryKey, documentsStaleTime, fetchDocuments } from '../hooks/useDocumentsQuery';
 import { initialBuilderCvData, useBuilderStore } from '../stores/useBuilderStore';
-import { ApiError, AuthUser, apiFetch, csrfFetch, getCurrentUser, setDashboardNotification } from '../utils/api';
+import {
+  API_ERROR_CODES,
+  ApiError,
+  AuthUser,
+  apiFetch,
+  csrfFetch,
+  getCurrentUser,
+  hasApiErrorCode,
+  isUpgradeRequiredError,
+  readApiResponse,
+  setDashboardNotification,
+} from '../utils/api';
 import type { DocumentResponse, PdfJobResponse } from '@nexcv/api-contracts/documents';
 import { EmailVerificationModal } from '../components/EmailVerificationModal';
 import toast from 'react-hot-toast';
@@ -27,12 +38,11 @@ import { ThemeTransitionOverlay } from './home/ThemeTransitionOverlay';
 import { UpgradePromptModal } from './home/UpgradePromptModal';
 import { UnsavedChangesModal } from './home/UnsavedChangesModal';
 import type { CvCreationQuota, DownloadQuota, ThemeTransitionState, UpgradePlan, UpgradePrompt } from './home/homeTypes';
-import { downloadLimitMessage, getPlanLabel, triggerBrowserDownload } from './home/homeUtils';
+import { downloadLimitMessage, getPdfDownloadErrorMessage, getPlanLabel, triggerBrowserDownload } from './home/homeUtils';
 
 const THEME_STORAGE_KEY = 'cv-builder-theme';
 const LOCAL_STORAGE_DRAFT_KEY = 'nexcv-draft-data';
 const VERIFY_BANNER_DISMISSED_KEY = 'nexcv-verify-banner-dismissed';
-const BUILDER_LOADING_MIN_MS = 350;
 const DEFAULT_A4_PREVIEW_WIDTH_PX = 794;
 const DEFAULT_A4_PREVIEW_HEIGHT_PX = 1122;
 const AuthModal = lazy(() => import('../components/AuthModal').then((module) => ({ default: module.AuthModal })));
@@ -74,7 +84,6 @@ export default function Home() {
   const [previewHeight, setPreviewHeight] = useState(DEFAULT_A4_PREVIEW_HEIGHT_PX);
   const [formWidth, setFormWidth] = useState(45);
   const [isDraggingResizer, setIsDraggingResizer] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [verificationBannerDismissed, setVerificationBannerDismissed] = useState<boolean>(() => {
     try {
@@ -298,13 +307,6 @@ export default function Home() {
     };
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, BUILDER_LOADING_MIN_MS);
-    return () => clearTimeout(timer);
-  }, []);
-
   const startDragging = useCallback(() => {
     isDraggingRef.current = true;
     setIsDraggingResizer(true);
@@ -421,7 +423,7 @@ export default function Home() {
       return true;
     } catch (error) {
       console.warn('Failed to save document:', error);
-      if (error instanceof ApiError && error.data?.upgradeRequired) {
+      if (isUpgradeRequiredError(error) && error instanceof ApiError) {
         if (error.data.quota) setCreationQuota(error.data.quota);
         if (!isSilent) {
           openUpgradePrompt('save', 'You have already saved 1 CV on the Free plan. Upgrade to create and save more CVs.');
@@ -616,7 +618,20 @@ export default function Home() {
       return;
     }
 
-
+    const handleUpgradeError = (error: unknown) => {
+      if (!isUpgradeRequiredError(error) || !(error instanceof ApiError)) return false;
+      const errorData = error.data;
+      if (errorData.quota) setDownloadQuota(errorData.quota);
+      setShowDownloadConfirm(false);
+      openUpgradePrompt(
+        'download',
+        errorData.reason === 'premium_template'
+          ? 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.'
+          : downloadLimitMessage(errorData.quota || downloadQuota),
+        errorData.reason === 'premium_template' ? 'Premium template download' : undefined
+      );
+      return true;
+    };
 
     setShowDownloadConfirm(false);
     pdfInFlightRef.current = true;
@@ -641,20 +656,6 @@ export default function Home() {
         });
       };
 
-      const handleUpgradeError = (errorData: any) => {
-        if (!errorData.upgradeRequired) return false;
-        if (errorData.quota) setDownloadQuota(errorData.quota);
-        setShowDownloadConfirm(false);
-        openUpgradePrompt(
-          'download',
-          errorData.reason === 'premium_template'
-            ? 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.'
-            : downloadLimitMessage(errorData.quota || downloadQuota),
-          errorData.reason === 'premium_template' ? 'Premium template download' : undefined
-        );
-        return true;
-      };
-
       const downloadDirectPdf = async () => {
         const response = await csrfFetch('/api/generate-pdf', {
           method: 'POST',
@@ -665,11 +666,12 @@ export default function Home() {
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          if (handleUpgradeError(errorData)) return;
-          const err = new Error(`Failed to generate PDF: ${response.statusText}`);
-          (err as any).responseBody = JSON.stringify(errorData);
-          throw err;
+          try {
+            await readApiResponse(response, 'Failed to generate PDF. Please try again.');
+          } catch (error) {
+            if (handleUpgradeError(error)) return;
+            throw error;
+          }
         }
 
         const blob = await response.blob();
@@ -685,19 +687,22 @@ export default function Home() {
         body: JSON.stringify({ cvData, template }),
       });
 
-      if (!queuedResponse.ok) {
-        const errorData = await queuedResponse.json().catch(() => ({}));
-        if (queuedResponse.status === 503 && String(errorData.error || '').includes('storage')) {
+      let queuedPayload: PdfJobResponse;
+      try {
+        queuedPayload = await readApiResponse<PdfJobResponse>(queuedResponse, 'Failed to queue PDF. Please try again.');
+      } catch (error) {
+        const isLegacyStorageFailure = error instanceof ApiError
+          && !error.code
+          && error.status === 503
+          && String(error.data.error || '').includes('storage');
+        if (hasApiErrorCode(error, API_ERROR_CODES.PDF_SERVICE_UNAVAILABLE) || isLegacyStorageFailure) {
           await downloadDirectPdf();
           return;
         }
-        if (handleUpgradeError(errorData)) return;
-        const err = new Error(`Failed to queue PDF: ${queuedResponse.statusText}`);
-        (err as any).responseBody = JSON.stringify(errorData);
-        throw err;
+        if (handleUpgradeError(error)) return;
+        throw error;
       }
 
-      const queuedPayload = await queuedResponse.json() as PdfJobResponse;
       const jobId = queuedPayload?.job?.id;
       if (!jobId) throw new Error('PDF job was not created.');
       if (queuedPayload.quota) setDownloadQuota(queuedPayload.quota);
@@ -706,14 +711,7 @@ export default function Home() {
       while (Date.now() - startedAt < 120000) {
         await new Promise((resolve) => setTimeout(resolve, 1800));
         const statusResponse = await csrfFetch(`/api/pdf-jobs/${jobId}`);
-        if (!statusResponse.ok) {
-          const errorData = await statusResponse.json().catch(() => ({}));
-          const err = new Error(`Failed to check PDF status: ${statusResponse.statusText}`);
-          (err as any).responseBody = JSON.stringify(errorData);
-          throw err;
-        }
-
-        const statusPayload = await statusResponse.json() as PdfJobResponse;
+        const statusPayload = await readApiResponse<PdfJobResponse>(statusResponse, 'Failed to check PDF status. Please try again.');
         const status = statusPayload?.job?.status;
         if (status === 'ready' && statusPayload.job.downloadUrl) {
           const downloadUrl = `${statusPayload.job.downloadUrl}?filename=${encodeURIComponent(safeName)}`;
@@ -727,36 +725,11 @@ export default function Home() {
       }
 
       throw new Error('PDF is taking longer than expected. Please try again.');
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error generating PDF:", error);
+      if (handleUpgradeError(error)) return;
 
-      let details = "We couldn't reach the PDF server. Check your internet connection and try again.";
-
-      if (error?.name === 'TypeError' || error?.message?.includes('fetch')) {
-        details = "Could not connect to the server. Make sure you're online and try again.";
-      } else if (error?.responseBody) {
-        try {
-          const parsed = JSON.parse(error.responseBody);
-          if (parsed.upgradeRequired) {
-            if (parsed.quota) setDownloadQuota(parsed.quota);
-            openUpgradePrompt(
-              'download',
-              parsed.reason === 'premium_template'
-                ? 'This premium template is free to edit and preview. Upgrade when you are ready to download it as a PDF.'
-                : downloadLimitMessage(parsed.quota || downloadQuota),
-              parsed.reason === 'premium_template' ? 'Premium template download' : undefined
-            );
-            setShowDownloadConfirm(false);
-            return;
-          }
-          if (parsed.details) details = parsed.details;
-          else if (parsed.error) details = parsed.error;
-        } catch { /* ignore */ }
-      } else if (error instanceof Error && error.message && !error.message.includes('Failed to generate')) {
-        details = error.message;
-      }
-
-      setDownloadError({ title: 'Download Failed', message: details });
+      setDownloadError({ title: 'Download Failed', message: getPdfDownloadErrorMessage(error) });
     } finally {
       pdfInFlightRef.current = false;
       setIsGeneratingPDF(false);
@@ -798,7 +771,7 @@ export default function Home() {
   return (
     <>
       <AnimatePresence>
-        {(isInitialLoading || isLoadingSavedDocument) && (
+        {isLoadingSavedDocument && (
           <BuilderLoadingOverlay isDarkMode={isDarkMode} />
         )}
       </AnimatePresence>

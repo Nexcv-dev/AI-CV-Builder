@@ -17,6 +17,7 @@ import type {
     LemonSqueezyCheckoutResponse,
     PayHereCheckoutResponse,
 } from '@nexcv/api-contracts/billing';
+import { API_ERROR_CODES } from '../server-utils/apiErrors';
 
 type RouteDeps = Record<string, any>;
 
@@ -127,7 +128,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const response = { ...billingContext, plans } satisfies BillingPlansResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not load billing plans.', error);
+            return sendError(res, 500, 'Could not load billing plans.', error, API_ERROR_CODES.PAYMENT_SERVICE_FAILED);
         }
     });
 
@@ -167,7 +168,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             } satisfies FeaturedCouponResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not load featured coupon.', error);
+            return sendError(res, 500, 'Could not load featured coupon.', error, API_ERROR_CODES.PAYMENT_SERVICE_FAILED);
         }
     });
 
@@ -175,15 +176,23 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         try {
             const plan = req.body.plan as BillingPlan;
             if (!isPaidBillingPlan(plan)) {
-                return res.status(400).json({ error: 'Choose a valid paid plan.' });
+                return res.status(400).json({
+                    error: 'Choose a valid paid plan.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
             const billingContext = resolveBillingMarket(req.body.country, req);
             const quote = await quoteCheckout(plan, req.body.couponCode, billingContext.market);
-            if ('error' in quote) return res.status(400).json({ error: quote.error });
+            if ('error' in quote) {
+                return res.status(400).json({
+                    error: quote.error,
+                    code: API_ERROR_CODES.COUPON_INVALID,
+                });
+            }
             const response = { quote: { ...quote, country: billingContext.country, countrySource: billingContext.source } } satisfies CheckoutQuoteResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not calculate checkout total.', error);
+            return sendError(res, 500, 'Could not calculate checkout total.', error, API_ERROR_CODES.PAYMENT_SERVICE_FAILED);
         }
     });
 
@@ -527,16 +536,25 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             }
 
             if ((req as any).appSettings?.payhereEnabled === false) {
-                return res.status(503).json({ error: 'Online checkout is temporarily disabled.' });
+                return res.status(503).json({
+                    error: 'Online checkout is temporarily disabled.',
+                    code: API_ERROR_CODES.CHECKOUT_DISABLED,
+                });
             }
 
             const plan = req.body.plan as BillingPlan;
             if (!isPaidBillingPlan(plan)) {
-                return res.status(400).json({ error: 'Choose a valid paid plan.' });
+                return res.status(400).json({
+                    error: 'Choose a valid paid plan.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
             const billingContext = resolveBillingMarket(req.body.country || req.body.customer?.countryCode, req);
             if (billingContext.market !== 'local') {
-                return res.status(501).json({ error: 'International checkout is not connected yet. Please switch to Sri Lanka for PayHere checkout.' });
+                return res.status(501).json({
+                    error: 'International checkout is not connected yet. Please switch to Sri Lanka for PayHere checkout.',
+                    code: API_ERROR_CODES.CHECKOUT_MARKET_UNSUPPORTED,
+                });
             }
 
             const customer = req.body.customer || {};
@@ -548,21 +566,35 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const city = sanitizeProfileField(customer.city, 80);
             const country = sanitizeProfileField(customer.country, 80) || 'Sri Lanka';
             if (!firstName || !lastName || !email || !phone || !address || !city) {
-                return res.status(400).json({ error: 'Please complete your customer details.' });
+                return res.status(400).json({
+                    error: 'Please complete your customer details.',
+                    code: API_ERROR_CODES.CHECKOUT_CUSTOMER_INVALID,
+                });
             }
 
             const { merchantId, merchantSecret } = getPayHereMerchantConfig();
             if (!merchantId || !merchantSecret) {
-                return res.status(500).json({ error: 'PayHere checkout is not configured.' });
+                return res.status(503).json({
+                    error: 'PayHere checkout is not configured.',
+                    code: API_ERROR_CODES.CHECKOUT_PROVIDER_UNAVAILABLE,
+                });
             }
 
             const userId = currentUserId(req).toString();
             const quote = await quoteCheckout(plan, req.body.couponCode, billingContext.market);
-            if ('error' in quote) return res.status(400).json({ error: quote.error });
+            if ('error' in quote) {
+                return res.status(400).json({
+                    error: quote.error,
+                    code: API_ERROR_CODES.COUPON_INVALID,
+                });
+            }
             await markExpiredPendingCheckouts(CheckoutSession, Coupon);
             const couponReserved = quote.couponCode ? await reserveCouponRedemption(quote.couponCode) : false;
             if (quote.couponCode && !couponReserved) {
-                return res.status(400).json({ error: 'Coupon redemption limit reached. Please refresh checkout and try again.' });
+                return res.status(409).json({
+                    error: 'Coupon redemption limit reached. Please refresh checkout and try again.',
+                    code: API_ERROR_CODES.COUPON_LIMIT_REACHED,
+                });
             }
             const orderId = `${generateTransactionId()}-${userId}-${plan}`;
             try {
@@ -624,7 +656,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             } satisfies PayHereCheckoutResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not start PayHere checkout.', error);
+            return sendError(res, 500, 'Could not start PayHere checkout.', error, API_ERROR_CODES.PAYMENT_SERVICE_FAILED);
         }
     });
 
@@ -636,19 +668,26 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
 
             const plan = req.body.plan as BillingPlan;
             if (!isPaidBillingPlan(plan)) {
-                return res.status(400).json({ error: 'Choose a valid paid plan.' });
+                return res.status(400).json({
+                    error: 'Choose a valid paid plan.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
             }
 
             const billingContext = resolveBillingMarket(req.body.country || req.body.customer?.countryCode, req);
             if (billingContext.market !== 'global') {
-                return res.status(400).json({ error: 'Lemon Squeezy checkout is only available for global USD pricing.' });
+                return res.status(400).json({
+                    error: 'Lemon Squeezy checkout is only available for global USD pricing.',
+                    code: API_ERROR_CODES.CHECKOUT_MARKET_UNSUPPORTED,
+                });
             }
 
             if (!isLemonSqueezyConfigured()) {
                 const issues = getLemonSqueezyConfigIssues();
                 logEvent('error', 'payment.lemonsqueezy_config_invalid', { issues });
-                return res.status(500).json({
+                return res.status(503).json({
                     error: 'Lemon Squeezy checkout is not configured.',
+                    code: API_ERROR_CODES.CHECKOUT_PROVIDER_UNAVAILABLE,
                     missing: getMissingLemonSqueezyConfigKeys(),
                     issues,
                 });
@@ -662,13 +701,21 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const lastName = sanitizeProfileField(customer.lastName, 80);
             const displayName = sanitizeProfileField([firstName, lastName].filter(Boolean).join(' ') || user?.displayName, 120);
             const quote = await quoteCheckout(plan, req.body.couponCode, billingContext.market);
-            if ('error' in quote) return res.status(400).json({ error: quote.error });
+            if ('error' in quote) {
+                return res.status(400).json({
+                    error: quote.error,
+                    code: API_ERROR_CODES.COUPON_INVALID,
+                });
+            }
 
             const orderId = `${generateTransactionId()}-${userId}-${plan}-ls`;
             await markExpiredPendingCheckouts(CheckoutSession, Coupon);
             const couponReserved = quote.couponCode ? await reserveCouponRedemption(quote.couponCode) : false;
             if (quote.couponCode && !couponReserved) {
-                return res.status(400).json({ error: 'Coupon redemption limit reached. Please refresh checkout and try again.' });
+                return res.status(409).json({
+                    error: 'Coupon redemption limit reached. Please refresh checkout and try again.',
+                    code: API_ERROR_CODES.COUPON_LIMIT_REACHED,
+                });
             }
             try {
                 await CheckoutSession.create({
@@ -713,7 +760,10 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
 
             const checkoutUrl = checkout.data?.attributes?.url;
             if (!checkoutUrl) {
-                return res.status(502).json({ error: 'Lemon Squeezy did not return a checkout URL.' });
+                return res.status(502).json({
+                    error: 'Lemon Squeezy did not return a checkout URL.',
+                    code: API_ERROR_CODES.CHECKOUT_PROVIDER_UNAVAILABLE,
+                });
             }
 
             const response = {
@@ -724,7 +774,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             } satisfies LemonSqueezyCheckoutResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not start Lemon Squeezy checkout.', error);
+            return sendError(res, 500, 'Could not start Lemon Squeezy checkout.', error, API_ERROR_CODES.PAYMENT_SERVICE_FAILED);
         }
     });
 
@@ -896,7 +946,12 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
     router.get('/api/billing/checkout/:orderId/status', requireAuth, async (req: Request, res: Response) => {
         try {
             const orderId = typeof req.params.orderId === 'string' ? req.params.orderId.trim() : '';
-            if (!orderId) return res.status(400).json({ error: 'Missing checkout order.' });
+            if (!orderId) {
+                return res.status(400).json({
+                    error: 'Missing checkout order.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
+            }
 
             const checkoutSession = await CheckoutSession.findOne({
                 orderId,
@@ -904,7 +959,10 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             });
 
             if (!checkoutSession) {
-                return res.status(404).json({ error: 'Checkout session not found.' });
+                return res.status(404).json({
+                    error: 'Checkout session not found.',
+                    code: API_ERROR_CODES.CHECKOUT_SESSION_NOT_FOUND,
+                });
             }
 
             const user = await User.findById(currentUserId(req));
@@ -924,14 +982,19 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             } satisfies CheckoutStatusResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not load checkout status.', error);
+            return sendError(res, 500, 'Could not load checkout status.', error, API_ERROR_CODES.PAYMENT_SERVICE_FAILED);
         }
     });
 
     router.post('/api/billing/checkout/:orderId/cancel', requireAuth, async (req: Request, res: Response) => {
         try {
             const orderId = typeof req.params.orderId === 'string' ? req.params.orderId.trim() : '';
-            if (!orderId) return res.status(400).json({ error: 'Missing checkout order.' });
+            if (!orderId) {
+                return res.status(400).json({
+                    error: 'Missing checkout order.',
+                    code: API_ERROR_CODES.VALIDATION_FAILED,
+                });
+            }
 
             const checkoutSession = await CheckoutSession.findOne({
                 orderId,
@@ -956,7 +1019,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const response = { status: checkoutSession.status } satisfies CheckoutCancelResponse;
             return res.json(response);
         } catch (error) {
-            return sendError(res, 500, 'Could not cancel checkout.', error);
+            return sendError(res, 500, 'Could not cancel checkout.', error, API_ERROR_CODES.PAYMENT_SERVICE_FAILED);
         }
     });
 
@@ -967,6 +1030,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         });
         return res.status(410).json({
             error: 'Client-side plan activation is disabled. Paid plans are activated only after a verified PayHere IPN.',
+            code: API_ERROR_CODES.FORBIDDEN,
         });
     });
 }

@@ -1,12 +1,20 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 
 export function RouteLoadingFallback() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm font-bold text-slate-400">
-      <div className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-4 shadow-xl shadow-black/20">
-        <Loader2 size={18} className="animate-spin text-violet-300" />
-        Loading page...
+    <div
+      className="flex min-h-screen items-center justify-center bg-slate-950"
+      role="status"
+      aria-label="Loading NexCV"
+    >
+      <div className="relative flex h-24 w-24 items-center justify-center">
+        <div className="absolute inset-0 animate-spin rounded-full border-4 border-violet-950 border-t-violet-500" />
+        <div className="absolute inset-2 animate-pulse rounded-full bg-violet-500/10 blur-md" />
+        <img
+          src="/brand/faviconblack.svg"
+          alt=""
+          className="relative h-14 w-14 rounded-2xl drop-shadow-[0_12px_24px_rgba(124,58,237,0.35)]"
+        />
       </div>
     </div>
   );

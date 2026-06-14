@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { isAdminUser } from '../features/admin/adminPermissions';
 import { useCurrentUserQuery, useSetCurrentUserCache } from '../hooks/useCurrentUserQuery';
+import { RouteLoadingFallback } from './loading';
 
 const AuthModal = lazy(() => import('../components/AuthModal').then((module) => ({ default: module.AuthModal })));
 
@@ -13,11 +14,7 @@ export function AdminProtectedRoute({ children }: { children: React.ReactElement
   const status = isPending ? 'loading' : isError || !user ? 'guest' : isAdminUser(user) ? 'authed' : 'forbidden';
 
   if (status === 'loading') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm font-bold text-slate-400">
-        Loading admin...
-      </div>
-    );
+    return <RouteLoadingFallback />;
   }
 
   if (status === 'guest') {
@@ -81,11 +78,7 @@ export function ProtectedRoute({ children }: { children: React.ReactElement }) {
   }, [status]);
 
   if (status === 'loading') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm font-bold text-slate-400">
-        Loading...
-      </div>
-    );
+    return <RouteLoadingFallback />;
   }
 
   if (status === 'guest') {
