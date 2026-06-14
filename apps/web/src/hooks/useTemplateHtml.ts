@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TemplateName } from '../templates';
-import { normalizeApiError } from '../utils/api';
+import { apiFetchText, isCancelledError, normalizeApiError } from '../utils/api';
 
 const templateHtmlCache = new Map<string, string>();
 
@@ -24,20 +24,15 @@ export function useTemplateHtml(template: TemplateName) {
 
     setLoading(!cached);
     setError(null);
-    fetch(`/api/templates/${encodeURIComponent(template)}/html`, {
-      credentials: 'include',
+    apiFetchText(`/api/templates/${encodeURIComponent(template)}/html`, {
       signal: controller.signal,
-    })
-      .then(async (response) => {
-        const text = await response.text();
-        if (!response.ok) {
-          throw new Error(text || 'Could not load template.');
-        }
+    }, 'Could not load template.')
+      .then((text) => {
         templateHtmlCache.set(template, text);
         if (!ignore) setTemplateHtml({ template, html: text });
       })
       .catch((fetchError) => {
-        if (fetchError?.name === 'AbortError') return;
+        if (isCancelledError(fetchError, controller.signal)) return;
         if (!ignore) setError(normalizeApiError(fetchError, 'Could not load template.').message);
       })
       .finally(() => {

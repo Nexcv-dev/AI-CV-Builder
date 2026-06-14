@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CVForm from './CVForm';
 import React from 'react';
 import { TEXT_FIELD_LIMITS } from './form';
+import { clearProfileImageSyncCache } from '../utils/profileImageSync';
 
 // Mock components that are not the focus of logic testing
 vi.mock('./RichTextEditor', () => ({
@@ -92,6 +93,7 @@ describe('CVForm Logic', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearProfileImageSyncCache();
     sessionStorage.clear();
     localStorage.clear();
   });

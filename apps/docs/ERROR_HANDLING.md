@@ -38,6 +38,8 @@ The registry covers common errors and domain-specific groups for:
 - authentication, credentials, OTP delivery/verification, and password reset;
 - request integrity, CSRF, rate limits, and timeouts;
 - AI generation and CV import;
+- CV document CRUD, including `DOCUMENT_NOT_FOUND`;
+- profile image validation, storage availability, and upload failures;
 - PDF and HTML-to-PDF jobs;
 - billing, coupons, checkout providers, and checkout sessions.
 

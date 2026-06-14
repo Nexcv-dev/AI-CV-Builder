@@ -85,6 +85,18 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             ? publicCvShareUrl(slug, req)
             : `${(getPublicCvBaseUrl?.(req) || getApiOrigin(req)).replace(/\/+$/, '')}/cv/${encodeURIComponent(slug)}`
     );
+    const validationError = (res: Response, error: string) => (
+        res.status(400).json({ error, code: API_ERROR_CODES.VALIDATION_FAILED })
+    );
+    const documentNotFound = (res: Response) => (
+        res.status(404).json({ error: 'Document not found.', code: API_ERROR_CODES.DOCUMENT_NOT_FOUND })
+    );
+    const hasValidCvData = (value: unknown) => (
+        Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+    );
+    const hasValidDocumentStatus = (value: unknown) => (
+        value === undefined || value === 'draft' || value === 'completed'
+    );
     const findOwnedDocument = async (req: Request) => {
         if (!isValidDocumentId(req.params.id)) return { status: 400, document: null, error: 'Invalid document id.' };
         const document = await CVDocument.findOne({ _id: req.params.id, userId: currentUserId(req) });
@@ -132,16 +144,23 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
     router.post('/api/profile-images', requireAuth, profileImageJsonParser, async (req: Request, res: Response) => {
         try {
             if (!hasCvAssetStorage()) {
-                return res.status(503).json({ error: 'CV image storage is not configured.' });
+                return res.status(503).json({
+                    error: 'Profile image storage is temporarily unavailable.',
+                    code: API_ERROR_CODES.PROFILE_IMAGE_STORAGE_UNAVAILABLE,
+                });
             }
 
             const image = parseProfileImageDataUrl(req.body?.imageData);
             if (!image) {
-                return res.status(400).json({ error: 'Upload a PNG, JPEG, or WebP image under 1 MB after compression.' });
+                return res.status(400).json({
+                    error: 'Upload a PNG, JPEG, or WebP image under 1 MB after compression.',
+                    code: API_ERROR_CODES.PROFILE_IMAGE_INVALID,
+                });
             }
 
             const userId = currentUserId(req);
-            const fileName = `${randomBytes(16).toString('hex')}.${image.extension}`;
+            const contentHash = createHash('sha256').update(image.buffer).digest('hex');
+            const fileName = `${contentHash}.${image.extension}`;
             const key = buildCvAssetKey(String(userId), fileName);
             await uploadCvAsset(key, image.buffer, image.contentType);
 
@@ -149,7 +168,13 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 imageUrl: `${getApiOrigin(req)}/api/cv-assets/${String(userId)}/${fileName}`,
             });
         } catch (error) {
-            return sendError(res, 500, 'Could not upload profile image.', error);
+            return sendError(
+                res,
+                500,
+                'Could not sync the profile image.',
+                error,
+                API_ERROR_CODES.PROFILE_IMAGE_UPLOAD_FAILED,
+            );
         }
     });
 
@@ -186,12 +211,12 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
     router.get('/api/documents/:id', requireAuth, async (req: Request, res: Response) => {
         try {
             if (!isValidDocumentId(req.params.id)) {
-                return res.status(400).json({ error: 'Invalid document id.' });
+                return validationError(res, 'Invalid document id.');
             }
     
             const document = await CVDocument.findOne({ _id: req.params.id, userId: currentUserId(req) });
             if (!document) {
-                return res.status(404).json({ error: 'Document not found.' });
+                return documentNotFound(res);
             }
             const response = { document: documentDetails(document) } satisfies DocumentResponse;
             res.json(response);
@@ -207,10 +232,13 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 return;
             }
     
-            const { cvData, status } = req.body;
+            const { cvData, status } = req.body || {};
     
-            if (!cvData || typeof cvData !== 'object') {
-                return res.status(400).json({ error: 'Missing CV data.' });
+            if (!hasValidCvData(cvData)) {
+                return validationError(res, 'Missing or invalid CV data.');
+            }
+            if (!hasValidDocumentStatus(status)) {
+                return validationError(res, 'Invalid document status.');
             }
 
             const requestedTemplate = await resolveRequestedTemplate(req.body.template);
@@ -221,6 +249,7 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             if (!quota.reserved) {
                 return res.status(403).json({
                     error: 'Free plan CV save limit reached.',
+                    code: API_ERROR_CODES.FORBIDDEN,
                     quota: { ...quota, reserved: undefined },
                     upgradeRequired: true,
                 });
@@ -241,6 +270,9 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
                 throw error;
             }
         } catch (error) {
+            if (isMongoValidationError?.(error)) {
+                return sendError(res, 400, 'Invalid CV data.', error, API_ERROR_CODES.VALIDATION_FAILED);
+            }
             return sendError(res, 500, 'Could not save your document.', error);
         }
     });
@@ -253,13 +285,16 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             }
     
             if (!isValidDocumentId(req.params.id)) {
-                return res.status(400).json({ error: 'Invalid document id.' });
+                return validationError(res, 'Invalid document id.');
             }
     
-            const { cvData, status } = req.body;
+            const { cvData, status } = req.body || {};
     
-            if (!cvData || typeof cvData !== 'object') {
-                return res.status(400).json({ error: 'Missing CV data.' });
+            if (!hasValidCvData(cvData)) {
+                return validationError(res, 'Missing or invalid CV data.');
+            }
+            if (!hasValidDocumentStatus(status)) {
+                return validationError(res, 'Invalid document status.');
             }
 
             const requestedTemplate = await resolveRequestedTemplate(req.body.template);
@@ -274,12 +309,15 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
             );
     
             if (!document) {
-                return res.status(404).json({ error: 'Document not found.' });
+                return documentNotFound(res);
             }
     
             const response = { document: documentDetails(document) } satisfies DocumentResponse;
             res.json(response);
         } catch (error) {
+            if (isMongoValidationError?.(error)) {
+                return sendError(res, 400, 'Invalid CV data.', error, API_ERROR_CODES.VALIDATION_FAILED);
+            }
             return sendError(res, 500, 'Could not update your document.', error);
         }
     });
@@ -288,12 +326,12 @@ export function registerCvRoutes(router: Router, deps: RouteDeps) {
     router.delete('/api/documents/:id', requireAuth, async (req: Request, res: Response) => {
         try {
             if (!isValidDocumentId(req.params.id)) {
-                return res.status(400).json({ error: 'Invalid document id.' });
+                return validationError(res, 'Invalid document id.');
             }
     
             const document = await CVDocument.findOneAndDelete({ _id: req.params.id, userId: currentUserId(req) });
             if (!document) {
-                return res.status(404).json({ error: 'Document not found.' });
+                return documentNotFound(res);
             }
             const response = { message: 'Document deleted successfully.' } satisfies DeleteDocumentResponse;
             res.json(response);

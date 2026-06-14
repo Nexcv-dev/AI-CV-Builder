@@ -79,6 +79,32 @@ describe('api helpers', () => {
     });
   });
 
+  it('reads successful text responses without treating HTML as JSON', async () => {
+    const { readApiTextResponse } = await import('./api');
+    const html = '<main><h1>Template</h1></main>';
+    const response = new Response(html, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+
+    await expect(readApiTextResponse(response)).resolves.toBe(html);
+  });
+
+  it('preserves structured errors from text endpoints', async () => {
+    const { readApiTextResponse } = await import('./api');
+    const response = new Response(JSON.stringify({
+      error: 'Template HTML not found.',
+      code: 'VALIDATION_FAILED',
+    }), { status: 404 });
+
+    await expect(readApiTextResponse(response, 'Could not load template.')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 404,
+      message: 'Template HTML not found.',
+      code: 'VALIDATION_FAILED',
+    });
+  });
+
   it('classifies authentication errors by code with a legacy status fallback', async () => {
     const {
       API_ERROR_CODES,
