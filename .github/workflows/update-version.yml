@@ -4,6 +4,10 @@ on:
   release:
     types: [published]
 
+concurrency:
+  group: sync-version-${{ github.event.repository.default_branch }}
+  cancel-in-progress: false
+
 jobs:
   update-version:
     runs-on: ubuntu-latest
@@ -11,18 +15,34 @@ jobs:
       contents: write
 
     steps:
+      - name: Validate release branch
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          RELEASE_TARGET: ${{ github.event.release.target_commitish }}
+        run: |
+          if [ "$RELEASE_TARGET" != "$DEFAULT_BRANCH" ]; then
+            echo "::error::Release target '$RELEASE_TARGET' does not match the production branch '$DEFAULT_BRANCH'."
+            echo "Publish the release from '$DEFAULT_BRANCH' so the version commit and Render deployment use the same source."
+            exit 1
+          fi
+
       - name: Checkout Repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.target_commitish }}
+          ref: ${{ github.event.repository.default_branch }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Extract version from tag
         id: get_version
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
-          # Get the tag name (e.g., v1.2.3) and remove the 'v' prefix (1.2.3)
-          TAG_NAME="${{ github.event.release.tag_name }}"
           VERSION="${TAG_NAME#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Release tag '$TAG_NAME' is not a supported semantic version."
+            exit 1
+          fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Setup Node.js
@@ -30,38 +50,56 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Enable pnpm
-        run: corepack enable
-
-      - name: Install dependencies
-        run: corepack pnpm install --frozen-lockfile
-
-      - name: Update package.json version
+      - name: Update workspace versions
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
-          # Update workspace package versions without creating a git tag (we already have a release tag).
-          VERSION="${{ steps.get_version.outputs.VERSION }}"
-          PACKAGES=(
-            @nexcv/web
-            @nexcv/api
-            @nexcv/shared
-            @nexcv/templates
-            @nexcv/api-contracts
-            @nexcv/pdf-worker
-            @nexcv/pdf-lambda
-            @nexcv/cv-import-worker
-            @nexcv/email-worker
-            @nexcv/ocr-lambda
-          )
+          node --input-type=module --eval '
+            import { readFile, writeFile } from "node:fs/promises";
 
-          for PACKAGE in "${PACKAGES[@]}"; do
-            corepack pnpm --filter "$PACKAGE" version "$VERSION" --no-git-tag-version
-          done
+            const packageFiles = [
+              "apps/web/package.json",
+              "apps/api/package.json",
+              "packages/shared/package.json",
+              "packages/templates/package.json",
+              "packages/api-contracts/package.json",
+              "apps/workers/pdf-worker/package.json",
+              "apps/workers/pdf-lambda/package.json",
+              "apps/workers/cv-import-worker/package.json",
+              "apps/workers/email-worker/package.json",
+              "apps/workers/ocr-lambda/package.json",
+            ];
 
-      - name: Commit and Push Changes
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "chore: bump version to ${{ steps.get_version.outputs.VERSION }}"
-          branch: ${{ github.event.release.target_commitish }}
+            for (const file of packageFiles) {
+              const pkg = JSON.parse(await readFile(file, "utf8"));
+              pkg.version = process.env.VERSION;
+              await writeFile(file, `${JSON.stringify(pkg, null, 2)}\n`);
+              console.log(`Updated ${file} to ${pkg.version}`);
+            }
+          '
+
+      - name: Verify frontend version
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          ACTUAL_VERSION="$(node -p "require('./apps/web/package.json').version")"
+          test "$ACTUAL_VERSION" = "$VERSION"
+
+      - name: Commit and push version
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/package.json apps/api/package.json packages/*/package.json apps/workers/*/package.json
+
+          if git diff --cached --quiet; then
+            echo "Version is already $VERSION; no commit needed."
+          else
+            git commit -m "chore: bump version to $VERSION"
+            git push origin "HEAD:$DEFAULT_BRANCH"
+          fi
 
       - name: Trigger Render Deploy
         env:
@@ -69,7 +107,7 @@ jobs:
         run: |
           if [ -n "$RENDER_DEPLOY_HOOK" ]; then
             echo "Triggering Render deploy..."
-            curl -X POST $RENDER_DEPLOY_HOOK
+            curl --fail-with-body --show-error --silent -X POST "$RENDER_DEPLOY_HOOK"
           else
             echo "RENDER_DEPLOY_HOOK secret is not set, skipping auto-deploy."
           fi
