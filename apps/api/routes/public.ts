@@ -790,7 +790,7 @@ export function registerPublicRoutes(router: Router, deps: RouteDeps) {
         try {
             const userId = String(req.params.userId || '');
             const fileName = String(req.params.fileName || '');
-            if (!/^[a-f0-9]{24}$/i.test(userId) || !/^[a-f0-9]{32}\.(?:webp|png|jpe?g)$/i.test(fileName)) {
+            if (!/^[a-f0-9]{24}$/i.test(userId) || !/^(?:[a-f0-9]{32}|[a-f0-9]{64})\.(?:webp|png|jpe?g)$/i.test(fileName)) {
                 return res.status(404).json({ error: 'Image not found.' });
             }
 
