@@ -174,8 +174,7 @@ export default function Profile() {
       const image = await compressAndResizeImage(file, 320, 320);
       updateField('profileImage', image);
 
-      let syncPromise: Promise<string | null>;
-      syncPromise = syncProfileImage(image)
+      const syncPromise: Promise<string | null> = syncProfileImage(image)
         .then((imageUrl) => {
           if (profileImageUploadIdRef.current !== uploadId) return null;
           setForm((current) => ({

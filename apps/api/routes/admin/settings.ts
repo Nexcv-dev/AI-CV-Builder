@@ -135,7 +135,7 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
                         emailConfigured,
                     ),
                     serviceStatus(
-                        Boolean(S3_TEMPLATE_BUCKET) ? 'ok' : 'warn',
+                        S3_TEMPLATE_BUCKET ? 'ok' : 'warn',
                         'S3 Templates',
                         S3_TEMPLATE_BUCKET ? `Bucket configured${S3_TEMPLATE_PREFIX ? ` with prefix ${S3_TEMPLATE_PREFIX}.` : '.'}` : 'Bucket not configured; custom templates will not be available.',
                         Boolean(S3_TEMPLATE_BUCKET),

@@ -28,9 +28,37 @@ These cleanup phases do not make the product permanently "100% finished." They m
 
 After launch, the app still needs real-user bug fixes, payment monitoring, template improvements, SEO/content work, analytics, and UX refinements.
 
+## Current Status (2026-11-05)
+
+Snapshot taken from the `test/overview` branch. Re-measure before starting each phase.
+
+Already done:
+
+- Checkout page split: `apps/web/src/pages/checkout/` holds `CheckoutCustomerForm`, `CheckoutSummaryPanel`, `useCheckoutPricing`, and `useCheckoutReturnHandler`. `CheckoutPage.tsx` is down to about 390 lines.
+- Builder page components: `apps/web/src/pages/home/` holds the header, banners, overlays, and modals. The builder hooks are still missing.
+- CV form sections: `apps/web/src/components/form/` holds one component per section. The form hooks are still missing.
+- Auth modal steps: `apps/web/src/components/auth/` holds one component per step, plus `authValidation.ts`.
+- Admin hooks (partial): `useAdminBootstrap`, `useAdminTemplates`, `useAdminUsers`.
+- Checkout timing constants live in `apps/api/services/checkoutSessionService.ts`: PayHere expiry, Lemon Squeezy expiry, and the payment processing lock timeout.
+- Backend auth validation lives in `apps/api/services/authValidationService.ts`.
+
+Main structural problems:
+
+| Area | Finding |
+| --- | --- |
+| Route dependency wiring | `server.ts` builds one `routeDeps` object with about 200 entries. `bindDeps()` returns its input unchanged, so it adds no typing or checks. `routes/cv.ts` destructures 169 names: 107 are unused and 14 do not exist in `routeDeps`, so they are always `undefined`. `routes/public.ts` destructures 139 names, and 98 of those are unused. |
+| `apps/api/server.ts` | 1307 lines with about 90 helper definitions: quota, session, auth guards, sanitizing, DTO builders, and SEO rendering. |
+| Large API routes | `auth.ts` (1246 lines), `cv.ts` (1243), `payment.ts` (1036), `public.ts` (1023), `admin/billing.ts` (566). |
+| Large web files | `LandingPage.tsx` (1142 lines), `Home.tsx` (1087), `CVForm.tsx` (1080), `HtmlToPdf.tsx` (894), `AdminDashboard.tsx` (779), `index.css` (1589). |
+| Workers | `apps/workers/pdf-lambda/src/handler.ts` is 1860 lines. |
+| Type safety | About 480 `any` usages in `apps/api` (574 by the ESLint rule, which counts every occurrence, including generics such as `Record<string, any>`). TypeScript `strict` is off. ESLint was added in Phase 2. |
+| Repo root | `Admin Templates/`, `sample templates/`, `Free CV Builder/`, and `nexcv-template-previews.zip` sit outside `apps/` and `packages/`. Together they have 75 tracked files. |
+
 ## Phase 1: Launch Safety Cleanup
 
 Safe to do before launch.
+
+Status: partly done. The checkout timing constants are centralized in `checkoutSessionService.ts`. The 30-day cleanup is a TTL index in `server-models/CheckoutSession.ts`, still written as an inline number. Still to confirm: the review queue rules and the signup validation parity.
 
 - Centralize checkout status rules:
   - `pending`: payment started and still in progress.
@@ -56,20 +84,104 @@ Safe to do before launch.
   - operations runbook.
   - payment edge-case behavior.
 
-## Phase 2: Payment And Billing Structure
+## Phase 2: Baseline And Tooling
 
-Highest priority cleanup because it is business-critical.
+Do this first. Every later phase depends on it.
+
+Status: done (2026-11-05).
+
+- Baseline before the ESLint change: `corepack pnpm lint`, `corepack pnpm test:run` (278 tests across 9 workspaces), and `corepack pnpm build` all passed.
+- ESLint 9 with `typescript-eslint` and `eslint-plugin-react-hooks` is installed at the repo root. One shared flat config, `eslint.config.mjs`, covers every workspace.
+- Root scripts: `corepack pnpm lint:eslint` (check) and `corepack pnpm lint:eslint:fix` (auto-fix). CI runs `lint:eslint` right after `lint`.
+- `no-explicit-any`, `no-unused-vars`, and `react-hooks/exhaustive-deps` are warnings. Every other recommended rule is an error, so new problems of those kinds fail CI.
+- `no-control-regex` is off, because the input sanitizers match control characters on purpose.
+- The initial run had 10 small errors, all fixed without behavior changes: a redundant `Boolean()` call, two empty `catch` blocks now explained by a comment, two `let` changed to `const`, and four `@ts-ignore` replaced with `@ts-expect-error` in `PrintView.tsx`.
+
+Warning baseline (2026-11-05): 1011 warnings across 303 files, 0 errors.
+
+| Workspace | `no-explicit-any` | `no-unused-vars` | Other |
+| --- | --- | --- | --- |
+| `apps/api` | 574 | 225 | 0 |
+| `apps/workers/pdf-lambda` | 74 | 4 | 0 |
+| `apps/web` | 42 | 14 | 9 (`exhaustive-deps`) |
+| `packages/templates` | 21 | 0 | 0 |
+| `apps/workers/pdf-worker` | 19 | 0 | 0 |
+| `apps/workers/ocr-lambda` | 17 | 0 | 0 |
+| `apps/workers/cv-import-worker` | 5 | 0 | 0 |
+| `packages/api-contracts` | 4 | 0 | 0 |
+| `apps/workers/email-worker` | 3 | 0 | 0 |
+
+Most of the `apps/api` unused-variable warnings come from the route dependency destructuring that Phase 3 removes.
+
+Next step for this phase: once a workspace reaches zero warnings for a rule, raise that rule to `error` for that workspace, so the count cannot grow back.
+
+Expected result:
+
+- Unused code and new `any` usages show up in review instead of piling up.
+
+## Phase 3: Route Dependency Wiring
+
+Low risk and high value: the later API phases are much easier once this is done.
 
 Target files:
 
-- `routes/payment.ts`
-- `routes/admin/billing.ts`
-- `server-models/CheckoutSession.ts`
-- `server-models/PaymentTransaction.ts`
+- `apps/api/server.ts` (`routeDeps`)
+- `apps/api/routes/_shared.ts` (`bindDeps`, `RouteDeps`)
+- All files in `apps/api/routes/` and `apps/api/routes/admin/`
+- Route tests that build their own deps object (`tests/server.test.ts`, `tests/profileImageServing.test.ts`)
+
+Steps:
+
+1. Export `AppRouteDeps = typeof routeDeps` from `server.ts`, and type every route's `deps` with it instead of `Record<string, any>`.
+2. Delete the destructured names each route never uses, and the names that do not exist in `routeDeps`.
+3. Give each router its own narrow type, for example `type CvRouteDeps = Pick<AppRouteDeps, 'User' | 'CVDocument' | ...>`. Then tests can pass a small typed object instead of using `as any`.
+4. Remove `bindDeps` and `_shared.ts` once no route imports them.
+
+Expected result:
+
+- Each route declares exactly what it needs.
+- A misspelled or removed dependency fails `tsc` instead of becoming `undefined` at runtime.
+- Test fixtures are typed.
+
+## Phase 4: Slim `server.ts`
+
+Goal: `apps/api/server.ts` keeps only bootstrap code (env, middleware, router mounting, listen) and gets under about 250 lines.
+
+Moves:
+
+- Session helpers (`markSessionCurrent`, `invalidateUserSessions`, `isSessionCurrent`) → `services/sessionService.ts`.
+- Quota helpers (`get`/`increment`/`consume`/`rollback` for CV creation, CV import, and downloads) → `services/quotaService.ts`.
+- Auth guards (`requireAuth`, `requireSuperAdmin`, `requireVerifiedEmail`, `requirePaidPlan`) → `middlewares/auth.ts`.
+- `sanitizeCvDataForStorage` and the `cleanStored*` helpers → `services/cvDataService.ts`.
+- DTO builders (`documentSummary`, `documentDetails`, `adminUserSummary`, `adminPaymentSummary`, `adminSupportTicketSummary`) → `server-utils/dto/`.
+- Gemini helper (`generateGeminiText`) → `services/geminiService.ts`.
+- Sitemap, robots, and SEO index rendering → `routes/seo.ts`.
+- Keep re-exporting anything the tests import from `server.ts` until the tests are updated to import from the new modules.
+
+Expected result:
+
+- `server.ts` is easy to read in one pass.
+- Helpers can be unit-tested without starting the whole app.
+
+## Phase 5: Payment And Billing Structure
+
+Highest-priority business cleanup, because this code handles money.
+
+Status: started. Checkout timing constants live in `checkoutSessionService.ts`. PayHere and Lemon Squeezy helpers live in `server-utils/`. `routes/payment.ts` is still about 1036 lines.
+
+Target files:
+
+- `apps/api/routes/payment.ts`
+- `apps/api/routes/admin/billing.ts`
+- `apps/api/services/checkoutSessionService.ts`
+- `apps/api/server-utils/payHere.ts`
+- `apps/api/server-utils/lemonSqueezy.ts`
+- `apps/api/server-models/CheckoutSession.ts`
+- `apps/api/server-models/PaymentTransaction.ts`
 
 Suggested split:
 
-- `services/payhereService.ts`
+- `services/payhereService.ts` (or keep growing `server-utils/payHere.ts`; pick one home)
   - PayHere config.
   - hash/signature helpers.
   - amount parsing.
@@ -95,20 +207,22 @@ Expected result:
 - Future refunds/reconciliation/subscriptions are easier to add.
 - Admin billing counts are easier to trust.
 
-## Phase 3: Checkout Frontend Split
+## Phase 6: Checkout Frontend Split
+
+Status: mostly done. `CheckoutCustomerForm`, `CheckoutSummaryPanel`, `useCheckoutPricing`, and `useCheckoutReturnHandler` exist under `apps/web/src/pages/checkout/`. What is left: decide whether `CheckoutPlanSelector`, `CheckoutPaymentMethod`, and `useCheckoutCustomerForm` are still worth extracting from the 390-line page.
 
 Target file:
 
-- `src/pages/CheckoutPage.tsx`
+- `apps/web/src/pages/CheckoutPage.tsx`
 
-Suggested split:
+Suggested split (original plan):
 
 - `CheckoutPlanSelector`
-- `CheckoutCustomerForm`
-- `CheckoutQuoteSummary`
+- `CheckoutCustomerForm` (done)
+- `CheckoutQuoteSummary` (done as `CheckoutSummaryPanel`)
 - `CheckoutPaymentMethod`
-- `useCheckoutQuote`
-- `usePayHereReturnHandler`
+- `useCheckoutQuote` (done as `useCheckoutPricing`)
+- `usePayHereReturnHandler` (done as `useCheckoutReturnHandler`)
 - `useCheckoutCustomerForm`
 
 Expected result:
@@ -117,7 +231,9 @@ Expected result:
 - Customer form validation is easier to change.
 - Plan/coupon UI does not mix with payment redirection logic.
 
-## Phase 4: Admin Panel Cleanup
+## Phase 7: Admin Panel Cleanup
+
+Status: started. `useAdminBootstrap`, `useAdminTemplates`, and `useAdminUsers` exist, and shared pieces live in `AdminSharedComponents.tsx` and `AdminShellComponents.tsx`. Billing, promotions, support, settings, and audit hooks are still missing. `AdminDashboard.tsx` is about 779 lines.
 
 Target files:
 
@@ -156,7 +272,9 @@ Expected result:
 - Section logic becomes easier to test and maintain.
 - Billing review changes become safer.
 
-## Phase 5: Auth Cleanup
+## Phase 8: Auth Cleanup
+
+Status: frontend mostly done, backend started. `AuthModal.tsx` is split into step components under `apps/web/src/components/auth/`, with `authValidation.ts`. On the backend, `services/authValidationService.ts` exists, but `routes/auth.ts` is still about 1246 lines.
 
 Target files:
 
@@ -185,7 +303,11 @@ Expected result:
 - Agreement and phone requirements stay consistent between UI and API.
 - Password reset and email verification logic is easier to update.
 
-## Phase 6: Dashboard And Builder Cleanup
+## Phase 9: Dashboard And Builder Cleanup
+
+Status: components done, hooks not started. Builder UI pieces live in `apps/web/src/pages/home/` and CV form sections in `apps/web/src/components/form/`. `Home.tsx` (about 1087 lines) and `CVForm.tsx` (about 1080 lines) still hold the state and side-effect logic that the hooks below should own.
+
+Also in scope: `LandingPage.tsx` (about 1142 lines) and `HtmlToPdf.tsx` (about 894 lines) should be split into section components, and `index.css` (about 1589 lines) should be split by feature.
 
 Target files:
 
@@ -237,7 +359,7 @@ Expected result:
 - `Home.tsx` becomes an orchestration shell for auth, save/download, layout, theme, and modal composition.
 - `CVForm.tsx` becomes easier to test because import, AI, template, image, and section mutations are isolated.
 
-## Phase 7: CV API Route Cleanup
+## Phase 10: CV API Route Cleanup
 
 Target files:
 
@@ -278,10 +400,11 @@ Expected result:
 - PDF, import, AI, and document CRUD bugs become easier to isolate.
 - Route tests can focus on HTTP behavior while service tests cover business rules.
 
-## Phase 8: PDF And Template Rendering Cleanup
+## Phase 11: PDF And Template Rendering Cleanup
 
 Target files:
 
+- `apps/workers/pdf-lambda/src/handler.ts` (about 1860 lines: split request parsing, rendering, and S3 I/O, and reuse `packages/templates` for template logic)
 - `apps/api/services/pdfService.ts`
 - `apps/api/services/s3Service.ts`
 - `packages/templates/src/templateData.ts`
@@ -316,9 +439,15 @@ Expected result:
 - Page-break and print regressions are easier to test.
 - New templates require less duplicated logic.
 
-## Phase 9: Shared Types, Constants, And DTOs
+## Phase 12: Shared Types, Constants, And DTOs
 
-Centralize repeated contracts.
+Centralize repeated contracts, then tighten the compiler.
+
+Strict mode rollout:
+
+- Turn on `strict` one folder at a time in `apps/api`: `server-utils` → `services` → `server-models` → `routes`. A per-folder `tsconfig` that extends the base config makes this possible.
+- Replace `any` as each folder is converted. About 480 `any` usages in `apps/api` are the starting count.
+- Repeat for `apps/web`, which has far fewer `any` usages.
 
 Suggested folders:
 
@@ -342,7 +471,13 @@ Expected result:
 - Frontend/backend naming drift is reduced.
 - Admin and API response changes are easier to track.
 
-## Phase 10: Tests To Add
+## Phase 13: Repo Hygiene
+
+- Decide a home for the root-level template material: `Admin Templates/`, `sample templates/`, and `nexcv-template-previews.zip`. Either move it under `templates/` or an app's `scripts/` fixtures, or remove it if the release scripts no longer read it.
+- Make sure nothing under `Free CV Builder/` (logs, `node_modules`) is tracked, and add it to `.gitignore` if it is only a local leftover.
+- Update this document's status lines whenever a phase lands.
+
+## Phase 14: Tests To Add
 
 Priority tests:
 
@@ -366,19 +501,28 @@ Priority tests:
 
 ## Recommended Order
 
-1. Payment and checkout service extraction.
-2. Checkout page frontend split.
-3. Admin billing section split.
-4. Auth modal and auth route cleanup.
-5. Admin dashboard hook extraction.
-6. Dashboard split.
-7. Builder page and CVForm hook cleanup.
-8. CV API route cleanup.
-9. PDF/template rendering cleanup.
-10. Shared types/constants cleanup.
-11. Additional tests around the critical flows.
+1. Baseline and tooling (Phase 2).
+2. Route dependency wiring (Phase 3).
+3. Slim `server.ts` (Phase 4).
+4. Payment and checkout service extraction (Phase 5), with the payment tests from Phase 14 written first.
+5. Admin billing section split and admin hook extraction (Phase 7).
+6. Auth route cleanup (Phase 8).
+7. Builder page and CVForm hook cleanup, then the dashboard split (Phase 9).
+8. CV API route cleanup (Phase 10).
+9. PDF/template rendering and PDF Lambda cleanup (Phase 11).
+10. Shared types/constants and strict mode rollout (Phase 12).
+11. Repo hygiene (Phase 13).
+12. Remaining tests around the critical flows (Phase 14).
 
-This order protects the highest-risk business flows first while keeping each step small enough to verify.
+Phase 6 (checkout frontend) is mostly done, so it is not in this list. Finish its leftovers whenever the checkout page is touched next.
+
+Phases 2 to 4 come first because they are low risk and make every later API phase smaller: once each route declares its own typed dependencies and the helpers live in modules, moving logic into services is mostly mechanical. After that, the order protects the highest-risk business flows first while keeping each step small enough to verify.
+
+PR rules:
+
+- One area per PR. Do not mix a refactor with a feature or a behavior change.
+- Lint, tests, and build must pass before and after each PR.
+- Write tests for payment, auth, and PDF behavior before refactoring that code.
 
 ## What 100% Clean Needs
 

@@ -125,7 +125,9 @@ export default function Home() {
         setDebouncedCvData(parsed);
         return;
       }
-    } catch {}
+    } catch {
+      // Ignore unreadable drafts and fall back to a fresh builder.
+    }
     resetBuilder();
     setDebouncedCvData(initialBuilderCvData);
   }, [resetBuilder, setCvData]);
@@ -419,7 +421,9 @@ export default function Home() {
       lastSavedDataRef.current = JSON.stringify({ cvData, template, title });
       try {
         localStorage.removeItem(LOCAL_STORAGE_DRAFT_KEY);
-      } catch {}
+      } catch {
+        // localStorage can be unavailable (private mode, quota); the cloud save already succeeded.
+      }
       return true;
     } catch (error) {
       console.warn('Failed to save document:', error);
@@ -559,7 +563,7 @@ export default function Home() {
     if (!previewNode) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         const measuredWidth = entry.target.scrollWidth || entry.contentRect.width || DEFAULT_A4_PREVIEW_WIDTH_PX;
         const measuredHeight = entry.target.scrollHeight || entry.contentRect.height || DEFAULT_A4_PREVIEW_HEIGHT_PX;
         const nextWidth = Math.max(measuredWidth, DEFAULT_A4_PREVIEW_WIDTH_PX);
