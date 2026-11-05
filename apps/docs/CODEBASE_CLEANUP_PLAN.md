@@ -40,7 +40,7 @@ Already done:
 - Auth modal steps: `apps/web/src/components/auth/` holds one component per step, plus `authValidation.ts`.
 - Admin hooks: every admin page has its own hook under `apps/web/src/features/admin/hooks/` (Phase 7).
 - Checkout timing constants live in `apps/api/services/checkoutSessionService.ts`: PayHere expiry, Lemon Squeezy expiry, and the payment processing lock timeout.
-- Backend auth validation lives in `apps/api/services/authValidationService.ts`.
+- Backend auth logic lives in services (Phase 8): `authValidationService.ts`, `emailVerificationService.ts`, `passwordResetService.ts`, `oauthService.ts`, and `sessionService.ts`.
 
 Main structural problems:
 
@@ -48,7 +48,7 @@ Main structural problems:
 | --- | --- |
 | Route dependency wiring | `server.ts` builds one `routeDeps` object with about 200 entries. `bindDeps()` returns its input unchanged, so it adds no typing or checks. `routes/cv.ts` destructures 169 names: 107 are unused and 14 do not exist in `routeDeps`, so they are always `undefined`. `routes/public.ts` destructures 139 names, and 98 of those are unused. Fixed in Phase 3. |
 | `apps/api/server.ts` | 1307 lines with about 90 helper definitions: quota, session, auth guards, sanitizing, DTO builders, and SEO rendering. Down to 185 lines after Phase 4. |
-| Large API routes | `auth.ts` (1246 lines), `cv.ts` (1243), `payment.ts` (1036), `public.ts` (1023), `admin/billing.ts` (566). After Phase 5: `payment.ts` 841 lines, `admin/billing.ts` 472. |
+| Large API routes | `auth.ts` (1246 lines), `cv.ts` (1243), `payment.ts` (1036), `public.ts` (1023), `admin/billing.ts` (566). After Phase 5: `payment.ts` 841 lines, `admin/billing.ts` 472. After Phase 8: `auth.ts` 632. |
 | Large web files | `LandingPage.tsx` (1142 lines), `Home.tsx` (1087), `CVForm.tsx` (1080), `HtmlToPdf.tsx` (894), `AdminDashboard.tsx` (779), `index.css` (1589). After Phase 7: `AdminDashboard.tsx` 281 lines. |
 | Workers | `apps/workers/pdf-lambda/src/handler.ts` is 1860 lines. |
 | Type safety | About 480 `any` usages in `apps/api` (574 by the ESLint rule, which counts every occurrence, including generics such as `Record<string, any>`). TypeScript `strict` is off. ESLint was added in Phase 2. |
@@ -58,7 +58,13 @@ Main structural problems:
 
 Safe to do before launch.
 
-Status: partly done. The checkout timing constants are centralized in `checkoutSessionService.ts`. The 30-day cleanup is a TTL index in `server-models/CheckoutSession.ts`, still written as an inline number. The review queue rules are confirmed and live in `services/billingReviewService.ts` (Phase 5): only `failed` checkouts and unprocessed payments enter Needs Review, and cancelled or expired checkouts never do. Still to confirm: the signup validation parity.
+Status: partly done. The checkout timing constants are centralized in `checkoutSessionService.ts`. The 30-day cleanup is a TTL index in `server-models/CheckoutSession.ts`, still written as an inline number. The review queue rules are confirmed and live in `services/billingReviewService.ts` (Phase 5): only `failed` checkouts and unprocessed payments enter Needs Review, and cancelled or expired checkouts never do.
+
+Signup validation parity, checked in Phase 8: the rules are **not** the same on the two signup endpoints, and the web app uses the one without the phone rule.
+
+- `POST /api/auth/signup` requires name, valid email, contact number, terms agreement, and a strong password (`validateSignupDetails` in `services/authValidationService.ts`).
+- The web auth modal never calls that endpoint. It signs up through `POST /api/auth/email/start` (`startEmailOtp` in `services/emailVerificationService.ts`), which requires name, valid email, terms agreement, and a strong password, but **no contact number**. Accounts created from the web app therefore have no phone saved.
+- To decide separately: either add the contact number to the modal and to `email/start`, or drop the requirement from this list (and decide whether `/api/auth/signup` is still needed).
 
 - Centralize checkout status rules:
   - `pending`: payment started and still in progress.
@@ -111,7 +117,7 @@ Warning baseline (2026-11-05): 1011 warnings across 303 files, 0 errors.
 | `packages/api-contracts` | 4 | 0 | 0 |
 | `apps/workers/email-worker` | 3 | 0 | 0 |
 
-Most of the `apps/api` unused-variable warnings came from the route dependency destructuring. Phase 3 removed it, and the count dropped from 225 to 16 (795 warnings in total after Phase 3, 756 after Phase 5, 753 after Phase 7).
+Most of the `apps/api` unused-variable warnings came from the route dependency destructuring. Phase 3 removed it, and the count dropped from 225 to 16 (795 warnings in total after Phase 3, 756 after Phase 5, 753 after Phase 7, 720 after Phase 8).
 
 Next step for this phase: once a workspace reaches zero warnings for a rule, raise that rule to `error` for that workspace, so the count cannot grow back.
 
@@ -330,7 +336,24 @@ Expected result:
 
 ## Phase 8: Auth Cleanup
 
-Status: frontend mostly done, backend started. `AuthModal.tsx` is split into step components under `apps/web/src/components/auth/`, with `authValidation.ts`. On the backend, `services/authValidationService.ts` exists, but `routes/auth.ts` is still about 1246 lines.
+Status: backend services extracted (2026-11-05). `routes/auth.ts` went from 1284 lines to 632. No API response, redirect, session field, or log message changed. The frontend was already split into step components under `apps/web/src/components/auth/`, with `authValidation.ts`.
+
+- Tests came first: `tests/authFlows.test.ts` (88 tests) was written and passing against the old routes before any code moved. It runs the real handlers on in-memory fake models with the real hashing, validation, session-version, and role helpers, and stubs only email delivery, passport, and the GitHub/LinkedIn HTTP calls. It covers signup, password login, email check, OTP start and verify, signed-in verification and resend, profile, password change, account deletion, forgot/validate/reset password, Google/GitHub/LinkedIn state handling and account rules, current user, and logout. A quick mutation check (keeping the session version on reset, keeping a new account when its OTP fails, and skipping the GitHub/LinkedIn state expiry) made them fail as expected.
+- `tests/helpers/fakeModels.ts` gained `$unset`, `deleteMany`, `findByIdAndDelete`, a query `catch`, and `res.redirect`/`res.clearCookie`.
+- New services, each returning an `AuthFailure` (`{ status, error, code }`) or a result instead of writing the response:
+  - `services/authValidationService.ts`: signup, email-for-intent, terms, and OTP code rules, plus `isAuthFailure` (needed because `strict` is off, so `!result.ok` does not narrow).
+  - `services/emailVerificationService.ts`: `createEmailAccount`, `startEmailOtp`, `verifyEmailOtpLogin`, `verifyCurrentUserEmail`, `resendEmailVerification`, `markEmailVerified`.
+  - `services/passwordResetService.ts`: reset token lookup, `sendPasswordResetEmail` (removes the token again if the email fails), `resetPasswordWithToken`.
+  - `services/oauthService.ts`: one `createOAuthState`/`consumeOAuthState` pair for all three providers (same session keys as before), redirect targets, GitHub and LinkedIn provider definitions (config, callback URL, authorize URL, profile fetch), and one `resolveOAuthUser` for both (the two copies differed only in the id field).
+  - `services/sessionService.ts`: `loginWithRegeneratedSession` and `sessionCookieName` (also used by `middlewares/session.ts` now).
+- The GitHub and LinkedIn routes are registered by one `registerCodeFlowProvider()` in `routes/auth.ts`. The paths are unchanged: `/api/auth/github`, `/api/auth/github/callback`, `/api/auth/linkedin`, `/api/auth/linkedin/callback`.
+- Removed as unreachable, with no behavior change: `email/start` checked `intent === 'signup'` again after already refusing signup for existing accounts, so its "set a password on an existing account" branch could never run.
+- Finding (not changed here, see Phase 1): the web modal signs up through `email/start`, which does not ask for a contact number, while `/api/auth/signup` does.
+
+Still to do in this phase:
+
+- Google sign-in still resolves users in `server-models/passportSetup.ts` (`resolveGoogleOAuthUser`). It could move next to `resolveOAuthUser`, but it has its own tests and a different email-conflict path, so it was left alone.
+- Profile update and signed-in password change stay in the route. They are short request validation plus one update each.
 
 Target files:
 
@@ -537,8 +560,8 @@ Expected result:
 
 Priority tests (items marked *done* are covered by `tests/paymentFlows.test.ts` and `tests/adminBillingReview.test.ts`, added in Phase 5):
 
-- Signup requires phone and agreement.
-- Signup saves phone and agreement timestamp.
+- Signup requires phone and agreement. *done* (`tests/authFlows.test.ts`, Phase 8, for `/api/auth/signup`)
+- Signup saves phone and agreement timestamp. *done* (same)
 - Checkout cancel marks session `cancelled`. *done*
 - Cancelled checkout does not enter Needs Review. *done*
 - Abandoned checkout expires after 15 minutes. *done*
@@ -562,7 +585,7 @@ Priority tests (items marked *done* are covered by `tests/paymentFlows.test.ts` 
 3. Slim `server.ts` (Phase 4).
 4. Payment and checkout service extraction (Phase 5), with the payment tests from Phase 14 written first.
 5. Admin billing section split and admin hook extraction (Phase 7).
-6. Auth route cleanup (Phase 8).
+6. Auth route cleanup (Phase 8). Backend done; see its status for leftovers.
 7. Builder page and CVForm hook cleanup, then the dashboard split (Phase 9).
 8. CV API route cleanup (Phase 10).
 9. PDF/template rendering and PDF Lambda cleanup (Phase 11).

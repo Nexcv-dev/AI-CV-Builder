@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
-import { isSessionCurrent } from '../services/sessionService';
+import { isSessionCurrent, sessionCookieName } from '../services/sessionService';
 
 const parsePositiveInt = (value: string | undefined, fallback: number) => {
     const parsed = Number.parseInt(value || '', 10);
@@ -37,7 +37,7 @@ export const configureSessionMiddleware = (app: Express) => {
         resave: false,
         saveUninitialized: false,
         ...(store ? { store } : {}),
-        name: process.env.SESSION_COOKIE_NAME || 'nexcv.sid',
+        name: sessionCookieName(),
         cookie: {
             secure: process.env.NODE_ENV === 'production',
             httpOnly: true,
@@ -56,7 +56,7 @@ export const configureSessionVersionCheck = (app: Express) => {
         req.logout((logoutError) => {
             if (logoutError) return next(logoutError);
             req.session.destroy(() => {
-                res.clearCookie(process.env.SESSION_COOKIE_NAME || 'nexcv.sid');
+                res.clearCookie(sessionCookieName());
                 return res.status(401).json({ error: 'Session expired. Please sign in again.' });
             });
         });
