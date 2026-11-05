@@ -5,8 +5,8 @@ import { vi } from 'vitest';
  *
  * It supports only the query shapes the payment and billing code uses:
  * equality, `$lt`/`$lte`/`$gt`/`$gte`, `$ne`, `$in`, `$exists`, `$or`, `$and`,
- * `$expr: { $lt: ['$a', '$b'] }`, and the `$set`/`$inc`/`$setOnInsert` update
- * operators. Query results are thenables with chainable `sort`, `limit`,
+ * `$expr: { $lt: ['$a', '$b'] }`, and the `$set`/`$unset`/`$inc`/`$setOnInsert`
+ * update operators. Query results are thenables with chainable `sort`, `limit`,
  * `populate`, and `select`, which are no-ops.
  *
  * Tests assert on the stored documents (`model.docs`) instead of on call
@@ -76,6 +76,9 @@ const applyUpdate = (doc: FakeDoc, update: Record<string, Loose>) => {
         return;
     }
     Object.assign(doc, update.$set || {});
+    Object.keys(update.$unset || {}).forEach((key) => {
+        delete doc[key];
+    });
     Object.entries(update.$inc || {}).forEach(([key, amount]) => {
         doc[key] = (Number(doc[key]) || 0) + Number(amount);
     });
@@ -95,6 +98,9 @@ const query = <T>(value: T) => {
             onFulfilled?: ((result: T) => R1 | PromiseLike<R1>) | null,
             onRejected?: ((reason: unknown) => R2 | PromiseLike<R2>) | null,
         ) => Promise.resolve(value).then(onFulfilled, onRejected),
+        catch: <R = never>(onRejected?: ((reason: unknown) => R | PromiseLike<R>) | null) => (
+            Promise.resolve(value).catch(onRejected)
+        ),
     };
     return chain;
 };
@@ -152,6 +158,17 @@ export const createFakeModel = (initialDocs: FakeDoc[] = []) => {
             if (index >= 0) docs.splice(index, 1);
             return { deletedCount: index >= 0 ? 1 : 0 };
         }),
+        deleteMany: vi.fn(async (filter: Record<string, Loose> = {}) => {
+            const remaining = docs.filter((doc) => !matchesFilter(doc, filter));
+            const deletedCount = docs.length - remaining.length;
+            docs.splice(0, docs.length, ...remaining);
+            return { deletedCount };
+        }),
+        findByIdAndDelete: vi.fn((id: unknown) => {
+            const index = docs.findIndex((doc) => sameValue(doc._id, id));
+            const [deleted] = index >= 0 ? docs.splice(index, 1) : [null];
+            return query(deleted);
+        }),
         findOneAndUpdate: vi.fn(findOneAndUpdate),
         findByIdAndUpdate: vi.fn((id: unknown, update: Record<string, Loose>, options: Record<string, Loose> = {}) => (
             findOneAndUpdate({ _id: id }, update, { ...options, upsert: false })
@@ -183,12 +200,13 @@ export const createRouteCapture = () => {
         patch: register('patch'),
         delete: register('delete'),
     };
-    const handler = (method: string, path: string) => {
+    const handlers = (method: string, path: string) => {
         const route = routes.find((item) => item.method === method && item.path === path);
         if (!route) throw new Error(`No ${method.toUpperCase()} ${path} route registered.`);
-        return route.handlers.at(-1);
+        return route.handlers;
     };
-    return { router, handler };
+    const handler = (method: string, path: string) => handlers(method, path).at(-1);
+    return { router, handler, handlers };
 };
 
 export const createResponse = () => {
@@ -197,5 +215,7 @@ export const createResponse = () => {
     res.json = vi.fn(() => res);
     res.send = vi.fn(() => res);
     res.setHeader = vi.fn(() => res);
+    res.redirect = vi.fn(() => res);
+    res.clearCookie = vi.fn(() => res);
     return res;
 };
