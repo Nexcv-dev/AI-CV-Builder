@@ -981,6 +981,8 @@ const routeDeps = {
     mongoose, randomBytes, randomInt, createHash, timingSafeEqual,
 };
 
+export type AppRouteDeps = typeof routeDeps;
+
 const publicRouter = express.Router();
 registerPublicRoutes(publicRouter, routeDeps);
 app.use(publicRouter);

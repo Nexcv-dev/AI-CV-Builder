@@ -20,7 +20,7 @@ const getProfileImageHandler = (overrides: Record<string, any> = {}) => {
     ...overrides,
   };
 
-  registerPublicRoutes(router, deps);
+  registerPublicRoutes(router, deps as any);
   const route = routes.find((item) => item.path === '/api/cv-assets/:userId/:fileName');
   if (!route) throw new Error('Profile image serving route not found.');
   return { handler: route.handlers.at(-1), deps };

@@ -900,7 +900,7 @@ describe('Server Utils', () => {
         isPaidPlan: vi.fn(() => false),
         getApiOrigin: () => 'https://app.example.com',
         sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
-      });
+      } as any);
       app.use(router);
 
       const server = await new Promise<Server>((resolve) => {
