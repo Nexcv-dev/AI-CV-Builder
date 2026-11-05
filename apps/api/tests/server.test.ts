@@ -1269,6 +1269,14 @@ describe('Server Utils', () => {
       expect(sanitized.experience[0]).not.toHaveProperty('junk');
       expect(sanitized.personalInfo).not.toHaveProperty('unusedNested');
     });
+
+    it('should keep the text size setting and clamp it to the slider range', () => {
+      expect(sanitizeCvDataForStorage({ textScale: 1.1 }).textScale).toBe(1.1);
+      expect(sanitizeCvDataForStorage({ textScale: 0.5 }).textScale).toBe(0.85);
+      expect(sanitizeCvDataForStorage({ textScale: 3 }).textScale).toBe(1.2);
+      expect(sanitizeCvDataForStorage({ textScale: 'big' }).textScale).toBe(1);
+      expect(sanitizeCvDataForStorage({}).textScale).toBe(1);
+    });
   });
 });
 
