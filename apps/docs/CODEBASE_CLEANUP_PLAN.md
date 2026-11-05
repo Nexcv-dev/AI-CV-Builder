@@ -48,7 +48,7 @@ Main structural problems:
 | --- | --- |
 | Route dependency wiring | `server.ts` builds one `routeDeps` object with about 200 entries. `bindDeps()` returns its input unchanged, so it adds no typing or checks. `routes/cv.ts` destructures 169 names: 107 are unused and 14 do not exist in `routeDeps`, so they are always `undefined`. `routes/public.ts` destructures 139 names, and 98 of those are unused. Fixed in Phase 3. |
 | `apps/api/server.ts` | 1307 lines with about 90 helper definitions: quota, session, auth guards, sanitizing, DTO builders, and SEO rendering. Down to 185 lines after Phase 4. |
-| Large API routes | `auth.ts` (1246 lines), `cv.ts` (1243), `payment.ts` (1036), `public.ts` (1023), `admin/billing.ts` (566). |
+| Large API routes | `auth.ts` (1246 lines), `cv.ts` (1243), `payment.ts` (1036), `public.ts` (1023), `admin/billing.ts` (566). After Phase 5: `payment.ts` 841 lines, `admin/billing.ts` 472. |
 | Large web files | `LandingPage.tsx` (1142 lines), `Home.tsx` (1087), `CVForm.tsx` (1080), `HtmlToPdf.tsx` (894), `AdminDashboard.tsx` (779), `index.css` (1589). |
 | Workers | `apps/workers/pdf-lambda/src/handler.ts` is 1860 lines. |
 | Type safety | About 480 `any` usages in `apps/api` (574 by the ESLint rule, which counts every occurrence, including generics such as `Record<string, any>`). TypeScript `strict` is off. ESLint was added in Phase 2. |
@@ -58,7 +58,7 @@ Main structural problems:
 
 Safe to do before launch.
 
-Status: partly done. The checkout timing constants are centralized in `checkoutSessionService.ts`. The 30-day cleanup is a TTL index in `server-models/CheckoutSession.ts`, still written as an inline number. Still to confirm: the review queue rules and the signup validation parity.
+Status: partly done. The checkout timing constants are centralized in `checkoutSessionService.ts`. The 30-day cleanup is a TTL index in `server-models/CheckoutSession.ts`, still written as an inline number. The review queue rules are confirmed and live in `services/billingReviewService.ts` (Phase 5): only `failed` checkouts and unprocessed payments enter Needs Review, and cancelled or expired checkouts never do. Still to confirm: the signup validation parity.
 
 - Centralize checkout status rules:
   - `pending`: payment started and still in progress.
@@ -111,7 +111,7 @@ Warning baseline (2026-11-05): 1011 warnings across 303 files, 0 errors.
 | `packages/api-contracts` | 4 | 0 | 0 |
 | `apps/workers/email-worker` | 3 | 0 | 0 |
 
-Most of the `apps/api` unused-variable warnings came from the route dependency destructuring. Phase 3 removed it, and the count dropped from 225 to 16 (795 warnings in total after Phase 3).
+Most of the `apps/api` unused-variable warnings came from the route dependency destructuring. Phase 3 removed it, and the count dropped from 225 to 16 (795 warnings in total after Phase 3, 756 after Phase 5).
 
 Next step for this phase: once a workspace reaches zero warnings for a rule, raise that rule to `error` for that workspace, so the count cannot grow back.
 
@@ -131,7 +131,7 @@ Status: done (2026-11-05).
 - Route tests wrap their mocks in `stubRouteDeps<XRouteDeps>({ ... })` (`tests/helpers/routeDeps.ts`), so stub key names are type-checked and the earlier `as any` casts are gone.
 - Typing the deps exposed 14 type mismatches that `Record<string, any>` had hidden. All were fixed without changing API responses: readonly template constants, the `source` literals in `templateAdmin.ts`, the HTML PDF `plan` type, the `planStartedAt` serialization, dropping the internal `reserved` field from quota responses, and adding `'billing.review.resolved'` to `AdminAuditAction` (the schema has no enum, so it was already being saved).
 - Left for later, marked in code:
-  - `routes/admin/billing.ts`: the review handler casts the payment/checkout model union to `Model<any>` (TODO for Phase 12).
+  - `routes/admin/billing.ts`: the review handler casts the payment/checkout model union to `Model<any>` (TODO for Phase 12). Fixed in Phase 5: `resolveBillingReview()` has a typed branch per model.
   - `routes/payment.ts`: the checkout status check compares `user.plan === 'unlimited'`, but the User schema's plan enum has no `'unlimited'`, so it never matches. It is kept as-is. Decide separately whether it should use `getEffectivePlan()`, which returns `'unlimited'` for super admins.
 
 Target files:
@@ -198,7 +198,19 @@ Expected result:
 
 Highest-priority business cleanup, because this code handles money.
 
-Status: started. Checkout timing constants live in `checkoutSessionService.ts`. PayHere and Lemon Squeezy helpers live in `server-utils/`. `routes/payment.ts` is still about 1036 lines.
+Status: services extracted (2026-11-05). `routes/payment.ts` went from 1079 lines to 841, and `routes/admin/billing.ts` from 622 to 472. No API response or log event changed.
+
+- Tests came first: `tests/paymentFlows.test.ts` and `tests/adminBillingReview.test.ts` (37 tests) were written and passing against the old routes before any code moved. They run the real route handlers on in-memory fake models (`tests/helpers/fakeModels.ts`) and check stored state, not call shapes, so they keep passing as code moves. A quick mutation check (breaking the failed-IPN status and widening the review filter) made them fail as expected.
+- `services/checkoutSessionService.ts` (kept as the one checkout home instead of adding `checkoutService.ts`): status meanings, timing constants, coupon reserve/return/release, `startPendingCheckout`, `cancelPendingCheckout`, `failPendingCheckout`, and `markExpiredPendingCheckouts`. `routes/admin/billing.ts` had its own copy of `markExpiredPendingCheckouts`. It now uses the shared one.
+- `services/paymentProcessingService.ts`: `processVerifiedPayment` (receive upsert, duplicate check, processing lock claim, and plan activation in one Mongo transaction), shared by the PayHere IPN and the Lemon Squeezy webhook, plus `recordUnprocessedPayment` for failed PayHere statuses.
+- `services/billingReviewService.ts`: the Needs Review filters, the payment/checkout review summaries, `resolveBillingReview`, and `summarizeBillingRevenue` for the admin revenue cards.
+- One tiny difference: the Lemon Squeezy webhook used two separate `new Date()` calls for `planStartedAt` and the expiry base. Both flows now use one timestamp, as PayHere already did.
+- PayHere helpers stay in `server-utils/payHere.ts`. No `payhereService.ts` was added.
+
+Still to do in this phase:
+
+- Signature, amount, and context checks for the IPN and webhook still sit in the route handlers. They are HTTP mapping (status codes and alert emails), so moving them is optional.
+- Admin coupon and plan-price handlers in `routes/admin/billing.ts` are untouched.
 
 Target files:
 
@@ -510,18 +522,18 @@ Expected result:
 
 ## Phase 14: Tests To Add
 
-Priority tests:
+Priority tests (items marked *done* are covered by `tests/paymentFlows.test.ts` and `tests/adminBillingReview.test.ts`, added in Phase 5):
 
 - Signup requires phone and agreement.
 - Signup saves phone and agreement timestamp.
-- Checkout cancel marks session `cancelled`.
-- Cancelled checkout does not enter Needs Review.
-- Abandoned checkout expires after 15 minutes.
-- Expired checkout does not enter Needs Review.
-- Failed PayHere IPN enters Needs Review.
-- Successful PayHere IPN upgrades the user.
-- Duplicate PayHere IPN does not double-upgrade or double-count revenue.
-- Billing review can be marked resolved with an admin note.
+- Checkout cancel marks session `cancelled`. *done*
+- Cancelled checkout does not enter Needs Review. *done*
+- Abandoned checkout expires after 15 minutes. *done*
+- Expired checkout does not enter Needs Review. *done*
+- Failed PayHere IPN enters Needs Review. *done*
+- Successful PayHere IPN upgrades the user. *done*
+- Duplicate PayHere IPN does not double-upgrade or double-count revenue. *done*
+- Billing review can be marked resolved with an admin note. *done*
 - CV import upload rejects unsupported/oversized files with friendly messages.
 - CV import queued job polling maps pending, ready, failed, and expired states correctly.
 - PDF download quota rolls back when PDF job creation fails.

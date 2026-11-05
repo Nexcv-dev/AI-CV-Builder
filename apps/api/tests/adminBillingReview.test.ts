@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerAdminBillingRoutes, type AdminBillingRouteDeps } from '../routes/admin/billing';
-import { formatUtcDay, startOfUtcDay } from '../server-utils/dates';
-import { adminPaymentSummary, parsePaymentAmountCents } from '../server-utils/dto/admin';
 import { isPaidBillingPlan } from '../server-utils/payHere';
 import { escapeRegex, isValidDocumentId } from '../server-utils/requestValidation';
 import { createFakeModel, createResponse, createRouteCapture, type FakeDoc } from './helpers/fakeModels';
@@ -56,10 +54,6 @@ const createHarness = (seed: { checkouts?: FakeDoc[]; transactions?: FakeDoc[] }
         isValidDocumentId,
         isPaidBillingPlan,
         escapeRegex,
-        parsePaymentAmountCents,
-        adminPaymentSummary,
-        startOfUtcDay,
-        formatUtcDay,
         recordAdminAuditLog: vi.fn(async () => undefined),
         sendError: vi.fn((res: any, status: number, message: string) => res.status(status).json({ error: message })),
     };

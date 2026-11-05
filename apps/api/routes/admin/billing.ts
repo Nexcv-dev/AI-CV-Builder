@@ -1,11 +1,19 @@
 import { Router, Request, Response } from 'express';
-import type { Model } from 'mongoose';
 import type { BillingPlan } from '../../server-models/userPlan';
 import type { AppRouteDeps } from '../../routeDeps';
+import {
+    adminCheckoutReviewSummary,
+    adminPaymentReviewSummary,
+    checkoutNeedsReviewFilter,
+    isBillingReviewType,
+    paymentNeedsReviewFilter,
+    resolveBillingReview,
+    summarizeBillingRevenue,
+} from '../../services/billingReviewService';
+import { markExpiredPendingCheckouts } from '../../services/checkoutSessionService';
 
 
 export type AdminBillingRouteDeps = Pick<AppRouteDeps,
-    | 'adminPaymentSummary'
     | 'BillingPlanSetting'
     | 'CheckoutSession'
     | 'Coupon'
@@ -13,13 +21,11 @@ export type AdminBillingRouteDeps = Pick<AppRouteDeps,
     | 'deleteLemonSqueezyDiscount'
     | 'deleteLemonSqueezyDiscountsByCode'
     | 'escapeRegex'
-    | 'formatUtcDay'
     | 'getAdminBillingPlans'
     | 'getPlanPrice'
     | 'isPaidBillingPlan'
     | 'isValidDocumentId'
     | 'normalizeCouponCode'
-    | 'parsePaymentAmountCents'
     | 'PAYHERE_PLAN_PRICES'
     | 'PaymentTransaction'
     | 'planDisplayName'
@@ -27,7 +33,6 @@ export type AdminBillingRouteDeps = Pick<AppRouteDeps,
     | 'requireAdminPermission'
     | 'sanitizeProfileField'
     | 'sendError'
-    | 'startOfUtcDay'
     | 'syncLemonSqueezyDiscount'
     | 'User'
 >;
@@ -44,14 +49,10 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
         sanitizeProfileField,
         currentUserId,
         isValidDocumentId,
-        startOfUtcDay,
-        formatUtcDay,
-        parsePaymentAmountCents,
         escapeRegex,
         getAdminBillingPlans,
         planDisplayName,
         getPlanPrice,
-        adminPaymentSummary,
         normalizeCouponCode,
         isPaidBillingPlan,
         PAYHERE_PLAN_PRICES,
@@ -60,33 +61,6 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
         deleteLemonSqueezyDiscount,
         deleteLemonSqueezyDiscountsByCode,
     } = deps;
-
-    const markExpiredPendingCheckouts = async () => {
-        const expiringReservedCheckouts = await CheckoutSession.find({
-            status: 'pending',
-            expiresAt: { $lt: new Date() },
-            couponReserved: true,
-            couponCode: { $exists: true, $ne: '' },
-        }).select('_id couponCode');
-
-        for (const checkout of expiringReservedCheckouts) {
-            const claimed = await CheckoutSession.updateOne(
-                { _id: checkout._id, status: 'pending', couponReserved: true },
-                { $set: { status: 'expired', billingReviewStatus: 'resolved', expiredAt: new Date(), couponReserved: false } }
-            );
-            if (claimed.modifiedCount > 0) {
-                await Coupon.updateOne(
-                    { code: checkout.couponCode, redeemedCount: { $gt: 0 } },
-                    { $inc: { redeemedCount: -1 } }
-                );
-            }
-        }
-
-        await CheckoutSession.updateMany(
-            { status: 'pending', expiresAt: { $lt: new Date() } },
-            { $set: { status: 'expired', billingReviewStatus: 'resolved', expiredAt: new Date() } }
-        );
-    };
 
     const adminCouponSummary = (coupon: any) => ({
         id: coupon._id?.toString?.() || coupon.id,
@@ -136,48 +110,10 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
         }
     };
 
-    const adminCheckoutReviewSummary = (checkout: any) => {
-        const user = checkout.userId && typeof checkout.userId === 'object' ? checkout.userId : null;
-        const currency = String(checkout.currency || 'LKR').toUpperCase();
-        return {
-            id: checkout._id?.toString?.() || checkout.id,
-            provider: currency === 'USD' ? 'lemonsqueezy' : 'payhere',
-            paymentId: checkout.status === 'failed' ? 'Failed checkout' : 'Checkout review',
-            orderId: checkout.orderId,
-            reviewType: 'checkout',
-            reviewStatus: checkout.status,
-            billingReviewStatus: checkout.billingReviewStatus || 'open',
-            reviewedAt: checkout.reviewedAt,
-            reviewNote: checkout.reviewNote || '',
-            user: user ? {
-                id: user._id?.toString?.() || user.id,
-                email: user.email,
-                displayName: user.displayName,
-            } : null,
-            plan: checkout.plan || null,
-            amount: (Math.max(0, checkout.finalAmountCents || 0) / 100).toFixed(2),
-            amountCents: checkout.finalAmountCents || 0,
-            baseAmountCents: checkout.baseAmountCents || 0,
-            discountCents: checkout.discountCents || 0,
-            finalAmountCents: checkout.finalAmountCents || 0,
-            couponCode: checkout.couponCode || '',
-            currency,
-            statusCode: checkout.status,
-            processed: false,
-            rawPayload: {
-                checkoutStatus: checkout.status,
-                expiresAt: checkout.expiresAt,
-                couponCode: checkout.couponCode || '',
-            },
-            createdAt: checkout.createdAt,
-            updatedAt: checkout.updatedAt,
-        };
-    };
-
     router.patch('/api/admin/billing/review/:type/:id', requireAdminPermission('billing.write'), async (req: Request, res: Response) => {
         try {
             const reviewType = req.params.type;
-            if (reviewType !== 'payment' && reviewType !== 'checkout') {
+            if (!isBillingReviewType(reviewType)) {
                 return res.status(400).json({ error: 'Choose a valid billing review type.' });
             }
             if (!isValidDocumentId(req.params.id)) {
@@ -185,41 +121,28 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
             }
 
             const reviewNote = sanitizeProfileField(req.body?.note, 500);
-            const reviewUpdate = {
-                billingReviewStatus: 'resolved',
-                reviewedAt: new Date(),
-                reviewedBy: currentUserId(req),
-                reviewNote,
-            };
-            // TODO(cleanup Phase 12): split into typed payment/checkout branches; the handler reads fields from both models.
-            const model = (reviewType === 'payment' ? PaymentTransaction : CheckoutSession) as Model<any>;
-            const item = await model.findByIdAndUpdate(req.params.id, { $set: reviewUpdate }, { new: true, runValidators: true }).populate('userId', 'email displayName');
-            if (!item) return res.status(404).json({ error: 'Review item not found.' });
+            const resolved = await resolveBillingReview(
+                { CheckoutSession, PaymentTransaction },
+                { type: reviewType, id: req.params.id, reviewerId: currentUserId(req), note: reviewNote }
+            );
+            if (!resolved) return res.status(404).json({ error: 'Review item not found.' });
 
             await recordAdminAuditLog({
                 actorId: currentUserId(req),
                 action: 'billing.review.resolved',
-                targetType: reviewType === 'payment' ? 'payment_transaction' : 'checkout_session',
-                targetId: item._id?.toString?.() || req.params.id,
-                targetLabel: reviewType === 'payment' ? item.paymentId : item.orderId,
+                targetType: resolved.targetType,
+                targetId: resolved.targetId,
+                targetLabel: resolved.targetLabel,
                 metadata: {
                     reviewType,
-                    orderId: item.orderId,
+                    orderId: resolved.orderId,
                     noteProvided: Boolean(reviewNote),
                 },
                 ip: req.ip,
                 userAgent: req.get('user-agent'),
             });
 
-            return res.json({
-                payment: reviewType === 'payment'
-                    ? {
-                        ...adminPaymentSummary(item),
-                        reviewType: 'payment',
-                        reviewStatus: item.processed ? 'processed' : 'unprocessed',
-                    }
-                    : adminCheckoutReviewSummary(item),
-            });
+            return res.json({ payment: resolved.summary });
         } catch (error) {
             return sendError(res, 500, 'Could not resolve billing review.', error);
         }
@@ -458,7 +381,7 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
 
     router.get('/api/admin/payments', requireAdminPermission('billing.read'), async (req: Request, res: Response) => {
         try {
-            await markExpiredPendingCheckouts();
+            await markExpiredPendingCheckouts(CheckoutSession, Coupon);
             const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
             const plan = typeof req.query.plan === 'string' ? req.query.plan.trim() : '';
             const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
@@ -477,8 +400,7 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
             } else if (status === 'unprocessed') {
                 filter.processed = false;
             } else if (status === 'review') {
-                filter.processed = false;
-                filter.billingReviewStatus = { $ne: 'resolved' };
+                Object.assign(filter, paymentNeedsReviewFilter());
             }
     
             if (search) {
@@ -497,7 +419,7 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
                 .populate('userId', 'email displayName');
             let checkoutReviewItems: any[] = [];
             if (status === 'review') {
-                const checkoutFilter: any = { status: 'failed', billingReviewStatus: { $ne: 'resolved' } };
+                const checkoutFilter: any = checkoutNeedsReviewFilter();
                 if (isPaidBillingPlan(plan)) checkoutFilter.plan = plan;
                 if (provider === 'payhere') checkoutFilter.currency = 'LKR';
                 if (provider === 'lemonsqueezy') checkoutFilter.currency = 'USD';
@@ -523,94 +445,22 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
             ] = await Promise.all([
                 PaymentTransaction.find({ processed: true }).select('amount currency provider plan createdAt'),
                 CheckoutSession.countDocuments({ status: 'pending' }),
-                CheckoutSession.countDocuments({ status: 'failed', billingReviewStatus: { $ne: 'resolved' } }),
-                PaymentTransaction.countDocuments({ processed: false, billingReviewStatus: { $ne: 'resolved' } }),
+                CheckoutSession.countDocuments(checkoutNeedsReviewFilter()),
+                PaymentTransaction.countDocuments(paymentNeedsReviewFilter()),
             ]);
-    
-            const revenueByCurrency: Record<string, { cents: number; count: number }> = {};
-            const revenueByProvider: Record<string, { count: number; byCurrency: Record<string, { cents: number; count: number }> }> = {};
-            const revenueByPlanCurrency: Record<string, Record<string, number>> = {};
-            const addCurrencyRevenue = (bucket: Record<string, { cents: number; count: number }>, currency: string, cents: number) => {
-                bucket[currency] = bucket[currency] || { cents: 0, count: 0 };
-                bucket[currency].cents += cents;
-                bucket[currency].count += 1;
-            };
-            const resolvePaymentCurrency = (payment: any) => (
-                String(payment.currency || (payment.provider === 'lemonsqueezy' ? 'USD' : 'LKR')).toUpperCase()
-            );
-
-            allProcessedPayments.forEach((payment: any) => {
-                const cents = parsePaymentAmountCents(payment.amount);
-                const currency = resolvePaymentCurrency(payment);
-                const providerKey = payment.provider || (currency === 'USD' ? 'lemonsqueezy' : 'payhere');
-                const planKey = payment.plan || 'unknown';
-
-                addCurrencyRevenue(revenueByCurrency, currency, cents);
-                revenueByProvider[providerKey] = revenueByProvider[providerKey] || { count: 0, byCurrency: {} };
-                revenueByProvider[providerKey].count += 1;
-                addCurrencyRevenue(revenueByProvider[providerKey].byCurrency, currency, cents);
-                revenueByPlanCurrency[planKey] = revenueByPlanCurrency[planKey] || {};
-                revenueByPlanCurrency[planKey][currency] = (revenueByPlanCurrency[planKey][currency] || 0) + cents;
-            });
-
-            const localProcessedPayments = allProcessedPayments.filter((payment: any) => resolvePaymentCurrency(payment) === 'LKR');
-            const revenueCents = revenueByCurrency.LKR?.cents || 0;
-            const revenueByPlan = localProcessedPayments.reduce((acc: Record<string, number>, payment: any) => {
-                const key = payment.plan || 'unknown';
-                acc[key] = (acc[key] || 0) + parsePaymentAmountCents(payment.amount);
-                return acc;
-            }, {});
-            const sevenDaysAgo = startOfUtcDay();
-            sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6);
-            const revenueByDay = new Map<string, number>();
-            const revenueByDayCurrency = new Map<string, Record<string, number>>();
-            allProcessedPayments.forEach((payment: any) => {
-                if (!payment.createdAt || payment.createdAt < sevenDaysAgo) return;
-                const day = formatUtcDay(payment.createdAt);
-                const cents = parsePaymentAmountCents(payment.amount);
-                const currency = resolvePaymentCurrency(payment);
-                if (currency === 'LKR') revenueByDay.set(day, (revenueByDay.get(day) || 0) + cents);
-                const dayCurrencies = revenueByDayCurrency.get(day) || {};
-                dayCurrencies[currency] = (dayCurrencies[currency] || 0) + cents;
-                revenueByDayCurrency.set(day, dayCurrencies);
-            });
-            const dailyRevenue = Array.from({ length: 7 }, (_, index) => {
-                const date = new Date(sevenDaysAgo);
-                date.setUTCDate(sevenDaysAgo.getUTCDate() + index);
-                const day = formatUtcDay(date);
-                return { day, cents: revenueByDay.get(day) || 0 };
-            });
-            const dailyRevenueByCurrency = Array.from({ length: 7 }, (_, index) => {
-                const date = new Date(sevenDaysAgo);
-                date.setUTCDate(sevenDaysAgo.getUTCDate() + index);
-                const day = formatUtcDay(date);
-                return { day, currencies: revenueByDayCurrency.get(day) || {} };
-            });
     
             return res.json({
                 payments: [
-                    ...payments.map((payment: any) => ({
-                        ...adminPaymentSummary(payment),
-                        reviewType: 'payment',
-                        reviewStatus: payment.processed ? 'processed' : 'unprocessed',
-                    })),
+                    ...payments.map(adminPaymentReviewSummary),
                     ...checkoutReviewItems.map(adminCheckoutReviewSummary),
                 ]
                     .sort((a: any, b: any) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
                     .slice(0, limit),
                 summary: {
-                    totalRevenueCents: revenueCents,
-                    currency: 'LKR',
-                    processedCount: allProcessedPayments.length,
+                    ...summarizeBillingRevenue(allProcessedPayments),
                     pendingCheckoutCount,
                     checkoutReviewCount,
                     failedPaymentCount,
-                    revenueByPlan,
-                    dailyRevenue,
-                    revenueByCurrency,
-                    revenueByProvider,
-                    revenueByPlanCurrency,
-                    dailyRevenueByCurrency,
                 },
             });
         } catch (error) {

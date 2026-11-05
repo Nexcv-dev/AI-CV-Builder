@@ -1,12 +1,18 @@
 import express, { Router, Request, Response } from 'express';
 import type { BillingPlan } from '../server-models/userPlan';
 import {
-    checkoutExpiryDate,
+    cancelPendingCheckout,
+    failPendingCheckout,
     LEMON_SQUEEZY_CHECKOUT_EXPIRY_MS,
     markExpiredPendingCheckouts,
     PAYHERE_CHECKOUT_EXPIRY_MS,
-    stalePaymentProcessingDate,
+    startPendingCheckout,
 } from '../services/checkoutSessionService';
+import {
+    processVerifiedPayment,
+    recordUnprocessedPayment,
+    type PaymentTransactionRecord,
+} from '../services/paymentProcessingService';
 import type {
     BillingPlansResponse,
     CheckoutCancelResponse,
@@ -25,7 +31,6 @@ export type PaymentRouteDeps = Pick<AppRouteDeps,
     | 'CheckoutSession'
     | 'Coupon'
     | 'createLemonSqueezyCheckout'
-    | 'createRenewedPlanExpiry'
     | 'currentUserId'
     | 'generateTransactionId'
     | 'getApiOrigin'
@@ -36,7 +41,6 @@ export type PaymentRouteDeps = Pick<AppRouteDeps,
     | 'getPayHereMerchantConfig'
     | 'getPublicBillingPlans'
     | 'isLemonSqueezyConfigured'
-    | 'isMongoDuplicateKeyError'
     | 'isPaidBillingPlan'
     | 'logError'
     | 'logEvent'
@@ -71,7 +75,6 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
         billingQuoteLimiter,
         User,
         buildPayHereCheckoutHash,
-        createRenewedPlanExpiry,
         currentUserId,
         generateTransactionId,
         createLemonSqueezyCheckout,
@@ -82,7 +85,6 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
         getPayHereCheckoutUrl,
         getPayHereMerchantConfig,
         getPublicBillingPlans,
-        isMongoDuplicateKeyError,
         isPaidBillingPlan,
         logError,
         logEvent,
@@ -106,40 +108,12 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
         verifyPayHereMd5Signature,
     } = deps;
 
-    const reserveCouponRedemption = async (couponCode?: string) => {
-        if (!couponCode) return false;
-        const reserved = await Coupon.findOneAndUpdate(
-            {
-                code: couponCode,
-                $or: [
-                    { maxRedemptions: { $exists: false } },
-                    { maxRedemptions: null },
-                    { $expr: { $lt: ['$redeemedCount', '$maxRedemptions'] } },
-                ],
-            },
-            { $inc: { redeemedCount: 1 } },
-            { returnDocument: 'after' }
-        );
-        return Boolean(reserved);
-    };
-
-    const releaseCouponRedemption = async (checkoutSession: any, session?: any) => {
-        if (!checkoutSession?.couponCode || !checkoutSession?.couponReserved) return;
-        const options = session ? { session } : undefined;
-        const claimed = await CheckoutSession.updateOne(
-            { _id: checkoutSession._id, couponReserved: true },
-            { $set: { couponReserved: false } },
-            options
-        );
-        if (claimed.modifiedCount > 0) {
-            checkoutSession.couponReserved = false;
-            await Coupon.updateOne(
-                { code: checkoutSession.couponCode, redeemedCount: { $gt: 0 } },
-                { $inc: { redeemedCount: -1 } },
-                options
-            );
-        }
-    };
+    const checkoutModels = { CheckoutSession, Coupon };
+    const paymentProcessingDeps = { mongoose, User, CheckoutSession, PaymentTransaction };
+    const couponLimitReached = (res: Response) => res.status(409).json({
+        error: 'Coupon redemption limit reached. Please refresh checkout and try again.',
+        code: API_ERROR_CODES.COUPON_LIMIT_REACHED,
+    });
 
     const alertPayHereIpnFailure = async (
         event: string,
@@ -317,31 +291,22 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
             }
 
             if (payload.status_code !== '2') {
-                await PaymentTransaction.findOneAndUpdate(
-                    transactionFilter,
-                    {
-                        provider: 'payhere',
-                        paymentId: payload.payment_id,
-                        orderId: payload.order_id,
-                        ...(checkoutSession?.userId ? { userId: checkoutSession.userId } : (context.userId ? { userId: context.userId } : {})),
-                        ...(checkoutSession?.plan ? { plan: checkoutSession.plan } : (context.plan ? { plan: context.plan } : {})),
-                        amount: payload.payhere_amount,
-                        currency: payload.payhere_currency,
-                        baseAmountCents: checkoutSession?.baseAmountCents,
-                        discountCents: checkoutSession?.discountCents,
-                        finalAmountCents: checkoutSession?.finalAmountCents,
-                        couponCode: checkoutSession?.couponCode,
-                        statusCode: payload.status_code,
-                        processed: false,
-                        rawPayload: payload,
-                    },
-                    { upsert: true, new: true, setDefaultsOnInsert: true }
-                );
-                if (checkoutSession && checkoutSession.status === 'pending') {
-                    await releaseCouponRedemption(checkoutSession);
-                    checkoutSession.status = 'failed';
-                    await checkoutSession.save();
-                }
+                await recordUnprocessedPayment(PaymentTransaction, {
+                    provider: 'payhere',
+                    paymentId: payload.payment_id,
+                    orderId: payload.order_id,
+                    ...(checkoutSession?.userId ? { userId: checkoutSession.userId } : (context.userId ? { userId: context.userId } : {})),
+                    ...(checkoutSession?.plan ? { plan: checkoutSession.plan } : (context.plan ? { plan: context.plan } : {})),
+                    amount: payload.payhere_amount,
+                    currency: payload.payhere_currency,
+                    baseAmountCents: checkoutSession?.baseAmountCents,
+                    discountCents: checkoutSession?.discountCents,
+                    finalAmountCents: checkoutSession?.finalAmountCents,
+                    couponCode: checkoutSession?.couponCode,
+                    statusCode: payload.status_code,
+                    rawPayload: payload,
+                });
+                await failPendingCheckout(checkoutModels, checkoutSession);
                 logEvent('warn', 'payment.payhere_ipn_unprocessed_status', {
                     orderId: payload.order_id,
                     paymentId: payload.payment_id,
@@ -426,7 +391,7 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
             }
 
             const purchasedPlan = checkoutSession?.plan || context.plan!;
-            const baseTransaction = {
+            const transaction: PaymentTransactionRecord = {
                 provider: 'payhere',
                 paymentId: payload.payment_id,
                 orderId: payload.order_id,
@@ -441,53 +406,21 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
                 statusCode: payload.status_code,
                 rawPayload: payload,
             };
-            const upsertReceivedTransaction = async () => {
-                try {
-                    return await PaymentTransaction.findOneAndUpdate(
-                        transactionFilter,
-                        {
-                            $setOnInsert: {
-                                ...baseTransaction,
-                                processed: false,
-                            },
-                            $set: {
-                                statusCode: payload.status_code,
-                                rawPayload: payload,
-                            },
-                        },
-                        { upsert: true, new: true, setDefaultsOnInsert: true }
-                    );
-                } catch (error) {
-                    if (!isMongoDuplicateKeyError(error)) throw error;
-                    const transaction = await PaymentTransaction.findOne(transactionFilter);
-                    if (!transaction) throw error;
-                    return transaction;
-                }
-            };
-            const receivedTransaction = await upsertReceivedTransaction();
-            if (receivedTransaction.processed) {
+            const result = await processVerifiedPayment(paymentProcessingDeps, {
+                transaction,
+                refreshOnReceive: { statusCode: payload.status_code, rawPayload: payload },
+                user,
+                plan: purchasedPlan,
+                checkoutSession,
+            });
+            if (result.status === 'duplicate_processed') {
                 logEvent('info', 'payment.payhere_ipn_duplicate_processed', {
                     orderId: payload.order_id,
                     paymentId: payload.payment_id,
                 });
                 return res.status(200).send('OK');
             }
-
-            const staleProcessingBefore = stalePaymentProcessingDate();
-            const processingStartedAt = new Date();
-            const claimedTransaction = await PaymentTransaction.findOneAndUpdate(
-                {
-                    ...transactionFilter,
-                    processed: false,
-                    $or: [
-                        { processingStartedAt: { $exists: false } },
-                        { processingStartedAt: { $lt: staleProcessingBefore } },
-                    ],
-                },
-                { $set: { processingStartedAt } },
-                { new: true }
-            );
-            if (!claimedTransaction) {
+            if (result.status === 'duplicate_in_progress') {
                 logEvent('info', 'payment.payhere_ipn_duplicate_in_progress', {
                     orderId: payload.order_id,
                     paymentId: payload.payment_id,
@@ -495,56 +428,7 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
                 return res.status(200).send('OK');
             }
 
-            let processedUser = user;
-            const session = await mongoose.startSession();
-            try {
-                await session.withTransaction(async () => {
-                    const planStartedAt = new Date();
-                    const planExpiresAt = createRenewedPlanExpiry(purchasedPlan, user, planStartedAt);
-                    const userUpdate: Record<string, unknown> = {
-                        $set: {
-                            plan: purchasedPlan,
-                            planStartedAt,
-                            planExpiresAt,
-                        },
-                    };
-                    if (purchasedPlan === 'payg') {
-                        userUpdate.$inc = { paygCvSaveCredits: 1 };
-                    }
-
-                    const updatedUser = await User.findByIdAndUpdate(
-                        user._id,
-                        userUpdate,
-                        { new: true, session }
-                    );
-                    if (!updatedUser) {
-                        throw new Error('User not found while processing payment transaction.');
-                    }
-                    processedUser = updatedUser;
-
-                    if (checkoutSession) {
-                        await CheckoutSession.updateOne(
-                            { _id: checkoutSession._id },
-                            { $set: { status: 'paid', couponReserved: false } },
-                            { session }
-                        );
-                    }
-
-                    await PaymentTransaction.findOneAndUpdate(
-                        transactionFilter,
-                        {
-                            ...baseTransaction,
-                            userId: updatedUser._id,
-                            processed: true,
-                            processedAt: new Date(),
-                        },
-                        { upsert: true, new: true, setDefaultsOnInsert: true, session }
-                    );
-                });
-            } finally {
-                await session.endSession();
-            }
-
+            const processedUser = result.user;
             await sendBillingSuccessNotifications({
                 user: processedUser,
                 plan: purchasedPlan,
@@ -629,38 +513,15 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
                     code: API_ERROR_CODES.COUPON_INVALID,
                 });
             }
-            await markExpiredPendingCheckouts(CheckoutSession, Coupon);
-            const couponReserved = quote.couponCode ? await reserveCouponRedemption(quote.couponCode) : false;
-            if (quote.couponCode && !couponReserved) {
-                return res.status(409).json({
-                    error: 'Coupon redemption limit reached. Please refresh checkout and try again.',
-                    code: API_ERROR_CODES.COUPON_LIMIT_REACHED,
-                });
-            }
             const orderId = `${generateTransactionId()}-${userId}-${plan}`;
-            try {
-                await CheckoutSession.create({
-                    orderId,
-                    userId,
-                    plan,
-                    currency: quote.currency,
-                    baseAmountCents: quote.baseAmountCents,
-                    discountCents: quote.discountCents,
-                    finalAmountCents: quote.finalAmountCents,
-                    couponCode: quote.couponCode || undefined,
-                    couponReserved,
-                    status: 'pending',
-                    expiresAt: checkoutExpiryDate(PAYHERE_CHECKOUT_EXPIRY_MS),
-                });
-            } catch (error) {
-                if (couponReserved && quote.couponCode) {
-                    await Coupon.updateOne(
-                        { code: quote.couponCode, redeemedCount: { $gt: 0 } },
-                        { $inc: { redeemedCount: -1 } }
-                    );
-                }
-                throw error;
-            }
+            const started = await startPendingCheckout(checkoutModels, {
+                orderId,
+                userId,
+                plan,
+                quote,
+                expiresInMs: PAYHERE_CHECKOUT_EXPIRY_MS,
+            });
+            if (!started.ok) return couponLimitReached(res);
             const frontendOrigin = getFrontendOrigin(req);
             const notifyUrl = process.env.PAYHERE_NOTIFY_URL?.trim() || `${getApiOrigin(req)}/api/payhere/ipn`;
             const checkoutPayload = {
@@ -750,37 +611,14 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
             }
 
             const orderId = `${generateTransactionId()}-${userId}-${plan}-ls`;
-            await markExpiredPendingCheckouts(CheckoutSession, Coupon);
-            const couponReserved = quote.couponCode ? await reserveCouponRedemption(quote.couponCode) : false;
-            if (quote.couponCode && !couponReserved) {
-                return res.status(409).json({
-                    error: 'Coupon redemption limit reached. Please refresh checkout and try again.',
-                    code: API_ERROR_CODES.COUPON_LIMIT_REACHED,
-                });
-            }
-            try {
-                await CheckoutSession.create({
-                    orderId,
-                    userId,
-                    plan,
-                    currency: quote.currency,
-                    baseAmountCents: quote.baseAmountCents,
-                    discountCents: quote.discountCents,
-                    finalAmountCents: quote.finalAmountCents,
-                    couponCode: quote.couponCode || undefined,
-                    couponReserved,
-                    status: 'pending',
-                    expiresAt: checkoutExpiryDate(LEMON_SQUEEZY_CHECKOUT_EXPIRY_MS),
-                });
-            } catch (error) {
-                if (couponReserved && quote.couponCode) {
-                    await Coupon.updateOne(
-                        { code: quote.couponCode, redeemedCount: { $gt: 0 } },
-                        { $inc: { redeemedCount: -1 } }
-                    );
-                }
-                throw error;
-            }
+            const started = await startPendingCheckout(checkoutModels, {
+                orderId,
+                userId,
+                plan,
+                quote,
+                expiresInMs: LEMON_SQUEEZY_CHECKOUT_EXPIRY_MS,
+            });
+            if (!started.ok) return couponLimitReached(res);
             const frontendOrigin = getFrontendOrigin(req);
             const checkout = await createLemonSqueezyCheckout({
                 plan,
@@ -871,9 +709,8 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
                 return res.status(404).send('User not found.');
             }
 
-            const transactionFilter = { provider: 'lemonsqueezy' as const, paymentId };
             const purchasedPlan = checkoutSession?.plan || plan;
-            const baseTransaction = {
+            const transaction: PaymentTransactionRecord = {
                 provider: 'lemonsqueezy',
                 paymentId,
                 orderId,
@@ -888,88 +725,22 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
                 statusCode: eventName,
                 rawPayload: payload,
             };
-            const upsertReceivedTransaction = async () => {
-                try {
-                    return await PaymentTransaction.findOneAndUpdate(
-                        transactionFilter,
-                        {
-                            $setOnInsert: {
-                                ...baseTransaction,
-                                processed: false,
-                            },
-                        },
-                        { upsert: true, new: true, setDefaultsOnInsert: true }
-                    );
-                } catch (error) {
-                    if (!isMongoDuplicateKeyError(error)) throw error;
-                    const transaction = await PaymentTransaction.findOne(transactionFilter);
-                    if (!transaction) throw error;
-                    return transaction;
-                }
-            };
-            const receivedTransaction = await upsertReceivedTransaction();
-            if (receivedTransaction.processed) {
+            const result = await processVerifiedPayment(paymentProcessingDeps, {
+                transaction,
+                user,
+                plan: purchasedPlan,
+                checkoutSession,
+            });
+            if (result.status === 'duplicate_processed') {
                 logEvent('info', 'payment.lemonsqueezy_webhook_duplicate_processed', { orderId, paymentId });
                 return res.status(200).send('OK');
             }
-
-            const staleProcessingBefore = stalePaymentProcessingDate();
-            const processingStartedAt = new Date();
-            const claimedTransaction = await PaymentTransaction.findOneAndUpdate(
-                {
-                    ...transactionFilter,
-                    processed: false,
-                    $or: [
-                        { processingStartedAt: { $exists: false } },
-                        { processingStartedAt: { $lt: staleProcessingBefore } },
-                    ],
-                },
-                { $set: { processingStartedAt } },
-                { new: true }
-            );
-            if (!claimedTransaction) {
+            if (result.status === 'duplicate_in_progress') {
                 logEvent('info', 'payment.lemonsqueezy_webhook_duplicate_in_progress', { orderId, paymentId });
                 return res.status(200).send('OK');
             }
 
-            const session = await mongoose.startSession();
-            let processedUser = user;
-            try {
-                await session.withTransaction(async () => {
-                    const userUpdate: Record<string, unknown> = {
-                        $set: {
-                            plan: purchasedPlan,
-                            planStartedAt: new Date(),
-                            planExpiresAt: createRenewedPlanExpiry(purchasedPlan, user),
-                        },
-                    };
-                    if (purchasedPlan === 'payg') {
-                        userUpdate.$inc = { paygCvSaveCredits: 1 };
-                    }
-
-                    const updatedUser = await User.findByIdAndUpdate(user._id, userUpdate, { new: true, session });
-                    if (!updatedUser) throw new Error('User not found while processing Lemon Squeezy transaction.');
-                    processedUser = updatedUser;
-
-                    if (checkoutSession) {
-                        await CheckoutSession.updateOne({ _id: checkoutSession._id }, { $set: { status: 'paid', couponReserved: false } }, { session });
-                    }
-
-                    await PaymentTransaction.findOneAndUpdate(
-                        transactionFilter,
-                        {
-                            ...baseTransaction,
-                            userId: updatedUser._id,
-                            processed: true,
-                            processedAt: new Date(),
-                        },
-                        { upsert: true, new: true, setDefaultsOnInsert: true, session }
-                    );
-                });
-            } finally {
-                await session.endSession();
-            }
-
+            const processedUser = result.user;
             await sendBillingSuccessNotifications({
                 user: processedUser,
                 plan: checkoutSession?.plan || plan,
@@ -1039,21 +810,12 @@ export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
                 });
             }
 
-            const checkoutSession = await CheckoutSession.findOne({
-                orderId,
-                userId: currentUserId(req),
-                status: 'pending',
-            });
+            const checkoutSession = await cancelPendingCheckout(checkoutModels, { orderId, userId: currentUserId(req) });
             if (!checkoutSession) {
                 const response = { status: 'ignored' } satisfies CheckoutCancelResponse;
                 return res.json(response);
             }
 
-            await releaseCouponRedemption(checkoutSession);
-            checkoutSession.status = 'cancelled';
-            checkoutSession.billingReviewStatus = 'resolved';
-            checkoutSession.cancelledAt = new Date();
-            await checkoutSession.save();
             logEvent('info', 'payment.checkout_cancelled_by_user', {
                 orderId,
                 userId: currentUserId(req),

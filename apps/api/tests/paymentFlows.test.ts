@@ -12,7 +12,6 @@ import {
     resolvePayHerePaymentContext,
     verifyPayHereMd5Signature,
 } from '../server-utils/payHere';
-import { isMongoDuplicateKeyError } from '../server-utils/requestValidation';
 import { markExpiredPendingCheckouts } from '../services/checkoutSessionService';
 import {
     createFakeModel,
@@ -116,8 +115,6 @@ const createHarness = (seed: {
         payHereAmountToCents,
         planDisplayName,
         isPaidBillingPlan,
-        isMongoDuplicateKeyError,
-        createRenewedPlanExpiry,
         sanitizeProfileField: vi.fn((value: unknown) => String(value ?? '').trim()),
         normalizeEmail: vi.fn((value: unknown) => String(value ?? '').trim().toLowerCase()),
         publicUser: vi.fn((user: FakeDoc) => ({ id: String(user._id), plan: user.plan })),
