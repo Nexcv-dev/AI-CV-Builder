@@ -1,7 +1,7 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { validateAuthEmail } from '../services/authValidationService';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
-import type { AppRouteDeps } from '../server';
+import type { AppRouteDeps } from '../routeDeps';
 
 const loginWithRegeneratedSession = (
     req: Request,

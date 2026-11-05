@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import type { AppRouteDeps } from '../../server';
+import type { AppRouteDeps } from '../../routeDeps';
 
 type DailyCount = {
     _id: string;

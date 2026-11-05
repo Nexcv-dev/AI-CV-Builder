@@ -17,7 +17,7 @@ import type {
     PayHereCheckoutResponse,
 } from '@nexcv/api-contracts/billing';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
-import type { AppRouteDeps } from '../server';
+import type { AppRouteDeps } from '../routeDeps';
 
 export type PaymentRouteDeps = Pick<AppRouteDeps,
     | 'billingQuoteLimiter'

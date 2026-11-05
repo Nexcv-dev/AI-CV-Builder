@@ -4,7 +4,7 @@ import { DEFAULT_APP_SETTINGS, getAppSettings } from '../../server-models/AppSet
 import { DEFAULT_CMS_CONTENT, mergeCmsContent, type CmsContent, type CmsFaqItem, type CmsLegalPage, type CmsPlanCopy } from '@nexcv/shared/contentDefaults';
 import { DEFAULT_EMAIL_TEMPLATES, mergeEmailTemplates, type EmailTemplateMap, type EmailTemplateKey } from '@nexcv/shared/emailTemplateDefaults';
 import type { AdminRoleConfig, AdminSettingsSummary, AdminUserListItem } from '@nexcv/api-contracts/admin';
-import type { AppRouteDeps } from '../../server';
+import type { AppRouteDeps } from '../../routeDeps';
 
 const roleSummary = (role: UserRole): AdminRoleConfig => ({
     role,

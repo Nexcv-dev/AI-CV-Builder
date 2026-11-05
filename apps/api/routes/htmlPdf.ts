@@ -14,7 +14,7 @@ import {
 } from '../services/htmlPdfJobService';
 import type { HtmlPdfJobResponse, HtmlPdfQuotaResponse } from '@nexcv/api-contracts/documents';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
-import type { AppRouteDeps } from '../server';
+import type { AppRouteDeps } from '../routeDeps';
 
 export type HtmlPdfRouteDeps = Pick<AppRouteDeps,
     | 'consumeHtmlPdfQuota'

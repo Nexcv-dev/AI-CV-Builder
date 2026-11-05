@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import type { BillingPlan } from '../../server-models/userPlan';
 import type { AdminUserDetail, AdminUserDocument, AdminUserListItem } from '@nexcv/api-contracts/admin';
-import type { AppRouteDeps } from '../../server';
+import type { AppRouteDeps } from '../../routeDeps';
 
 
 export type AdminUsersRouteDeps = Pick<AppRouteDeps,

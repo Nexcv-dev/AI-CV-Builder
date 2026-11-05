@@ -24,7 +24,7 @@ import {
     queuePdfJob,
     sendPdfJobDownload,
 } from '../services/pdfJobService';
-import type { AppRouteDeps } from '../server';
+import type { AppRouteDeps } from '../routeDeps';
 
 export type CvRouteDeps = Pick<AppRouteDeps,
     | 'aiLimiter'

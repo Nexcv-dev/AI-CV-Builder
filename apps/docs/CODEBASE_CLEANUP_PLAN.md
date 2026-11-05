@@ -47,7 +47,7 @@ Main structural problems:
 | Area | Finding |
 | --- | --- |
 | Route dependency wiring | `server.ts` builds one `routeDeps` object with about 200 entries. `bindDeps()` returns its input unchanged, so it adds no typing or checks. `routes/cv.ts` destructures 169 names: 107 are unused and 14 do not exist in `routeDeps`, so they are always `undefined`. `routes/public.ts` destructures 139 names, and 98 of those are unused. Fixed in Phase 3. |
-| `apps/api/server.ts` | 1307 lines with about 90 helper definitions: quota, session, auth guards, sanitizing, DTO builders, and SEO rendering. |
+| `apps/api/server.ts` | 1307 lines with about 90 helper definitions: quota, session, auth guards, sanitizing, DTO builders, and SEO rendering. Down to 185 lines after Phase 4. |
 | Large API routes | `auth.ts` (1246 lines), `cv.ts` (1243), `payment.ts` (1036), `public.ts` (1023), `admin/billing.ts` (566). |
 | Large web files | `LandingPage.tsx` (1142 lines), `Home.tsx` (1087), `CVForm.tsx` (1080), `HtmlToPdf.tsx` (894), `AdminDashboard.tsx` (779), `index.css` (1589). |
 | Workers | `apps/workers/pdf-lambda/src/handler.ts` is 1860 lines. |
@@ -158,7 +158,27 @@ Expected result:
 
 Goal: `apps/api/server.ts` keeps only bootstrap code (env, middleware, router mounting, listen) and gets under about 250 lines.
 
-Moves:
+Status: done (2026-11-05). `server.ts` went from 1307 lines to 185.
+
+- `routeDeps.ts` is the new composition root. It holds the `routeDeps` object and exports `AppRouteDeps`, and the routes import that type from it.
+- Helpers moved without changes:
+  - `middlewares/auth.ts`: auth guards and `currentUserId`.
+  - `server-utils/sendError.ts`.
+  - `server-utils/requestValidation.ts`: sanitizers, ID and Mongo error checks, upload limits.
+  - `server-utils/publicUrls.ts`: API, frontend, and public CV URLs.
+  - `server-utils/dates.ts`.
+  - `server-utils/dto/documents.ts` and `server-utils/dto/admin.ts`.
+  - `services/quotaService.ts` (now including the CV import quota), `services/sessionService.ts`, `services/cvDataService.ts`, and `services/geminiService.ts`.
+- Startup middleware moved into `middlewares/bodyParsers.ts`, `middlewares/appSettings.ts`, `middlewares/maintenance.ts`, `middlewares/errorHandler.ts`, and `configureSessionVersionCheck` in `middlewares/session.ts`. `server.ts` registers them in the original order.
+- robots.txt, sitemap.xml, static files, asset redirects, and the SEO index catch-all moved to `routes/frontend.ts` (not `routes/seo.ts`, because it serves the whole built web app). `distPath` and `siteUrl` are still computed in `server.ts` after `dotenv.config()` and passed in, so `.env` values keep applying.
+- Earlier attempts had left unused copies of these helpers in `services/` that had drifted from the live code. They are now replaced by the live versions, and `services/serverHelpers.ts` is deleted. Differences found in the dead copies, still to decide as separate changes:
+  - `services/cvDataService.ts` kept `textScale` when saving a CV. The live version drops it, so **the text-size setting is lost on every cloud save** (`POST`/`PUT` in `routes/cv.ts`). This is a real bug: the commit that added the text-size slider only updated the dead copy.
+  - The dead auth guards added `code` fields (`AUTH_REQUIRED`, `EMAIL_VERIFICATION_REQUIRED`, `FORBIDDEN`) to their error responses. The live guards send none. The frontend falls back to the 401 status for sign-in errors, but `isEmailVerificationRequiredError()` only matches the code.
+  - The dead copy set `MAX_BASE64_LENGTH` to 15 MiB. The live value is about 13.3 MiB (10 MiB file as base64).
+- Verification: every top-level statement of the old `server.ts` was checked against its new location, and the old and new servers were started side by side. Status, headers, and bodies matched for robots, sitemap, health, auth, documents, admin, SPA routes, asset redirects, and unknown API paths.
+- `server.ts` still re-exports the helpers that tests import from it.
+
+Moves (original plan):
 
 - Session helpers (`markSessionCurrent`, `invalidateUserSessions`, `isSessionCurrent`) → `services/sessionService.ts`.
 - Quota helpers (`get`/`increment`/`consume`/`rollback` for CV creation, CV import, and downloads) → `services/quotaService.ts`.

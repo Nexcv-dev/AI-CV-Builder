@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import type { Model } from 'mongoose';
 import type { BillingPlan } from '../../server-models/userPlan';
-import type { AppRouteDeps } from '../../server';
+import type { AppRouteDeps } from '../../routeDeps';
 
 
 export type AdminBillingRouteDeps = Pick<AppRouteDeps,

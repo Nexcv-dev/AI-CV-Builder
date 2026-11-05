@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { mergeTemplateValidationResults, validateAdminTemplateMetadata, validateAdminTemplateSource } from '@nexcv/templates/templateValidation';
 import type { AdminTemplateItem, AdminTemplateValidationResult } from '@nexcv/api-contracts/admin';
-import type { AppRouteDeps } from '../../server';
+import type { AppRouteDeps } from '../../routeDeps';
 
 export type AdminTemplatesRouteDeps = Pick<AppRouteDeps,
     | 'adminTemplateJsonParser'

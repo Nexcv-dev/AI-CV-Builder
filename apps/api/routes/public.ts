@@ -6,7 +6,7 @@ import type { TemplateName } from '@nexcv/templates';
 import type { PublicAppSettingsResponse, TemplateConfigResponse } from '@nexcv/api-contracts';
 import { mergeCmsContent } from '@nexcv/shared/contentDefaults';
 import { getOrSetCachedValue, parseCacheTtlMs } from '../server-utils/ttlCache';
-import type { AppRouteDeps } from '../server';
+import type { AppRouteDeps } from '../routeDeps';
 
 const repoRootPath = path.resolve(process.cwd(), '../..');
 const webDistPath = process.env.WEB_DIST_DIR
