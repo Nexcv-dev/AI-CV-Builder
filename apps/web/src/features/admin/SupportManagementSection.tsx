@@ -6,7 +6,7 @@ import {
   Send,
   X,
 } from 'lucide-react';
-import type { AdminSupportTicket } from './adminTypes';
+import type { AdminSupportSummary, AdminSupportTicket, AdminTicketForm } from './adminTypes';
 import { formatDate } from './adminUtils';
 import { DetailTile, TicketStatusBadge } from './AdminSharedComponents';
 
@@ -33,13 +33,13 @@ export default function SupportManagementSection({
   onSendReply,
 }: {
   tickets: AdminSupportTicket[];
-  summary: Record<'open' | 'pending' | 'resolved' | 'closed', number> | null;
+  summary: AdminSupportSummary | null;
   loading: boolean;
   search: string;
   statusFilter: string;
   typeFilter: string;
   selectedTicket: AdminSupportTicket | null;
-  ticketForm: { status: AdminSupportTicket['status']; priority: AdminSupportTicket['priority']; adminNotes: string };
+  ticketForm: AdminTicketForm;
   replyMessage: string;
   savingTicket: boolean;
   sendingReply: boolean;
@@ -48,7 +48,7 @@ export default function SupportManagementSection({
   onTypeFilterChange: (value: string) => void;
   onOpenTicket: (ticket: AdminSupportTicket) => void;
   onCloseDetail: () => void;
-  onFormChange: (value: { status: AdminSupportTicket['status']; priority: AdminSupportTicket['priority']; adminNotes: string }) => void;
+  onFormChange: (value: AdminTicketForm) => void;
   onSaveTicket: () => void;
   onReplyMessageChange: (value: string) => void;
   onSendReply: () => void;

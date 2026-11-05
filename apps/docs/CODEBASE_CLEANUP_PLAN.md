@@ -38,7 +38,7 @@ Already done:
 - Builder page components: `apps/web/src/pages/home/` holds the header, banners, overlays, and modals. The builder hooks are still missing.
 - CV form sections: `apps/web/src/components/form/` holds one component per section. The form hooks are still missing.
 - Auth modal steps: `apps/web/src/components/auth/` holds one component per step, plus `authValidation.ts`.
-- Admin hooks (partial): `useAdminBootstrap`, `useAdminTemplates`, `useAdminUsers`.
+- Admin hooks: every admin page has its own hook under `apps/web/src/features/admin/hooks/` (Phase 7).
 - Checkout timing constants live in `apps/api/services/checkoutSessionService.ts`: PayHere expiry, Lemon Squeezy expiry, and the payment processing lock timeout.
 - Backend auth validation lives in `apps/api/services/authValidationService.ts`.
 
@@ -49,7 +49,7 @@ Main structural problems:
 | Route dependency wiring | `server.ts` builds one `routeDeps` object with about 200 entries. `bindDeps()` returns its input unchanged, so it adds no typing or checks. `routes/cv.ts` destructures 169 names: 107 are unused and 14 do not exist in `routeDeps`, so they are always `undefined`. `routes/public.ts` destructures 139 names, and 98 of those are unused. Fixed in Phase 3. |
 | `apps/api/server.ts` | 1307 lines with about 90 helper definitions: quota, session, auth guards, sanitizing, DTO builders, and SEO rendering. Down to 185 lines after Phase 4. |
 | Large API routes | `auth.ts` (1246 lines), `cv.ts` (1243), `payment.ts` (1036), `public.ts` (1023), `admin/billing.ts` (566). After Phase 5: `payment.ts` 841 lines, `admin/billing.ts` 472. |
-| Large web files | `LandingPage.tsx` (1142 lines), `Home.tsx` (1087), `CVForm.tsx` (1080), `HtmlToPdf.tsx` (894), `AdminDashboard.tsx` (779), `index.css` (1589). |
+| Large web files | `LandingPage.tsx` (1142 lines), `Home.tsx` (1087), `CVForm.tsx` (1080), `HtmlToPdf.tsx` (894), `AdminDashboard.tsx` (779), `index.css` (1589). After Phase 7: `AdminDashboard.tsx` 281 lines. |
 | Workers | `apps/workers/pdf-lambda/src/handler.ts` is 1860 lines. |
 | Type safety | About 480 `any` usages in `apps/api` (574 by the ESLint rule, which counts every occurrence, including generics such as `Record<string, any>`). TypeScript `strict` is off. ESLint was added in Phase 2. |
 | Repo root | `Admin Templates/`, `sample templates/`, `Free CV Builder/`, and `nexcv-template-previews.zip` sit outside `apps/` and `packages/`. Together they have 75 tracked files. |
@@ -111,7 +111,7 @@ Warning baseline (2026-11-05): 1011 warnings across 303 files, 0 errors.
 | `packages/api-contracts` | 4 | 0 | 0 |
 | `apps/workers/email-worker` | 3 | 0 | 0 |
 
-Most of the `apps/api` unused-variable warnings came from the route dependency destructuring. Phase 3 removed it, and the count dropped from 225 to 16 (795 warnings in total after Phase 3, 756 after Phase 5).
+Most of the `apps/api` unused-variable warnings came from the route dependency destructuring. Phase 3 removed it, and the count dropped from 225 to 16 (795 warnings in total after Phase 3, 756 after Phase 5, 753 after Phase 7).
 
 Next step for this phase: once a workspace reaches zero warnings for a rule, raise that rule to `error` for that workspace, so the count cannot grow back.
 
@@ -276,7 +276,20 @@ Expected result:
 
 ## Phase 7: Admin Panel Cleanup
 
-Status: started. `useAdminBootstrap`, `useAdminTemplates`, and `useAdminUsers` exist, and shared pieces live in `AdminSharedComponents.tsx` and `AdminShellComponents.tsx`. Billing, promotions, support, settings, and audit hooks are still missing. `AdminDashboard.tsx` is about 779 lines.
+Status: hooks and billing split done (2026-11-05). `AdminDashboard.tsx` went from 779 lines to 281. No API request, response handling, or visible text changed.
+
+- Tests came first: `apps/web/tests/adminDashboard.test.tsx` (22 tests) was written and passing against the old dashboard before any code moved. It renders the real dashboard and sections on a fake `apiFetch` and checks what is sent and shown: billing filters, the Needs Review toggle, resolving checkout and payment reviews (list and count updates, failure, missing `billing.write`), plan prices and coupons in cents, support ticket save and reply, role changes, settings save, test email, audit filters, and that each page loads only its own data. Only the Settings and Email sections are stubbed, because they need a full settings document. A quick mutation check (keeping resolved items in the review queue and skipping the count decrement) made them fail as expected.
+- New hooks in `features/admin/hooks/`: `useAdminBilling`, `useAdminPromotions`, `useAdminSupport`, `useAdminRoles`, `useAdminSettings` (shared by the Settings, CMS, and Notifications pages), and `useAdminAudit`. Each takes `{ enabled }` and loads only while its page is open, like the existing `useAdminUsers` and `useAdminTemplates`.
+- `AdminDashboard.tsx` is now a shell: it picks the active page from the nav item, reads permissions, and renders one section. Page titles, descriptions, and header search placeholders live in `adminPageMeta.ts` instead of a nested ternary.
+- `BillingManagementSection.tsx` composes `billing/BillingStatsGrid`, `BillingGatewayRevenue`, `BillingFilters`, `BillingPaymentsTable`, `DailyRevenueStrip`, and `BillingReviewDrawer`. The revenue fallbacks, provider labels, and status labels are pure functions in `billing/billingDisplay.ts`, covered by `tests/adminHelpers.test.ts`.
+- Shared `AdminLoadingState` and `AdminErrorNotice` replace three copies of the loading and error boxes. The coupon form, ticket form, and support summary types moved to `adminTypes.ts`.
+- One small difference: the Roles page used to write its "recent users" list into the Users page state. `useAdminRoles` now keeps its own list. The Users page refetches when opened anyway, so the only effect is that it no longer flashes the Roles page list for a moment.
+
+Still to do in this phase:
+
+- The other large sections (`TemplateManagementSection.tsx` 608 lines, `SettingsManagementSection.tsx` 457) are not split yet.
+- `AdminDrawer`, `AdminEmptyState`, `AdminFilterBar`, and `AdminPermissionNotice` were not extracted. The billing and support drawers and filter bars are similar but not identical, so merging them is a visual change and belongs in its own PR.
+- `useAdminTemplates` (326 lines) is unchanged.
 
 Target files:
 
@@ -287,25 +300,25 @@ Target files:
 
 Suggested hooks:
 
-- `useAdminBilling`
-- `useAdminPromotions`
-- `useAdminSupport`
-- `useAdminSettings`
-- `useAdminAudit`
+- `useAdminBilling` (done)
+- `useAdminPromotions` (done)
+- `useAdminSupport` (done)
+- `useAdminSettings` (done)
+- `useAdminAudit` (done)
 
 Suggested billing components:
 
-- `BillingStatsGrid`
-- `BillingFilters`
-- `BillingPaymentsTable`
-- `BillingReviewDrawer`
-- `DailyRevenueStrip`
+- `BillingStatsGrid` (done)
+- `BillingFilters` (done)
+- `BillingPaymentsTable` (done)
+- `BillingReviewDrawer` (done)
+- `DailyRevenueStrip` (done)
 
 Suggested shared admin components:
 
 - `AdminDrawer`
 - `AdminEmptyState`
-- `AdminLoadingState`
+- `AdminLoadingState` (done)
 - `AdminFilterBar`
 - `AdminPermissionNotice`
 
@@ -540,7 +553,7 @@ Priority tests (items marked *done* are covered by `tests/paymentFlows.test.ts` 
 - Premium template access is enforced for queued and direct PDF flows.
 - Template rendering preserves page-break rules for long experience/education sections.
 - Profile image crop/zoom/position render consistently in preview and PDF.
-- Admin billing/support/settings/audit hooks handle loading, success, and error states.
+- Admin billing/support/settings/audit hooks handle loading, success, and error states. *done* (`apps/web/tests/adminDashboard.test.tsx`, Phase 7)
 
 ## Recommended Order
 
