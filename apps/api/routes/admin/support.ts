@@ -1,9 +1,47 @@
 import { Router, Request, Response } from 'express';
-import { bindDeps, type RouteDeps } from '../_shared';
+import type { AppRouteDeps } from '../../server';
 
 
-export function registerAdminSupportRoutes(router: Router, deps: RouteDeps) {
-    const { SupportTicket, requireAdminPermission, sendError, currentUserId, isValidDocumentId, sanitizeProfileField, escapeRegex, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, adminSupportTicketSummary, recordAdminAuditLog, sendSystemEmail, emailGreetingName, mergeEmailTemplates, renderEmailTemplate, buildBrandedEmailHtml } = bindDeps(deps);
+export type AdminSupportRouteDeps = Pick<AppRouteDeps,
+    | 'adminSupportTicketSummary'
+    | 'buildBrandedEmailHtml'
+    | 'currentUserId'
+    | 'emailGreetingName'
+    | 'escapeRegex'
+    | 'isValidDocumentId'
+    | 'mergeEmailTemplates'
+    | 'recordAdminAuditLog'
+    | 'renderEmailTemplate'
+    | 'requireAdminPermission'
+    | 'sanitizeProfileField'
+    | 'sendError'
+    | 'sendSystemEmail'
+    | 'SUPPORT_TICKET_PRIORITIES'
+    | 'SUPPORT_TICKET_STATUSES'
+    | 'SUPPORT_TICKET_TYPES'
+    | 'SupportTicket'
+>;
+
+export function registerAdminSupportRoutes(router: Router, deps: AdminSupportRouteDeps) {
+    const {
+        SupportTicket,
+        requireAdminPermission,
+        sendError,
+        currentUserId,
+        isValidDocumentId,
+        sanitizeProfileField,
+        escapeRegex,
+        SUPPORT_TICKET_STATUSES,
+        SUPPORT_TICKET_TYPES,
+        SUPPORT_TICKET_PRIORITIES,
+        adminSupportTicketSummary,
+        recordAdminAuditLog,
+        sendSystemEmail,
+        emailGreetingName,
+        mergeEmailTemplates,
+        renderEmailTemplate,
+        buildBrandedEmailHtml,
+    } = deps;
 
     router.get('/api/admin/support/tickets', requireAdminPermission('support.read'), async (req: Request, res: Response) => {
         try {

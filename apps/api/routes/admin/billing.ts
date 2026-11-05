@@ -1,10 +1,65 @@
 import { Router, Request, Response } from 'express';
-import { bindDeps, type RouteDeps } from '../_shared';
+import type { Model } from 'mongoose';
 import type { BillingPlan } from '../../server-models/userPlan';
+import type { AppRouteDeps } from '../../server';
 
 
-export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
-    const { User, PaymentTransaction, CheckoutSession, BillingPlanSetting, Coupon, requireAdminPermission, sendError, sanitizeProfileField, currentUserId, isValidDocumentId, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, getAdminBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, normalizeCouponCode, isPaidBillingPlan, PAYHERE_PLAN_PRICES, recordAdminAuditLog, syncLemonSqueezyDiscount, deleteLemonSqueezyDiscount, deleteLemonSqueezyDiscountsByCode } = bindDeps(deps);
+export type AdminBillingRouteDeps = Pick<AppRouteDeps,
+    | 'adminPaymentSummary'
+    | 'BillingPlanSetting'
+    | 'CheckoutSession'
+    | 'Coupon'
+    | 'currentUserId'
+    | 'deleteLemonSqueezyDiscount'
+    | 'deleteLemonSqueezyDiscountsByCode'
+    | 'escapeRegex'
+    | 'formatUtcDay'
+    | 'getAdminBillingPlans'
+    | 'getPlanPrice'
+    | 'isPaidBillingPlan'
+    | 'isValidDocumentId'
+    | 'normalizeCouponCode'
+    | 'parsePaymentAmountCents'
+    | 'PAYHERE_PLAN_PRICES'
+    | 'PaymentTransaction'
+    | 'planDisplayName'
+    | 'recordAdminAuditLog'
+    | 'requireAdminPermission'
+    | 'sanitizeProfileField'
+    | 'sendError'
+    | 'startOfUtcDay'
+    | 'syncLemonSqueezyDiscount'
+    | 'User'
+>;
+
+export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRouteDeps) {
+    const {
+        User,
+        PaymentTransaction,
+        CheckoutSession,
+        BillingPlanSetting,
+        Coupon,
+        requireAdminPermission,
+        sendError,
+        sanitizeProfileField,
+        currentUserId,
+        isValidDocumentId,
+        startOfUtcDay,
+        formatUtcDay,
+        parsePaymentAmountCents,
+        escapeRegex,
+        getAdminBillingPlans,
+        planDisplayName,
+        getPlanPrice,
+        adminPaymentSummary,
+        normalizeCouponCode,
+        isPaidBillingPlan,
+        PAYHERE_PLAN_PRICES,
+        recordAdminAuditLog,
+        syncLemonSqueezyDiscount,
+        deleteLemonSqueezyDiscount,
+        deleteLemonSqueezyDiscountsByCode,
+    } = deps;
 
     const markExpiredPendingCheckouts = async () => {
         const expiringReservedCheckouts = await CheckoutSession.find({
@@ -136,7 +191,8 @@ export function registerAdminBillingRoutes(router: Router, deps: RouteDeps) {
                 reviewedBy: currentUserId(req),
                 reviewNote,
             };
-            const model = reviewType === 'payment' ? PaymentTransaction : CheckoutSession;
+            // TODO(cleanup Phase 12): split into typed payment/checkout branches; the handler reads fields from both models.
+            const model = (reviewType === 'payment' ? PaymentTransaction : CheckoutSession) as Model<any>;
             const item = await model.findByIdAndUpdate(req.params.id, { $set: reviewUpdate }, { new: true, runValidators: true }).populate('userId', 'email displayName');
             if (!item) return res.status(404).json({ error: 'Review item not found.' });
 

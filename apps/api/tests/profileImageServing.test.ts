@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { registerPublicRoutes } from '../routes/public';
+import type { PublicRouteDeps } from '../routes/public';
+import { stubRouteDeps } from './helpers/routeDeps';
 
 const getProfileImageHandler = (overrides: Record<string, any> = {}) => {
   const routes: Array<{ path: string; handlers: any[] }> = [];
@@ -20,7 +22,7 @@ const getProfileImageHandler = (overrides: Record<string, any> = {}) => {
     ...overrides,
   };
 
-  registerPublicRoutes(router, deps as any);
+  registerPublicRoutes(router, stubRouteDeps<PublicRouteDeps>(deps));
   const route = routes.find((item) => item.path === '/api/cv-assets/:userId/:fileName');
   if (!route) throw new Error('Profile image serving route not found.');
   return { handler: route.handlers.at(-1), deps };

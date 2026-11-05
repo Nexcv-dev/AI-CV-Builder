@@ -7,6 +7,7 @@ export type AdminAuditAction =
   | 'billing.coupon.saved'
   | 'billing.coupon.updated'
   | 'billing.coupon.deleted'
+  | 'billing.review.resolved'
   | 'template.created'
   | 'template.updated'
   | 'template.published'

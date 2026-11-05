@@ -1,9 +1,7 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
-import { bindDeps } from './_shared';
 import { validateAuthEmail } from '../services/authValidationService';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
-
-type RouteDeps = Record<string, any>;
+import type { AppRouteDeps } from '../server';
 
 const loginWithRegeneratedSession = (
     req: Request,
@@ -306,7 +304,49 @@ const genericSignupError = 'Could not create your account. Please check your det
 const existingAccountSignupError = 'An account already exists for this email. Please log in instead.';
 const genericPasswordResetMessage = 'If an account exists for this email, we will send password reset instructions.';
 
-export function registerAuthRoutes(router: Router, deps: RouteDeps) {
+export type AuthRouteDeps = Pick<AppRouteDeps,
+    | 'authLimiter'
+    | 'buildBrandedEmailHtml'
+    | 'currentUserId'
+    | 'CVDocument'
+    | 'emailGreetingName'
+    | 'emailVerificationAttemptLimiter'
+    | 'emailVerificationLimiter'
+    | 'generateEmailVerificationOtp'
+    | 'hashPassword'
+    | 'hashToken'
+    | 'invalidateUserSessions'
+    | 'isEmailServiceConfigured'
+    | 'isEmailVerified'
+    | 'isMongoDuplicateKeyError'
+    | 'isMongoValidationError'
+    | 'isValidEmail'
+    | 'markSessionCurrent'
+    | 'mergeEmailTemplates'
+    | 'mongoose'
+    | 'normalizeEmail'
+    | 'passport'
+    | 'passwordPolicyMessage'
+    | 'passwordResetDailyLimiter'
+    | 'passwordResetLimiter'
+    | 'publicUser'
+    | 'randomBytes'
+    | 'renderEmailTemplate'
+    | 'requireAuth'
+    | 'roleForEmail'
+    | 'sanitizeDisplayName'
+    | 'sanitizeProfileField'
+    | 'sendEmailVerificationWithRetry'
+    | 'sendError'
+    | 'sendNewAccountNotification'
+    | 'sendSystemEmail'
+    | 'syncUserRoleFromAllowlist'
+    | 'User'
+    | 'validatePasswordStrength'
+    | 'verifyPassword'
+>;
+
+export function registerAuthRoutes(router: Router, deps: AuthRouteDeps) {
     const {
         CVDocument,
         User,
@@ -328,7 +368,6 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         mergeEmailTemplates,
         mongoose,
         normalizeEmail,
-        normalizeEmailFrom,
         buildBrandedEmailHtml,
         passport,
         passwordPolicyMessage,
@@ -341,7 +380,6 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         roleForEmail,
         sanitizeDisplayName,
         sanitizeProfileField,
-        sendAppEmail,
         sendSystemEmail,
         sendEmailVerificationWithRetry,
         sendError,
@@ -349,7 +387,7 @@ export function registerAuthRoutes(router: Router, deps: RouteDeps) {
         syncUserRoleFromAllowlist,
         validatePasswordStrength,
         verifyPassword,
-    } = bindDeps(deps);
+    } = deps;
 
     router.post('/api/auth/signup', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
         try {

@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { createHash } from 'crypto';
-import { bindDeps } from './_shared';
 import {
     createHtmlPdfJob,
     findUserHtmlPdfJob,
@@ -15,13 +14,24 @@ import {
 } from '../services/htmlPdfJobService';
 import type { HtmlPdfJobResponse, HtmlPdfQuotaResponse } from '@nexcv/api-contracts/documents';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
+import type { AppRouteDeps } from '../server';
 
-type RouteDeps = Record<string, any>;
+export type HtmlPdfRouteDeps = Pick<AppRouteDeps,
+    | 'consumeHtmlPdfQuota'
+    | 'currentUserId'
+    | 'getHtmlPdfQuota'
+    | 'htmlPdfJsonParser'
+    | 'isValidDocumentId'
+    | 'logError'
+    | 'pdfLimiter'
+    | 'rollbackHtmlPdfQuota'
+    | 'sendError'
+    | 'User'
+>;
 
-export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
+export function registerHtmlPdfRoutes(router: Router, deps: HtmlPdfRouteDeps) {
     const {
         User,
-        requireAuth,
         sendError,
         htmlPdfJsonParser,
         pdfLimiter,
@@ -31,7 +41,7 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
         consumeHtmlPdfQuota,
         rollbackHtmlPdfQuota,
         logError,
-    } = bindDeps(deps);
+    } = deps;
 
     const getHtmlPdfGuestKey = (req: Request) => {
         const forwardedFor = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
@@ -124,6 +134,7 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
                 }, 0);
             }
 
+            const { reserved: _reserved, ...publicQuota } = quota;
             const response = {
                 job: {
                     id: String(job._id),
@@ -131,7 +142,7 @@ export function registerHtmlPdfRoutes(router: Router, deps: RouteDeps) {
                     queuedInSqs,
                     pollUrl: `/api/html-pdf-jobs/${String(job._id)}`,
                 },
-                quota: { ...quota, reserved: undefined },
+                quota: publicQuota,
                 maxInputBytes: MAX_HTML_PDF_INPUT_BYTES,
             } satisfies HtmlPdfJobResponse;
             return res.status(202).json(response);

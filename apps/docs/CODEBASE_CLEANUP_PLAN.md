@@ -46,7 +46,7 @@ Main structural problems:
 
 | Area | Finding |
 | --- | --- |
-| Route dependency wiring | `server.ts` builds one `routeDeps` object with about 200 entries. `bindDeps()` returns its input unchanged, so it adds no typing or checks. `routes/cv.ts` destructures 169 names: 107 are unused and 14 do not exist in `routeDeps`, so they are always `undefined`. `routes/public.ts` destructures 139 names, and 98 of those are unused. |
+| Route dependency wiring | `server.ts` builds one `routeDeps` object with about 200 entries. `bindDeps()` returns its input unchanged, so it adds no typing or checks. `routes/cv.ts` destructures 169 names: 107 are unused and 14 do not exist in `routeDeps`, so they are always `undefined`. `routes/public.ts` destructures 139 names, and 98 of those are unused. Fixed in Phase 3. |
 | `apps/api/server.ts` | 1307 lines with about 90 helper definitions: quota, session, auth guards, sanitizing, DTO builders, and SEO rendering. |
 | Large API routes | `auth.ts` (1246 lines), `cv.ts` (1243), `payment.ts` (1036), `public.ts` (1023), `admin/billing.ts` (566). |
 | Large web files | `LandingPage.tsx` (1142 lines), `Home.tsx` (1087), `CVForm.tsx` (1080), `HtmlToPdf.tsx` (894), `AdminDashboard.tsx` (779), `index.css` (1589). |
@@ -111,7 +111,7 @@ Warning baseline (2026-11-05): 1011 warnings across 303 files, 0 errors.
 | `packages/api-contracts` | 4 | 0 | 0 |
 | `apps/workers/email-worker` | 3 | 0 | 0 |
 
-Most of the `apps/api` unused-variable warnings come from the route dependency destructuring that Phase 3 removes.
+Most of the `apps/api` unused-variable warnings came from the route dependency destructuring. Phase 3 removed it, and the count dropped from 225 to 16 (795 warnings in total after Phase 3).
 
 Next step for this phase: once a workspace reaches zero warnings for a rule, raise that rule to `error` for that workspace, so the count cannot grow back.
 
@@ -122,6 +122,17 @@ Expected result:
 ## Phase 3: Route Dependency Wiring
 
 Low risk and high value: the later API phases are much easier once this is done.
+
+Status: done (2026-11-05).
+
+- Every router exports its own deps type, for example `CvRouteDeps = Pick<AppRouteDeps, ...>`, and `routes/admin.ts` combines the admin ones into `AdminRouteDeps`. `bindDeps` and `routes/_shared.ts` are gone.
+- Destructured names removed: 108 from `cv.ts` (61 kept), 98 from `public.ts` (41 kept), 2 from `auth.ts`, and 1 from `htmlPdf.ts`. The 14 names in `cv.ts` that were missing from `routeDeps` are gone too. None was used as a value, so they never caused a runtime bug.
+- `CvRouteDeps` also lists the keys that `processCvImportJob` and `processPdfJob` read, because `cv.ts` passes its whole `deps` object to them. Those two services still take `Record<string, any>`; typing them belongs to Phase 12.
+- Route tests wrap their mocks in `stubRouteDeps<XRouteDeps>({ ... })` (`tests/helpers/routeDeps.ts`), so stub key names are type-checked and the earlier `as any` casts are gone.
+- Typing the deps exposed 14 type mismatches that `Record<string, any>` had hidden. All were fixed without changing API responses: readonly template constants, the `source` literals in `templateAdmin.ts`, the HTML PDF `plan` type, the `planStartedAt` serialization, dropping the internal `reserved` field from quota responses, and adding `'billing.review.resolved'` to `AdminAuditAction` (the schema has no enum, so it was already being saved).
+- Left for later, marked in code:
+  - `routes/admin/billing.ts`: the review handler casts the payment/checkout model union to `Model<any>` (TODO for Phase 12).
+  - `routes/payment.ts`: the checkout status check compares `user.plan === 'unlimited'`, but the User schema's plan enum has no `'unlimited'`, so it never matches. It is kept as-is. Decide separately whether it should use `getEffectivePlan()`, which returns `'unlimited'` for super admins.
 
 Target files:
 

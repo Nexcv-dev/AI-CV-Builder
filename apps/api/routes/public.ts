@@ -1,15 +1,12 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { readFile } from 'fs/promises';
-import { bindDeps } from './_shared';
-import type { AppRouteDeps } from '../server';
 import type { BillingPlan } from '../server-models/userPlan';
 import type { TemplateName } from '@nexcv/templates';
 import type { PublicAppSettingsResponse, TemplateConfigResponse } from '@nexcv/api-contracts';
 import { mergeCmsContent } from '@nexcv/shared/contentDefaults';
 import { getOrSetCachedValue, parseCacheTtlMs } from '../server-utils/ttlCache';
-
-type RouteDeps = AppRouteDeps;
+import type { AppRouteDeps } from '../server';
 
 const repoRootPath = path.resolve(process.cwd(), '../..');
 const webDistPath = process.env.WEB_DIST_DIR
@@ -127,8 +124,95 @@ const publicCvPreviewScript = `(() => {
   }
 })();`;
 
-export function registerPublicRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, BillingPlanSetting, Coupon, CheckoutSession, TemplateSetting, SupportTicket, CV_TEMPLATES, DEFAULT_TEMPLATE, templateRequiresPaidPlan, requireAuth, requireSuperAdmin, sendError, passport, adminTemplateJsonParser, cvImportJsonParser, pdfJsonParser, authLimiter, passwordResetLimiter, publicFormLimiter, emailVerificationAttemptLimiter, emailVerificationLimiter, getRequestOrigin, isAllowedOrigin, clearS3TemplateCache, fetchS3Text, generateS3CVHTML, getCvAssetObjectStream, getS3ObjectStream, putS3Object, cvAssetS3Key, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, renderCvTemplateString, generateCVHTML, generatePdfDocument, sanitizeCvData, getDownloadQuota, incrementDownloadQuota, getActiveTemplateForKey, sanitizeTextForPrompt, sanitizeContextField, sanitizeProfileField, sanitizeDisplayName, normalizeEmail, isValidEmail, validatePasswordStrength, hashPassword, verifyPassword, hashToken, generateEmailVerificationOtp, isEmailVerified, publicUser, isMongoDuplicateKeyError, isMongoValidationError, passwordPolicyMessage, sendEmailVerificationWithRetry, sendNewAccountNotification, sendContactNotification, sendBillingSuccessNotifications, getFrontendOrigin, getApiOrigin, currentUserId, isValidDocumentId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, normalizeCouponCode, isPaidBillingPlan, createPlanExpiry, getEffectivePlan, isPaidPlan, documentSummary, generateGeminiText, Type, ALLOWED_MIME_TYPES, ALLOWED_SECTION_TYPES, buildCvCreationQuota, buildDownloadQuota, sendAppEmail, sendSystemEmail, sendNotificationEmail, isEmailServiceConfigured, normalizeEmailFrom, roleForEmail, syncUserRoleFromAllowlist, isSuperAdmin, mongoose, randomBytes, randomInt, createHash, timingSafeEqual, startOfUtcDay, formatUtcDay, parsePaymentAmountCents, escapeRegex, adminUserSummary, getPublicBillingPlans, planDisplayName, getPlanPrice, adminPaymentSummary, SUPPORT_TICKET_STATUSES, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_PRIORITIES, sanitizeContactMessage, adminSupportTicketSummary, emailGreetingName, getCvCreationQuota, incrementCvCreationQuota, documentDetails, requireVerifiedEmail, resolveRequestedTemplate, titleFromCvData, requirePaidPlan, MAX_BASE64_LENGTH, quoteCheckout, getPayHereMerchantConfig, verifyPayHereMd5Signature, resolvePayHerePaymentContext, PAYHERE_PLAN_PRICES, payHereAmountToCents, generateTransactionId, getPayHereCheckoutUrl, buildPayHereCheckoutHash, getReleasedTemplateDefinition, getReleasedTemplateSummaries } = bindDeps(deps);
+export type PublicRouteDeps = Pick<AppRouteDeps,
+    | 'adminSupportTicketSummary'
+    | 'adminTemplateSummary'
+    | 'currentUserId'
+    | 'customTemplateSummary'
+    | 'CV_TEMPLATES'
+    | 'cvAssetS3Key'
+    | 'CVDocument'
+    | 'DEFAULT_TEMPLATE'
+    | 'fetchS3Text'
+    | 'generateCVHTML'
+    | 'generatePdfDocument'
+    | 'generateS3CVHTML'
+    | 'getApiOrigin'
+    | 'getCvAssetObjectStream'
+    | 'getFrontendOrigin'
+    | 'getPayHereCheckoutUrl'
+    | 'getPayHereMerchantConfig'
+    | 'getReleasedTemplateDefinition'
+    | 'getReleasedTemplateSummaries'
+    | 'getS3ObjectStream'
+    | 'isAdminIpAllowed'
+    | 'isEmailServiceConfigured'
+    | 'isPaidPlan'
+    | 'isSuperAdmin'
+    | 'isValidEmail'
+    | 'mongoose'
+    | 'normalizeEmail'
+    | 'publicFormLimiter'
+    | 'renderCvTemplateString'
+    | 'S3_TEMPLATE_BUCKET'
+    | 'S3_TEMPLATE_PREFIX'
+    | 'sanitizeContactMessage'
+    | 'sanitizeCvData'
+    | 'sanitizeDisplayName'
+    | 'sanitizeProfileField'
+    | 'sendContactNotification'
+    | 'sendError'
+    | 'SUPPORT_TICKET_TYPES'
+    | 'SupportTicket'
+    | 'TemplateSetting'
+    | 'Type'
+    | 'validateCustomTemplateKey'
+>;
+
+export function registerPublicRoutes(router: Router, deps: PublicRouteDeps) {
+    const {
+        CVDocument,
+        TemplateSetting,
+        SupportTicket,
+        CV_TEMPLATES,
+        DEFAULT_TEMPLATE,
+        sendError,
+        publicFormLimiter,
+        fetchS3Text,
+        generateS3CVHTML,
+        getCvAssetObjectStream,
+        getS3ObjectStream,
+        cvAssetS3Key,
+        S3_TEMPLATE_BUCKET,
+        S3_TEMPLATE_PREFIX,
+        renderCvTemplateString,
+        generateCVHTML,
+        generatePdfDocument,
+        sanitizeCvData,
+        sanitizeProfileField,
+        sanitizeDisplayName,
+        normalizeEmail,
+        isValidEmail,
+        sendContactNotification,
+        getFrontendOrigin,
+        getApiOrigin,
+        currentUserId,
+        adminTemplateSummary,
+        customTemplateSummary,
+        validateCustomTemplateKey,
+        isPaidPlan,
+        Type,
+        isEmailServiceConfigured,
+        isSuperAdmin,
+        mongoose,
+        SUPPORT_TICKET_TYPES,
+        sanitizeContactMessage,
+        adminSupportTicketSummary,
+        getPayHereMerchantConfig,
+        getPayHereCheckoutUrl,
+        getReleasedTemplateDefinition,
+        getReleasedTemplateSummaries,
+    } = deps;
 
     const localAdminTemplateFile = async (sourceFolder: string | undefined, fileName: string) => {
         if (!sourceFolder) return null;

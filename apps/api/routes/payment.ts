@@ -1,5 +1,4 @@
 import express, { Router, Request, Response } from 'express';
-import { bindDeps } from './_shared';
 import type { BillingPlan } from '../server-models/userPlan';
 import {
     checkoutExpiryDate,
@@ -18,10 +17,52 @@ import type {
     PayHereCheckoutResponse,
 } from '@nexcv/api-contracts/billing';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
+import type { AppRouteDeps } from '../server';
 
-type RouteDeps = Record<string, any>;
+export type PaymentRouteDeps = Pick<AppRouteDeps,
+    | 'billingQuoteLimiter'
+    | 'buildPayHereCheckoutHash'
+    | 'CheckoutSession'
+    | 'Coupon'
+    | 'createLemonSqueezyCheckout'
+    | 'createRenewedPlanExpiry'
+    | 'currentUserId'
+    | 'generateTransactionId'
+    | 'getApiOrigin'
+    | 'getFrontendOrigin'
+    | 'getLemonSqueezyConfigIssues'
+    | 'getMissingLemonSqueezyConfigKeys'
+    | 'getPayHereCheckoutUrl'
+    | 'getPayHereMerchantConfig'
+    | 'getPublicBillingPlans'
+    | 'isLemonSqueezyConfigured'
+    | 'isMongoDuplicateKeyError'
+    | 'isPaidBillingPlan'
+    | 'logError'
+    | 'logEvent'
+    | 'mongoose'
+    | 'normalizeEmail'
+    | 'PAYHERE_PLAN_PRICES'
+    | 'payHereAmountToCents'
+    | 'PaymentTransaction'
+    | 'planDisplayName'
+    | 'publicUser'
+    | 'quoteCheckout'
+    | 'requireAdminPermission'
+    | 'requireAuth'
+    | 'requireVerifiedEmail'
+    | 'resolveBillingMarket'
+    | 'resolvePayHerePaymentContext'
+    | 'sanitizeProfileField'
+    | 'sendBillingAlertNotification'
+    | 'sendBillingSuccessNotifications'
+    | 'sendError'
+    | 'User'
+    | 'verifyLemonSqueezySignature'
+    | 'verifyPayHereMd5Signature'
+>;
 
-export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
+export function registerPaymentRoutes(router: Router, deps: PaymentRouteDeps) {
     const {
         CheckoutSession,
         Coupon,
@@ -63,7 +104,7 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
         sendError,
         verifyLemonSqueezySignature,
         verifyPayHereMd5Signature,
-    } = bindDeps(deps);
+    } = deps;
 
     const reserveCouponRedemption = async (couponCode?: string) => {
         if (!couponCode) return false;
@@ -968,7 +1009,9 @@ export function registerPaymentRoutes(router: Router, deps: RouteDeps) {
             const user = await User.findById(currentUserId(req));
             const planActive = Boolean(
                 user &&
-                (user.plan === checkoutSession.plan || user.plan === 'unlimited') &&
+                // NOTE: the User schema's plan enum has no 'unlimited', so the second check never matches.
+                // Kept as-is during the Phase 3 refactor; decide separately whether it should use getEffectivePlan().
+                (user.plan === checkoutSession.plan || (user.plan as string) === 'unlimited') &&
                 (!user.planExpiresAt || user.planExpiresAt > new Date())
             );
 

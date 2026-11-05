@@ -1,8 +1,22 @@
 import { Router, Request, Response } from 'express';
-import { bindDeps, type RouteDeps } from '../_shared';
+import type { AppRouteDeps } from '../../server';
 
-export function registerAdminAuditRoutes(router: Router, deps: RouteDeps) {
-    const { AdminAuditLog, requireAdminPermission, sendError, escapeRegex, adminAuditLogSummary } = bindDeps(deps);
+export type AdminAuditRouteDeps = Pick<AppRouteDeps,
+    | 'AdminAuditLog'
+    | 'adminAuditLogSummary'
+    | 'escapeRegex'
+    | 'requireAdminPermission'
+    | 'sendError'
+>;
+
+export function registerAdminAuditRoutes(router: Router, deps: AdminAuditRouteDeps) {
+    const {
+        AdminAuditLog,
+        requireAdminPermission,
+        sendError,
+        escapeRegex,
+        adminAuditLogSummary,
+    } = deps;
 
     router.get('/api/admin/audit-logs', requireAdminPermission('audit.read'), async (req: Request, res: Response) => {
         try {

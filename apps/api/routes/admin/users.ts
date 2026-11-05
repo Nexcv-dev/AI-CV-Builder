@@ -1,11 +1,41 @@
 import { Router, Request, Response } from 'express';
-import { bindDeps, type RouteDeps } from '../_shared';
 import type { BillingPlan } from '../../server-models/userPlan';
 import type { AdminUserDetail, AdminUserDocument, AdminUserListItem } from '@nexcv/api-contracts/admin';
+import type { AppRouteDeps } from '../../server';
 
 
-export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, requireAdminPermission, sendError, currentUserId, isValidDocumentId, createPlanExpiry, documentSummary, escapeRegex, adminUserSummary, recordAdminAuditLog, isUserRole, isPaidBillingPlan } = bindDeps(deps);
+export type AdminUsersRouteDeps = Pick<AppRouteDeps,
+    | 'adminUserSummary'
+    | 'createPlanExpiry'
+    | 'currentUserId'
+    | 'CVDocument'
+    | 'documentSummary'
+    | 'escapeRegex'
+    | 'isPaidBillingPlan'
+    | 'isUserRole'
+    | 'isValidDocumentId'
+    | 'recordAdminAuditLog'
+    | 'requireAdminPermission'
+    | 'sendError'
+    | 'User'
+>;
+
+export function registerAdminUserRoutes(router: Router, deps: AdminUsersRouteDeps) {
+    const {
+        User,
+        CVDocument,
+        requireAdminPermission,
+        sendError,
+        currentUserId,
+        isValidDocumentId,
+        createPlanExpiry,
+        documentSummary,
+        escapeRegex,
+        adminUserSummary,
+        recordAdminAuditLog,
+        isUserRole,
+        isPaidBillingPlan,
+    } = deps;
 
     router.get('/api/admin/users', requireAdminPermission('users.read'), async (req: Request, res: Response) => {
         try {
@@ -86,7 +116,7 @@ export function registerAdminUserRoutes(router: Router, deps: RouteDeps) {
                     ...adminUserSummary(user, cvCount),
                     phone: user.phone,
                     address: user.address,
-                    planStartedAt: user.planStartedAt,
+                    planStartedAt: user.planStartedAt?.toISOString(),
                     paygCvSaveCredits: user.paygCvSaveCredits || 0,
                 },
                 documents: documents.map(documentSummary),

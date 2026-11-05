@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { bindDeps, type RouteDeps } from '../_shared';
+import type { AppRouteDeps } from '../../server';
 
 type DailyCount = {
     _id: string;
@@ -12,8 +12,36 @@ type DailyCheckoutCount = {
     paid: number;
 };
 
-export function registerAdminSummaryRoutes(router: Router, deps: RouteDeps) {
-    const { User, CVDocument, DownloadQuota, PaymentTransaction, CheckoutSession, SupportTicket, requireAdminPermission, sendError, getEffectivePlan, startOfUtcDay, formatUtcDay, parsePaymentAmountCents } = bindDeps(deps);
+export type AdminSummaryRouteDeps = Pick<AppRouteDeps,
+    | 'CheckoutSession'
+    | 'CVDocument'
+    | 'DownloadQuota'
+    | 'formatUtcDay'
+    | 'getEffectivePlan'
+    | 'parsePaymentAmountCents'
+    | 'PaymentTransaction'
+    | 'requireAdminPermission'
+    | 'sendError'
+    | 'startOfUtcDay'
+    | 'SupportTicket'
+    | 'User'
+>;
+
+export function registerAdminSummaryRoutes(router: Router, deps: AdminSummaryRouteDeps) {
+    const {
+        User,
+        CVDocument,
+        DownloadQuota,
+        PaymentTransaction,
+        CheckoutSession,
+        SupportTicket,
+        requireAdminPermission,
+        sendError,
+        getEffectivePlan,
+        startOfUtcDay,
+        formatUtcDay,
+        parsePaymentAmountCents,
+    } = deps;
 
     router.get('/api/admin/summary', requireAdminPermission('dashboard.read'), async (_req: Request, res: Response) => {
         try {
