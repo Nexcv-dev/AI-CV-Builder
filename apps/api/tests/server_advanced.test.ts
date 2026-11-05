@@ -5,6 +5,8 @@ import User from '../server-models/User';
 import { GOOGLE_EMAIL_CONFLICT_MESSAGE, resolveGoogleOAuthUser } from '../server-models/passportSetup';
 import { registerAuthRoutes } from '../routes/auth';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
+import type { AuthRouteDeps } from '../routes/auth';
+import { stubRouteDeps } from './helpers/routeDeps';
 
 const restoreEnvValue = (name: string, value: string | undefined) => {
   if (value === undefined) {
@@ -59,7 +61,7 @@ describe('Advanced Server Security', () => {
         ...overrides,
       };
 
-      registerAuthRoutes(router, deps);
+      registerAuthRoutes(router, stubRouteDeps<AuthRouteDeps>(deps));
       const route = routes.find((item) => item.method === 'post' && item.path === routePath);
       return { handler: route?.handlers.at(-1), deps };
     };

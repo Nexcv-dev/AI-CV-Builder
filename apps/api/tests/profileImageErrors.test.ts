@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { registerCvRoutes } from '../routes/cv';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
+import type { CvRouteDeps } from '../routes/cv';
+import { stubRouteDeps } from './helpers/routeDeps';
 
 const getHandler = (overrides: Record<string, any> = {}) => {
   const routes: Array<{ path: string; handlers: any[] }> = [];
@@ -28,7 +30,7 @@ const getHandler = (overrides: Record<string, any> = {}) => {
     ...overrides,
   };
 
-  registerCvRoutes(router, deps);
+  registerCvRoutes(router, stubRouteDeps<CvRouteDeps>(deps));
   const route = routes.find((item) => item.path === '/api/profile-images');
   if (!route) throw new Error('Profile image route not found.');
   return { handler: route.handlers.at(-1), deps };

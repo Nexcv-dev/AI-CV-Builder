@@ -4,6 +4,7 @@ import type {
   AdminBillingPlan,
   AdminBillingPlanDraft,
   AdminCoupon,
+  AdminCouponForm,
 } from './adminTypes';
 import { billingPlanDraftFromPlan, formatCurrency } from './adminUtils';
 
@@ -19,10 +20,10 @@ export default function PromotionManagementSection({
 }: {
   billingPlans: AdminBillingPlan[];
   coupons: AdminCoupon[];
-  couponForm: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; maxRedemptions: string; active: boolean };
+  couponForm: AdminCouponForm;
   savingBilling: boolean;
   onUpdatePlanPrice: (plan: AdminBillingPlan, draft: AdminBillingPlanDraft) => Promise<void>;
-  onCouponFormChange: (value: { code: string; label: string; discountType: 'fixed' | 'percent'; discountValue: string; appliesTo: string; maxRedemptions: string; active: boolean }) => void;
+  onCouponFormChange: (value: AdminCouponForm) => void;
   onSaveCoupon: () => Promise<void>;
   onToggleCoupon: (coupon: AdminCoupon) => Promise<void>;
   onDeleteCoupon: (coupon: AdminCoupon) => Promise<void>;

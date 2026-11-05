@@ -35,6 +35,10 @@ import { buildDownloadQuota, getDailyUnverifiedDownloadLimit, getNextUtcDayReset
 import { createPlanExpiry, createRenewedPlanExpiry, getEffectivePlan, isPaidPlan } from '../server-models/userPlan';
 import { logEvent } from '../server-utils/logger';
 import { markExpiredPendingCheckouts } from '../services/checkoutSessionService';
+import type { CvRouteDeps } from '../routes/cv';
+import type { PaymentRouteDeps } from '../routes/payment';
+import type { PublicRouteDeps } from '../routes/public';
+import { stubRouteDeps } from './helpers/routeDeps';
 
 describe('Server Utils', () => {
   describe('structured logging', () => {
@@ -107,7 +111,7 @@ describe('Server Utils', () => {
       const User = { findById: vi.fn() };
 
       app.use(express.json());
-      registerPaymentRoutes(router, {
+      registerPaymentRoutes(router, stubRouteDeps<PaymentRouteDeps>({
         User,
         billingQuoteLimiter: (_req: any, _res: any, next: any) => next(),
         currentUserId: vi.fn(() => '507f1f77bcf86cd799439011'),
@@ -117,7 +121,7 @@ describe('Server Utils', () => {
           req.user = { _id: '507f1f77bcf86cd799439011' };
           next();
         },
-      });
+      }));
       app.use(router);
 
       const server = await new Promise<Server>((resolve) => {
@@ -499,7 +503,7 @@ describe('Server Utils', () => {
         .mockResolvedValueOnce({ limit: 1, used: 1, remaining: 0, reached: true, plan: 'free', reserved: true })
         .mockResolvedValueOnce({ limit: 1, used: 1, remaining: 0, reached: true, plan: 'free', reserved: false });
 
-      registerCvRoutes(router, {
+      registerCvRoutes(router, stubRouteDeps<CvRouteDeps>({
         aiLimiter: (_req: any, _res: any, next: any) => next(),
         cvImportLimiter: (_req: any, _res: any, next: any) => next(),
         CV_TEMPLATES: [{ key: 'classic' }],
@@ -527,7 +531,7 @@ describe('Server Utils', () => {
         sanitizeCvData: vi.fn((value) => value),
         sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
         templateRequiresPaidPlan: vi.fn(() => false),
-      });
+      }));
       app.use(router);
 
       const server = await new Promise<Server>((resolve) => {
@@ -618,7 +622,7 @@ describe('Server Utils', () => {
       const user = { _id: '507f1f77bcf86cd799439011', role: 'user', plan: 'free' };
       const extractCvText = vi.fn();
 
-      registerCvRoutes(router, {
+      registerCvRoutes(router, stubRouteDeps<CvRouteDeps>({
         aiLimiter: (_req: any, _res: any, next: any) => next(),
         cvImportLimiter: (_req: any, _res: any, next: any) => next(),
         cvImportJsonParser: express.json({ limit: '1mb' }),
@@ -641,7 +645,7 @@ describe('Server Utils', () => {
         sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
         withImportMeta: vi.fn((data, meta) => ({ ...data, importMeta: meta })),
         isPaidPlan: vi.fn(() => false),
-      });
+      }));
       app.use((req: any, _res, next) => {
         req.user = user;
         req.isAuthenticated = () => true;
@@ -703,7 +707,7 @@ describe('Server Utils', () => {
         req.isAuthenticated = () => true;
         next();
       });
-      registerCvRoutes(router, {
+      registerCvRoutes(router, stubRouteDeps<CvRouteDeps>({
         CVDocument,
         aiLimiter: (_req: any, _res: any, next: any) => next(),
         cvImportLimiter: (_req: any, _res: any, next: any) => next(),
@@ -738,7 +742,7 @@ describe('Server Utils', () => {
           updatedAt: doc.updatedAt,
         }),
         sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
-      });
+      }));
       app.use(router);
 
       const server = await new Promise<Server>((resolve) => {
@@ -796,7 +800,7 @@ describe('Server Utils', () => {
         req.isAuthenticated = () => true;
         next();
       });
-      registerCvRoutes(router, {
+      registerCvRoutes(router, stubRouteDeps<CvRouteDeps>({
         CVDocument,
         aiLimiter: (_req: any, _res: any, next: any) => next(),
         cvImportLimiter: (_req: any, _res: any, next: any) => next(),
@@ -821,7 +825,7 @@ describe('Server Utils', () => {
         publicCvShareUrl: (slug: string) => `https://app.example.com/cv/${slug}`,
         getApiOrigin: () => 'https://app.example.com',
         sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
-      });
+      }));
       app.use(router);
 
       const server = await new Promise<Server>((resolve) => {
@@ -887,7 +891,7 @@ describe('Server Utils', () => {
         templateSource: 'shared-cv',
       });
 
-      registerPublicRoutes(router, {
+      registerPublicRoutes(router, stubRouteDeps<PublicRouteDeps>({
         CVDocument,
         CV_TEMPLATES: [{ key: 'classic' }],
         DEFAULT_TEMPLATE: 'classic',
@@ -900,7 +904,7 @@ describe('Server Utils', () => {
         isPaidPlan: vi.fn(() => false),
         getApiOrigin: () => 'https://app.example.com',
         sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
-      });
+      }));
       app.use(router);
 
       const server = await new Promise<Server>((resolve) => {
@@ -1264,6 +1268,14 @@ describe('Server Utils', () => {
       expect(sanitized).not.toHaveProperty('extraRoot');
       expect(sanitized.experience[0]).not.toHaveProperty('junk');
       expect(sanitized.personalInfo).not.toHaveProperty('unusedNested');
+    });
+
+    it('should keep the text size setting and clamp it to the slider range', () => {
+      expect(sanitizeCvDataForStorage({ textScale: 1.1 }).textScale).toBe(1.1);
+      expect(sanitizeCvDataForStorage({ textScale: 0.5 }).textScale).toBe(0.85);
+      expect(sanitizeCvDataForStorage({ textScale: 3 }).textScale).toBe(1.2);
+      expect(sanitizeCvDataForStorage({ textScale: 'big' }).textScale).toBe(1);
+      expect(sanitizeCvDataForStorage({}).textScale).toBe(1);
     });
   });
 });

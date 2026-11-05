@@ -41,6 +41,9 @@ jobs:
       - name: Lint
         run: corepack pnpm lint
 
+      - name: ESLint
+        run: corepack pnpm lint:eslint
+
       - name: Run tests
         run: corepack pnpm test:run
 

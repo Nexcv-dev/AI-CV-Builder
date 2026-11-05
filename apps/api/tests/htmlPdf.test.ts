@@ -12,6 +12,8 @@ import {
 } from '../server-models/htmlPdfQuota';
 import { calculateHtmlPdfAutoScale, calculateHtmlPdfFitScale, sanitizeHtmlPdfFilename, sanitizeHtmlPdfInput } from '../services/htmlPdfJobService';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
+import type { HtmlPdfRouteDeps } from '../routes/htmlPdf';
+import { stubRouteDeps } from './helpers/routeDeps';
 
 const validHtml = `
   <html>
@@ -143,12 +145,12 @@ describe('HTML to PDF feature', () => {
     const app = express();
     const router = express.Router();
     app.use(express.json());
-    registerHtmlPdfRoutes(router, {
+    registerHtmlPdfRoutes(router, stubRouteDeps<HtmlPdfRouteDeps>({
       htmlPdfJsonParser: express.json({ limit: '300kb' }),
       pdfLimiter: (_req: any, _res: any, next: any) => next(),
       sendError: (res: any, status: number, message: string) => res.status(status).json({ error: message }),
       getHtmlPdfQuota: vi.fn().mockResolvedValue({ limit: 1, used: 0, remaining: 1, reached: false, plan: 'guest' }),
-    });
+    }));
     app.use(router);
 
     const server = await new Promise<Server>((resolve) => {
@@ -179,14 +181,14 @@ describe('HTML to PDF feature', () => {
       }),
       post: vi.fn(() => router),
     } as any;
-    registerHtmlPdfRoutes(router, {
+    registerHtmlPdfRoutes(router, stubRouteDeps<HtmlPdfRouteDeps>({
       isValidDocumentId: vi.fn((id: string) => id === 'valid-id'),
       currentUserId: vi.fn(),
       getHtmlPdfQuota: vi.fn(),
       consumeHtmlPdfQuota: vi.fn(),
       rollbackHtmlPdfQuota: vi.fn(),
       sendError: vi.fn(),
-    });
+    }));
 
     const handler = routes.find((route) => route.path === '/api/html-pdf-jobs/:id')?.handlers.at(-1);
     const invalidRes = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;

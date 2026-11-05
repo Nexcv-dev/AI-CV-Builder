@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { bindDeps, type RouteDeps } from '../_shared';
 import { ADMIN_ROLE_ACCESS, ADMIN_ROLE_LABELS, ALL_USER_ROLES, isUserRole, type UserRole } from '@nexcv/shared/admin';
 import { DEFAULT_APP_SETTINGS, getAppSettings } from '../../server-models/AppSetting';
 import { DEFAULT_CMS_CONTENT, mergeCmsContent, type CmsContent, type CmsFaqItem, type CmsLegalPage, type CmsPlanCopy } from '@nexcv/shared/contentDefaults';
 import { DEFAULT_EMAIL_TEMPLATES, mergeEmailTemplates, type EmailTemplateMap, type EmailTemplateKey } from '@nexcv/shared/emailTemplateDefaults';
 import type { AdminRoleConfig, AdminSettingsSummary, AdminUserListItem } from '@nexcv/api-contracts/admin';
+import type { AppRouteDeps } from '../../routeDeps';
 
 const roleSummary = (role: UserRole): AdminRoleConfig => ({
     role,
@@ -29,8 +29,50 @@ const serviceStatus = (
     detail,
 });
 
-export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
-    const { User, AppSetting, CV_TEMPLATES, requireAdminPermission, sendError, currentUserId, isValidDocumentId, adminUserSummary, recordAdminAuditLog, normalizeEmail, sanitizeProfileField, isEmailServiceConfigured, getAppEmailFrom, sendSystemEmail, getPayHereMerchantConfig, getPayHereCheckoutUrl, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, mongoose } = bindDeps(deps);
+export type AdminSettingsRouteDeps = Pick<AppRouteDeps,
+    | 'adminUserSummary'
+    | 'AppSetting'
+    | 'currentUserId'
+    | 'CV_TEMPLATES'
+    | 'getAppEmailFrom'
+    | 'getPayHereCheckoutUrl'
+    | 'getPayHereMerchantConfig'
+    | 'isEmailServiceConfigured'
+    | 'isValidDocumentId'
+    | 'mongoose'
+    | 'normalizeEmail'
+    | 'recordAdminAuditLog'
+    | 'requireAdminPermission'
+    | 'S3_TEMPLATE_BUCKET'
+    | 'S3_TEMPLATE_PREFIX'
+    | 'sanitizeProfileField'
+    | 'sendError'
+    | 'sendSystemEmail'
+    | 'User'
+>;
+
+export function registerAdminSettingsRoutes(router: Router, deps: AdminSettingsRouteDeps) {
+    const {
+        User,
+        AppSetting,
+        CV_TEMPLATES,
+        requireAdminPermission,
+        sendError,
+        currentUserId,
+        isValidDocumentId,
+        adminUserSummary,
+        recordAdminAuditLog,
+        normalizeEmail,
+        sanitizeProfileField,
+        isEmailServiceConfigured,
+        getAppEmailFrom,
+        sendSystemEmail,
+        getPayHereMerchantConfig,
+        getPayHereCheckoutUrl,
+        S3_TEMPLATE_BUCKET,
+        S3_TEMPLATE_PREFIX,
+        mongoose,
+    } = deps;
 
     router.get('/api/admin/roles', requireAdminPermission('roles.read'), async (_req: Request, res: Response) => {
         try {
@@ -135,7 +177,7 @@ export function registerAdminSettingsRoutes(router: Router, deps: RouteDeps) {
                         emailConfigured,
                     ),
                     serviceStatus(
-                        Boolean(S3_TEMPLATE_BUCKET) ? 'ok' : 'warn',
+                        S3_TEMPLATE_BUCKET ? 'ok' : 'warn',
                         'S3 Templates',
                         S3_TEMPLATE_BUCKET ? `Bucket configured${S3_TEMPLATE_PREFIX ? ` with prefix ${S3_TEMPLATE_PREFIX}.` : '.'}` : 'Bucket not configured; custom templates will not be available.',
                         Boolean(S3_TEMPLATE_BUCKET),
@@ -306,7 +348,7 @@ function emailSettingsSummary(settings: any, deps: { isEmailServiceConfigured: (
     };
 }
 
-function sanitizeSettingsPatch(input: any, deps: { CV_TEMPLATES: Array<{ key: string }>; normalizeEmail: (value: unknown) => string; sanitizeProfileField: (value: unknown, maxLength?: number) => string }) {
+function sanitizeSettingsPatch(input: any, deps: { CV_TEMPLATES: ReadonlyArray<{ key: string }>; normalizeEmail: (value: unknown) => string; sanitizeProfileField: (value: unknown, maxLength?: number) => string }) {
     const values: Record<string, unknown> = {};
     const booleanFields = ['maintenanceMode', 'announcementEnabled', 'emailVerificationRequired', 'payhereEnabled'];
 

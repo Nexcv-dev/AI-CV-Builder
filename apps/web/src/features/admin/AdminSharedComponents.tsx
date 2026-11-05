@@ -1,4 +1,5 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 import type { AdminUserListItem } from './adminTypes';
 import { formatDate } from './adminUtils';
 
@@ -97,5 +98,22 @@ export function TicketStatusBadge({ status, priority }: { status: string; priori
     }`}>
       {status}
     </span>
+  );
+}
+
+export function AdminLoadingState({ label }: { label: string }) {
+  return (
+    <div className="mt-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-5 text-sm font-bold text-slate-400">
+      <Loader2 className="animate-spin text-violet-300" size={18} />
+      {label}
+    </div>
+  );
+}
+
+export function AdminErrorNotice({ message }: { message: string }) {
+  return (
+    <div className="mt-10 rounded-2xl border border-red-400/20 bg-red-500/10 p-5 text-sm font-bold text-red-100">
+      {message}
+    </div>
   );
 }

@@ -29,14 +29,14 @@ export const getNextUtcDayResetAt = (date = new Date()) => {
 };
 
 export const buildHtmlPdfQuota = (user: any, used: number, date = new Date()) => {
-  const plan = user ? getEffectivePlan(user, date) : 'guest';
+  const plan: HtmlPdfPlan = user ? getEffectivePlan(user, date) : 'guest';
   if (user?.role === 'super_admin') {
     return {
       limit: null,
       used,
       remaining: null,
       reached: false,
-      plan: 'unlimited',
+      plan: 'unlimited' as const,
       resetAt: null,
     };
   }

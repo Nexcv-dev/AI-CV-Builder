@@ -1,10 +1,70 @@
 import { Router, Request, Response } from 'express';
-import { bindDeps, type RouteDeps } from '../_shared';
 import { mergeTemplateValidationResults, validateAdminTemplateMetadata, validateAdminTemplateSource } from '@nexcv/templates/templateValidation';
 import type { AdminTemplateItem, AdminTemplateValidationResult } from '@nexcv/api-contracts/admin';
+import type { AppRouteDeps } from '../../routeDeps';
 
-export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
-    const { CVDocument, TemplateSetting, CV_TEMPLATES, requireAdminPermission, sendError, adminTemplateJsonParser, clearS3TemplateCache, fetchS3Text, putS3Object, S3_TEMPLATE_BUCKET, S3_TEMPLATE_PREFIX, currentUserId, adminTemplateSummary, customTemplateSummary, templateThumbnailPath, validateCustomTemplateKey, defaultTemplateCategory, sanitizeTemplateSource, validateTemplateHtml, validateTemplateCss, parseThumbnailUpload, TEMPLATE_CATEGORIES, TEMPLATE_SURFACE_COLOR_ROLES, TEMPLATE_STATUSES, MAX_TEMPLATE_HTML_LENGTH, MAX_TEMPLATE_CSS_LENGTH, sanitizeProfileField, recordAdminAuditLog } = bindDeps(deps);
+export type AdminTemplatesRouteDeps = Pick<AppRouteDeps,
+    | 'adminTemplateJsonParser'
+    | 'adminTemplateSummary'
+    | 'clearS3TemplateCache'
+    | 'currentUserId'
+    | 'customTemplateSummary'
+    | 'CV_TEMPLATES'
+    | 'CVDocument'
+    | 'defaultTemplateCategory'
+    | 'fetchS3Text'
+    | 'MAX_TEMPLATE_CSS_LENGTH'
+    | 'MAX_TEMPLATE_HTML_LENGTH'
+    | 'parseThumbnailUpload'
+    | 'putS3Object'
+    | 'recordAdminAuditLog'
+    | 'requireAdminPermission'
+    | 'S3_TEMPLATE_BUCKET'
+    | 'S3_TEMPLATE_PREFIX'
+    | 'sanitizeProfileField'
+    | 'sanitizeTemplateSource'
+    | 'sendError'
+    | 'TEMPLATE_CATEGORIES'
+    | 'TEMPLATE_STATUSES'
+    | 'TEMPLATE_SURFACE_COLOR_ROLES'
+    | 'TemplateSetting'
+    | 'templateThumbnailPath'
+    | 'validateCustomTemplateKey'
+    | 'validateTemplateCss'
+    | 'validateTemplateHtml'
+>;
+
+export function registerAdminTemplateRoutes(router: Router, deps: AdminTemplatesRouteDeps) {
+    const {
+        CVDocument,
+        TemplateSetting,
+        CV_TEMPLATES,
+        requireAdminPermission,
+        sendError,
+        adminTemplateJsonParser,
+        clearS3TemplateCache,
+        fetchS3Text,
+        putS3Object,
+        S3_TEMPLATE_BUCKET,
+        S3_TEMPLATE_PREFIX,
+        currentUserId,
+        adminTemplateSummary,
+        customTemplateSummary,
+        templateThumbnailPath,
+        validateCustomTemplateKey,
+        defaultTemplateCategory,
+        sanitizeTemplateSource,
+        validateTemplateHtml,
+        validateTemplateCss,
+        parseThumbnailUpload,
+        TEMPLATE_CATEGORIES,
+        TEMPLATE_SURFACE_COLOR_ROLES,
+        TEMPLATE_STATUSES,
+        MAX_TEMPLATE_HTML_LENGTH,
+        MAX_TEMPLATE_CSS_LENGTH,
+        sanitizeProfileField,
+        recordAdminAuditLog,
+    } = deps;
 
     router.get('/api/admin/templates', requireAdminPermission('templates.read'), async (_req: Request, res: Response) => {
         try {
@@ -22,9 +82,9 @@ export function registerAdminTemplateRoutes(router: Router, deps: RouteDeps) {
                 .map((setting) => customTemplateSummary(setting, usageMap.get(setting.key) || 0));
 
             const response = {
-                categories: TEMPLATE_CATEGORIES,
-                statuses: TEMPLATE_STATUSES,
-                surfaceColorRoles: TEMPLATE_SURFACE_COLOR_ROLES,
+                categories: [...TEMPLATE_CATEGORIES],
+                statuses: [...TEMPLATE_STATUSES],
+                surfaceColorRoles: [...TEMPLATE_SURFACE_COLOR_ROLES],
                 templates: [
                     ...CV_TEMPLATES.map((template) => adminTemplateSummary(
                         template,

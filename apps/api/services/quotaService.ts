@@ -1,8 +1,10 @@
 import CvCreationQuota from '../server-models/CvCreationQuotaModel';
+import CvImportQuota from '../server-models/CvImportQuotaModel';
 import CVDocument from '../server-models/CVDocument';
 import DownloadQuota from '../server-models/DownloadQuotaModel';
 import { getAppSettings } from '../server-models/AppSetting';
 import { buildCvCreationQuota } from '../server-models/cvQuota';
+import { buildCvImportQuota, getCvImportQuotaPeriod } from '../server-models/cvImportQuota';
 import { buildDownloadQuota, getNextUtcDayResetAt, getUtcDayKey } from '../server-models/downloadQuotaUtils';
 import { getEffectivePlan } from '../server-models/userPlan';
 
@@ -136,6 +138,57 @@ export const rollbackDownloadQuota = async (user: any) => {
     const day = plan === 'payg' || plan === 'monthly' || plan === 'quarterly' ? getUtcDayKey() : 'free-lifetime';
     await DownloadQuota.updateOne(
         { userId: user._id || user.id, day, count: { $gt: 0 } },
+        { $inc: { count: -1 } }
+    );
+};
+
+export const getCvImportQuota = async (user: any) => {
+    const { period } = getCvImportQuotaPeriod(user);
+    if (period === 'unlimited') return buildCvImportQuota(user, 0);
+    const record = await CvImportQuota.findOne({ userId: user._id || user.id, period });
+    return buildCvImportQuota(user, record?.count || 0);
+};
+
+export const consumeCvImportQuota = async (user: any) => {
+    const userId = user._id || user.id;
+    const currentQuota = await getCvImportQuota(user);
+    if (currentQuota.limit === null) return { ...currentQuota, reserved: true };
+    if (currentQuota.reached) return { ...currentQuota, reserved: false };
+
+    try {
+        await CvImportQuota.updateOne(
+            { userId, period: currentQuota.period },
+            { $setOnInsert: { userId, period: currentQuota.period, count: currentQuota.used } },
+            { upsert: true }
+        );
+    } catch (error: any) {
+        if (error?.code !== 11000) throw error;
+    }
+
+    const reserved = await CvImportQuota.findOneAndUpdate(
+        { userId, period: currentQuota.period, count: { $lt: currentQuota.limit } },
+        { $inc: { count: 1 } },
+        { new: true }
+    );
+
+    if (!reserved) {
+        return {
+            ...currentQuota,
+            used: currentQuota.limit,
+            remaining: 0,
+            reached: true,
+            reserved: false,
+        };
+    }
+
+    return { ...(await getCvImportQuota(user)), reserved: true };
+};
+
+export const rollbackCvImportQuota = async (user: any) => {
+    const { period } = getCvImportQuotaPeriod(user);
+    if (period === 'unlimited') return;
+    await CvImportQuota.updateOne(
+        { userId: user._id || user.id, period, count: { $gt: 0 } },
         { $inc: { count: -1 } }
     );
 };

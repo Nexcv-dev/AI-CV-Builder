@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { registerPaymentRoutes } from '../routes/payment';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
+import type { PaymentRouteDeps } from '../routes/payment';
+import { stubRouteDeps } from './helpers/routeDeps';
 
 const createRoutes = (overrides: Record<string, any> = {}) => {
   const routes: Array<{ method: 'get' | 'post'; path: string; handlers: any[] }> = [];
@@ -15,7 +17,7 @@ const createRoutes = (overrides: Record<string, any> = {}) => {
     }),
   } as any;
 
-  registerPaymentRoutes(router, {
+  registerPaymentRoutes(router, stubRouteDeps<PaymentRouteDeps>({
     billingQuoteLimiter: vi.fn(),
     requireAuth: vi.fn(),
     requireAdminPermission: vi.fn(() => vi.fn()),
@@ -27,7 +29,7 @@ const createRoutes = (overrides: Record<string, any> = {}) => {
     sendError: vi.fn(),
     logEvent: vi.fn(),
     ...overrides,
-  });
+  }));
 
   const handler = (method: 'get' | 'post', path: string) => (
     routes.find((route) => route.method === method && route.path === path)?.handlers.at(-1)

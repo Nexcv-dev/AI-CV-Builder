@@ -12,9 +12,9 @@ export const PrintView = () => {
   useEffect(() => {
     // Puppeteer will inject window.__CV_DATA__ before rendering
     const checkData = () => {
-      // @ts-ignore
+      // @ts-expect-error -- print globals are injected by the PDF renderer
       if (window.__CV_DATA__) {
-        // @ts-ignore
+        // @ts-expect-error -- print globals are injected by the PDF renderer
         setCvData(window.__CV_DATA__);
       } else {
         // Fallback or retry
@@ -29,13 +29,13 @@ export const PrintView = () => {
   }
 
   // To let puppeteer know when it's safe to print
-  // @ts-ignore
+  // @ts-expect-error -- print globals are injected by the PDF renderer
   window.__CV_RENDERED__ = true;
 
   // We explicitly select the template from localStorage if required, 
   // currently we just read it from the cvData object if we store it there, 
   // or it will be injected by Puppeteer.
-  // @ts-ignore
+  // @ts-expect-error -- print globals are injected by the PDF renderer
   const template = window.__CV_TEMPLATE__ || 'modern';
 
   return (

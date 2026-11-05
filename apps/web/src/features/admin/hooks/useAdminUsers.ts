@@ -85,7 +85,6 @@ export function useAdminUsers({ enabled }: { enabled: boolean }) {
     setRoleFilter,
     setSelectedPlan,
     setSelectedUser,
-    setUsers,
     setUserSearch,
     updateSelectedUserPlan,
     userSearch,

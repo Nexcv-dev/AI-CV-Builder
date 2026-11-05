@@ -1,6 +1,7 @@
-import type { Express } from 'express';
+import type { Express, Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
+import { isSessionCurrent, sessionCookieName } from '../services/sessionService';
 
 const parsePositiveInt = (value: string | undefined, fallback: number) => {
     const parsed = Number.parseInt(value || '', 10);
@@ -36,7 +37,7 @@ export const configureSessionMiddleware = (app: Express) => {
         resave: false,
         saveUninitialized: false,
         ...(store ? { store } : {}),
-        name: process.env.SESSION_COOKIE_NAME || 'nexcv.sid',
+        name: sessionCookieName(),
         cookie: {
             secure: process.env.NODE_ENV === 'production',
             httpOnly: true,
@@ -44,4 +45,20 @@ export const configureSessionMiddleware = (app: Express) => {
             maxAge: 24 * 60 * 60 * 1000,
         },
     }));
+};
+
+// Signs out sessions that predate the user's current sessionVersion (bumped on password change and reset).
+export const configureSessionVersionCheck = (app: Express) => {
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        if (!req.path.startsWith('/api') || !req.isAuthenticated?.() || !req.user) return next();
+        if (isSessionCurrent(req, req.user)) return next();
+
+        req.logout((logoutError) => {
+            if (logoutError) return next(logoutError);
+            req.session.destroy(() => {
+                res.clearCookie(sessionCookieName());
+                return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+            });
+        });
+    });
 };

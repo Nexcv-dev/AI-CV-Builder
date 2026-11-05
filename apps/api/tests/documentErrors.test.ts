@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerCvRoutes } from '../routes/cv';
 import { API_ERROR_CODES } from '../server-utils/apiErrors';
+import type { CvRouteDeps } from '../routes/cv';
+import { stubRouteDeps } from './helpers/routeDeps';
 
 type Route = { method: string; path: string; handlers: any[] };
 
@@ -46,7 +48,7 @@ const createRouteHarness = (overrides: Record<string, any> = {}) => {
     ...overrides,
   };
 
-  registerCvRoutes(router, deps);
+  registerCvRoutes(router, stubRouteDeps<CvRouteDeps>(deps));
 
   const handler = (method: string, path: string) => {
     const route = routes.find((item) => item.method === method && item.path === path);
