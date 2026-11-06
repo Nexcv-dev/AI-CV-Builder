@@ -3,19 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #298 from Nexcv-dev/test/overview (7bb37fd) - Bimantha Perera, 9 seconds ago
-* fix(ci): repair worker build and release admin templates to S3; set CV font sizes (ae04f39) - Bimantha Perera, 9 minutes ago
-* docs: auto-update CHANGELOG.md [skip ci] (917f9dc) - bimanthaperera-lab, 18 hours ago
-* Merge pull request #297 from Nexcv-dev/test/overview (1840753) - Bimantha Perera, 18 hours ago
-* refactor(api): move auth logic into services (227fadc) - Bimantha Perera, 18 hours ago
-* test(api): cover auth flows before Phase 8 (68ddeb6) - Bimantha Perera, 18 hours ago
+* Merge pull request #299 from Nexcv-dev/test/overview (d3cae57) - Bimantha Perera, 9 seconds ago
+* fix(api): fall back to in-process jobs when SQS send fails; drop deprecated new option (547961d) - Bimantha Perera, 27 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (34f507f) - bimanthaperera-lab, 41 minutes ago
+* Merge pull request #298 from Nexcv-dev/test/overview (7bb37fd) - Bimantha Perera, 41 minutes ago
+* fix(ci): repair worker build and release admin templates to S3; set CV font sizes (ae04f39) - Bimantha Perera, 49 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (917f9dc) - bimanthaperera-lab, 19 hours ago
+* Merge pull request #297 from Nexcv-dev/test/overview (1840753) - Bimantha Perera, 19 hours ago
+* refactor(api): move auth logic into services (227fadc) - Bimantha Perera, 19 hours ago
+* test(api): cover auth flows before Phase 8 (68ddeb6) - Bimantha Perera, 19 hours ago
 * refactor(web): move admin page state into hooks and split billing section (ffe9d2a) - Bimantha Perera, 19 hours ago
 * test(web): cover admin dashboard flows before Phase 7 (d5fbf58) - Bimantha Perera, 19 hours ago
-* refactor(api): move payment and billing review logic into services (b56abdd) - Bimantha Perera, 19 hours ago
-* test(api): cover payment and billing review flows before Phase 5 (ad9e017) - Bimantha Perera, 19 hours ago
-* fix(api): send API error codes from the auth guards (6881be1) - Bimantha Perera, 19 hours ago
-* fix(api): keep the CV text size setting when saving (e2ce8ff) - Bimantha Perera, 19 hours ago
-* refactor(api): slim server.ts down to bootstrap code (1e67571) - Bimantha Perera, 19 hours ago
+* refactor(api): move payment and billing review logic into services (b56abdd) - Bimantha Perera, 20 hours ago
+* test(api): cover payment and billing review flows before Phase 5 (ad9e017) - Bimantha Perera, 20 hours ago
+* fix(api): send API error codes from the auth guards (6881be1) - Bimantha Perera, 20 hours ago
+* fix(api): keep the CV text size setting when saving (e2ce8ff) - Bimantha Perera, 20 hours ago
+* refactor(api): slim server.ts down to bootstrap code (1e67571) - Bimantha Perera, 20 hours ago
 * refactor(api): give each router its own typed deps (4fab9d8) - Bimantha Perera, 20 hours ago
 * chore: add repo-wide ESLint and update cleanup plan (90494bc) - Bimantha Perera, 21 hours ago
 * refactor(api): type public route deps with AppRouteDeps (98cce12) - Bimantha Perera, 21 hours ago
