@@ -92,7 +92,7 @@ export function registerAdminSupportRoutes(router: Router, deps: AdminSupportRou
             if (typeof req.body.adminNotes === 'string') update.adminNotes = sanitizeProfileField(req.body.adminNotes, 2000);
     
             const existingTicket = await SupportTicket.findById(req.params.id).select('status priority adminNotes email subject');
-            const ticket = await SupportTicket.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).populate('userId', 'email displayName');
+            const ticket = await SupportTicket.findByIdAndUpdate(req.params.id, update, { returnDocument: 'after', runValidators: true }).populate('userId', 'email displayName');
             if (!ticket) {
                 return res.status(404).json({ error: 'Support ticket not found.' });
             }

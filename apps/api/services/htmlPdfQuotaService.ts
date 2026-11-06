@@ -52,7 +52,7 @@ export const consumeHtmlPdfQuota = async (ownerOrUser: HtmlPdfQuotaOwner | any) 
     const reserved = await model.findOneAndUpdate(
         { ...filter, day, count: { $lt: currentQuota.limit } },
         { $inc: { count: 1 } },
-        { new: true }
+        { returnDocument: 'after' }
     );
 
     if (!reserved) {

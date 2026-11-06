@@ -224,7 +224,7 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
                         : previousSetting?.promotionDiscountValue,
                     updatedBy: currentUserId(req),
                 },
-                { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+                { upsert: true, returnDocument: 'after', runValidators: true, setDefaultsOnInsert: true }
             );
             await recordAdminAuditLog({
                 actorId: currentUserId(req),
@@ -274,7 +274,7 @@ export function registerAdminBillingRoutes(router: Router, deps: AdminBillingRou
                     maxRedemptions: req.body.maxRedemptions ? Math.max(1, Math.round(Number(req.body.maxRedemptions))) : undefined,
                     updatedBy: currentUserId(req),
                 },
-                { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+                { upsert: true, returnDocument: 'after', runValidators: true, setDefaultsOnInsert: true }
             );
             await syncCouponDiscount(coupon);
             await recordAdminAuditLog({

@@ -278,7 +278,7 @@ export function registerAdminTemplateRoutes(router: Router, deps: AdminTemplates
             const setting = await TemplateSetting.findOneAndUpdate(
                 { key },
                 update,
-                { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+                { upsert: true, returnDocument: 'after', runValidators: true, setDefaultsOnInsert: true }
             );
             const usageCount = await CVDocument.countDocuments({ template: key });
 

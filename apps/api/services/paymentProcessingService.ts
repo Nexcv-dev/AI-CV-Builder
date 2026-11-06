@@ -82,7 +82,7 @@ export const recordUnprocessedPayment = async (
     PaymentTransaction.findOneAndUpdate(
         transactionFilterFor(record),
         { ...record, processed: false },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
+        { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     )
 );
 
@@ -99,7 +99,7 @@ const upsertReceivedTransaction = async (
                 $setOnInsert: { ...record, processed: false },
                 ...(refreshOnReceive ? { $set: refreshOnReceive } : {}),
             },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
         if (!transaction) throw new Error('Payment transaction upsert returned no document.');
         return transaction;
@@ -126,7 +126,7 @@ const claimTransaction = async (
             ],
         },
         { $set: { processingStartedAt: new Date() } },
-        { new: true }
+        { returnDocument: 'after' }
     )
 );
 
@@ -167,7 +167,7 @@ export const processVerifiedPayment = async (
                 userUpdate.$inc = { paygCvSaveCredits: 1 };
             }
 
-            const updatedUser = await User.findByIdAndUpdate(user._id, userUpdate, { new: true, session });
+            const updatedUser = await User.findByIdAndUpdate(user._id, userUpdate, { returnDocument: 'after', session });
             if (!updatedUser) throw new Error(USER_MISSING_MESSAGES[transaction.provider]);
             processedUser = updatedUser;
 
@@ -187,7 +187,7 @@ export const processVerifiedPayment = async (
                     processed: true,
                     processedAt: new Date(),
                 },
-                { upsert: true, new: true, setDefaultsOnInsert: true, session }
+                { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true, session }
             );
         });
     } finally {

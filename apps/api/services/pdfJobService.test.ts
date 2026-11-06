@@ -248,3 +248,36 @@ describe('pdfJobService runtime download failures', () => {
     });
   });
 });
+
+describe('queuePdfJob', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    enqueuePdfJob.mockReset();
+    isPdfQueueConfigured.mockReset();
+  });
+
+  it('returns false without sending when no queue is configured', async () => {
+    isPdfQueueConfigured.mockReturnValue(false);
+    const { queuePdfJob } = await importService();
+
+    await expect(queuePdfJob({ _id: 'pdf-job-3' } as any)).resolves.toBe(false);
+    expect(enqueuePdfJob).not.toHaveBeenCalled();
+  });
+
+  it('returns true when the job is sent to SQS', async () => {
+    isPdfQueueConfigured.mockReturnValue(true);
+    enqueuePdfJob.mockResolvedValue(true);
+    const { queuePdfJob } = await importService();
+
+    await expect(queuePdfJob({ _id: 'pdf-job-4' } as any)).resolves.toBe(true);
+    expect(enqueuePdfJob).toHaveBeenCalledWith('pdf-job-4');
+  });
+
+  it('returns false so the route renders in-process when the SQS send fails', async () => {
+    isPdfQueueConfigured.mockReturnValue(true);
+    enqueuePdfJob.mockRejectedValue(new Error('AWS.SimpleQueueService.NonExistentQueue'));
+    const { queuePdfJob } = await importService();
+
+    await expect(queuePdfJob({ _id: 'pdf-job-5' } as any)).resolves.toBe(false);
+  });
+});

@@ -337,7 +337,7 @@ export function registerAuthRoutes(router: Router, deps: AuthRouteDeps) {
             const user = await User.findByIdAndUpdate(
                 currentUserId(req),
                 { displayName, profileImage, phone, address, dob, gender, nationality },
-                { new: true, runValidators: true }
+                { returnDocument: 'after', runValidators: true }
             );
 
             if (!user) {

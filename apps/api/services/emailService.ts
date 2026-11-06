@@ -134,8 +134,13 @@ export const sendSystemEmail = async (options: Omit<AppEmailOptions, 'from'>) =>
 
     const email = { ...options, from };
     if (isEmailQueueConfigured()) {
-        await enqueueEmail(email);
-        return;
+        try {
+            await enqueueEmail(email);
+            return;
+        } catch (error) {
+            // Fall through to direct delivery (Resend/SMTP) if the queue is unavailable.
+            logError('email.queue_send_failed', error, { to: email.to, subject: email.subject });
+        }
     }
 
     await sendAppEmail(email);

@@ -100,7 +100,7 @@ export const resolveBillingReview = async (
             reviewNote: input.note,
         },
     };
-    const options = { new: true, runValidators: true };
+    const options = { returnDocument: 'after', runValidators: true } as const;
 
     if (input.type === 'payment') {
         const payment = await PaymentTransaction.findByIdAndUpdate(input.id, reviewUpdate, options)

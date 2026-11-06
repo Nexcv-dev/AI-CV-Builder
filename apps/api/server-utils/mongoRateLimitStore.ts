@@ -38,7 +38,7 @@ export class MongoRateLimitStore implements Store {
         const counter = await RateLimitCounter.findOneAndUpdate(
             { key: scopedKey },
             { $inc: { hits: 1 }, $setOnInsert: { resetTime } },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
 
         return {

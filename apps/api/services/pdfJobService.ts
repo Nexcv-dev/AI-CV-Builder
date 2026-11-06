@@ -2,6 +2,7 @@ import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3
 import type { Response } from 'express';
 import PdfJob, { IPdfJob } from '../server-models/PdfJob';
 import { enqueuePdfJob, isPdfQueueConfigured } from './pdfQueueService';
+import { logError } from '../server-utils/logger';
 
 const PDF_JOB_TTL_MS = Number(process.env.PDF_JOB_TTL_MS || 24 * 60 * 60 * 1000);
 const PDF_OUTPUT_BUCKET = (process.env.PDF_OUTPUT_BUCKET_NAME || process.env.S3_PDF_BUCKET_NAME || process.env.S3_TEMPLATE_BUCKET_NAME || '').trim();
@@ -45,8 +46,15 @@ export const createPdfJob = async ({
 
 export const queuePdfJob = async (job: IPdfJob) => {
     if (!isPdfQueueConfigured()) return false;
-    await enqueuePdfJob(String(job._id));
-    return true;
+    try {
+        await enqueuePdfJob(String(job._id));
+        return true;
+    } catch (error) {
+        // A missing or misconfigured queue must not block downloads: the caller
+        // processes the job in-process when this returns false.
+        logError('pdf.queue_send_failed', error, { jobId: String(job._id) });
+        return false;
+    }
 };
 
 const pdfOutputKey = (job: IPdfJob) => {
@@ -78,7 +86,7 @@ export const processPdfJob = async (jobId: string, deps: Record<string, any>) =>
     const job = await PdfJob.findOneAndUpdate(
         { _id: jobId, status: 'queued' },
         { $set: { status: 'processing', startedAt: new Date() }, $inc: { attempts: 1 } },
-        { new: true }
+        { returnDocument: 'after' }
     );
     if (!job) return null;
 
