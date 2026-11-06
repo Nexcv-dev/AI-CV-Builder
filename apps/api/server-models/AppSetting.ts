@@ -71,7 +71,7 @@ export async function getAppSettings() {
   const setting = await AppSetting.findOneAndUpdate(
     { singletonKey: 'global' },
     { $setOnInsert: DEFAULT_APP_SETTINGS },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
   );
   if (!setting.cmsContent) {
     setting.cmsContent = DEFAULT_CMS_CONTENT;

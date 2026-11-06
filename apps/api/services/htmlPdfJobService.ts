@@ -158,8 +158,13 @@ export const createHtmlPdfJob = async ({
 
 export const queueHtmlPdfJob = async (job: IHtmlPdfJob) => {
     if (!isHtmlPdfQueueConfigured()) return false;
-    await enqueueHtmlPdfJob(String(job._id));
-    return true;
+    try {
+        await enqueueHtmlPdfJob(String(job._id));
+        return true;
+    } catch (error) {
+        logError('html_pdf.queue_send_failed', error, { jobId: String(job._id) });
+        return false;
+    }
 };
 
 const htmlPdfOutputKey = (job: IHtmlPdfJob) => {
@@ -306,7 +311,7 @@ export const processHtmlPdfJob = async (jobId: string, deps: Record<string, any>
     const job = await HtmlPdfJob.findOneAndUpdate(
         { _id: jobId, status: 'queued' },
         { $set: { status: 'processing', startedAt: new Date() }, $inc: { attempts: 1 } },
-        { new: true }
+        { returnDocument: 'after' }
     );
     if (!job) return null;
 

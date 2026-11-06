@@ -45,7 +45,7 @@ export const incrementCvCreationQuota = async (user: any) => {
     const reserved = await CvCreationQuota.findOneAndUpdate(
         { userId, day: 'lifetime', count: { $lt: currentQuota.limit } },
         { $inc: { count: 1 } },
-        { new: true }
+        { returnDocument: 'after' }
     );
 
     if (!reserved) {
@@ -89,7 +89,7 @@ export const incrementDownloadQuota = async (user: any) => {
     await DownloadQuota.findOneAndUpdate(
         { userId: user._id || user.id, day },
         { $inc: { count: 1 } },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
+        { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
     );
     return getDownloadQuota(user);
 };
@@ -117,7 +117,7 @@ export const consumeDownloadQuota = async (user: any) => {
     const reserved = await DownloadQuota.findOneAndUpdate(
         { userId, day, count: { $lt: currentQuota.limit } },
         { $inc: { count: 1 } },
-        { new: true }
+        { returnDocument: 'after' }
     );
 
     if (!reserved) {
@@ -168,7 +168,7 @@ export const consumeCvImportQuota = async (user: any) => {
     const reserved = await CvImportQuota.findOneAndUpdate(
         { userId, period: currentQuota.period, count: { $lt: currentQuota.limit } },
         { $inc: { count: 1 } },
-        { new: true }
+        { returnDocument: 'after' }
     );
 
     if (!reserved) {

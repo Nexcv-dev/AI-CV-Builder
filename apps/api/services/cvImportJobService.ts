@@ -1,5 +1,6 @@
 import CvImportJob, { ICvImportJob } from '../server-models/CvImportJob';
 import { enqueueCvImportJob, isCvImportQueueConfigured } from './cvImportQueueService';
+import { logError } from '../server-utils/logger';
 
 const CV_IMPORT_JOB_TTL_MS = Number(process.env.CV_IMPORT_JOB_TTL_MS || 24 * 60 * 60 * 1000);
 const UNCLEAR_CV_IMPORT_MESSAGE = 'We could not find clear resume details in this file. Please upload a clearer resume, a text-based PDF, or a LinkedIn profile PDF.';
@@ -38,8 +39,13 @@ export const createCvImportJob = async ({
 
 export const queueCvImportJob = async (job: ICvImportJob) => {
     if (!isCvImportQueueConfigured()) return false;
-    await enqueueCvImportJob(String(job._id));
-    return true;
+    try {
+        await enqueueCvImportJob(String(job._id));
+        return true;
+    } catch (error) {
+        logError('cv_import.queue_send_failed', error, { jobId: String(job._id) });
+        return false;
+    }
 };
 
 const aiImportSchema = (Type: any) => ({
@@ -180,7 +186,7 @@ export const processCvImportJob = async (jobId: string, deps: Record<string, any
     const job = await CvImportJob.findOneAndUpdate(
         { _id: jobId, status: 'queued' },
         { $set: { status: 'processing', startedAt: new Date() }, $inc: { attempts: 1 } },
-        { new: true }
+        { returnDocument: 'after' }
     );
     if (!job) return null;
 

@@ -430,7 +430,7 @@ export function registerCvRoutes(router: Router, deps: CvRouteDeps) {
             const document = await CVDocument.findOneAndUpdate(
                 { _id: req.params.id, userId: currentUserId(req) },
                 { title, template: requestedTemplate, cvData: safeCvData, ...(safeStatus ? { status: safeStatus } : {}) },
-                { new: true, runValidators: true }
+                { returnDocument: 'after', runValidators: true }
             );
     
             if (!document) {

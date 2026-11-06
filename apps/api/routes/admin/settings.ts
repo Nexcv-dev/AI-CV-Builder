@@ -242,7 +242,7 @@ export function registerAdminSettingsRoutes(router: Router, deps: AdminSettingsR
                         updatedBy: currentUserId(req),
                     },
                 },
-                { new: true, runValidators: true }
+                { returnDocument: 'after', runValidators: true }
             );
 
             await recordAdminAuditLog({
