@@ -44,7 +44,7 @@ vi.mock('../../../api/services/cvImportJobService', () => ({
   processCvImportJob,
 }));
 
-vi.mock('../../../api/services/serverHelpers', () => ({
+vi.mock('../../../api/server-utils/requestValidation', () => ({
   sanitizeTextForPrompt,
 }));
 

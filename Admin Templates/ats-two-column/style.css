@@ -57,7 +57,7 @@ a {
 h1 {
   margin: 0;
   color: #111827;
-  font-size: 31px;
+  font-size: 20pt;
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: 0;
@@ -67,7 +67,7 @@ h1 {
 .headline {
   margin: 7px 0 0;
   color: {{themeColor}};
-  font-size: 13px;
+  font-size: 16pt;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -78,7 +78,7 @@ h1 {
   gap: 6px 12px;
   margin-top: 9px;
   color: #4b5563;
-  font-size: 10.8px;
+  font-size: 11pt;
   font-weight: 700;
   line-height: 1.45;
   page-break-inside: avoid;
@@ -124,7 +124,7 @@ h2 {
   padding-bottom: 5px;
   border-bottom: 1px solid #d1d5db;
   color: #111827;
-  font-size: 11px;
+  font-size: 11pt;
   font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1.2;
@@ -136,7 +136,7 @@ h2 {
 h3 {
   margin: 0;
   color: #111827;
-  font-size: 13px;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.32;
 }
@@ -147,14 +147,14 @@ p {
 
 .rich {
   color: #374151;
-  font-size: 10.8px;
+  font-size: 11pt;
   font-weight: 400;
   line-height: {{lineSpacing}};
   white-space: pre-wrap;
 }
 
 .summary {
-  font-size: 11.5px;
+  font-size: 11pt;
   line-height: {{lineSpacing}};
 }
 
@@ -201,7 +201,7 @@ p {
 .organization {
   margin-top: 2px;
   color: {{themeColor}};
-  font-size: 11px;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -210,7 +210,7 @@ p {
   flex: 0 0 27mm;
   margin-top: 1px;
   color: #64748b;
-  font-size: 10px;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.35;
   text-align: right;
@@ -233,7 +233,7 @@ p {
   border: 1px solid #d1d5db;
   background: #f9fafb;
   color: #374151;
-  font-size: 10px;
+  font-size: 11pt;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -256,13 +256,13 @@ p {
 }
 
 .side-item h3 {
-  font-size: 11.5px;
+  font-size: 11pt;
 }
 
 .side-item p {
   margin-top: 3px;
   color: #4b5563;
-  font-size: 10.5px;
+  font-size: 11pt;
   font-weight: 600;
   line-height: 1.42;
 }

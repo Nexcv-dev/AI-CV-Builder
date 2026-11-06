@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,7 +15,10 @@ const dryRun = process.argv.includes('--dry-run');
 const bucket = (process.env.S3_TEMPLATE_BUCKET_NAME || process.env.TEMPLATE_BUCKET_NAME || '').trim();
 const prefix = (process.env.S3_TEMPLATE_PREFIX || 'templates').replace(/^\/+|\/+$/g, '');
 const region = process.env.AWS_REGION || 'eu-north-1';
-const backupRoot = path.join('C:\\tmp', `nexcv-s3-template-release-backup-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+const backupRoot = path.join(
+  process.env.TEMPLATE_RELEASE_BACKUP_DIR || os.tmpdir(),
+  `nexcv-s3-template-release-backup-${new Date().toISOString().replace(/[:.]/g, '-')}`,
+);
 
 const contentTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],

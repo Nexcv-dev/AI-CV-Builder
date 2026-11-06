@@ -107,7 +107,7 @@ img {
   gap: 8px;
   margin: 0 0 12px;
   color: {{themeColor}};
-  font-size: 11px;
+  font-size: 11pt;
   font-weight: 900;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -125,7 +125,7 @@ img {
 h1 {
   margin: 0 0 10px;
   color: #ffffff;
-  font-size: 40px;
+  font-size: 20pt;
   line-height: 1;
   letter-spacing: -0.05em;
   font-weight: 900;
@@ -134,7 +134,7 @@ h1 {
 .role {
   margin: 0 0 16px;
   color: #c4b5fd;
-  font-size: 14px;
+  font-size: 16pt;
   font-weight: 700;
 }
 
@@ -150,7 +150,7 @@ h1 {
   border-radius: 999px;
   background: rgba(255,255,255,0.09);
   color: #e0f2fe;
-  font-size: 10px;
+  font-size: 11pt;
   font-weight: 700;
 }
 
@@ -219,7 +219,7 @@ h2 {
   gap: 9px;
   margin: 0 0 14px;
   color: #312e81;
-  font-size: 11px;
+  font-size: 11pt;
   font-weight: 900;
   letter-spacing: 0.18em;
   line-height: 1.4;
@@ -238,7 +238,7 @@ h2::after {
 h3 {
   margin: 0;
   color: #0f172a;
-  font-size: 14px;
+  font-size: 11pt;
   font-weight: 900;
   line-height: 1.35;
 }
@@ -246,20 +246,20 @@ h3 {
 .sub {
   margin: 3px 0 0;
   color: #64748b;
-  font-size: 11px;
+  font-size: 11pt;
   font-weight: 800;
 }
 
 .tiny {
   margin: 2px 0 0;
   color: #64748b;
-  font-size: 10px;
+  font-size: 11pt;
   font-weight: 700;
 }
 
 .rich {
   color: #334155;
-  font-size: 12px;
+  font-size: 11pt;
   font-weight: 400;
   line-height: {{lineSpacing}};
   white-space: pre-wrap;
@@ -326,7 +326,7 @@ h3 {
   margin: 0;
   padding-top: 2px;
   color: #7c3aed;
-  font-size: 10px;
+  font-size: 11pt;
   font-weight: 900;
   line-height: 1.4;
 }
@@ -381,14 +381,14 @@ h3 {
   gap: 10px;
   margin-bottom: 6px;
   color: #0f172a;
-  font-size: 11px;
+  font-size: 11pt;
   font-weight: 900;
 }
 
 .skill-level {
   flex: 0 0 auto;
   color: #7c3aed;
-  font-size: 10px;
+  font-size: 11pt;
 }
 
 .skill-track {
@@ -425,7 +425,7 @@ h3 {
   gap: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid #e2e8f0;
-  font-size: 12px;
+  font-size: 11pt;
 }
 
 .language-list div:last-child,
@@ -442,7 +442,7 @@ h3 {
 .language-list span,
 .detail-list span {
   color: #64748b;
-  font-size: 10px;
+  font-size: 11pt;
   font-weight: 800;
   text-align: right;
 }
@@ -511,4 +511,21 @@ h3 {
 
 .tech-gradient {
   max-width: 210mm;
+}
+
+/* NexCV 11pt rows: keep short values whole instead of breaking mid-word */
+.skill-head,
+.language-list div,
+.detail-list div {
+  flex-wrap: wrap;
+  column-gap: 10px;
+}
+
+.skill-head > :last-child:not(:first-child),
+.language-list div > :last-child:not(:first-child),
+.detail-list div > :last-child:not(:first-child),
+.line-head > a {
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
 }
