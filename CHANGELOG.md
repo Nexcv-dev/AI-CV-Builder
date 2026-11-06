@@ -3,19 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 ## Commit History
-* Merge pull request #297 from Nexcv-dev/test/overview (1840753) - Bimantha Perera, 8 seconds ago
-* refactor(api): move auth logic into services (227fadc) - Bimantha Perera, 11 minutes ago
-* test(api): cover auth flows before Phase 8 (68ddeb6) - Bimantha Perera, 11 minutes ago
-* refactor(web): move admin page state into hooks and split billing section (ffe9d2a) - Bimantha Perera, 29 minutes ago
-* test(web): cover admin dashboard flows before Phase 7 (d5fbf58) - Bimantha Perera, 29 minutes ago
-* refactor(api): move payment and billing review logic into services (b56abdd) - Bimantha Perera, 48 minutes ago
-* test(api): cover payment and billing review flows before Phase 5 (ad9e017) - Bimantha Perera, 49 minutes ago
-* fix(api): send API error codes from the auth guards (6881be1) - Bimantha Perera, 69 minutes ago
-* fix(api): keep the CV text size setting when saving (e2ce8ff) - Bimantha Perera, 72 minutes ago
-* refactor(api): slim server.ts down to bootstrap code (1e67571) - Bimantha Perera, 73 minutes ago
-* refactor(api): give each router its own typed deps (4fab9d8) - Bimantha Perera, 88 minutes ago
-* chore: add repo-wide ESLint and update cleanup plan (90494bc) - Bimantha Perera, 2 hours ago
-* refactor(api): type public route deps with AppRouteDeps (98cce12) - Bimantha Perera, 2 hours ago
+* Merge pull request #298 from Nexcv-dev/test/overview (7bb37fd) - Bimantha Perera, 9 seconds ago
+* fix(ci): repair worker build and release admin templates to S3; set CV font sizes (ae04f39) - Bimantha Perera, 9 minutes ago
+* docs: auto-update CHANGELOG.md [skip ci] (917f9dc) - bimanthaperera-lab, 18 hours ago
+* Merge pull request #297 from Nexcv-dev/test/overview (1840753) - Bimantha Perera, 18 hours ago
+* refactor(api): move auth logic into services (227fadc) - Bimantha Perera, 18 hours ago
+* test(api): cover auth flows before Phase 8 (68ddeb6) - Bimantha Perera, 18 hours ago
+* refactor(web): move admin page state into hooks and split billing section (ffe9d2a) - Bimantha Perera, 19 hours ago
+* test(web): cover admin dashboard flows before Phase 7 (d5fbf58) - Bimantha Perera, 19 hours ago
+* refactor(api): move payment and billing review logic into services (b56abdd) - Bimantha Perera, 19 hours ago
+* test(api): cover payment and billing review flows before Phase 5 (ad9e017) - Bimantha Perera, 19 hours ago
+* fix(api): send API error codes from the auth guards (6881be1) - Bimantha Perera, 19 hours ago
+* fix(api): keep the CV text size setting when saving (e2ce8ff) - Bimantha Perera, 19 hours ago
+* refactor(api): slim server.ts down to bootstrap code (1e67571) - Bimantha Perera, 19 hours ago
+* refactor(api): give each router its own typed deps (4fab9d8) - Bimantha Perera, 20 hours ago
+* chore: add repo-wide ESLint and update cleanup plan (90494bc) - Bimantha Perera, 21 hours ago
+* refactor(api): type public route deps with AppRouteDeps (98cce12) - Bimantha Perera, 21 hours ago
 * docs: auto-update CHANGELOG.md [skip ci] (27a1691) - bimanthaperera-lab, 5 months ago
 * Merge pull request #290 from Nexcv-dev/test/overview (14d459b) - Bimantha Perera, 5 months ago
 * fix release version synchronization (35c9a64) - Bimantha Perera, 5 months ago
@@ -350,24 +353,24 @@ All notable changes to this project will be documented in this file.
 * fix mobile preview scrolling bug (6386995) - Bimantha Perera, 5 months ago
 * Optimize and documentation update (3116b32) - Bimantha Perera, 5 months ago
 * add template per color behavior (be3ebbd) - Bimantha Perera, 5 months ago
-* docs: auto-update CHANGELOG.md [skip ci] (464ea93) - bimanthaperera-lab, 5 months ago
-* Merge pull request #180 from bimanthaperera-lab/test/overview (244492e) - Bimantha Perera, 5 months ago
-* Merge branch 'main' into test/overview (f8f9109) - Bimantha Perera, 5 months ago
-* update documentation (c66d857) - Bimantha Perera, 5 months ago
-* docs: auto-update CHANGELOG.md [skip ci] (4722eed) - bimanthaperera-lab, 5 months ago
-* Merge pull request #179 from bimanthaperera-lab/test/overview (3c4bab1) - Bimantha Perera, 5 months ago
-* add template color reset button (c118cad) - Bimantha Perera, 5 months ago
-* docs: auto-update CHANGELOG.md [skip ci] (50d0ea4) - bimanthaperera-lab, 5 months ago
-* Merge pull request #178 from bimanthaperera-lab/test/overview (e183a9c) - Bimantha Perera, 5 months ago
-* add release automation (bbd4835) - Bimantha Perera, 5 months ago
-* Add admin template validation gate (4d59037) - Bimantha Perera, 5 months ago
-* docs: auto-update CHANGELOG.md [skip ci] (1efa7c6) - bimanthaperera-lab, 5 months ago
-* Merge pull request #177 from bimanthaperera-lab/test/overview (f52109e) - Bimantha Perera, 5 months ago
-* fix default color bug in design panel (eb0b089) - Bimantha Perera, 5 months ago
-* add script to validate new templates (dcb9e7b) - Bimantha Perera, 5 months ago
-* Improve Template Rendering (b2408d6) - Bimantha Perera, 5 months ago
-* fix template issues (e165f72) - Bimantha Perera, 5 months ago
-* fix mobile preview bug (2f68c3d) - Bimantha Perera, 5 months ago
+* docs: auto-update CHANGELOG.md [skip ci] (464ea93) - bimanthaperera-lab, 6 months ago
+* Merge pull request #180 from bimanthaperera-lab/test/overview (244492e) - Bimantha Perera, 6 months ago
+* Merge branch 'main' into test/overview (f8f9109) - Bimantha Perera, 6 months ago
+* update documentation (c66d857) - Bimantha Perera, 6 months ago
+* docs: auto-update CHANGELOG.md [skip ci] (4722eed) - bimanthaperera-lab, 6 months ago
+* Merge pull request #179 from bimanthaperera-lab/test/overview (3c4bab1) - Bimantha Perera, 6 months ago
+* add template color reset button (c118cad) - Bimantha Perera, 6 months ago
+* docs: auto-update CHANGELOG.md [skip ci] (50d0ea4) - bimanthaperera-lab, 6 months ago
+* Merge pull request #178 from bimanthaperera-lab/test/overview (e183a9c) - Bimantha Perera, 6 months ago
+* add release automation (bbd4835) - Bimantha Perera, 6 months ago
+* Add admin template validation gate (4d59037) - Bimantha Perera, 6 months ago
+* docs: auto-update CHANGELOG.md [skip ci] (1efa7c6) - bimanthaperera-lab, 6 months ago
+* Merge pull request #177 from bimanthaperera-lab/test/overview (f52109e) - Bimantha Perera, 6 months ago
+* fix default color bug in design panel (eb0b089) - Bimantha Perera, 6 months ago
+* add script to validate new templates (dcb9e7b) - Bimantha Perera, 6 months ago
+* Improve Template Rendering (b2408d6) - Bimantha Perera, 6 months ago
+* fix template issues (e165f72) - Bimantha Perera, 6 months ago
+* fix mobile preview bug (2f68c3d) - Bimantha Perera, 6 months ago
 * Create cv_templates_mobile_preview_safe.zip (e0842f5) - Bimantha Perera, 6 months ago
 * Update MyCvs.tsx (bf9e59c) - Bimantha Perera, 6 months ago
 * fix landing page carousel bug (dc27d02) - Bimantha Perera, 6 months ago
@@ -744,8 +747,8 @@ All notable changes to this project will be documented in this file.
 * fix unit test (fb0cbcd) - Bimantha Perera, 6 months ago
 * Implement Step by step wizard (5477892) - Bimantha Perera, 6 months ago
 * Update README.md (f4f3ed7) - Bimantha Perera, 6 months ago
-* Merge pull request #7 from bimanthaperera-lab/test/overview (edfb4a2) - Bimantha Perera, 6 months ago
-* Update CVForm_logic.test.tsx (94867c5) - Bimantha Perera, 6 months ago
+* Merge pull request #7 from bimanthaperera-lab/test/overview (edfb4a2) - Bimantha Perera, 7 months ago
+* Update CVForm_logic.test.tsx (94867c5) - Bimantha Perera, 7 months ago
 * fix layot issues (60213b1) - Bimantha Perera, 7 months ago
 * Fix Pdf layout issues and add blue color theme (ffdb5f3) - Bimantha Perera, 7 months ago
 * Update README.md (4cf647f) - Bimantha Perera, 7 months ago
