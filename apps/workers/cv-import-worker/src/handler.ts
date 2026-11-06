@@ -7,7 +7,7 @@ import { isPaidPlan } from '../../../api/server-models/userPlan';
 import { extractCvText, parseCvTextToStructuredData, withImportMeta } from '../../../api/services/cvImportService';
 import { Type, generateGeminiText } from '../../../api/services/geminiService';
 import { processCvImportJob } from '../../../api/services/cvImportJobService';
-import { sanitizeTextForPrompt } from '../../../api/services/serverHelpers';
+import { sanitizeTextForPrompt } from '../../../api/server-utils/requestValidation';
 
 const MONGODB_URI = (process.env.MONGODB_URI || process.env.MONGO_URI || '').trim();
 

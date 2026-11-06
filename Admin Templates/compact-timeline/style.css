@@ -93,7 +93,7 @@ img {
   border: 1px solid #b5f5ec;
   border-radius: 999px;
   padding: 6px 11px;
-  font-size: 0.68rem;
+  font-size: 11pt;
   font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -101,7 +101,7 @@ img {
 }
 
 h1 {
-  font-size: 3rem;
+  font-size: 20pt;
   line-height: 0.95;
   font-weight: 900;
   color: #14213d;
@@ -110,7 +110,7 @@ h1 {
 }
 
 .role {
-  font-size: 1rem;
+  font-size: 16pt;
   font-weight: 900;
   color: #64748b;
   text-transform: uppercase;
@@ -124,7 +124,7 @@ h1 {
   max-width: 120mm;
   margin-top: 10px;
   color: #475569;
-  font-size: 0.76rem;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -182,7 +182,7 @@ h1 {
 .contact-item span {
   display: block;
   color: {{themeColor}};
-  font-size: 0.62rem;
+  font-size: 11pt;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -192,7 +192,7 @@ h1 {
 .contact-item strong {
   display: block;
   color: #334155;
-  font-size: 0.74rem;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -229,7 +229,7 @@ h1 {
   align-items: center;
   gap: 10px;
   color: #14213d;
-  font-size: 0.78rem;
+  font-size: 11pt;
   font-weight: 900;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -259,7 +259,7 @@ h1 {
 
 .rich {
   color: #475569;
-  font-size: 0.82rem;
+  font-size: 11pt;
   line-height: {{lineSpacing}};
   white-space: pre-wrap;
   font-weight: 500;
@@ -329,7 +329,7 @@ h1 {
 .project h3,
 .reference h3 {
   color: #14213d;
-  font-size: 0.98rem;
+  font-size: 11pt;
   font-weight: 900;
   line-height: 1.25;
   margin: 0;
@@ -339,7 +339,7 @@ h1 {
   width: 27mm;
   text-align: right;
   color: #fca311;
-  font-size: 0.7rem;
+  font-size: 11pt;
   font-weight: 900;
   text-transform: uppercase;
   padding-top: 2px;
@@ -347,7 +347,7 @@ h1 {
 
 .company {
   color: {{themeColor}};
-  font-size: 0.78rem;
+  font-size: 11pt;
   font-weight: 900;
   margin-bottom: 7px;
 }
@@ -377,14 +377,14 @@ h1 {
   justify-content: space-between;
   gap: 10px;
   color: #14213d;
-  font-size: 0.76rem;
+  font-size: 11pt;
   font-weight: 900;
   margin-bottom: 6px;
 }
 
 .skill-head span:last-child {
   color: {{themeColor}};
-  font-size: 0.68rem;
+  font-size: 11pt;
 }
 
 .skill-track {
@@ -414,7 +414,7 @@ h1 {
   gap: 10px;
   padding: 8px 0;
   border-bottom: 1px solid #e2e8f0;
-  font-size: 0.78rem;
+  font-size: 11pt;
 }
 
 .language-list div:last-child,
@@ -481,7 +481,7 @@ h1 {
 
 .reference p {
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 11pt;
   line-height: 1.45;
   font-weight: 800;
   margin: 0;
@@ -546,4 +546,21 @@ h1 {
   .experience-continuation-section {
     padding-top: 8mm !important;
   }
+}
+
+/* NexCV 11pt rows: keep short values whole instead of breaking mid-word */
+.skill-head,
+.language-list div,
+.detail-list div {
+  flex-wrap: wrap;
+  column-gap: 10px;
+}
+
+.skill-head > :last-child:not(:first-child),
+.language-list div > :last-child:not(:first-child),
+.detail-list div > :last-child:not(:first-child),
+.line-head > a {
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
 }

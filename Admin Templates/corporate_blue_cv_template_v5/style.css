@@ -99,7 +99,7 @@ img {
 .name {
   margin: 0 0 10px;
   color: #ffffff;
-  font-size: 40px;
+  font-size: 20pt;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.8px;
@@ -108,7 +108,7 @@ img {
 .role {
   margin: 0 0 18px;
   color: #bfdbfe;
-  font-size: 15px;
+  font-size: 16pt;
   font-weight: 800;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -124,7 +124,7 @@ img {
   display: inline-flex;
   align-items: center;
   color: #e0ecff;
-  font-size: 12.5px;
+  font-size: 11pt;
   line-height: 1.45;
 }
 
@@ -171,7 +171,7 @@ img {
   border-bottom: 2px solid #93c5fd;
   color: #0f3d75;
   color: {{primaryColor}};
-  font-size: 14.5px;
+  font-size: 11pt;
   font-weight: 800;
   letter-spacing: 1.2px;
   line-height: 1.25;
@@ -179,14 +179,14 @@ img {
 }
 
 .summary {
-  font-size: 13.6px;
+  font-size: 11pt;
   line-height: {{lineSpacing}};
   color: #334155;
 }
 
 .rich {
   color: #334155;
-  font-size: 13.1px;
+  font-size: 11pt;
   line-height: {{lineSpacing}};
 }
 
@@ -213,7 +213,7 @@ img {
 .side-list li {
   margin-bottom: 12px;
   color: #334155;
-  font-size: 12.9px;
+  font-size: 11pt;
   line-height: 1.7;
 }
 
@@ -236,7 +236,7 @@ img {
   border-radius: 6px;
   background: #eff6ff;
   color: #1d4ed8;
-  font-size: 11.8px;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.2;
 }
@@ -268,7 +268,7 @@ img {
 .mini h3 {
   margin: 0;
   color: #102033;
-  font-size: 13px;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -277,7 +277,7 @@ img {
 .tiny-rich {
   margin: 5px 0 0;
   color: #334155;
-  font-size: 12px;
+  font-size: 11pt;
   line-height: 1.55;
 }
 
@@ -295,7 +295,7 @@ img {
   justify-content: space-between;
   gap: 12px;
   color: #334155;
-  font-size: 12.3px;
+  font-size: 11pt;
   font-weight: 700;
   line-height: 1.35;
 }
@@ -319,14 +319,14 @@ img {
 .item-title {
   margin: 0;
   color: #102033;
-  font-size: 15px;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.35;
 }
 
 .item-date {
   color: #1d4ed8;
-  font-size: 12.5px;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.35;
   text-align: right;
@@ -336,7 +336,7 @@ img {
 .company {
   margin: 0 0 8px;
   color: #475569;
-  font-size: 13px;
+  font-size: 11pt;
   font-weight: 800;
 }
 
@@ -353,7 +353,7 @@ img {
 .reference-card h3 {
   margin: 0 0 7px;
   color: #102033;
-  font-size: 14.5px;
+  font-size: 11pt;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -374,7 +374,7 @@ img {
 .reference-card p {
   margin: 4px 0 0;
   color: #334155;
-  font-size: 12.5px;
+  font-size: 11pt;
   line-height: 1.55;
 }
 

@@ -108,7 +108,7 @@ img {
 }
 
 .side-name {
-  font-size: 1.55rem;
+  font-size: 20pt;
   line-height: 1.1;
   font-weight: 900;
   text-transform: uppercase;
@@ -118,7 +118,7 @@ img {
 
 .side-role {
   color: {{themeColor}};
-  font-size: 0.76rem;
+  font-size: 16pt;
   font-weight: 900;
   line-height: 1.35;
   letter-spacing: 0.14em;
@@ -133,7 +133,7 @@ img {
 }
 
 .side-title {
-  font-size: 0.76rem;
+  font-size: 11pt;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   color: {{themeColor}};
@@ -150,7 +150,7 @@ img {
   align-items: flex-start;
   gap: 10px;
   margin-bottom: 12px;
-  font-size: 0.76rem;
+  font-size: 11pt;
   line-height: 1.45;
   color: #ebe4da;
   font-weight: 700;
@@ -188,7 +188,7 @@ img {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 0.76rem;
+  font-size: 11pt;
   font-weight: 900;
   margin-bottom: 6px;
   color: #ffffff;
@@ -196,7 +196,7 @@ img {
 
 .skill-top span:last-child {
   color: {{themeColor}};
-  font-size: 0.68rem;
+  font-size: 11pt;
 }
 
 .skill-track {
@@ -226,7 +226,7 @@ img {
   gap: 10px;
   padding: 8px 0;
   border-bottom: 1px solid rgba(255,255,255,0.12);
-  font-size: 0.76rem;
+  font-size: 11pt;
   color: #ebe4da;
 }
 
@@ -251,7 +251,7 @@ img {
 }
 
 };
-  font-size: 0.72rem;
+  font-size: 11pt;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.22em;
@@ -259,7 +259,7 @@ img {
 }
 
 .main h1 {
-  font-size: 2.45rem;
+  font-size: 20pt;
   line-height: 1.04;
   letter-spacing: -0.04em;
   color: #26211d;
@@ -274,7 +274,7 @@ img {
 }
 
 .section-title {
-  font-size: 0.82rem;
+  font-size: 11pt;
   font-weight: 900;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -307,7 +307,7 @@ img {
 }
 
 .rich {
-  font-size: 0.84rem;
+  font-size: 11pt;
   line-height: {{lineSpacing}};
   color: #51483f;
   white-space: pre-wrap;
@@ -343,7 +343,7 @@ img {
   width: 28mm;
   vertical-align: top;
   color: {{themeColor}};
-  font-size: 0.7rem;
+  font-size: 11pt;
   font-weight: 900;
   text-transform: uppercase;
   padding-top: 3px;
@@ -372,7 +372,7 @@ img {
 
 .item-body h3,
 .project h3 {
-  font-size: 0.98rem;
+  font-size: 11pt;
   color: #26211d;
   font-weight: 900;
   margin-bottom: 4px;
@@ -380,7 +380,7 @@ img {
 
 .company {
   color: #796b5f;
-  font-size: 0.78rem;
+  font-size: 11pt;
   font-weight: 900;
   margin-bottom: 7px;
 }
@@ -433,14 +433,14 @@ img {
 }
 
 .reference h3 {
-  font-size: 0.82rem;
+  font-size: 11pt;
   color: #ffffff;
   margin-bottom: 3px;
 }
 
 .reference p {
   color: #c9bfb4;
-  font-size: 0.72rem;
+  font-size: 11pt;
   line-height: 1.45;
   font-weight: 800;
   margin: 0;
@@ -505,4 +505,21 @@ img {
   .experience-continuation-section {
     padding-top: 8mm !important;
   }
+}
+
+/* NexCV 11pt rows: keep short values whole instead of breaking mid-word */
+.skill-top,
+.language-list div,
+.detail-list div {
+  flex-wrap: wrap;
+  column-gap: 10px;
+}
+
+.skill-top > :last-child:not(:first-child),
+.language-list div > :last-child:not(:first-child),
+.detail-list div > :last-child:not(:first-child),
+.line-head > a {
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
 }

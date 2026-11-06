@@ -351,7 +351,9 @@ The OCR Lambda uploads each import file to S3 temporarily, runs AWS Textract, re
 
 ## Template Deployment
 
-Before releasing admin templates:
+Every push to `main` runs `templates:release` in the CI/CD pipeline (step "Release admin CV templates to S3"), so merged changes under `Admin Templates/` reach S3 automatically. It uploads each template in `apps/web/config/template-release-map.json` and never deletes other objects in the bucket. The bucket and prefix come from the GitHub repository variables `S3_TEMPLATE_BUCKET_NAME` and `S3_TEMPLATE_PREFIX` (defaults: `cv-template-bucket`, `templates`).
+
+To release manually, or before merging, validate first:
 
 ```bash
 corepack pnpm validate:template-map

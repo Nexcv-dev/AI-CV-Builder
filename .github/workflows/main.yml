@@ -58,15 +58,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-north-1
 
-      - name: Sync CV templates to S3
+      # Uploads every template in apps/web/config/template-release-map.json
+      # (index.html, style.css, thumbnail) from "Admin Templates/". It only
+      # overwrites those keys; it never deletes other objects in the bucket.
+      - name: Release admin CV templates to S3
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
-        working-directory: '.'
-        run: |
-          if [ -d "templates" ]; then
-            aws s3 sync templates s3://cv-template-bucket/templates --delete
-          else
-            echo "No templates directory found; skipping S3 sync."
-          fi
+        env:
+          S3_TEMPLATE_BUCKET_NAME: ${{ vars.S3_TEMPLATE_BUCKET_NAME || 'cv-template-bucket' }}
+          S3_TEMPLATE_PREFIX: ${{ vars.S3_TEMPLATE_PREFIX || 'templates' }}
+          AWS_REGION: eu-north-1
+          TEMPLATE_RELEASE_BACKUP_DIR: ${{ runner.temp }}/template-release-backup
+        run: corepack pnpm --filter @nexcv/web templates:release
 
       - name: Build PDF Lambda zip
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
